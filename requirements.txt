@@ -1,0 +1,10 @@
+argparse
+matplotlib
+mpl-toolkits.clifford
+opencv-python
+numpy
+pandas
+pyquaternion
+scipy
+sklearn
+plotly
