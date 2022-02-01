@@ -14,7 +14,7 @@ for i in range(0, trinity_npatchs-1):
 # trinity_points = np.array([[0, 0, 1], [0, 0, -1], [1, 0, 0], [0, 1, 0], [0, -1, 0], [-1, 0, 0]])
 
 
-def vis_voroni_plotly(trajectory=None):
+def vis_voroni_plotly(trajectory=None, save_html=False):
     import numpy as np
     import pandas as pd
     import plotly
@@ -54,20 +54,34 @@ def vis_voroni_plotly(trajectory=None):
             data.append(edge)
 
     if trajectory is not None:
-        trajc = go.Scatter3d(x=trajectory[:, 0], y=trajectory[:, 1], z=trajectory[:, 2],
-                             mode='lines', line={'width': 1, 'color': 'blue'}, name='trajectory', showlegend=False)
-        data.append(trajc)
+        if isinstance(trajectory, np.ndarray):
+            trajc = go.Scatter3d(x=trajectory[:, 0], y=trajectory[:, 1], z=trajectory[:, 2],
+                                 mode='lines', line={'width': 1, 'color': 'blue'}, name='trajectory', showlegend=False)
+            data.append(trajc)
+        else:
+            for user in trajectory.keys():
+                for video in trajectory[user].keys():
+                    trajc = go.Scatter3d(x=trajectory[user][video][:, 0], y=trajectory[user][video][:, 1],
+                                         z=trajectory[user][video][:, 2], mode='lines', 
+                                         line={'width': 1, 'color': 'blue'}, 
+                                         name='trajectory',showlegend=False)
+                    data.append(trajc)
 
     # -- configure layout
     layout = go.Layout(margin={'l': 0, 'r': 0, 'b': 0, 't': 0}, title={
-        'text': "Voronoi Tessellation with a random set of generators",
+        'text': "Trinity Voroni with trajectory",
         'y': 0.9,
         'x': 0.5,
         'xanchor': 'center',
         'yanchor': 'top'})
     plot_figure = go.Figure(data=data, layout=layout)
+
     # -- render plot
-    plotly.offline.iplot(plot_figure)
+
+    if save_html:
+        plotly.offline.plot(data, filename=f'{__file__}.html', auto_open=False)
+    else:
+        plotly.offline.iplot(plot_figure)
 
 
 def vis_voroni_matplot(trajectory=None):
@@ -123,20 +137,27 @@ def vis_voroni_matplot(trajectory=None):
     plt.show()
 
 
+SAMPLED_DATASET = None
+
+
 def get_sample_dataset():
     import sys
     import os
+    global SAMPLED_DATASET
     sys.path.append('head_motion_prediction')
     from head_motion_prediction.David_MMSys_18.Read_Dataset import load_sampled_dataset
     project_path = "head_motion_prediction"
-    if os.path.basename(os.getcwd()) != project_path:
-        print(f"moving to {project_path}")
-        os.chdir(project_path)
-    return  load_sampled_dataset()
+    cwd = os.getcwd()
+    if SAMPLED_DATASET is None:
+        if os.path.basename(cwd) != project_path:
+            print(f"running load_sampled_dataset on {project_path}")
+            os.chdir(project_path)
+            SAMPLED_DATASET = load_sampled_dataset()
+            os.chdir(cwd)
+    return SAMPLED_DATASET
 
 
 def get_sample_user_trace():
-    sampled_dataset = get_sample_dataset()
     user = '0'
     video = '10_Cows'
-    return sampled_dataset[user][video][:, 1:]
+    return get_sample_dataset()[user][video][:, 1:]
