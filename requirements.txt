@@ -8,3 +8,4 @@ pyquaternion
 scipy
 sklearn
 plotly
+# healpy
