@@ -10,4 +10,9 @@ nbformat
 sklearn
 plotly
 jupyter
+
+# exp_healpix.ipynb
 # healpy
+
+# TileRateSelector_360videos
+# pyqt5
