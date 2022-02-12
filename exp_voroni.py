@@ -6,7 +6,7 @@ from scipy.spatial import SphericalVoronoi, geometric_slerp
 
 
 # Trinity paches
-TRINITY_NPATCHS = 14
+TRINITY_NPATCHS = 24
 TRINITY_POINTS = np.empty((0, 3))
 for i in range(0, TRINITY_NPATCHS-1):
     zi = (1 - 1.0/TRINITY_NPATCHS) * (1 - 2.0*i / (TRINITY_NPATCHS - 1))
@@ -40,8 +40,17 @@ def get_sample_dataset():
     return SAMPLE_DATASET
 
 
-def get_sample_one_user_one_video():
+def get_traces_one_video_one_user():
     return get_sample_dataset()[ONE_USER][ONE_VIDEO][:, 1:]
+
+
+def get_traces_one_video_all_users():
+    dataset = get_sample_dataset()
+    traces = []
+    for user in dataset.keys():
+        for i in dataset[user][ONE_VIDEO][:, 1:]:
+            traces.append(i)
+    return traces
 
 
 # plot functions
@@ -144,7 +153,7 @@ def plot_voroni_one_video_one_user(to_html=False):
         go.Figure(data=data, layout=layout, layout_width=800).show()
 
 
-def plot_voroni_one_video_one_all_user(to_html=False):
+def plot_voroni_one_video_all_users(to_html=False):
     data = plotly_data_voroni()
     dataset = get_sample_dataset()
     for user in dataset.keys():
