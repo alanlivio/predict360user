@@ -131,9 +131,9 @@ dmypy.json
 
 # added
 exp_voroni.py.html
-head_motion_prediction
-OpCASH/
-PARIMA/
-TileRateSelector_360videos/
-MV_SalGAN360/
-PanoProject
+# head_motion_prediction
+# OpCASH/
+# PARIMA/
+# TileRateSelector_360videos/
+# MV_SalGAN360/
+# PanoProject
