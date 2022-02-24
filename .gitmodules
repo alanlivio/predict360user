@@ -1,0 +1,12 @@
+[submodule "360Transformations"]
+path = 360Transformations
+url = https://github.com/xmar/360Transformations
+[submodule "head_motion_prediction"]
+	path = head_motion_prediction
+	url = https://gitlab.com/miguelfromeror/head-motion-prediction
+[submodule "TileRateSelector_360videos"]
+path = TileRateSelector_360videos
+url = https://github.com/blackwiz4rd/TileRateSelector_360videos
+[submodule "VRClient"]
+path = VRClient
+url = https://github.com/jvdrhoof/VRClient

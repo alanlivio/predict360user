@@ -16,7 +16,11 @@ https://github.com/eborboihuc/Deep360Pilot-CVPR17
 * tiling
 https://github.com/xmar/360Transformations (focus)
 https://github.com/manojMadarasingha/OpCASH (focus)
-https://github.com/blackwiz4rd/TileRateSelector_360videos
+https://github.com/blackwiz4rd/TileRateSelector_360videos (focus)
+
+* tiling coverage
+https://github.com/jvdrhoof/VRClient/blob/master/src/rate_adaptation.py
+https://github.com/EricLindskog/REEFT-360/blob/main/Requester/WaterfillRequester.cs
 
 * user clustering
 https://github.com/LASP-UCL/spherical-clustering-in-VR-content/
@@ -46,6 +50,10 @@ https://github.com/xuyanyu-shh/Saliency-Detection-in-360-Videos
 https://github.com/phananh1010/PanoSalNet
 https://github.com/phananh1010/PanoSaliency
 
+* DASH js 
+https://github.com/tnomedialab/dash-srd.js
+https://github.com/fraunhoferhhi/omaf.js
+
 * geometry
 https://github.com/sunset1995/py360convert
 https://github.com/facebook/transform360
@@ -54,3 +62,8 @@ https://github.com/bhautikj/vrProjector
 https://github.com/bingsyslab/360projection
 https://github.com/NitishMutha/equirectangular-toolbox
 https://github.com/jonkhler/s2cnn
+
+
+* others
+https://github.com/hsientzucheng/awesome-360-vision
+https://github.com/xiangjieSui/Awesome-360-processing
