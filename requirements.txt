@@ -1,3 +1,4 @@
+spherical_geometry
 argparse
 matplotlib
 mpl-toolkits.clifford

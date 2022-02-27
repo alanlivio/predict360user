@@ -2,25 +2,39 @@ import math
 import numpy as np
 import plotly
 import plotly.graph_objs as go
+import plotly.express as px
 from scipy.spatial import SphericalVoronoi, geometric_slerp
+from head_motion_prediction.Utils import *
+from VRClient.src.help_functions import *
+from spherical_geometry import polygon
 
-
-# Trinity paches
-TRINITY_NPATCHS = 24
-TRINITY_POINTS = np.empty((0, 3))
-for i in range(0, TRINITY_NPATCHS-1):
-    zi = (1 - 1.0/TRINITY_NPATCHS) * (1 - 2.0*i / (TRINITY_NPATCHS - 1))
-    di = math.sqrt(1 - math.pow(zi, 2))
-    alphai = i * math.pi * (3 - math.sqrt(5))
-    xi = di * math.cos(alphai)
-    yi = di * math.sin(alphai)
-    new_point = np.array([[xi, yi, zi]])
-    TRINITY_POINTS = np.append(TRINITY_POINTS, new_point, axis=0)
-
+TILES_WIDTH, TILES_HEIGHT = 6, 4
 # head_motion_predction sample dataset
 SAMPLE_DATASET = None
 ONE_USER = '0'
 ONE_VIDEO = '10_Cows'
+LAYOUT = go.Layout(width=800,
+                   margin={'l': 0, 'r': 0, 'b': 0, 't': 40})
+
+
+def create_trinity_voroni(npatchs):
+    points = np.empty((0, 3))
+    for i in range(0, npatchs):
+        zi = (1 - 1.0/npatchs) * (1 - 2.0*i / (npatchs - 1))
+        di = math.sqrt(1 - math.pow(zi, 2))
+        alphai = i * math.pi * (3 - math.sqrt(5))
+        xi = di * math.cos(alphai)
+        yi = di * math.sin(alphai)
+        new_point = np.array([[xi, yi, zi]])
+        points = np.append(points, new_point, axis=0)
+    sv = SphericalVoronoi(points, 1, np.array([0, 0, 0]))
+    sv.sort_vertices_of_regions()
+    return points, sv
+
+
+TRINITY_NPATCHS = 14
+VORONOI_CPOINTS_14P, VORONOI_SPHERE_14P = create_trinity_voroni(TRINITY_NPATCHS)
+VORONOI_CPOINTS_24P, VORONOI_SPHERE_24P = create_trinity_voroni(24)
 
 
 def get_sample_dataset():
@@ -59,17 +73,13 @@ def plot_voroni_one_user_one_video_with_matplot():
     import matplotlib.pyplot as plt
     fig = plt.figure()
     fig.set_size_inches(18.5, 10.5)
-    u, v = np.mgrid[0:2 * np.pi:20j, 0:np.pi:10j]
+    u, v = np.mgrid[0: 2 * np.pi: 20j, 0: np.pi: 10j]
     ax = fig.add_subplot(111, projection='3d')
     ax.plot_surface(np.cos(u) * np.sin(v), np.sin(u) *
                     np.sin(v), np.cos(v), alpha=0.1, color="r")
     ax.set_xlabel('X')
     ax.set_ylabel('Y')
     ax.set_zlabel('Z')
-    radius = 1
-    center = np.array([0, 0, 0])
-    sv = SphericalVoronoi(TRINITY_POINTS, radius, center)
-    sv.sort_vertices_of_regions()
     t_vals = np.linspace(0, 1, 2000)
     # plot the unit sphere for reference (optional)
     u = np.linspace(0, 2 * np.pi, 100)
@@ -77,18 +87,18 @@ def plot_voroni_one_user_one_video_with_matplot():
     x = np.outer(np.cos(u), np.sin(v))
     y = np.outer(np.sin(u), np.sin(v))
     z = np.outer(np.ones(np.size(u)), np.cos(v))
-    # plot generator TRINITY_POINTS
-    ax.scatter(TRINITY_POINTS[:, 0], TRINITY_POINTS[:,
-               1], TRINITY_POINTS[:, 2], c='b')
+    # plot generator VORONOI_CPOINTS_14P
+    ax.scatter(VORONOI_CPOINTS_14P[:, 0], VORONOI_CPOINTS_14P[:,
+               1], VORONOI_CPOINTS_14P[:, 2], c='b')
     # plot Voronoi vertices
-    ax.scatter(sv.vertices[:, 0], sv.vertices[:, 1], sv.vertices[:, 2],
+    ax.scatter(VORONOI_SPHERE_14P.vertices[:, 0], VORONOI_SPHERE_14P.vertices[:, 1], VORONOI_SPHERE_14P.vertices[:, 2],
                c='g')
     # indicate Voronoi regions (as Euclidean polygons)
-    for region in sv.regions:
+    for region in VORONOI_SPHERE_14P.regions:
         n = len(region)
         for i in range(n):
-            start = sv.vertices[region][i]
-            end = sv.vertices[region][(i + 1) % n]
+            start = VORONOI_SPHERE_14P.vertices[region][i]
+            end = VORONOI_SPHERE_14P.vertices[region][(i + 1) % n]
             result = geometric_slerp(start, end, t_vals)
             ax.plot(result[..., 0],
                     result[..., 1],
@@ -102,29 +112,25 @@ def plot_voroni_one_user_one_video_with_matplot():
 
 
 def plotly_data_voroni():
-    radius = 1
-    center = np.array([0, 0, 0])
-    sv = SphericalVoronoi(TRINITY_POINTS, radius, center)
-    sv.sort_vertices_of_regions()
     data = []
 
     # -- add generator points
-    # gens = go.Scatter3d(x=TRINITY_POINTS[:, 0], y=TRINITY_POINTS[:, 1], z=TRINITY_POINTS[:, 2], mode='markers', marker={'size': 1, 'opacity': 1.0, 'color': 'blue'}, name='Generator TRINITY_POINTS')
+    # gens = go.Scatter3d(x=VORONOI_CPOINTS_14P[:, 0], y=VORONOI_CPOINTS_14P[:, 1], z=VORONOI_CPOINTS_14P[:, 2], mode='markers', marker={'size': 1, 'opacity': 1.0, 'color': 'blue'}, name='Generator VORONOI_CPOINTS_14P')
     # data.append(gens)
 
     # -- add vortonoi vertices
-    vrts = go.Scatter3d(x=sv.vertices[:, 0], y=sv.vertices[:, 1], z=sv.vertices[:, 2],
+    vrts = go.Scatter3d(x=VORONOI_SPHERE_14P.vertices[:, 0], y=VORONOI_SPHERE_14P.vertices[:, 1], z=VORONOI_SPHERE_14P.vertices[:, 2],
                         mode='markers', marker={'size': 1, 'opacity': 1.0, 'color': 'green'}, name='Voronoi Vertices')
     data.append(vrts)
 
     # -- add vortonoi edges
-    for region in sv.regions:
+    for region in VORONOI_SPHERE_14P.regions:
         n = len(region)
         rgb = np.random.rand(3,)
         t = np.linspace(0, 1, 100)
         for i in range(n):
-            start = sv.vertices[region][i]
-            end = sv.vertices[region][(i + 1) % n]
+            start = VORONOI_SPHERE_14P.vertices[region][i]
+            end = VORONOI_SPHERE_14P.vertices[region][(i + 1) % n]
             result = np.array(geometric_slerp(start, end, t))
             edge = go.Scatter3d(x=result[..., 0], y=result[..., 1], z=result[..., 2], mode='lines', line={
                                 'width': 1, 'color': [rgb]}, name='region edge', showlegend=False)
@@ -142,6 +148,17 @@ def plotly_data_append_user_traces(data, dataset, user, video):
     data.append(trajc)
 
 
+def plot_rec_tiles_heatmap(traces):
+    heatmap = []
+    for i in traces:
+        heatmap.append(from_position_to_tile(eulerian_in_range(
+            *cartesian_to_eulerian(i[0], i[1], i[2])), TILES_WIDTH, TILES_HEIGHT))
+    fig = px.imshow(np.sum(heatmap, axis=0), labels=dict(
+        x="longitude", y="latitude", color="requests"), title=f"reqs={str(np.sum(heatmap))}")
+    fig.update_layout(LAYOUT)
+    fig.show()
+
+
 def plot_voroni_one_video_one_user(to_html=False):
     data = plotly_data_voroni()
     dataset = get_sample_dataset()
@@ -149,8 +166,7 @@ def plot_voroni_one_video_one_user(to_html=False):
     if to_html:
         plotly.offline.plot(data, filename=f'{__file__}.html', auto_open=False)
     else:
-        layout = go.Layout(margin={'l': 0, 'r': 0, 'b': 0, 't': 0})
-        go.Figure(data=data, layout=layout, layout_width=800).show()
+        go.Figure(data=data, layout=LAYOUT).show()
 
 
 def plot_voroni_one_video_all_users(to_html=False):
@@ -161,5 +177,126 @@ def plot_voroni_one_video_all_users(to_html=False):
     if to_html:
         plotly.offline.plot(data, filename=f'{__file__}.html', auto_open=False)
     else:
-        layout = go.Layout(margin={'l': 0, 'r': 0, 'b': 0, 't': 0})
-        go.Figure(data=data, layout=layout, layout_width=800).show()
+        go.Figure(data=data, layout=LAYOUT).show()
+
+
+def fov_ar_cartesian(phi_vp, theta_vp):
+    # https://daglar-cizmeci.com/how-does-virtual-reality-work/
+    margin_lateral = np.deg2rad(90/2)
+    margin_ab = np.deg2rad(110/2)
+    fov = np.array([
+        eulerian_to_cartesian(phi_vp-margin_ab, theta_vp+margin_lateral),
+        eulerian_to_cartesian(phi_vp+margin_ab, theta_vp+margin_lateral),
+        eulerian_to_cartesian(phi_vp+margin_ab, theta_vp-margin_lateral),
+        eulerian_to_cartesian(phi_vp-margin_ab, theta_vp-margin_lateral)])
+    return fov
+
+
+def plot_reqs_per_func(traces, func_list, plot_heatmaps=False):
+    fig_reqs = go.Figure(layout=LAYOUT)
+    fig_areas = go.Figure(layout=LAYOUT)
+    for func in func_list:
+        reqs = []
+        areas = []
+        heatmaps = []
+        # call func per trace
+        for t in traces:
+            reqs_in, areas_in, heatmap_in = func(*cartesian_to_eulerian(t[0], t[1], t[2]))
+            reqs.append(reqs_in)
+            areas.append(areas_in)
+            if heatmap_in is not None:
+                heatmaps.append(heatmap_in)
+        # reqs
+        fig_reqs.add_trace(go.Scatter(
+            y=reqs, mode='lines', name=f"reqs {func.__name__}"))
+        # coverage_are
+        fig_areas.add_trace(go.Scatter(
+            y=areas, mode='lines', name=f"areas {func.__name__}"))
+        # heatmap
+        if(plot_heatmaps and len(heatmaps)):
+            fig_heatmap = px.imshow(np.sum(heatmaps, axis=0), title=f"heatmap {func.__name__}",
+                                    labels=dict(x="longitude", y="latitude", color="requests"))
+            fig_heatmap.update_layout(LAYOUT)
+            fig_heatmap.show()
+    fig_reqs.show()
+    fig_areas.show()
+
+
+def tiles_rect_center_in_fov_110radius(phi_vp, theta_vp):
+    t_hor, t_vert = TILES_WIDTH, TILES_HEIGHT
+    vp_110d = 110
+    vp_110_rad = vp_110d * np.pi / 180
+    d_hor = 2 * np.pi / t_hor
+    d_vert = np.pi / t_vert
+    projection = np.ndarray((t_vert, t_hor))
+    covered_areas = []
+    for i in range(t_vert):
+        for j in range(t_hor):
+            # reqs, heatmap
+            phi_c = d_hor * (j + 0.5)
+            theta_c = d_vert * (i + 0.5)
+            dist = arc_dist(phi_vp, theta_vp, phi_c, theta_c)
+            projection[i][j] = 1 if dist <= vp_110_rad / 2 else 0
+            # # area
+            # voroni_patch_polygon = polygon.SphericalPolygon(VORONOI_SPHERE_24P.vertices[region])
+            # fov_polygon = polygon.SphericalPolygon(fov_ar_cartesian(phi_vp, theta_vp))
+            # covered_area = voroni_patch_polygon.overlap(fov_polygon)
+            # if covered_area > 0:
+            #     covered_areas.append(covered_area)
+    reqs = np.sum(projection)
+    heatmap = projection
+    return reqs, None, heatmap
+
+
+def tiles_voroni24_center_in_fov_110radius(phi_vp, theta_vp):
+    t_hor, t_vert = TILES_WIDTH, TILES_HEIGHT
+    vp_110d = 110
+    vp_110_rad = vp_110d * np.pi / 180
+    # reqs, heatmap
+    projection = np.ndarray((t_vert, t_hor))
+    for i in range(t_vert):
+        for j in range(t_hor):
+            index = i * t_hor + j - 1
+            phi_c, theta_c = cart_to_spher(*VORONOI_CPOINTS_24P[index])
+            dist = arc_dist(phi_vp, theta_vp, phi_c, theta_c)
+            projection[i][j] = 1 if dist <= vp_110_rad / 2 else 0
+    # area
+    covered_areas = []
+    for region in VORONOI_SPHERE_24P.regions:
+        voroni_patch_polygon = polygon.SphericalPolygon(VORONOI_SPHERE_24P.vertices[region])
+        fov_polygon = polygon.SphericalPolygon(fov_ar_cartesian(phi_vp, theta_vp))
+        covered_area = voroni_patch_polygon.overlap(fov_polygon)
+        if covered_area > 0:
+            covered_areas.append(covered_area)
+    # print(np.average(covered_areas))
+    reqs = np.sum(projection)
+    heatmap = projection
+    return reqs, np.average(covered_areas), heatmap
+
+
+def tiles_voroni14_intersect_fov(phi_vp, theta_vp):
+    reqs = 0
+    covered_areas = []
+    for region in VORONOI_SPHERE_14P.regions:
+        voroni_patch_polygon = polygon.SphericalPolygon(VORONOI_SPHERE_14P.vertices[region])
+        fov_polygon = polygon.SphericalPolygon(fov_ar_cartesian(phi_vp, theta_vp))
+        covered_area = voroni_patch_polygon.overlap(fov_polygon)
+        if covered_area > 0:
+            reqs += 1
+            covered_areas.append(covered_area)
+    # print(np.average(covered_areas))
+    return reqs, np.average(covered_areas), None
+
+
+def tiles_voroni24_intersect_fov(phi_vp, theta_vp):
+    reqs = 0
+    covered_areas = []
+    for region in VORONOI_SPHERE_24P.regions:
+        voroni_patch_polygon = polygon.SphericalPolygon(VORONOI_SPHERE_24P.vertices[region])
+        fov_polygon = polygon.SphericalPolygon(fov_ar_cartesian(phi_vp, theta_vp))
+        covered_area = voroni_patch_polygon.overlap(fov_polygon)
+        if covered_area > 0:
+            reqs += 1
+            covered_areas.append(covered_area)
+    # print(np.average(covered_areas))
+    return reqs, np.average(covered_areas), None

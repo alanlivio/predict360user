@@ -54,7 +54,11 @@ https://github.com/phananh1010/PanoSaliency
 https://github.com/tnomedialab/dash-srd.js
 https://github.com/fraunhoferhhi/omaf.js
 
-* geometry
+* spherical polygons
+https://github.com/lcx366/SphericalPolygon/
+https://github.com/spacetelescope/spherical_geometry
+
+* spherical geometry
 https://github.com/sunset1995/py360convert
 https://github.com/facebook/transform360
 https://github.com/scikit-geometry/scikit-geometry
