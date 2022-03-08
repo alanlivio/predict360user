@@ -17,7 +17,7 @@ LAYOUT = go.Layout(width=800,
                    margin={'l': 0, 'r': 0, 'b': 0, 't': 40})
 
 
-def create_trinity_voroni(npatchs):
+def create_voroni_sphere(npatchs) -> tuple[np.ndarray, SphericalVoronoi]:
     points = np.empty((0, 3))
     for i in range(0, npatchs):
         zi = (1 - 1.0/npatchs) * (1 - 2.0*i / (npatchs - 1))
@@ -33,8 +33,8 @@ def create_trinity_voroni(npatchs):
 
 
 TRINITY_NPATCHS = 14
-VORONOI_CPOINTS_14P, VORONOI_SPHERE_14P = create_trinity_voroni(TRINITY_NPATCHS)
-VORONOI_CPOINTS_24P, VORONOI_SPHERE_24P = create_trinity_voroni(24)
+VORONOI_CPOINTS_14P, VORONOI_SPHERE_14P = create_voroni_sphere(TRINITY_NPATCHS)
+VORONOI_CPOINTS_24P, VORONOI_SPHERE_24P = create_voroni_sphere(24)
 
 
 def get_sample_dataset():
@@ -67,9 +67,9 @@ def get_traces_one_video_all_users():
     return traces
 
 
-# plot functions
+# plot funcs
 
-def plot_voroni_one_user_one_video_with_matplot():
+def plot_voro14_one_user_one_video_matplot():
     import matplotlib.pyplot as plt
     fig = plt.figure()
     fig.set_size_inches(18.5, 10.5)
@@ -111,7 +111,7 @@ def plot_voroni_one_user_one_video_with_matplot():
     plt.show()
 
 
-def plotly_data_voroni():
+def plotly_data_voro14():
     data = []
 
     # -- add generator points
@@ -138,7 +138,7 @@ def plotly_data_voroni():
     return data
 
 
-def plotly_data_append_user_traces(data, dataset, user, video):
+def plotly_scatter3d_add_user_traces(data, dataset, user, video):
     trajc = go.Scatter3d(x=dataset[user][video][:, 1:][:, 0],
                          y=dataset[user][video][:, 1:][:, 1],
                          z=dataset[user][video][:, 1:][:, 2],
@@ -157,39 +157,6 @@ def plot_rec_tiles_heatmap(traces):
         x="longitude", y="latitude", color="requests"), title=f"reqs={str(np.sum(heatmap))}")
     fig.update_layout(LAYOUT)
     fig.show()
-
-
-def plot_voroni_one_video_one_user(to_html=False):
-    data = plotly_data_voroni()
-    dataset = get_sample_dataset()
-    plotly_data_append_user_traces(data, dataset, ONE_USER, ONE_VIDEO)
-    if to_html:
-        plotly.offline.plot(data, filename=f'{__file__}.html', auto_open=False)
-    else:
-        go.Figure(data=data, layout=LAYOUT).show()
-
-
-def plot_voroni_one_video_all_users(to_html=False):
-    data = plotly_data_voroni()
-    dataset = get_sample_dataset()
-    for user in dataset.keys():
-        plotly_data_append_user_traces(data, dataset, user, ONE_VIDEO)
-    if to_html:
-        plotly.offline.plot(data, filename=f'{__file__}.html', auto_open=False)
-    else:
-        go.Figure(data=data, layout=LAYOUT).show()
-
-
-def fov_ar_cartesian(phi_vp, theta_vp):
-    # https://daglar-cizmeci.com/how-does-virtual-reality-work/
-    margin_lateral = np.deg2rad(90/2)
-    margin_ab = np.deg2rad(110/2)
-    fov = np.array([
-        eulerian_to_cartesian(phi_vp-margin_ab, theta_vp+margin_lateral),
-        eulerian_to_cartesian(phi_vp+margin_ab, theta_vp+margin_lateral),
-        eulerian_to_cartesian(phi_vp+margin_ab, theta_vp-margin_lateral),
-        eulerian_to_cartesian(phi_vp-margin_ab, theta_vp-margin_lateral)])
-    return fov
 
 
 def plot_reqs_per_func(traces, func_list, plot_heatmaps=False):
@@ -222,7 +189,42 @@ def plot_reqs_per_func(traces, func_list, plot_heatmaps=False):
     fig_areas.show()
 
 
-def tiles_rect_center_in_fov_110radius(phi_vp, theta_vp):
+def plot_voro14_one_video_one_user(to_html=False):
+    data = plotly_data_voro14()
+    dataset = get_sample_dataset()
+    plotly_scatter3d_add_user_traces(data, dataset, ONE_USER, ONE_VIDEO)
+    if to_html:
+        plotly.offline.plot(data, filename=f'{__file__}.html', auto_open=False)
+    else:
+        go.Figure(data=data, layout=LAYOUT).show()
+
+
+def plot_voro14_one_video_all_users(to_html=False):
+    data = plotly_data_voro14()
+    dataset = get_sample_dataset()
+    for user in dataset.keys():
+        plotly_scatter3d_add_user_traces(data, dataset, user, ONE_VIDEO)
+    if to_html:
+        plotly.offline.plot(data, filename=f'{__file__}.html', auto_open=False)
+    else:
+        go.Figure(data=data, layout=LAYOUT).show()
+
+# tiles funcs
+
+
+def fov_ar_cartesian(phi_vp, theta_vp):
+    # https://daglar-cizmeci.com/how-does-virtual-reality-work/
+    margin_lateral = np.deg2rad(90/2)
+    margin_ab = np.deg2rad(110/2)
+    fov = np.array([
+        eulerian_to_cartesian(phi_vp-margin_ab, theta_vp+margin_lateral),
+        eulerian_to_cartesian(phi_vp+margin_ab, theta_vp+margin_lateral),
+        eulerian_to_cartesian(phi_vp+margin_ab, theta_vp-margin_lateral),
+        eulerian_to_cartesian(phi_vp-margin_ab, theta_vp-margin_lateral)])
+    return fov
+
+
+def tiles_rectag_fov_110radius_cover_center(phi_vp, theta_vp):
     t_hor, t_vert = TILES_WIDTH, TILES_HEIGHT
     vp_110d = 110
     vp_110_rad = vp_110d * np.pi / 180
@@ -248,7 +250,7 @@ def tiles_rect_center_in_fov_110radius(phi_vp, theta_vp):
     return reqs, None, heatmap
 
 
-def tiles_voroni24_center_in_fov_110radius(phi_vp, theta_vp):
+def tiles_voro24_fov_110radius_cover_center(phi_vp, theta_vp):
     t_hor, t_vert = TILES_WIDTH, TILES_HEIGHT
     vp_110d = 110
     vp_110_rad = vp_110d * np.pi / 180
@@ -274,7 +276,7 @@ def tiles_voroni24_center_in_fov_110radius(phi_vp, theta_vp):
     return reqs, np.average(covered_areas), heatmap
 
 
-def tiles_voroni14_intersect_fov(phi_vp, theta_vp):
+def tiles_voro14_fov_110x90_cover_any(phi_vp, theta_vp):
     reqs = 0
     covered_areas = []
     for region in VORONOI_SPHERE_14P.regions:
@@ -288,7 +290,7 @@ def tiles_voroni14_intersect_fov(phi_vp, theta_vp):
     return reqs, np.average(covered_areas), None
 
 
-def tiles_voroni24_intersect_fov(phi_vp, theta_vp):
+def tiles_voro24_fov_110x90_cover_any(phi_vp, theta_vp):
     reqs = 0
     covered_areas = []
     for region in VORONOI_SPHERE_24P.regions:
