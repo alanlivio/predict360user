@@ -9,7 +9,7 @@ from VRClient.src.help_functions import *
 from spherical_geometry import polygon
 from plotly.subplots import make_subplots
 
-# voroni sphere
+# -- voroni sphere
 
 
 def create_voroni_sphere(npatchs) -> tuple[np.ndarray, SphericalVoronoi]:
@@ -31,7 +31,8 @@ TRINITY_NPATCHS = 14
 VORONOI_CPOINTS_14P, VORONOI_SPHERE_14P = create_voroni_sphere(TRINITY_NPATCHS)
 VORONOI_CPOINTS_24P, VORONOI_SPHERE_24P = create_voroni_sphere(24)
 
-# dataset
+# -- dataset
+
 SAMPLE_DATASET = None
 ONE_USER = '0'
 ONE_VIDEO = '10_Cows'
@@ -67,7 +68,7 @@ def get_traces_one_video_all_users():
     return traces
 
 
-# plot funcs
+# -- plot funcs
 TILES_WIDTH, TILES_HEIGHT = 6, 4
 LAYOUT = go.Layout(width=800,
                    margin={'l': 0, 'r': 0, 'b': 0, 't': 40})
@@ -183,12 +184,12 @@ def plot_voro14_one_video_all_users(to_html=False):
     else:
         go.Figure(data=data, layout=LAYOUT).show()
 
+# -- tiles funcs
+
 
 def plot_reqs_per_func(traces, func_list, plot_heatmaps=False):
     fig_reqs = go.Figure(layout=LAYOUT)
     fig_areas = go.Figure(layout=LAYOUT)
-    fig_sum = make_subplots(rows=1, cols=2,  subplot_titles=("reqs sum", "areas sum"))
-
     reqs_all = []
     areas_all = []
     for func in func_list:
@@ -214,20 +215,38 @@ def plot_reqs_per_func(traces, func_list, plot_heatmaps=False):
             fig_heatmap.show()
         # sum
         reqs_all.append(np.sum(reqs))
-        areas_all.append(np.sum(areas))
+        areas_all.append(np.average(areas))
 
     # line fig reqs areas
+    fig_reqs.update_layout(xaxis_title="trace", yaxis_title="reqs",)
     fig_reqs.show()
+    fig_areas.update_layout(xaxis_title="trace", yaxis_title="area",)
     fig_areas.show()
 
     # bar fig reqs_all areas_all
     funcs_names = [str(func.__name__) for func in func_list]
+    fig_sum = make_subplots(rows=1, cols=2,  subplot_titles=("sum of reqs", "svg requested tile use"))
     fig_sum.add_trace(go.Bar(x=funcs_names, y=reqs_all), row=1, col=1)
     fig_sum.add_trace(go.Bar(x=funcs_names, y=areas_all), row=1, col=2)
     fig_sum.update_layout(width=800, showlegend=False)
     fig_sum.show()
 
-# tiles funcs
+
+def polygon_rectan_tile_cartesian(i, j):
+    t_hor, t_vert = TILES_WIDTH, TILES_HEIGHT
+    t_hor, t_vert = TILES_WIDTH, TILES_HEIGHT
+    d_hor = np.deg2rad(360/t_hor)
+    d_vert = np.deg2rad(180/t_vert)
+    phi_c = d_hor * (j + 0.5)
+    theta_c = d_vert * (i + 0.5)
+    margin_lateral = np.deg2rad(360/t_hor/2)
+    margin_ab = np.deg2rad(180/t_vert/2)
+    polygon_rectan_tile = np.array([
+        eulerian_to_cartesian(phi_c-margin_ab, theta_c+margin_lateral),
+        eulerian_to_cartesian(phi_c+margin_ab, theta_c+margin_lateral),
+        eulerian_to_cartesian(phi_c+margin_ab, theta_c-margin_lateral),
+        eulerian_to_cartesian(phi_c-margin_ab, theta_c-margin_lateral)])
+    return polygon_rectan_tile, phi_c, theta_c
 
 
 def polygon_fov_cartesian(phi_vp, theta_vp):
@@ -241,31 +260,26 @@ def polygon_fov_cartesian(phi_vp, theta_vp):
         eulerian_to_cartesian(phi_vp-margin_ab, theta_vp-margin_lateral)])
     return polygon_fov
 
-
 def tiles_rectan_fov_110radius_cover_center(phi_vp, theta_vp):
     t_hor, t_vert = TILES_WIDTH, TILES_HEIGHT
+    projection = np.ndarray((t_vert, t_hor))
     vp_110d = 110
     vp_110_rad = vp_110d * np.pi / 180
-    d_hor = 2 * np.pi / t_hor
-    d_vert = np.pi / t_vert
-    projection = np.ndarray((t_vert, t_hor))
     view_areas = []
     for i in range(t_vert):
         for j in range(t_hor):
-            # reqs, heatmap
-            phi_c = d_hor * (j + 0.5)
-            theta_c = d_vert * (i + 0.5)
+            polygon_rectan_tile, phi_c, theta_c = polygon_rectan_tile_cartesian(i, j)
             dist = arc_dist(phi_vp, theta_vp, phi_c, theta_c)
-            projection[i][j] = 1 if dist <= vp_110_rad / 2 else 0
-            # # area
-            # voroni_patch_polygon = polygon.SphericalPolygon(VORONOI_SPHERE_24P.vertices[region])
-            # fov_polygon = polygon.SphericalPolygon(fov_ar_cartesian(phi_vp, theta_vp))
-            # view_area = voroni_patch_polygon.overlap(fov_polygon)
-            # if view_area > 0:
-            #     view_areas.append(view_area)
+            projection[i][j] = 0
+            if dist <= vp_110_rad / 2:
+                projection[i][j] = 1
+                tile_polygon = polygon.SphericalPolygon(polygon_rectan_tile)
+                fov_polygon = polygon.SphericalPolygon(polygon_fov_cartesian(phi_vp, theta_vp))
+                view_area = tile_polygon.overlap(fov_polygon)
+                view_areas.append(view_area)
     reqs = np.sum(projection)
     heatmap = projection
-    return reqs, None, heatmap
+    return reqs, view_areas, heatmap
 
 
 def tiles_voro24_fov_110radius_cover_center(phi_vp, theta_vp):
