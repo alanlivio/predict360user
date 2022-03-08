@@ -254,7 +254,22 @@ def tiles_voro24_fov_110radius_cover_center(phi_vp, theta_vp):
     t_hor, t_vert = TILES_WIDTH, TILES_HEIGHT
     vp_110d = 110
     vp_110_rad = vp_110d * np.pi / 180
-    # reqs, heatmap
+    reqs = 0
+    covered_areas = []
+
+    # reqs, area
+    for index, region in enumerate(VORONOI_SPHERE_24P.regions):
+        phi_c, theta_c = cart_to_spher(*VORONOI_SPHERE_24P.points[index])
+        dist = arc_dist(phi_vp, theta_vp, phi_c, theta_c)
+        if dist <= vp_110_rad / 2:
+            reqs += 1
+            voroni_patch_polygon = polygon.SphericalPolygon(VORONOI_SPHERE_24P.vertices[region])
+            fov_polygon = polygon.SphericalPolygon(fov_ar_cartesian(phi_vp, theta_vp))
+            covered_area = voroni_patch_polygon.overlap(fov_polygon)
+            if covered_area > 0:
+                covered_areas.append(covered_area)
+
+    # heatmap
     projection = np.ndarray((t_vert, t_hor))
     for i in range(t_vert):
         for j in range(t_hor):
@@ -262,17 +277,8 @@ def tiles_voro24_fov_110radius_cover_center(phi_vp, theta_vp):
             phi_c, theta_c = cart_to_spher(*VORONOI_CPOINTS_24P[index])
             dist = arc_dist(phi_vp, theta_vp, phi_c, theta_c)
             projection[i][j] = 1 if dist <= vp_110_rad / 2 else 0
-    # area
-    covered_areas = []
-    for region in VORONOI_SPHERE_24P.regions:
-        voroni_patch_polygon = polygon.SphericalPolygon(VORONOI_SPHERE_24P.vertices[region])
-        fov_polygon = polygon.SphericalPolygon(fov_ar_cartesian(phi_vp, theta_vp))
-        covered_area = voroni_patch_polygon.overlap(fov_polygon)
-        if covered_area > 0:
-            covered_areas.append(covered_area)
-    # print(np.average(covered_areas))
-    reqs = np.sum(projection)
     heatmap = projection
+
     return reqs, np.average(covered_areas), heatmap
 
 
