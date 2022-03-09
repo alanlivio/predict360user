@@ -9,33 +9,14 @@ from VRClient.src.help_functions import *
 from spherical_geometry import polygon
 from plotly.subplots import make_subplots
 
-# -- voroni sphere
 
-
-def create_voroni_sphere(npatchs) -> tuple[np.ndarray, SphericalVoronoi]:
-    points = np.empty((0, 3))
-    for i in range(0, npatchs):
-        zi = (1 - 1.0/npatchs) * (1 - 2.0*i / (npatchs - 1))
-        di = math.sqrt(1 - math.pow(zi, 2))
-        alphai = i * math.pi * (3 - math.sqrt(5))
-        xi = di * math.cos(alphai)
-        yi = di * math.sin(alphai)
-        new_point = np.array([[xi, yi, zi]])
-        points = np.append(points, new_point, axis=0)
-    sv = SphericalVoronoi(points, 1, np.array([0, 0, 0]))
-    sv.sort_vertices_of_regions()
-    return points, sv
-
-
-TRINITY_NPATCHS = 14
-VORONOI_CPOINTS_14P, VORONOI_SPHERE_14P = create_voroni_sphere(TRINITY_NPATCHS)
-VORONOI_CPOINTS_24P, VORONOI_SPHERE_24P = create_voroni_sphere(24)
-
-# -- dataset
-
+LAYOUT = go.Layout(width=800,
+                   margin={'l': 0, 'r': 0, 'b': 0, 't': 40})
 SAMPLE_DATASET = None
 ONE_USER = '0'
 ONE_VIDEO = '10_Cows'
+
+# -- dataset
 
 
 def get_sample_dataset():
@@ -68,13 +49,29 @@ def get_traces_one_video_all_users():
     return traces
 
 
-# -- plot funcs
-TILES_WIDTH, TILES_HEIGHT = 6, 4
-LAYOUT = go.Layout(width=800,
-                   margin={'l': 0, 'r': 0, 'b': 0, 't': 40})
+# -- sphere
+
+def sphere_voroni_points(npatchs) -> tuple[np.ndarray, SphericalVoronoi]:
+    points = np.empty((0, 3))
+    for i in range(0, npatchs):
+        zi = (1 - 1.0/npatchs) * (1 - 2.0*i / (npatchs - 1))
+        di = math.sqrt(1 - math.pow(zi, 2))
+        alphai = i * math.pi * (3 - math.sqrt(5))
+        xi = di * math.cos(alphai)
+        yi = di * math.sin(alphai)
+        new_point = np.array([[xi, yi, zi]])
+        points = np.append(points, new_point, axis=0)
+    sv = SphericalVoronoi(points, 1, np.array([0, 0, 0]))
+    sv.sort_vertices_of_regions()
+    return points, sv
 
 
-def plot_voro14_one_user_one_video_matplot():
+TRINITY_NPATCHS = 14
+VORONOI_CPOINTS_14P, VORONOI_SPHERE_14P = sphere_voroni_points(TRINITY_NPATCHS)
+VORONOI_CPOINTS_24P, VORONOI_SPHERE_24P = sphere_voroni_points(24)
+
+
+def sphere_plot_voro14_one_user_one_video_matplot():
     import matplotlib.pyplot as plt
     fig = plt.figure()
     fig.set_size_inches(18.5, 10.5)
@@ -116,7 +113,7 @@ def plot_voro14_one_user_one_video_matplot():
     plt.show()
 
 
-def plotly_data_voro14():
+def sphere_data_voro():
     data = []
 
     # -- add generator points
@@ -143,7 +140,7 @@ def plotly_data_voro14():
     return data
 
 
-def plotly_scatter3d_add_user_traces(data, dataset, user, video):
+def sphere_data_add_user_traces(data, dataset, user, video):
     trajc = go.Scatter3d(x=dataset[user][video][:, 1:][:, 0],
                          y=dataset[user][video][:, 1:][:, 1],
                          z=dataset[user][video][:, 1:][:, 2],
@@ -153,7 +150,32 @@ def plotly_scatter3d_add_user_traces(data, dataset, user, video):
     data.append(trajc)
 
 
-def plot_rec_tiles_heatmap(traces):
+def sphere_plot_voro14_one_video_one_user(to_html=False):
+    data = sphere_data_voro()
+    dataset = get_sample_dataset()
+    sphere_data_add_user_traces(data, dataset, ONE_USER, ONE_VIDEO)
+    if to_html:
+        plotly.offline.plot(data, filename=f'{__file__}.html', auto_open=False)
+    else:
+        go.Figure(data=data, layout=LAYOUT).show()
+
+
+def sphere_plot_voro14_one_video_all_users(to_html=False):
+    data = sphere_data_voro()
+    dataset = get_sample_dataset()
+    for user in dataset.keys():
+        sphere_data_add_user_traces(data, dataset, user, ONE_VIDEO)
+    if to_html:
+        plotly.offline.plot(data, filename=f'{__file__}.html', auto_open=False)
+    else:
+        go.Figure(data=data, layout=LAYOUT).show()
+
+
+# --  erp
+TILES_WIDTH, TILES_HEIGHT = 6, 4
+
+
+def erp_tiles_heatmap(traces):
     heatmap = []
     for i in traces:
         heatmap.append(from_position_to_tile(eulerian_in_range(
@@ -163,31 +185,10 @@ def plot_rec_tiles_heatmap(traces):
     fig.update_layout(LAYOUT)
     fig.show()
 
-
-def plot_voro14_one_video_one_user(to_html=False):
-    data = plotly_data_voro14()
-    dataset = get_sample_dataset()
-    plotly_scatter3d_add_user_traces(data, dataset, ONE_USER, ONE_VIDEO)
-    if to_html:
-        plotly.offline.plot(data, filename=f'{__file__}.html', auto_open=False)
-    else:
-        go.Figure(data=data, layout=LAYOUT).show()
-
-
-def plot_voro14_one_video_all_users(to_html=False):
-    data = plotly_data_voro14()
-    dataset = get_sample_dataset()
-    for user in dataset.keys():
-        plotly_scatter3d_add_user_traces(data, dataset, user, ONE_VIDEO)
-    if to_html:
-        plotly.offline.plot(data, filename=f'{__file__}.html', auto_open=False)
-    else:
-        go.Figure(data=data, layout=LAYOUT).show()
-
 # -- tiles funcs
 
 
-def req_plot_per_func(traces, func_list, plot_heatmaps=False):
+def req_plot_per_func(traces, func_list, plot_lines=False, plot_heatmaps=False):
     fig_reqs = go.Figure(layout=LAYOUT)
     fig_areas = go.Figure(layout=LAYOUT)
     funcs_n_reqs = []
@@ -211,7 +212,7 @@ def req_plot_per_func(traces, func_list, plot_heatmaps=False):
         # line areas
         fig_areas.add_trace(go.Scatter(y=traces_avg_areas, mode='lines', name=f"{func.__name__}"))
         # heatmap
-        if(plot_heatmaps and len(traces_heatmaps)):
+        if(plot_heatmaps):
             fig_heatmap = px.imshow(np.sum(traces_heatmaps, axis=0), title=f"{func.__name__}",
                                     labels=dict(x="longitude", y="latitude", color="requests"))
             fig_heatmap.update_layout(LAYOUT)
@@ -221,10 +222,11 @@ def req_plot_per_func(traces, func_list, plot_heatmaps=False):
         funcs_avg_areas.append(np.average(traces_avg_areas))
 
     # line fig reqs areas
-    fig_reqs.update_layout(xaxis_title="user position", yaxis_title="n of requested tiles",)
-    fig_reqs.show()
-    fig_areas.update_layout(xaxis_title="user position", yaxis_title="avg view area of requested tiles",)
-    fig_areas.show()
+    if(plot_lines):
+        fig_reqs.update_layout(xaxis_title="user position", yaxis_title="n of requested tiles",)
+        fig_reqs.show()
+        fig_areas.update_layout(xaxis_title="user position", yaxis_title="avg view area of requested tiles",)
+        fig_areas.show()
 
     # bar fig funcs_n_reqs funcs_avg_areas
     funcs_names = [str(func.__name__) for func in func_list]
