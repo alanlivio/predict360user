@@ -187,49 +187,54 @@ def plot_voro14_one_video_all_users(to_html=False):
 # -- tiles funcs
 
 
-def plot_reqs_per_func(traces, func_list, plot_heatmaps=False):
+def req_plot_per_func(traces, func_list, plot_heatmaps=False):
     fig_reqs = go.Figure(layout=LAYOUT)
     fig_areas = go.Figure(layout=LAYOUT)
-    reqs_all = []
-    areas_all = []
+    funcs_n_reqs = []
+    funcs_avg_areas = []
     for func in func_list:
-        reqs = []
-        areas = []
-        heatmaps = []
+        traces_n_reqs = []
+        traces_avg_areas = []
+        traces_heatmaps = []
+        # func_funcs_avg_areas = [] # to calc avg funcs_avg_areas
         # call func per trace
         for t in traces:
-            reqs_in, areas_in, heatmap_in = func(*cartesian_to_eulerian(t[0], t[1], t[2]))
-            reqs.append(reqs_in)
-            areas.append(np.average(areas_in))
+            req_in, areas_in, heatmap_in = func(*cartesian_to_eulerian(t[0], t[1], t[2]))
+            # print(areas_in)
+            traces_n_reqs.append(req_in)
+            traces_avg_areas.append(np.average(areas_in))
             if heatmap_in is not None:
-                heatmaps.append(heatmap_in)
+                traces_heatmaps.append(heatmap_in)
+            # func_funcs_avg_areas.append(areas_in)
         # line reqs
-        fig_reqs.add_trace(go.Scatter(y=reqs, mode='lines', name=f"reqs {func.__name__}"))
+        fig_reqs.add_trace(go.Scatter(y=traces_n_reqs, mode='lines', name=f"{func.__name__}"))
         # line areas
-        fig_areas.add_trace(go.Scatter(y=areas, mode='lines', name=f"areas {func.__name__}"))
+        fig_areas.add_trace(go.Scatter(y=traces_avg_areas, mode='lines', name=f"{func.__name__}"))
         # heatmap
-        if(plot_heatmaps and len(heatmaps)):
-            fig_heatmap = px.imshow(np.sum(heatmaps, axis=0), title=f"heatmap {func.__name__}",
+        if(plot_heatmaps and len(traces_heatmaps)):
+            fig_heatmap = px.imshow(np.sum(traces_heatmaps, axis=0), title=f"{func.__name__}",
                                     labels=dict(x="longitude", y="latitude", color="requests"))
             fig_heatmap.update_layout(LAYOUT)
             fig_heatmap.show()
         # sum
-        reqs_all.append(np.sum(reqs))
-        areas_all.append(np.average(areas))
+        funcs_n_reqs.append(np.sum(traces_n_reqs))
+        funcs_avg_areas.append(np.average(traces_avg_areas))
 
     # line fig reqs areas
-    fig_reqs.update_layout(xaxis_title="trace", yaxis_title="reqs",)
+    fig_reqs.update_layout(xaxis_title="user position", yaxis_title="n of requested tiles",)
     fig_reqs.show()
-    fig_areas.update_layout(xaxis_title="trace", yaxis_title="area",)
+    fig_areas.update_layout(xaxis_title="user position", yaxis_title="avg view area of requested tiles",)
     fig_areas.show()
 
-    # bar fig reqs_all areas_all
+    # bar fig funcs_n_reqs funcs_avg_areas
     funcs_names = [str(func.__name__) for func in func_list]
-    fig_sum = make_subplots(rows=1, cols=2,  subplot_titles=("sum of reqs", "svg requested tile use"))
-    fig_sum.add_trace(go.Bar(x=funcs_names, y=reqs_all), row=1, col=1)
-    fig_sum.add_trace(go.Bar(x=funcs_names, y=areas_all), row=1, col=2)
-    fig_sum.update_layout(width=800, showlegend=False)
-    fig_sum.show()
+    fig_bar = make_subplots(rows=1, cols=2,  subplot_titles=(
+        "total requested tiles", "avg view area of requested tiles"), shared_yaxes=True)
+    fig_bar.add_trace(go.Bar(y=funcs_names, x=funcs_n_reqs, orientation='h'), row=1, col=1)
+    fig_bar.add_trace(go.Bar(y=funcs_names, x=funcs_avg_areas, orientation='h'), row=1, col=2)
+    fig_bar.update_layout(width=800, showlegend=False)
+    fig_bar.update_layout(barmode="stack")
+    fig_bar.show()
 
 
 def polygon_rectan_tile_cartesian(i, j):
@@ -260,7 +265,35 @@ def polygon_fov_cartesian(phi_vp, theta_vp):
         eulerian_to_cartesian(phi_vp-margin_ab, theta_vp-margin_lateral)])
     return polygon_fov
 
-def tiles_rectan_fov_110radius_cover_center(phi_vp, theta_vp):
+
+def req_tiles_rectan_fov_required_intersec(phi_vp, theta_vp, required_intersec):
+    t_hor, t_vert = TILES_WIDTH, TILES_HEIGHT
+    projection = np.ndarray((t_vert, t_hor))
+    view_areas = []
+    for i in range(t_vert):
+        for j in range(t_hor):
+            polygon_rectan_tile, phi_c, theta_c = polygon_rectan_tile_cartesian(i, j)
+            projection[i][j] = 0
+            tile_polygon = polygon.SphericalPolygon(polygon_rectan_tile)
+            fov_polygon = polygon.SphericalPolygon(polygon_fov_cartesian(phi_vp, theta_vp))
+            view_area = tile_polygon.overlap(fov_polygon)
+            if view_area > required_intersec:
+                projection[i][j] = 1
+                view_areas.append(view_area)
+    reqs = np.sum(projection)
+    heatmap = projection
+    return reqs, view_areas, heatmap
+
+
+def req_tiles_rectan_fov_20perc_cover(phi_vp, theta_vp):
+    return req_tiles_rectan_fov_required_intersec(phi_vp, theta_vp, 0.2)
+
+
+def req_tiles_rectan_fov_33perc_cover(phi_vp, theta_vp):
+    return req_tiles_rectan_fov_required_intersec(phi_vp, theta_vp, 0.33)
+
+
+def req_tiles_rectan_fov_110radius_cover_center(phi_vp, theta_vp):
     t_hor, t_vert = TILES_WIDTH, TILES_HEIGHT
     projection = np.ndarray((t_vert, t_hor))
     vp_110d = 110
@@ -282,7 +315,7 @@ def tiles_rectan_fov_110radius_cover_center(phi_vp, theta_vp):
     return reqs, view_areas, heatmap
 
 
-def tiles_voro24_fov_110radius_cover_center(phi_vp, theta_vp):
+def req_tiles_voro24_fov_110radius_cover_center(phi_vp, theta_vp):
     t_hor, t_vert = TILES_WIDTH, TILES_HEIGHT
     vp_110d = 110
     vp_110_rad = vp_110d * np.pi / 180
@@ -313,7 +346,7 @@ def tiles_voro24_fov_110radius_cover_center(phi_vp, theta_vp):
     return reqs, view_areas, heatmap
 
 
-def tiles_voro14_fov_110x90_cover_any(phi_vp, theta_vp):
+def req_tiles_voro14_fov_110x90_cover_any(phi_vp, theta_vp):
     reqs = 0
     view_areas = []
     for region in VORONOI_SPHERE_14P.regions:
@@ -326,7 +359,7 @@ def tiles_voro14_fov_110x90_cover_any(phi_vp, theta_vp):
     return reqs, view_areas, None
 
 
-def tiles_voro24_fov_110x90_cover_any(phi_vp, theta_vp):
+def req_tiles_voro24_fov_110x90_cover_any(phi_vp, theta_vp):
     reqs = 0
     view_areas = []
     for region in VORONOI_SPHERE_24P.regions:
