@@ -8,7 +8,7 @@ from head_motion_prediction.Utils import *
 from VRClient.src.help_functions import *
 from spherical_geometry import polygon
 from plotly.subplots import make_subplots
-from typing import List, Callable, Tuple
+from typing import List, Callable, Tuple, Any
 
 
 # -- dataset
@@ -193,7 +193,7 @@ def erp_tiles_heatmap(traces):
 
 
 def req_plot_per_func(traces,
-                      func_list: List[Callable[[float, float], Tuple[int, List[float], np.ndarray]]],
+                      func_list: List[Callable[[float, float], tuple[int, List[float], Any]]],
                       plot_lines=False, plot_heatmaps=False):
     fig_reqs = go.Figure(layout=LAYOUT)
     fig_areas = go.Figure(layout=LAYOUT)
@@ -305,15 +305,16 @@ def req_tiles_rectan_fov_33perc_cover(phi_vp, theta_vp):
 def req_tiles_rectan_fov_110radius_cover_center(phi_vp, theta_vp):
     t_hor, t_vert = TILES_WIDTH, TILES_HEIGHT
     projection = np.ndarray((t_vert, t_hor))
-    vp_110d = 110
-    vp_110_rad = vp_110d * np.pi / 180
+    # vp_110d = 110
+    # vp_110_rad = vp_110d * np.pi / 180
+    vp_110_rad_half = np.deg2rad(110/2)
     view_areas = []
     for i in range(t_vert):
         for j in range(t_hor):
             polygon_rectan_tile, phi_c, theta_c = polygon_rectan_tile_cartesian(i, j)
             dist = arc_dist(phi_vp, theta_vp, phi_c, theta_c)
             projection[i][j] = 0
-            if dist <= vp_110_rad / 2:
+            if dist <= vp_110_rad_half:
                 projection[i][j] = 1
                 tile_polygon = polygon.SphericalPolygon(polygon_rectan_tile)
                 fov_polygon = polygon.SphericalPolygon(polygon_fov_cartesian(phi_vp, theta_vp))
@@ -324,20 +325,21 @@ def req_tiles_rectan_fov_110radius_cover_center(phi_vp, theta_vp):
     return reqs, view_areas, heatmap
 
 
-def req_tiles_voro24_fov_110radius_cover_center(phi_vp, theta_vp):
+def req_tiles_voro_fov_110radius_cover_center(phi_vp, theta_vp, spherical_voronoi: SphericalVoronoi):
     t_hor, t_vert = TILES_WIDTH, TILES_HEIGHT
-    vp_110d = 110
-    vp_110_rad = vp_110d * np.pi / 180
+    # vp_110d = 110
+    # vp_110_rad = vp_110d * np.pi / 180
+    vp_110_rad_half = np.deg2rad(110/2)
     reqs = 0
     view_areas = []
 
     # reqs, area
-    for index, region in enumerate(VORONOI_SPHERE_24P.regions):
-        phi_c, theta_c = cart_to_spher(*VORONOI_SPHERE_24P.points[index])
+    for index, region in enumerate(spherical_voronoi.regions):
+        phi_c, theta_c = cart_to_spher(*spherical_voronoi.points[index])
         dist = arc_dist(phi_vp, theta_vp, phi_c, theta_c)
-        if dist <= vp_110_rad / 2:
+        if dist <= vp_110_rad_half:
             reqs += 1
-            voroni_patch_polygon = polygon.SphericalPolygon(VORONOI_SPHERE_24P.vertices[region])
+            voroni_patch_polygon = polygon.SphericalPolygon(spherical_voronoi.vertices[region])
             fov_polygon = polygon.SphericalPolygon(polygon_fov_cartesian(phi_vp, theta_vp))
             view_area = voroni_patch_polygon.overlap(fov_polygon)
             if view_area > 0:
@@ -350,32 +352,35 @@ def req_tiles_voro24_fov_110radius_cover_center(phi_vp, theta_vp):
             index = i * t_hor + j - 1
             phi_c, theta_c = cart_to_spher(*VORONOI_CPOINTS_24P[index])
             dist = arc_dist(phi_vp, theta_vp, phi_c, theta_c)
-            projection[i][j] = 1 if dist <= vp_110_rad / 2 else 0
+            projection[i][j] = 1 if dist <= vp_110_rad_half else 0
     heatmap = projection
     return reqs, view_areas, heatmap
 
 
-def req_tiles_voro14_fov_110x90_cover_any(phi_vp, theta_vp):
+def req_tiles_voro14_fov_110radius_cover_center(phi_vp, theta_vp):
+    return req_tiles_voro_fov_110radius_cover_center(phi_vp, theta_vp, VORONOI_SPHERE_14P)
+
+
+def req_tiles_voro24_fov_110radius_cover_center(phi_vp, theta_vp):
+    return req_tiles_voro_fov_110radius_cover_center(phi_vp, theta_vp, VORONOI_SPHERE_24P)
+
+
+def req_tiles_voro_fov_110x90_cover_any(phi_vp, theta_vp, spherical_voronoi: SphericalVoronoi):
     reqs = 0
     view_areas = []
-    for region in VORONOI_SPHERE_14P.regions:
-        voroni_patch_polygon = polygon.SphericalPolygon(VORONOI_SPHERE_14P.vertices[region])
+    for region in spherical_voronoi.regions:
+        voroni_patch_polygon = polygon.SphericalPolygon(spherical_voronoi.vertices[region])
         fov_polygon = polygon.SphericalPolygon(polygon_fov_cartesian(phi_vp, theta_vp))
         view_area = voroni_patch_polygon.overlap(fov_polygon)
         if view_area > 0:
             reqs += 1
             view_areas.append(view_area)
     return reqs, view_areas, None
+
+
+def req_tiles_voro14_fov_110x90_cover_any(phi_vp, theta_vp):
+    return req_tiles_voro_fov_110x90_cover_any(phi_vp, theta_vp, VORONOI_SPHERE_14P)
 
 
 def req_tiles_voro24_fov_110x90_cover_any(phi_vp, theta_vp):
-    reqs = 0
-    view_areas = []
-    for region in VORONOI_SPHERE_24P.regions:
-        voroni_patch_polygon = polygon.SphericalPolygon(VORONOI_SPHERE_24P.vertices[region])
-        fov_polygon = polygon.SphericalPolygon(polygon_fov_cartesian(phi_vp, theta_vp))
-        view_area = voroni_patch_polygon.overlap(fov_polygon)
-        if view_area > 0:
-            reqs += 1
-            view_areas.append(view_area)
-    return reqs, view_areas, None
+    return req_tiles_voro_fov_110x90_cover_any(phi_vp, theta_vp, VORONOI_SPHERE_24P)
