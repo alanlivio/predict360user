@@ -384,3 +384,33 @@ def req_tiles_voro14_fov_110x90_cover_any(phi_vp, theta_vp):
 
 def req_tiles_voro24_fov_110x90_cover_any(phi_vp, theta_vp):
     return req_tiles_voro_fov_110x90_cover_any(phi_vp, theta_vp, VORONOI_SPHERE_24P)
+
+
+def req_tiles_voro_fov_required_intersec(phi_vp, theta_vp, spherical_voronoi: SphericalVoronoi, required_intersec):
+    reqs = 0
+    view_areas = []
+    for region in spherical_voronoi.regions:
+        voroni_patch_polygon = polygon.SphericalPolygon(spherical_voronoi.vertices[region])
+        fov_polygon = polygon.SphericalPolygon(polygon_fov_cartesian(phi_vp, theta_vp))
+        view_area = voroni_patch_polygon.overlap(fov_polygon)
+        view_area = 1 if view_area > 1 else view_area  # TODO: reivew this
+        if view_area > required_intersec:
+            reqs += 1
+            view_areas.append(view_area)
+    return reqs, view_areas, None
+
+
+def req_tiles_voro14_fov_20perc_cover(phi_vp, theta_vp):
+    return req_tiles_voro_fov_required_intersec(phi_vp, theta_vp, VORONOI_SPHERE_14P, 0.2)
+
+
+def req_tiles_voro14_fov_33perc_cover(phi_vp, theta_vp):
+    return req_tiles_voro_fov_required_intersec(phi_vp, theta_vp, VORONOI_SPHERE_14P, 0.33)
+
+
+def req_tiles_voro24_fov_20perc_cover(phi_vp, theta_vp):
+    return req_tiles_voro_fov_required_intersec(phi_vp, theta_vp, VORONOI_SPHERE_24P, 0.2)
+
+
+def req_tiles_voro24_fov_33perc_cover(phi_vp, theta_vp):
+    return req_tiles_voro_fov_required_intersec(phi_vp, theta_vp, VORONOI_SPHERE_24P, 0.33)
