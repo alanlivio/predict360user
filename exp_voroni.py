@@ -8,15 +8,14 @@ from head_motion_prediction.Utils import *
 from VRClient.src.help_functions import *
 from spherical_geometry import polygon
 from plotly.subplots import make_subplots
+from typing import List, Callable, Tuple
 
 
-LAYOUT = go.Layout(width=800,
-                   margin={'l': 0, 'r': 0, 'b': 0, 't': 40})
+# -- dataset
+
 SAMPLE_DATASET = None
 ONE_USER = '0'
 ONE_VIDEO = '10_Cows'
-
-# -- dataset
 
 
 def get_sample_dataset():
@@ -51,6 +50,11 @@ def get_traces_one_video_all_users():
 
 # -- sphere
 
+TRINITY_NPATCHS = 14
+LAYOUT = go.Layout(width=800,
+                   margin={'l': 0, 'r': 0, 'b': 0, 't': 40})
+
+
 def sphere_voroni_points(npatchs) -> tuple[np.ndarray, SphericalVoronoi]:
     points = np.empty((0, 3))
     for i in range(0, npatchs):
@@ -66,7 +70,6 @@ def sphere_voroni_points(npatchs) -> tuple[np.ndarray, SphericalVoronoi]:
     return points, sv
 
 
-TRINITY_NPATCHS = 14
 VORONOI_CPOINTS_14P, VORONOI_SPHERE_14P = sphere_voroni_points(TRINITY_NPATCHS)
 VORONOI_CPOINTS_24P, VORONOI_SPHERE_24P = sphere_voroni_points(24)
 
@@ -172,6 +175,7 @@ def sphere_plot_voro14_one_video_all_users(to_html=False):
 
 
 # --  erp
+
 TILES_WIDTH, TILES_HEIGHT = 6, 4
 
 
@@ -188,7 +192,9 @@ def erp_tiles_heatmap(traces):
 # -- tiles funcs
 
 
-def req_plot_per_func(traces, func_list, plot_lines=False, plot_heatmaps=False):
+def req_plot_per_func(traces,
+                      func_list: List[Callable[[float, float], Tuple[int, List[float], np.ndarray]]],
+                      plot_lines=False, plot_heatmaps=False):
     fig_reqs = go.Figure(layout=LAYOUT)
     fig_areas = go.Figure(layout=LAYOUT)
     funcs_n_reqs = []
@@ -239,7 +245,7 @@ def req_plot_per_func(traces, func_list, plot_lines=False, plot_heatmaps=False):
     fig_bar.show()
 
 
-def polygon_rectan_tile_cartesian(i, j):
+def polygon_rectan_tile_cartesian(i, j) -> Tuple[np.ndarray, float, float]:
     t_hor, t_vert = TILES_WIDTH, TILES_HEIGHT
     t_hor, t_vert = TILES_WIDTH, TILES_HEIGHT
     d_hor = np.deg2rad(360/t_hor)
@@ -256,7 +262,7 @@ def polygon_rectan_tile_cartesian(i, j):
     return polygon_rectan_tile, phi_c, theta_c
 
 
-def polygon_fov_cartesian(phi_vp, theta_vp):
+def polygon_fov_cartesian(phi_vp, theta_vp) -> np.ndarray:
     # https://daglar-cizmeci.com/how-does-virtual-reality-work/
     margin_lateral = np.deg2rad(90/2)
     margin_ab = np.deg2rad(110/2)
@@ -279,6 +285,7 @@ def req_tiles_rectan_fov_required_intersec(phi_vp, theta_vp, required_intersec):
             tile_polygon = polygon.SphericalPolygon(polygon_rectan_tile)
             fov_polygon = polygon.SphericalPolygon(polygon_fov_cartesian(phi_vp, theta_vp))
             view_area = tile_polygon.overlap(fov_polygon)
+            view_area = 1 if view_area > 1 else view_area  # TODO: reivew this
             if view_area > required_intersec:
                 projection[i][j] = 1
                 view_areas.append(view_area)
