@@ -9,53 +9,11 @@ from VRClient.src.help_functions import *
 from spherical_geometry import polygon
 from plotly.subplots import make_subplots
 from typing import List, Callable, Tuple, Any
-
-
-# -- dataset
-
-SAMPLE_DATASET = None
-ONE_USER = '0'
-ONE_VIDEO = '10_Cows'
-
-
-def get_sample_dataset():
-    import sys
-    import os
-    global SAMPLE_DATASET
-    sys.path.append('head_motion_prediction')
-    from head_motion_prediction.David_MMSys_18.Read_Dataset import load_sampled_dataset
-    project_path = "head_motion_prediction"
-    cwd = os.getcwd()
-    if SAMPLE_DATASET is None:
-        if os.path.basename(cwd) != project_path:
-            print(f"running get_sample_dataset on {project_path}")
-            os.chdir(project_path)
-            SAMPLE_DATASET = load_sampled_dataset()
-            os.chdir(cwd)
-    return SAMPLE_DATASET
-
-
-SAMPLE_DATASET = get_sample_dataset()
-
-
-def get_traces_one_video_one_user():
-    return get_sample_dataset()[ONE_USER][ONE_VIDEO][:, 1:]
-
-
-def get_traces_one_video_all_users():
-    dataset = get_sample_dataset()
-    traces = []
-    for user in dataset.keys():
-        for i in dataset[user][ONE_VIDEO][:, 1:]:
-            traces.append(i)
-    return traces
-
+from rondon import *
 
 # -- sphere
 
 TRINITY_NPATCHS = 14
-LAYOUT = go.Layout(width=800,
-                   margin={'l': 0, 'r': 0, 'b': 0, 't': 40})
 
 
 def points_voroni(npatchs) -> tuple[np.ndarray, SphericalVoronoi]:
@@ -76,10 +34,8 @@ def points_voroni(npatchs) -> tuple[np.ndarray, SphericalVoronoi]:
 VORONOI_CPOINTS_14P, VORONOI_SPHERE_14P = points_voroni(TRINITY_NPATCHS)
 VORONOI_CPOINTS_24P, VORONOI_SPHERE_24P = points_voroni(24)
 
-TILES_WIDTH, TILES_HEIGHT = 6, 4
 
-
-def points_rectan_tile_cartesian(i, j, t_hor=TILES_WIDTH, t_vert=TILES_HEIGHT) -> Tuple[np.ndarray, float, float]:
+def points_rectan_tile_cartesian(i, j, t_hor=TILES_H, t_vert=TILES_V) -> Tuple[np.ndarray, float, float]:
     d_hor = np.deg2rad(360/t_hor)
     d_vert = np.deg2rad(180/t_vert)
     phi_c = d_hor * (j + 0.5)
@@ -247,19 +203,6 @@ def sphere_plot_rectan6x4_one_video_one_user(to_html=False):
 def sphere_plot_rectan4x4_one_video_one_user(to_html=False):
     sphere_plot_rectan(4, 4, SAMPLE_DATASET, ONE_USER, ONE_VIDEO, to_html)
 
-# --  erp
-
-
-def erp_tiles_heatmap(traces):
-    heatmap = []
-    for i in traces:
-        heatmap.append(from_position_to_tile(eulerian_in_range(
-            *cartesian_to_eulerian(i[0], i[1], i[2])), TILES_WIDTH, TILES_HEIGHT))
-    fig = px.imshow(np.sum(heatmap, axis=0), labels=dict(
-        x="longitude", y="latitude", color="requests"), title=f"reqs={str(np.sum(heatmap))}")
-    fig.update_layout(LAYOUT)
-    fig.show()
-
 # -- tiles funcs
 
 
@@ -327,7 +270,7 @@ def req_plot_per_func(traces,
 
 
 def req_tiles_rectan_fov_required_intersec(phi_vp, theta_vp, required_intersec):
-    t_hor, t_vert = TILES_WIDTH, TILES_HEIGHT
+    t_hor, t_vert = TILES_H, TILES_V
     projection = np.ndarray((t_vert, t_hor))
     view_areas = []
     vp_quality = 0.0
@@ -349,7 +292,7 @@ def req_tiles_rectan_fov_required_intersec(phi_vp, theta_vp, required_intersec):
 
 
 def req_tiles_rectan_fov_110radius_cover_center(phi_vp, theta_vp):
-    t_hor, t_vert = TILES_WIDTH, TILES_HEIGHT
+    t_hor, t_vert = TILES_H, TILES_V
     projection = np.ndarray((t_vert, t_hor))
     # vp_110d = 110
     # vp_110_rad = vp_110d * np.pi / 180
@@ -374,7 +317,7 @@ def req_tiles_rectan_fov_110radius_cover_center(phi_vp, theta_vp):
 
 
 def req_tiles_voro_fov_110radius_cover_center(phi_vp, theta_vp, spherical_voronoi: SphericalVoronoi):
-    t_hor, t_vert = TILES_WIDTH, TILES_HEIGHT
+    t_hor, t_vert = TILES_H, TILES_V
     # vp_110d = 110
     # vp_110_rad = vp_110d * np.pi / 180
     vp_110_rad_half = np.deg2rad(110/2)
