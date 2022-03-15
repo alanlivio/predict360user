@@ -221,6 +221,7 @@ def points_fov_cartesian(phi_vp, theta_vp) -> np.ndarray:
 
 # -- tiles funcs
 
+
 def req_plot_per_func(traces,
                       func_list: List[Callable[[float, float], tuple[int, float, List[float], Any]]],
                       plot_lines=False, plot_heatmaps=False):
@@ -264,21 +265,25 @@ def req_plot_per_func(traces,
 
     # line fig reqs areas
     if(plot_lines):
-        fig_reqs.update_layout(xaxis_title="user position", yaxis_title="req-tiles",)
+        fig_reqs.update_layout(xaxis_title="user position", yaxis_title="req_tiles",)
         fig_reqs.show()
-        fig_areas.update_layout(xaxis_title="user position", yaxis_title="avg req-tiles view-ratio",)
+        fig_areas.update_layout(xaxis_title="user position", yaxis_title="avg req_tiles view_ratio",)
         fig_areas.show()
 
     # bar fig funcs_n_reqs funcs_avg_area
     funcs_names = [str(func.__name__) for func in func_list]
-    fig_bar = make_subplots(rows=1, cols=3,  subplot_titles=(
-        "req-tiles", "avg req-tiles view-ratio", "avg VP quality-ratio"), shared_yaxes=True)
+    fig_bar = make_subplots(rows=1, cols=4,  subplot_titles=(
+        "req_tiles", "avg req_tiles view_ratio", "avg VP quality_ratio", "score=quality_ratio/(req_tiles*(1-view_ratio)))"), shared_yaxes=True)
     fig_bar.add_trace(go.Bar(y=funcs_names, x=funcs_n_reqs, orientation='h'), row=1, col=1)
     fig_bar.add_trace(go.Bar(y=funcs_names, x=funcs_avg_area, orientation='h'), row=1, col=2)
     fig_bar.add_trace(go.Bar(y=funcs_names, x=funcs_vp_quality, orientation='h'), row=1, col=3)
-    fig_bar.update_layout(width=1200, showlegend=False)
+    funcs_score = [funcs_vp_quality[i] * (1 / (funcs_n_reqs[i] * (1 - funcs_avg_area[i])))
+                   for i, _ in enumerate(funcs_n_reqs)]
+    fig_bar.add_trace(go.Bar(y=funcs_names, x=funcs_score, orientation='h'), row=1, col=4)
+    fig_bar.update_layout(width=1500, showlegend=False)
     fig_bar.update_layout(barmode="stack")
     fig_bar.show()
+
 
 def req_tiles_rectan_fov_required_intersec(phi_vp, theta_vp, required_intersec):
     t_hor, t_vert = TILES_WIDTH, TILES_HEIGHT
@@ -292,7 +297,7 @@ def req_tiles_rectan_fov_required_intersec(phi_vp, theta_vp, required_intersec):
             rectan_tile_polygon = polygon.SphericalPolygon(rectan_tile_points)
             fov_polygon = polygon.SphericalPolygon(points_fov_cartesian(phi_vp, theta_vp))
             view_area = rectan_tile_polygon.overlap(fov_polygon)
-            if view_area > required_intersec and view_area <=1: # TODO: reivew this
+            if view_area > required_intersec and view_area <= 1:  # TODO: reivew this
                 projection[i][j] = 1
                 view_area = 1 if view_area > 1 else view_area  # TODO: reivew this
                 view_areas.append(view_area)
@@ -300,6 +305,7 @@ def req_tiles_rectan_fov_required_intersec(phi_vp, theta_vp, required_intersec):
     reqs = np.sum(projection)
     heatmap = projection
     return reqs, vp_quality, view_areas, heatmap
+
 
 def req_tiles_rectan_fov_110radius_cover_center(phi_vp, theta_vp):
     t_hor, t_vert = TILES_WIDTH, TILES_HEIGHT
@@ -388,7 +394,6 @@ def req_tiles_voro_fov_required_intersec(phi_vp, theta_vp, spherical_voronoi: Sp
             view_areas.append(view_area)
             vp_quality += fov_polygon.overlap(voroni_tile_polygon)
     return reqs, vp_quality, view_areas, None
-
 
 
 def req_tiles_rectan_fov_20perc_cover(phi_vp, theta_vp):
