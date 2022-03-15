@@ -31,6 +31,10 @@ def get_sample_dataset():
 SAMPLE_DATASET = get_sample_dataset()
 
 
+def get_one_trace_one_video_one_user():
+    return get_sample_dataset()[ONE_USER][ONE_VIDEO][0, 1:]
+
+
 def get_traces_one_video_one_user():
     return get_sample_dataset()[ONE_USER][ONE_VIDEO][:, 1:]
 
