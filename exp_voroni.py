@@ -35,6 +35,9 @@ def get_sample_dataset():
     return SAMPLE_DATASET
 
 
+SAMPLE_DATASET = get_sample_dataset()
+
+
 def get_traces_one_video_one_user():
     return get_sample_dataset()[ONE_USER][ONE_VIDEO][:, 1:]
 
@@ -55,7 +58,7 @@ LAYOUT = go.Layout(width=800,
                    margin={'l': 0, 'r': 0, 'b': 0, 't': 40})
 
 
-def sphere_voroni_points(npatchs) -> tuple[np.ndarray, SphericalVoronoi]:
+def points_voroni(npatchs) -> tuple[np.ndarray, SphericalVoronoi]:
     points = np.empty((0, 3))
     for i in range(0, npatchs):
         zi = (1 - 1.0/npatchs) * (1 - 2.0*i / (npatchs - 1))
@@ -70,8 +73,35 @@ def sphere_voroni_points(npatchs) -> tuple[np.ndarray, SphericalVoronoi]:
     return points, sv
 
 
-VORONOI_CPOINTS_14P, VORONOI_SPHERE_14P = sphere_voroni_points(TRINITY_NPATCHS)
-VORONOI_CPOINTS_24P, VORONOI_SPHERE_24P = sphere_voroni_points(24)
+VORONOI_CPOINTS_14P, VORONOI_SPHERE_14P = points_voroni(TRINITY_NPATCHS)
+VORONOI_CPOINTS_24P, VORONOI_SPHERE_24P = points_voroni(24)
+
+TILES_WIDTH, TILES_HEIGHT = 6, 4
+
+
+def points_rectan_tile_cartesian(i, j, t_hor=TILES_WIDTH, t_vert=TILES_HEIGHT) -> Tuple[np.ndarray, float, float]:
+    d_hor = np.deg2rad(360/t_hor)
+    d_vert = np.deg2rad(180/t_vert)
+    phi_c = d_hor * (j + 0.5)
+    theta_c = d_vert * (i + 0.5)
+    polygon_rectan_tile = np.array([
+        eulerian_to_cartesian(d_hor * j, d_vert * (i+1)),
+        eulerian_to_cartesian(d_hor * (j+1), d_vert * (i+1)),
+        eulerian_to_cartesian(d_hor * (j+1), d_vert * i),
+        eulerian_to_cartesian(d_hor * j, d_vert * i)])
+    return polygon_rectan_tile, phi_c, theta_c
+
+
+def points_fov_cartesian(phi_vp, theta_vp) -> np.ndarray:
+    # https://daglar-cizmeci.com/how-does-virtual-reality-work/
+    margin_lateral = np.deg2rad(90/2)
+    margin_ab = np.deg2rad(110/2)
+    polygon_fov = np.array([
+        eulerian_to_cartesian(phi_vp-margin_ab, theta_vp+margin_lateral),
+        eulerian_to_cartesian(phi_vp+margin_ab, theta_vp+margin_lateral),
+        eulerian_to_cartesian(phi_vp+margin_ab, theta_vp-margin_lateral),
+        eulerian_to_cartesian(phi_vp-margin_ab, theta_vp-margin_lateral)])
+    return polygon_fov
 
 
 def sphere_plot_voro14_one_user_one_video_matplot():
@@ -95,10 +125,10 @@ def sphere_plot_voro14_one_user_one_video_matplot():
     # plot generator VORONOI_CPOINTS_14P
     ax.scatter(VORONOI_CPOINTS_14P[:, 0], VORONOI_CPOINTS_14P[:,
                1], VORONOI_CPOINTS_14P[:, 2], c='b')
-    # plot Voronoi vertices
+    # plot voronoi vertices
     ax.scatter(VORONOI_SPHERE_14P.vertices[:, 0], VORONOI_SPHERE_14P.vertices[:, 1], VORONOI_SPHERE_14P.vertices[:, 2],
                c='g')
-    # indicate Voronoi regions (as Euclidean polygons)
+    # indicate voronoi regions (as Euclidean polygons)
     for region in VORONOI_SPHERE_14P.regions:
         n = len(region)
         for i in range(n):
@@ -116,29 +146,31 @@ def sphere_plot_voro14_one_user_one_video_matplot():
     plt.show()
 
 
-def sphere_data_voro():
+def sphere_data_voro(spherical_voronoi: SphericalVoronoi):
     data = []
 
     # -- add generator points
-    # gens = go.Scatter3d(x=VORONOI_CPOINTS_14P[:, 0], y=VORONOI_CPOINTS_14P[:, 1], z=VORONOI_CPOINTS_14P[:, 2], mode='markers', marker={'size': 1, 'opacity': 1.0, 'color': 'blue'}, name='Generator VORONOI_CPOINTS_14P')
+    # gens = go.Scatter3d(x=spherical_voronoi.points[:, 0], y=spherical_voronoi.points[:, 1], z=spherical_voronoi.points[:, 2], mode='markers', marker={
+    #                     'size': 1, 'opacity': 1.0, 'color': 'blue'}, name='voronoi center')
     # data.append(gens)
 
     # -- add vortonoi vertices
-    vrts = go.Scatter3d(x=VORONOI_SPHERE_14P.vertices[:, 0], y=VORONOI_SPHERE_14P.vertices[:, 1], z=VORONOI_SPHERE_14P.vertices[:, 2],
-                        mode='markers', marker={'size': 1, 'opacity': 1.0, 'color': 'green'}, name='Voronoi Vertices')
-    data.append(vrts)
+    # vrts = go.Scatter3d(x=spherical_voronoi.vertices[:, 0],
+    #                     y=spherical_voronoi.vertices[:, 1],
+    #                     z=spherical_voronoi.vertices[:, 2],
+    #                     mode='markers', marker={'size': 1, 'opacity': 1.0, 'color': 'green'}, name='voronoi Vertices')
+    # data.append(vrts)
 
     # -- add vortonoi edges
-    for region in VORONOI_SPHERE_14P.regions:
+    for region in spherical_voronoi.regions:
         n = len(region)
-        rgb = np.random.rand(3,)
         t = np.linspace(0, 1, 100)
         for i in range(n):
-            start = VORONOI_SPHERE_14P.vertices[region][i]
-            end = VORONOI_SPHERE_14P.vertices[region][(i + 1) % n]
+            start = spherical_voronoi.vertices[region][i]
+            end = spherical_voronoi.vertices[region][(i + 1) % n]
             result = np.array(geometric_slerp(start, end, t))
             edge = go.Scatter3d(x=result[..., 0], y=result[..., 1], z=result[..., 2], mode='lines', line={
-                                'width': 1, 'color': [rgb]}, name='region edge', showlegend=False)
+                                'width': 5, 'color': 'black'}, name='region edge', showlegend=False)
             data.append(edge)
     return data
 
@@ -154,7 +186,7 @@ def sphere_data_add_user_traces(data, dataset, user, video):
 
 
 def sphere_plot_voro14_one_video_one_user(to_html=False):
-    data = sphere_data_voro()
+    data = sphere_data_voro(VORONOI_SPHERE_14P)
     dataset = get_sample_dataset()
     sphere_data_add_user_traces(data, dataset, ONE_USER, ONE_VIDEO)
     if to_html:
@@ -164,7 +196,7 @@ def sphere_plot_voro14_one_video_one_user(to_html=False):
 
 
 def sphere_plot_voro14_one_video_all_users(to_html=False):
-    data = sphere_data_voro()
+    data = sphere_data_voro(VORONOI_SPHERE_14P)
     dataset = get_sample_dataset()
     for user in dataset.keys():
         sphere_data_add_user_traces(data, dataset, user, ONE_VIDEO)
@@ -174,9 +206,48 @@ def sphere_plot_voro14_one_video_all_users(to_html=False):
         go.Figure(data=data, layout=LAYOUT).show()
 
 
-# --  erp
+def sphere_data_rectan_tiles(t_hor, t_vert):
+    data = []
+    for i in range(t_hor+1):
+        for j in range(t_vert+1):
+            # -- add rectan tiles edges
+            rectan_tile_points, phi_c, theta_c = points_rectan_tile_cartesian(i, j, t_hor, t_vert)
+            n = len(rectan_tile_points)
+            t = np.linspace(0, 1, 100)
+            for index in range(n):
+                start = rectan_tile_points[index]
+                end = rectan_tile_points[(index + 1) % n]
+                result = np.array(geometric_slerp(start, end, t))
+                edge = go.Scatter3d(x=result[..., 0], y=result[..., 1], z=result[..., 2], mode='lines', line={
+                    'width': 5, 'color': 'black'}, name='region edge', showlegend=False)
+                data.append(edge)
+            # x, y, z = eulerian_to_cartesian(phi_c, theta_c)
+            # corners = go.Scatter3d(x=rectan_tile_points[:, 0], y=rectan_tile_points[:, 1], z=rectan_tile_points[:, 2], mode='markers', marker={
+            #     'size': 2, 'opacity': 1.0, 'color': 'blue'}, name='tile corners', showlegend=False)
+            # data.append(corners)
+            # centers = go.Scatter3d(x=[x], y=[y], z=[z], mode='markers', marker={
+            #     'size': 2, 'opacity': 1.0, 'color': 'red'}, name='tile center', showlegend=False)
+            # data.append(centers)
+    return data
 
-TILES_WIDTH, TILES_HEIGHT = 6, 4
+
+def sphere_plot_rectan(t_hor, t_vert, dataset, user, video, to_html=False):
+    data = sphere_data_rectan_tiles(t_hor, t_vert)
+    sphere_data_add_user_traces(data, dataset, user, video)
+    if to_html:
+        plotly.offline.plot(data, filename=f'{__file__}.html', auto_open=False)
+    else:
+        go.Figure(data=data, layout=LAYOUT).show()
+
+
+def sphere_plot_rectan6x4_one_video_one_user(to_html=False):
+    sphere_plot_rectan(6, 4, SAMPLE_DATASET, ONE_USER, ONE_VIDEO, to_html)
+
+
+def sphere_plot_rectan4x4_one_video_one_user(to_html=False):
+    sphere_plot_rectan(4, 4, SAMPLE_DATASET, ONE_USER, ONE_VIDEO, to_html)
+
+# --  erp
 
 
 def erp_tiles_heatmap(traces):
@@ -188,36 +259,6 @@ def erp_tiles_heatmap(traces):
         x="longitude", y="latitude", color="requests"), title=f"reqs={str(np.sum(heatmap))}")
     fig.update_layout(LAYOUT)
     fig.show()
-
-# -- points funcs
-
-
-def points_rectan_tile_cartesian(i, j) -> Tuple[np.ndarray, float, float]:
-    t_hor, t_vert = TILES_WIDTH, TILES_HEIGHT
-    d_hor = np.deg2rad(360/t_hor)
-    d_vert = np.deg2rad(180/t_vert)
-    phi_c = d_hor * (j + 0.5)
-    theta_c = d_vert * (i + 0.5)
-    margin_lateral = np.deg2rad(360/t_hor/2)
-    margin_ab = np.deg2rad(180/t_vert/2)
-    polygon_rectan_tile = np.array([
-        eulerian_to_cartesian(phi_c-margin_ab, theta_c+margin_lateral),
-        eulerian_to_cartesian(phi_c+margin_ab, theta_c+margin_lateral),
-        eulerian_to_cartesian(phi_c+margin_ab, theta_c-margin_lateral),
-        eulerian_to_cartesian(phi_c-margin_ab, theta_c-margin_lateral)])
-    return polygon_rectan_tile, phi_c, theta_c
-
-
-def points_fov_cartesian(phi_vp, theta_vp) -> np.ndarray:
-    # https://daglar-cizmeci.com/how-does-virtual-reality-work/
-    margin_lateral = np.deg2rad(90/2)
-    margin_ab = np.deg2rad(110/2)
-    polygon_fov = np.array([
-        eulerian_to_cartesian(phi_vp-margin_ab, theta_vp+margin_lateral),
-        eulerian_to_cartesian(phi_vp+margin_ab, theta_vp+margin_lateral),
-        eulerian_to_cartesian(phi_vp+margin_ab, theta_vp-margin_lateral),
-        eulerian_to_cartesian(phi_vp-margin_ab, theta_vp-margin_lateral)])
-    return polygon_fov
 
 # -- tiles funcs
 
