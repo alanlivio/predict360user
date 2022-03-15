@@ -7,7 +7,7 @@ ONE_USER = '0'
 ONE_VIDEO = '10_Cows'
 LAYOUT = go.Layout(width=800,
                    margin={'l': 0, 'r': 0, 'b': 0, 't': 40})
-TILES_H, TILES_V = 6, 4
+TILES_H6, TILES_V4 = 6, 4
 
 
 def get_sample_dataset():
@@ -48,7 +48,7 @@ def erp_tiles_heatmap(traces):
     heatmap = []
     for i in traces:
         heatmap.append(from_position_to_tile(eulerian_in_range(
-            *cartesian_to_eulerian(i[0], i[1], i[2])), TILES_H, TILES_V))
+            *cartesian_to_eulerian(i[0], i[1], i[2])), TILES_H6, TILES_V4))
     fig = px.imshow(np.sum(heatmap, axis=0), labels=dict(
         x="longitude", y="latitude", color="requests"), title=f"reqs={str(np.sum(heatmap))}")
     fig.update_layout(LAYOUT)

@@ -35,7 +35,7 @@ VORONOI_CPOINTS_14P, VORONOI_SPHERE_14P = points_voroni(TRINITY_NPATCHS)
 VORONOI_CPOINTS_24P, VORONOI_SPHERE_24P = points_voroni(24)
 
 
-def points_rectan_tile_cartesian(i, j, t_hor=TILES_H, t_vert=TILES_V) -> Tuple[np.ndarray, float, float]:
+def points_rectan_tile_cartesian(i, j, t_hor=TILES_H6, t_vert=TILES_V4) -> Tuple[np.ndarray, float, float]:
     d_hor = np.deg2rad(360/t_hor)
     d_vert = np.deg2rad(180/t_vert)
     phi_c = d_hor * (j + 0.5)
@@ -270,7 +270,7 @@ def req_plot_per_func(traces,
 
 
 def req_tiles_rectan_fov_required_intersec(phi_vp, theta_vp, required_intersec):
-    t_hor, t_vert = TILES_H, TILES_V
+    t_hor, t_vert = TILES_H6, TILES_V4
     projection = np.ndarray((t_vert, t_hor))
     view_areas = []
     vp_quality = 0.0
@@ -292,7 +292,7 @@ def req_tiles_rectan_fov_required_intersec(phi_vp, theta_vp, required_intersec):
 
 
 def req_tiles_rectan_fov_110radius_cover_center(phi_vp, theta_vp):
-    t_hor, t_vert = TILES_H, TILES_V
+    t_hor, t_vert = TILES_H6, TILES_V4
     projection = np.ndarray((t_vert, t_hor))
     # vp_110d = 110
     # vp_110_rad = vp_110d * np.pi / 180
@@ -317,7 +317,7 @@ def req_tiles_rectan_fov_110radius_cover_center(phi_vp, theta_vp):
 
 
 def req_tiles_voro_fov_110radius_cover_center(phi_vp, theta_vp, spherical_voronoi: SphericalVoronoi):
-    t_hor, t_vert = TILES_H, TILES_V
+    t_hor, t_vert = TILES_H6, TILES_V4
     # vp_110d = 110
     # vp_110_rad = vp_110d * np.pi / 180
     vp_110_rad_half = np.deg2rad(110/2)
