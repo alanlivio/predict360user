@@ -5,7 +5,7 @@ import plotly.express as px
 SAMPLE_DATASET = None
 ONE_USER = '0'
 ONE_VIDEO = '10_Cows'
-LAYOUT = go.Layout(width=800)
+LAYOUT = go.Layout(width=600)
 TILES_H6, TILES_V4 = 6, 4
 
 
@@ -34,8 +34,13 @@ def get_sample_dataset():
 SAMPLE_DATASET = get_sample_dataset()
 
 
-def get_one_trace_one_video_one_user():
+def get_one_trace():
     return get_sample_dataset()[ONE_USER][ONE_VIDEO][0, 1:]
+
+
+def get_one_trace_eulerian():
+    trace_cartesian = get_one_trace()
+    return cartesian_to_eulerian(trace_cartesian[0], trace_cartesian[1], trace_cartesian[2])
 
 
 def get_traces_one_video_one_user():
@@ -44,10 +49,15 @@ def get_traces_one_video_one_user():
 
 def get_traces_one_video_all_users():
     dataset = get_sample_dataset()
-    traces = []
+    n_traces = len(dataset[ONE_USER][ONE_VIDEO][:, 1:])
+    traces = np.ndarray((len(dataset.keys())*n_traces, 3))
+    count = 0
     for user in dataset.keys():
         for i in dataset[user][ONE_VIDEO][:, 1:]:
-            traces.append(i)
+            traces.itemset((count, 0), i[0])
+            traces.itemset((count, 1), i[1])
+            traces.itemset((count, 2), i[2])
+            count += 1
     return traces
 
 
