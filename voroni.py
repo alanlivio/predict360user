@@ -187,6 +187,23 @@ def sphere_data_rectan_tiles(t_hor, t_vert):
     return data
 
 
+def sphere_plot_voro_with_vp(spherical_voronoi: SphericalVoronoi, phi_vp, theta_vp, to_html=False):
+    data = sphere_data_voro(spherical_voronoi)
+    fov_polygon = points_fov_cartesian(phi_vp, theta_vp)
+    n = len(fov_polygon)
+    t = np.linspace(0, 1, 100)
+    for index in range(n):
+        start = fov_polygon[index]
+        end = fov_polygon[(index + 1) % n]
+        result = np.array(geometric_slerp(start, end, t))
+        edge = go.Scatter3d(x=result[..., 0], y=result[..., 1], z=result[..., 2], mode='lines', line={
+            'width': 5, 'color': 'red'}, name='vp edge', showlegend=False)
+        data.append(edge)
+    if to_html:
+        plotly.offline.plot(data, filename=f'{__file__}.html', auto_open=False)
+    else:
+        go.Figure(data=data, layout=LAYOUT).show()
+
 def sphere_plot_rectan_with_vp(t_hor, t_vert, phi_vp, theta_vp, to_html=False):
     data = sphere_data_rectan_tiles(t_hor, t_vert)
     fov_polygon = points_fov_cartesian(phi_vp, theta_vp)
