@@ -18,7 +18,7 @@ from rondon import *
 TRINITY_NPATCHS = 14
 
 
-def points_voroni(npatchs) -> tuple[np.ndarray, SphericalVoronoi]:
+def points_voroni(npatchs) -> SphericalVoronoi:
     points = np.empty((0, 3))
     for i in range(0, npatchs):
         zi = (1 - 1.0/npatchs) * (1 - 2.0*i / (npatchs - 1))
@@ -30,11 +30,11 @@ def points_voroni(npatchs) -> tuple[np.ndarray, SphericalVoronoi]:
         points = np.append(points, new_point, axis=0)
     sv = SphericalVoronoi(points, 1, np.array([0, 0, 0]))
     sv.sort_vertices_of_regions()
-    return points, sv
+    return sv
 
 
-VORONOI_CPOINTS_14P, VORONOI_SPHERE_14P = points_voroni(TRINITY_NPATCHS)
-VORONOI_CPOINTS_24P, VORONOI_SPHERE_24P = points_voroni(24)
+VORONOI_SPHERE_14P = points_voroni(TRINITY_NPATCHS)
+VORONOI_SPHERE_24P = points_voroni(24)
 
 
 def points_rectan_tile_cartesian(i, j, t_hor=TILES_H6, t_vert=TILES_V4) -> Tuple[np.ndarray, float, float]:
@@ -376,7 +376,7 @@ def req_tiles_voro_fov_110radius_cover_center(phi_vp, theta_vp, spherical_vorono
     for i in range(t_vert):
         for j in range(t_hor):
             index = i * t_hor + j - 1
-            phi_c, theta_c = cart_to_spher(*VORONOI_CPOINTS_24P[index])
+            phi_c, theta_c = cart_to_spher(*spherical_voronoi.points[index])
             dist = arc_dist(phi_vp, theta_vp, phi_c, theta_c)
             projection[i][j] = 1 if dist <= vp_110_rad_half else 0
     heatmap = projection
