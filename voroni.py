@@ -62,7 +62,11 @@ def points_fov_cartesian(phi_vp, theta_vp) -> np.ndarray:
     return polygon_fov
 
 
-def sphere_plot_voro14_one_user_one_video_matplot():
+def sphere_plot_voro_matplot(traces, spherical_voronoi: SphericalVoronoi = VORONOI_SPHERE_14P):
+    """
+    Example:
+        sphere_plot_voro_matplot(get_traces_one_video_one_user())
+    """
     import matplotlib.pyplot as plt
     fig = plt.figure()
     fig.set_size_inches(18.5, 10.5)
@@ -81,26 +85,26 @@ def sphere_plot_voro14_one_user_one_video_matplot():
     y = np.outer(np.sin(u), np.sin(v))
     z = np.outer(np.ones(np.size(u)), np.cos(v))
     # plot generator VORONOI_CPOINTS_14P
-    ax.scatter(VORONOI_CPOINTS_14P[:, 0], VORONOI_CPOINTS_14P[:,
-               1], VORONOI_CPOINTS_14P[:, 2], c='b')
+    ax.scatter(spherical_voronoi.points[:, 0], spherical_voronoi.points[:,
+               1], spherical_voronoi.points[:, 2], c='b')
     # plot voronoi vertices
-    ax.scatter(VORONOI_SPHERE_14P.vertices[:, 0], VORONOI_SPHERE_14P.vertices[:, 1], VORONOI_SPHERE_14P.vertices[:, 2],
+    ax.scatter(spherical_voronoi.vertices[:, 0], spherical_voronoi.vertices[:, 1], spherical_voronoi.vertices[:, 2],
                c='g')
     # indicate voronoi regions (as Euclidean polygons)
-    for region in VORONOI_SPHERE_14P.regions:
+    for region in spherical_voronoi.regions:
         n = len(region)
         for i in range(n):
-            start = VORONOI_SPHERE_14P.vertices[region][i]
-            end = VORONOI_SPHERE_14P.vertices[region][(i + 1) % n]
+            start = spherical_voronoi.vertices[region][i]
+            end = spherical_voronoi.vertices[region][(i + 1) % n]
             result = geometric_slerp(start, end, t_vals)
             ax.plot(result[..., 0],
                     result[..., 1],
                     result[..., 2],
                     c='k')
 
-    trajectory = get_sample_dataset()[ONE_USER][ONE_VIDEO][:, 1:]
-    ax.plot(trajectory[:, 0], trajectory[:, 1],
-            trajectory[:, 2], label='parametric curve')
+    # trajectory = get_traces_one_video_one_user()
+    ax.plot(traces[:, 0], traces[:, 1],
+            traces[:, 2], label='parametric curve')
     plt.show()
 
 
@@ -448,6 +452,5 @@ def req_tiles_voro24_fov_20perc_cover(phi_vp, theta_vp):
 
 def req_tiles_voro24_fov_33perc_cover(phi_vp, theta_vp):
     return req_tiles_voro_fov_required_intersec(phi_vp, theta_vp, VORONOI_SPHERE_24P, 0.33)
-
 
 # %%
