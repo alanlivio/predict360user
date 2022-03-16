@@ -11,6 +11,7 @@ nbformat
 sklearn
 plotly
 jupyter
+pickle5
 
 # exp_healpix.ipynb
 # healpy

@@ -130,10 +130,11 @@ dmypy.json
 .pyre/
 
 # added
-exp_voroni.py.html
+*.html
 # head_motion_prediction
 # OpCASH/
 # PARIMA/
 # TileRateSelector_360videos/
 # MV_SalGAN360/
 # PanoProject
+SAMPLE_DATASET.pickle

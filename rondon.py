@@ -1,8 +1,11 @@
 from head_motion_prediction.Utils import *
 import plotly.graph_objs as go
 import plotly.express as px
+import pickle
+from os.path import exists
 
 SAMPLE_DATASET = None
+SAMPLE_DATASET_PICKLE = 'SAMPLE_DATASET.pickle'
 ONE_USER = '0'
 ONE_VIDEO = '10_Cows'
 LAYOUT = go.Layout(width=600)
@@ -13,21 +16,28 @@ def layout_with_title(title):
     return go.Layout(width=800, title=title)
 
 
-def get_sample_dataset():
-    import sys
-    import os
+def get_sample_dataset(load=False):
     global SAMPLE_DATASET
-    sys.path.append('head_motion_prediction')
-    from head_motion_prediction.David_MMSys_18.Read_Dataset import load_sampled_dataset
-    import head_motion_prediction.Utils as Utis
-    project_path = "head_motion_prediction"
-    cwd = os.getcwd()
     if SAMPLE_DATASET is None:
-        if os.path.basename(cwd) != project_path:
-            print(f"running get_sample_dataset on {project_path}")
-            os.chdir(project_path)
-            SAMPLE_DATASET = load_sampled_dataset()
-            os.chdir(cwd)
+        if load or not exists(SAMPLE_DATASET_PICKLE):
+            import sys
+            import os
+            sys.path.append('head_motion_prediction')
+            from head_motion_prediction.David_MMSys_18.Read_Dataset import load_sampled_dataset
+            import head_motion_prediction.Utils as Utis
+            project_path = "head_motion_prediction"
+            cwd = os.getcwd()
+            if os.path.basename(cwd) != project_path:
+                print(f"-- get SAMPLE_DATASET from {project_path}")
+                os.chdir(project_path)
+                SAMPLE_DATASET = load_sampled_dataset()
+                os.chdir(cwd)
+                with open(SAMPLE_DATASET_PICKLE, 'wb') as f:
+                    pickle.dump(SAMPLE_DATASET, f, protocol=pickle.HIGHEST_PROTOCOL)
+        else:
+            print(f"-- get SAMPLE_DATASET from {SAMPLE_DATASET_PICKLE}")
+            with open(SAMPLE_DATASET_PICKLE, 'rb') as f:
+                SAMPLE_DATASET = pickle.load(f)
     return SAMPLE_DATASET
 
 
