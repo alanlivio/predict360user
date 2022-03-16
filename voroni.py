@@ -242,16 +242,18 @@ def sphere_plot_rectan_traces(t_hor, t_vert, dataset, user, video, title="", to_
 
 
 def req_plot_per_func(traces,
-                      func_list: List[Callable[[float, float], tuple[int, float, List[float], Any]]],
+                      func_list,
                       plot_lines=False, plot_heatmaps=False):
     fig_reqs = go.Figure(layout=LAYOUT)
     fig_areas = go.Figure(layout=LAYOUT)
+    fig_quality = go.Figure(layout=LAYOUT)
     funcs_n_reqs = []
     funcs_avg_area = []
     funcs_vp_quality = []
     for func in func_list:
         traces_n_reqs = []
-        traces_avg_areas = []
+        traces_areas = []
+        traces_areas_svg = []
         traces_heatmaps = []
         traces_vp_quality = []
         # func_funcs_avg_area = [] # to calc avg funcs_avg_area
@@ -260,7 +262,8 @@ def req_plot_per_func(traces,
             req_in, quality_in, areas_in, heatmap_in = func(*cartesian_to_eulerian(t[0], t[1], t[2]))
             # print(areas_in)
             traces_n_reqs.append(req_in)
-            traces_avg_areas.append(np.average(areas_in))
+            traces_areas.append(areas_in)
+            traces_areas_svg.append(np.average(areas_in))
             traces_vp_quality.append(quality_in)
             if heatmap_in is not None:
                 traces_heatmaps.append(heatmap_in)
@@ -268,9 +271,9 @@ def req_plot_per_func(traces,
         # line reqs
         fig_reqs.add_trace(go.Scatter(y=traces_n_reqs, mode='lines', name=f"{func.__name__}"))
         # line areas
-        fig_areas.add_trace(go.Scatter(y=traces_avg_areas, mode='lines', name=f"{func.__name__}"))
+        fig_areas.add_trace(go.Scatter(y=traces_areas_svg, mode='lines', name=f"{func.__name__}"))
         # line quality
-        fig_areas.add_trace(go.Scatter(y=traces_vp_quality, mode='lines', name=f"{func.__name__}"))
+        fig_quality.add_trace(go.Scatter(y=traces_vp_quality, mode='lines', name=f"{func.__name__}"))
         # heatmap
         if(plot_heatmaps):
             fig_heatmap = px.imshow(np.sum(traces_heatmaps, axis=0), title=f"{func.__name__}",
@@ -279,15 +282,14 @@ def req_plot_per_func(traces,
             fig_heatmap.show()
         # sum
         funcs_n_reqs.append(np.sum(traces_n_reqs))
-        funcs_avg_area.append(np.average(traces_avg_areas))
+        funcs_avg_area.append(np.average(traces_areas_svg))
         funcs_vp_quality.append(np.average(traces_vp_quality))
 
     # line fig reqs areas
     if(plot_lines):
-        fig_reqs.update_layout(xaxis_title="user position", yaxis_title="req_tiles",)
-        fig_reqs.show()
-        fig_areas.update_layout(xaxis_title="user position", yaxis_title="avg req_tiles view_ratio",)
-        fig_areas.show()
+        fig_reqs.update_layout(xaxis_title="user position", title="req_tiles",).show()
+        fig_areas.update_layout(xaxis_title="user position", title="avg req_tiles view_ratio",).show()
+        fig_quality.update_layout(xaxis_title="user position", title="avg quality ratio",).show()
 
     # bar fig funcs_n_reqs funcs_avg_area
     funcs_names = [str(func.__name__) for func in func_list]
@@ -307,23 +309,25 @@ def req_plot_per_func(traces,
 def req_tiles_rectan_fov_required_intersec(phi_vp, theta_vp, required_intersec):
     t_hor, t_vert = TILES_H6, TILES_V4
     projection = np.ndarray((t_vert, t_hor))
-    view_areas = []
+    areas_in = []
     vp_quality = 0.0
+    vp_threshold = np.deg2rad(110/2)
     for i in range(t_vert):
         for j in range(t_hor):
             rectan_tile_points, phi_c, theta_c = points_rectan_tile_cartesian(i, j)
             projection[i][j] = 0
-            rectan_tile_polygon = polygon.SphericalPolygon(rectan_tile_points)
-            fov_polygon = polygon.SphericalPolygon(points_fov_cartesian(phi_vp, theta_vp))
-            view_area = rectan_tile_polygon.overlap(fov_polygon)
-            if view_area > required_intersec and view_area <= 1:  # TODO: reivew this
-                projection[i][j] = 1
-                view_area = 1 if view_area > 1 else view_area  # TODO: reivew this
-                view_areas.append(view_area)
-                vp_quality += fov_polygon.overlap(rectan_tile_polygon)
+            dist = arc_dist(phi_vp, theta_vp, phi_c, theta_c)
+            if dist <= vp_threshold:
+                rectan_tile_polygon = polygon.SphericalPolygon(rectan_tile_points)
+                fov_polygon = polygon.SphericalPolygon(points_fov_cartesian(phi_vp, theta_vp))
+                view_area = rectan_tile_polygon.overlap(fov_polygon)
+                if view_area > required_intersec:
+                    projection[i][j] = 1
+                    areas_in.append(view_area)
+                    vp_quality += fov_polygon.overlap(rectan_tile_polygon)
     reqs = np.sum(projection)
     heatmap = projection
-    return reqs, vp_quality, view_areas, heatmap
+    return reqs, vp_quality, areas_in, heatmap
 
 
 def req_tiles_rectan_fov_110radius_cover_center(phi_vp, theta_vp):
@@ -332,7 +336,7 @@ def req_tiles_rectan_fov_110radius_cover_center(phi_vp, theta_vp):
     # vp_110d = 110
     # vp_110_rad = vp_110d * np.pi / 180
     vp_110_rad_half = np.deg2rad(110/2)
-    view_areas = []
+    areas_in = []
     vp_quality = 0.0
     for i in range(t_vert):
         for j in range(t_hor):
@@ -344,11 +348,11 @@ def req_tiles_rectan_fov_110radius_cover_center(phi_vp, theta_vp):
                 rectan_tile_polygon = polygon.SphericalPolygon(rectan_tile_points)
                 fov_polygon = polygon.SphericalPolygon(points_fov_cartesian(phi_vp, theta_vp))
                 view_area = rectan_tile_polygon.overlap(fov_polygon)
-                view_areas.append(view_area)
+                areas_in.append(view_area)
                 vp_quality += fov_polygon.overlap(rectan_tile_polygon)
     reqs = np.sum(projection)
     heatmap = projection
-    return reqs, vp_quality, view_areas, heatmap
+    return reqs, vp_quality, areas_in, heatmap
 
 
 def req_tiles_voro_fov_110radius_cover_center(phi_vp, theta_vp, spherical_voronoi: SphericalVoronoi):
@@ -357,7 +361,7 @@ def req_tiles_voro_fov_110radius_cover_center(phi_vp, theta_vp, spherical_vorono
     # vp_110_rad = vp_110d * np.pi / 180
     vp_110_rad_half = np.deg2rad(110/2)
     reqs = 0
-    view_areas = []
+    areas_in = []
     vp_quality = 0.0
 
     # reqs, area
@@ -369,7 +373,7 @@ def req_tiles_voro_fov_110radius_cover_center(phi_vp, theta_vp, spherical_vorono
             voroni_tile_polygon = polygon.SphericalPolygon(spherical_voronoi.vertices[region])
             fov_polygon = polygon.SphericalPolygon(points_fov_cartesian(phi_vp, theta_vp))
             view_area = voroni_tile_polygon.overlap(fov_polygon)
-            view_areas.append(view_area)
+            areas_in.append(view_area)
             vp_quality += fov_polygon.overlap(voroni_tile_polygon)
 
     # heatmap
@@ -381,12 +385,12 @@ def req_tiles_voro_fov_110radius_cover_center(phi_vp, theta_vp, spherical_vorono
             dist = arc_dist(phi_vp, theta_vp, phi_c, theta_c)
             projection[i][j] = 1 if dist <= vp_110_rad_half else 0
     heatmap = projection
-    return reqs, vp_quality, view_areas, heatmap
+    return reqs, vp_quality, areas_in, heatmap
 
 
 def req_tiles_voro_fov_110x90_cover_any(phi_vp, theta_vp, spherical_voronoi: SphericalVoronoi):
     reqs = 0
-    view_areas = []
+    areas_in = []
     vp_quality = 0.0
     for region in spherical_voronoi.regions:
         voroni_tile_polygon = polygon.SphericalPolygon(spherical_voronoi.vertices[region])
@@ -394,14 +398,14 @@ def req_tiles_voro_fov_110x90_cover_any(phi_vp, theta_vp, spherical_voronoi: Sph
         view_area = voroni_tile_polygon.overlap(fov_polygon)
         if view_area > 0:
             reqs += 1
-            view_areas.append(view_area)
+            areas_in.append(view_area)
             vp_quality += fov_polygon.overlap(voroni_tile_polygon)
-    return reqs, vp_quality, view_areas, None
+    return reqs, vp_quality, areas_in, None
 
 
 def req_tiles_voro_fov_required_intersec(phi_vp, theta_vp, spherical_voronoi: SphericalVoronoi, required_intersec):
     reqs = 0
-    view_areas = []
+    areas_in = []
     vp_quality = 0.0
     for region in spherical_voronoi.regions:
         voroni_tile_polygon = polygon.SphericalPolygon(spherical_voronoi.vertices[region])
@@ -410,9 +414,9 @@ def req_tiles_voro_fov_required_intersec(phi_vp, theta_vp, spherical_voronoi: Sp
         if view_area > required_intersec:
             reqs += 1
             view_area = 1 if view_area > 1 else view_area  # TODO: reivew this
-            view_areas.append(view_area)
+            areas_in.append(view_area)
             vp_quality += fov_polygon.overlap(voroni_tile_polygon)
-    return reqs, vp_quality, view_areas, None
+    return reqs, vp_quality, areas_in, None
 
 
 def req_tiles_rectan_fov_20perc_cover(phi_vp, theta_vp):
