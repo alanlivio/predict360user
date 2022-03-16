@@ -1,4 +1,6 @@
+# %%
 import math
+from turtle import title
 import numpy as np
 import plotly
 import plotly.graph_objs as go
@@ -141,25 +143,27 @@ def sphere_data_add_user_traces(data, dataset, user, video):
     data.append(trajc)
 
 
-def sphere_plot_voro14_one_video_one_user(to_html=False):
+def sphere_plot_voro14_one_video_one_user(title="", to_html=False):
     data = sphere_data_voro(VORONOI_SPHERE_14P)
     dataset = get_sample_dataset()
     sphere_data_add_user_traces(data, dataset, ONE_USER, ONE_VIDEO)
+    fig = go.Figure(data=data, layout=layout_with_title(title))
     if to_html:
-        plotly.offline.plot(data, filename=f'{__file__}.html', auto_open=False)
+        plotly.offline.plot(fig, filename=f'vp_voro_{len(VORONOI_SPHERE_14P.points)}.html', auto_open=False)
     else:
-        go.Figure(data=data, layout=LAYOUT).show()
+        fig.show()
 
 
-def sphere_plot_voro14_one_video_all_users(to_html=False):
+def sphere_plot_voro14_one_video_all_users(title="", to_html=False):
     data = sphere_data_voro(VORONOI_SPHERE_14P)
     dataset = get_sample_dataset()
     for user in dataset.keys():
         sphere_data_add_user_traces(data, dataset, user, ONE_VIDEO)
+    fig = go.Figure(data=data, layout=layout_with_title(title))
     if to_html:
-        plotly.offline.plot(data, filename=f'{__file__}.html', auto_open=False)
+        plotly.offline.plot(fig, filename=f'vp_voro_{len(VORONOI_SPHERE_14P.points)}.html', auto_open=False)
     else:
-        go.Figure(data=data, layout=LAYOUT).show()
+        fig.show()
 
 
 def sphere_data_rectan_tiles(t_hor, t_vert):
@@ -187,7 +191,7 @@ def sphere_data_rectan_tiles(t_hor, t_vert):
     return data
 
 
-def sphere_plot_voro_with_vp(spherical_voronoi: SphericalVoronoi, phi_vp, theta_vp, to_html=False):
+def sphere_plot_voro_with_vp(spherical_voronoi: SphericalVoronoi, phi_vp, theta_vp, title="", to_html=False):
     data = sphere_data_voro(spherical_voronoi)
     fov_polygon = points_fov_cartesian(phi_vp, theta_vp)
     n = len(fov_polygon)
@@ -199,12 +203,14 @@ def sphere_plot_voro_with_vp(spherical_voronoi: SphericalVoronoi, phi_vp, theta_
         edge = go.Scatter3d(x=result[..., 0], y=result[..., 1], z=result[..., 2], mode='lines', line={
             'width': 5, 'color': 'red'}, name='vp edge', showlegend=False)
         data.append(edge)
+    fig = go.Figure(data=data, layout=layout_with_title(title))
     if to_html:
-        plotly.offline.plot(data, filename=f'{__file__}.html', auto_open=False)
+        plotly.offline.plot(fig, filename=f'vp_voro_{len(spherical_voronoi.points)}.html', auto_open=False)
     else:
-        go.Figure(data=data, layout=LAYOUT).show()
+        fig.show()
 
-def sphere_plot_rectan_with_vp(t_hor, t_vert, phi_vp, theta_vp, to_html=False):
+
+def sphere_plot_rectan_with_vp(t_hor, t_vert, phi_vp, theta_vp, title="", to_html=False):
     data = sphere_data_rectan_tiles(t_hor, t_vert)
     fov_polygon = points_fov_cartesian(phi_vp, theta_vp)
     n = len(fov_polygon)
@@ -216,19 +222,21 @@ def sphere_plot_rectan_with_vp(t_hor, t_vert, phi_vp, theta_vp, to_html=False):
         edge = go.Scatter3d(x=result[..., 0], y=result[..., 1], z=result[..., 2], mode='lines', line={
             'width': 5, 'color': 'red'}, name='vp edge', showlegend=False)
         data.append(edge)
+    fig = go.Figure(data=data, layout=layout_with_title(title))
     if to_html:
-        plotly.offline.plot(data, filename=f'{__file__}.html', auto_open=False)
+        plotly.offline.plot(fig, filename=f'vp_rectan_{t_hor}x{t_vert}.html', auto_open=False)
     else:
-        go.Figure(data=data, layout=LAYOUT).show()
+        fig.show()
 
 
-def sphere_plot_rectan_traces(t_hor, t_vert, dataset, user, video, to_html=False):
+def sphere_plot_rectan_traces(t_hor, t_vert, dataset, user, video, title="", to_html=False):
     data = sphere_data_rectan_tiles(t_hor, t_vert)
     sphere_data_add_user_traces(data, dataset, user, video)
+    fig = go.Figure(data=data, layout=layout_with_title(title))
     if to_html:
-        plotly.offline.plot(data, filename=f'{__file__}.html', auto_open=False)
+        plotly.offline.plot(fig, filename=f'traces_rectan_{t_hor}x{t_vert}.html', auto_open=False)
     else:
-        go.Figure(data=data, layout=LAYOUT).show()
+        fig.show()
 
 # -- tiles funcs
 

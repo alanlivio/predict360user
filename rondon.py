@@ -5,9 +5,12 @@ import plotly.express as px
 SAMPLE_DATASET = None
 ONE_USER = '0'
 ONE_VIDEO = '10_Cows'
-LAYOUT = go.Layout(width=800,
-                   margin={'l': 0, 'r': 0, 'b': 0, 't': 40})
+LAYOUT = go.Layout(width=800)
 TILES_H6, TILES_V4 = 6, 4
+
+
+def layout_with_title(title):
+    return go.Layout(width=800, title=title)
 
 
 def get_sample_dataset():
