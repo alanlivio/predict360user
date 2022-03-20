@@ -1,21 +1,28 @@
 # %%
-import math
-from turtle import title
-import numpy as np
-import plotly
-import plotly.graph_objs as go
-import plotly.express as px
-from scipy.spatial import SphericalVoronoi, geometric_slerp
-from head_motion_prediction.Utils import *
-from VRClient.src.help_functions import *
-from spherical_geometry import polygon
 from plotly.subplots import make_subplots
+from head_motion_prediction.Utils import *
+from os.path import exists
+from scipy.spatial import SphericalVoronoi, geometric_slerp
+from spherical_geometry import polygon
 from typing import List, Callable, Tuple, Any
-from rondon import *
+from VRClient.src.help_functions import *
+import math
+import numpy as np
+import os
+import pickle
+import plotly.express as px
+import plotly.graph_objs as go
+import sys
 
-# -- sphere
-
+ONE_USER = '0'
+ONE_VIDEO = '10_Cows'
+LAYOUT = go.Layout(width=600)
+TILES_H6, TILES_V4 = 6, 4
 TRINITY_NPATCHS = 14
+
+
+def layout_with_title(title):
+    return go.Layout(width=800, title=title)
 
 
 def points_voroni(npatchs) -> SphericalVoronoi:
@@ -37,7 +44,7 @@ VORONOI_SPHERE_14P = points_voroni(TRINITY_NPATCHS)
 VORONOI_SPHERE_24P = points_voroni(24)
 
 
-def points_rectan_tile_cartesian(i, j, t_hor=TILES_H6, t_vert=TILES_V4) -> Tuple[np.ndarray, float, float]:
+def points_rectan_tile_cartesian(i, j, t_hor, t_vert) -> Tuple[np.ndarray, float, float]:
     d_hor = np.deg2rad(360/t_hor)
     d_vert = np.deg2rad(180/t_vert)
     phi_c = d_hor * (j + 0.5)
@@ -63,16 +70,70 @@ def points_fov_cartesian(phi_vp, theta_vp) -> np.ndarray:
 
 
 class VRUsers:
+    SAMPLE_DATASET= None
+    SAMPLE_DATASET_PICKLE = 'SAMPLE_DATASET.pickle'
+    def __init__(self, dataset=None):
+        if dataset is None:
+            self.dataset = self._get_sample_dataset()
+
+    def _get_sample_dataset(self, load=False):
+        if VRUsers.SAMPLE_DATASET is None:
+            if load or not exists(VRUsers.SAMPLE_DATASET_PICKLE):
+                sys.path.append('head_motion_prediction')
+                from head_motion_prediction.David_MMSys_18.Read_Dataset import load_sampled_dataset
+                project_path = "head_motion_prediction"
+                cwd = os.getcwd()
+                if os.path.basename(cwd) != project_path:
+                    print(f"-- get VRUsers.SAMPLE_DATASET from {project_path}")
+                    os.chdir(project_path)
+                    VRUsers.SAMPLE_DATASET = load_sampled_dataset()
+                    os.chdir(cwd)
+                    with open(VRUsers.SAMPLE_DATASET_PICKLE, 'wb') as f:
+                        pickle.dump(VRUsers.SAMPLE_DATASET, f, protocol=pickle.HIGHEST_PROTOCOL)
+            else:
+                print(f"-- get VRUsers.SAMPLE_DATASET from {VRUsers.SAMPLE_DATASET_PICKLE}")
+                with open(VRUsers.SAMPLE_DATASET_PICKLE, 'rb') as f:
+                    VRUsers.SAMPLE_DATASET = pickle.load(f)
+        return VRUsers.SAMPLE_DATASET
+
+
+    def get_one_trace_eulerian(self):
+        trace_cartesian = self.get_one_trace()
+        return cartesian_to_eulerian(trace_cartesian[0], trace_cartesian[1], trace_cartesian[2])
+
+    def get_traces_one_video_one_user(self):
+        return self.dataset[ONE_USER][ONE_VIDEO][:, 1:]
+
+    def get_one_trace(self):
+        return self.dataset[ONE_USER][ONE_VIDEO][:, 1:][:1]
+        # VRUsers().get_traces_one_video_one_user()[:1]
+        # return self.dataset[ONE_USER][ONE_VIDEO][0, 1:]
+        
+    def get_traces_one_video_all_users(self):
+        dataset = self.dataset
+        n_traces = len(dataset[ONE_USER][ONE_VIDEO][:, 1:])
+        traces = np.ndarray((len(dataset.keys())*n_traces, 3))
+        count = 0
+        for user in dataset.keys():
+            for i in dataset[user][ONE_VIDEO][:, 1:]:
+                traces.itemset((count, 0), i[0])
+                traces.itemset((count, 1), i[1])
+                traces.itemset((count, 2), i[2])
+                count += 1
+        return traces
+
+
+class VRTraces:
     def __init__(self, traces, verbose=False):
         self.verbose = verbose
         self.traces = traces
         if self.verbose:
             print("VRUsers.traces.shape is " + str(traces.shape))
 
-    def sphere_plot_voro_matplot(self, spherical_voronoi: SphericalVoronoi = VORONOI_SPHERE_14P):
+    def plot_sphere_voro_matplot(self, spherical_voronoi: SphericalVoronoi = VORONOI_SPHERE_14P):
         """
         Example:
-            sphere_plot_voro_matplot(get_traces_one_video_one_user())
+            plot_sphere_voro_matplot(get_traces_one_video_one_user())
         """
         import matplotlib.pyplot as plt
         fig = plt.figure()
@@ -142,7 +203,7 @@ class VRUsers:
                 data.append(edge)
         return data
 
-    def _sphere_data_add_user_traces(self, data):
+    def _sphere_data_add_user(self, data):
         trajc = go.Scatter3d(x=self.traces[:, 0],
                              y=self.traces[:, 1],
                              z=self.traces[:, 2],
@@ -151,9 +212,9 @@ class VRUsers:
                              name='trajectory', showlegend=False)
         data.append(trajc)
 
-    def sphere_plot_voro_traces(self, spherical_voronoi: SphericalVoronoi, title_sufix="", to_html=False):
+    def plot_sphere_voro(self, spherical_voronoi: SphericalVoronoi, title_sufix="", to_html=False):
         data = self._sphere_data_voro(spherical_voronoi)
-        self._sphere_data_add_user_traces(data)
+        self._sphere_data_add_user(data)
         title = f"traces_voro{len(spherical_voronoi.points)}_" + title_sufix
         fig = go.Figure(data=data, layout=layout_with_title(title))
         if to_html:
@@ -185,7 +246,7 @@ class VRUsers:
                 # data.append(centers)
         return data
 
-    def sphere_plot_voro_with_vp(self, spherical_voronoi: SphericalVoronoi, title_sufix="", to_html=False):
+    def plot_sphere_voro_with_vp(self, spherical_voronoi: SphericalVoronoi, title_sufix="", to_html=False):
         data = self._sphere_data_voro(spherical_voronoi)
         for trace in self.traces:
             phi_vp, theta_vp = cartesian_to_eulerian(trace[0], trace[1], trace[2])
@@ -206,7 +267,7 @@ class VRUsers:
         else:
             fig.show()
 
-    def sphere_plot_rectan_with_vp(self, t_hor, t_vert, title_sufix="", to_html=False):
+    def plot_sphere_rectan_with_vp(self, t_hor, t_vert, title_sufix="", to_html=False):
         data = self._sphere_data_rectan_tiles(t_hor, t_vert)
         for trace in self.traces:
             phi_vp, theta_vp = cartesian_to_eulerian(trace[0], trace[1], trace[2])
@@ -227,9 +288,9 @@ class VRUsers:
         else:
             fig.show()
 
-    def sphere_plot_rectan_traces(self, t_hor, t_vert, title_sufix="", to_html=False):
+    def plot_sphere_rectan(self, t_hor, t_vert, title_sufix="", to_html=False):
         data = self._sphere_data_rectan_tiles(t_hor, t_vert)
-        self._sphere_data_add_user_traces(data)
+        self._sphere_data_add_user(data)
         title = f"traces_rectan{t_hor}x{t_vert}_" + title_sufix
         fig = go.Figure(data=data, layout=layout_with_title(title))
         if to_html:
@@ -311,7 +372,7 @@ def req_tiles_rectan_fov_required_intersec(phi_vp, theta_vp, required_intersec):
     vp_threshold = np.deg2rad(110/2)
     for i in range(t_vert):
         for j in range(t_hor):
-            rectan_tile_points, phi_c, theta_c = points_rectan_tile_cartesian(i, j)
+            rectan_tile_points, phi_c, theta_c = points_rectan_tile_cartesian(i, j, t_hor, t_vert)
             projection[i][j] = 0
             dist = arc_dist(phi_vp, theta_vp, phi_c, theta_c)
             if dist <= vp_threshold:
@@ -337,7 +398,7 @@ def req_tiles_rectan_fov_110radius_cover_center(phi_vp, theta_vp):
     vp_quality = 0.0
     for i in range(t_vert):
         for j in range(t_hor):
-            rectan_tile_points, phi_c, theta_c = points_rectan_tile_cartesian(i, j)
+            rectan_tile_points, phi_c, theta_c = points_rectan_tile_cartesian(i, j, t_hor, t_vert)
             dist = arc_dist(phi_vp, theta_vp, phi_c, theta_c)
             projection[i][j] = 0
             if dist <= vp_110_rad_half:
@@ -454,24 +515,5 @@ def req_tiles_voro24_fov_20perc_cover(phi_vp, theta_vp):
 
 def req_tiles_voro24_fov_33perc_cover(phi_vp, theta_vp):
     return req_tiles_voro_fov_required_intersec(phi_vp, theta_vp, VORONOI_SPHERE_24P, 0.33)
-
-# -- req performace
-from voroni import *
-some_users = VRUsers(get_traces_one_video_one_user()[::25], True)
-# req_plot_per_func(get_traces_one_video_one_user()[::25], [
-# req_plot_per_func(get_traces_one_video_one_user()[24:25:], [
-some_users.req_plot_per_func([
-    req_tiles_voro24_fov_110radius_cover_center,
-    req_tiles_voro14_fov_110radius_cover_center,
-    req_tiles_voro24_fov_110x90_cover_any,
-    req_tiles_voro14_fov_110x90_cover_any,
-    req_tiles_rectan_fov_33perc_cover,
-    req_tiles_rectan_fov_20perc_cover,
-    req_tiles_rectan_fov_110radius_cover_center,
-    req_tiles_voro14_fov_20perc_cover,
-    req_tiles_voro14_fov_33perc_cover,
-    req_tiles_voro24_fov_20perc_cover,
-    req_tiles_voro24_fov_33perc_cover,
-], True)
 
 # %%
