@@ -10,6 +10,7 @@ import math
 import numpy as np
 import os
 import pickle
+import plotly
 import plotly.express as px
 import plotly.graph_objs as go
 import sys
@@ -70,8 +71,9 @@ def points_fov_cartesian(phi_vp, theta_vp) -> np.ndarray:
 
 
 class VRUsers:
-    SAMPLE_DATASET= None
+    SAMPLE_DATASET = None
     SAMPLE_DATASET_PICKLE = 'SAMPLE_DATASET.pickle'
+
     def __init__(self, dataset=None):
         if dataset is None:
             self.dataset = self._get_sample_dataset()
@@ -96,7 +98,6 @@ class VRUsers:
                     VRUsers.SAMPLE_DATASET = pickle.load(f)
         return VRUsers.SAMPLE_DATASET
 
-
     def get_one_trace_eulerian(self):
         trace_cartesian = self.get_one_trace()
         return cartesian_to_eulerian(trace_cartesian[0], trace_cartesian[1], trace_cartesian[2])
@@ -108,7 +109,7 @@ class VRUsers:
         return self.dataset[ONE_USER][ONE_VIDEO][:, 1:][:1]
         # VRUsers().get_traces_one_video_one_user()[:1]
         # return self.dataset[ONE_USER][ONE_VIDEO][0, 1:]
-        
+
     def get_traces_one_video_all_users(self):
         dataset = self.dataset
         n_traces = len(dataset[ONE_USER][ONE_VIDEO][:, 1:])
@@ -129,9 +130,10 @@ class VRUsers:
 
 
 class VRTraces:
-    def __init__(self, traces, verbose=False):
+    def __init__(self, traces, title_sufix="", verbose=False):
         self.verbose = verbose
         self.traces = traces
+        self.title_sufix = str(len(traces)) + "_traces" if not title_sufix else title_sufix
         if self.verbose:
             print("VRUsers.traces.shape is " + str(traces.shape))
 
@@ -217,10 +219,10 @@ class VRTraces:
                              name='trajectory', showlegend=False)
         data.append(trajc)
 
-    def plot_sphere_voro(self, spherical_voronoi: SphericalVoronoi, title_sufix="", to_html=False):
+    def plot_sphere_voro(self, spherical_voronoi: SphericalVoronoi, to_html=False):
         data = self._sphere_data_voro(spherical_voronoi)
         self._sphere_data_add_user(data)
-        title = f"traces_voro{len(spherical_voronoi.points)}_" + title_sufix
+        title = f"traces_voro{len(spherical_voronoi.points)}_" + self.title_sufix
         fig = go.Figure(data=data, layout=layout_with_title(title))
         if to_html:
             plotly.offline.plot(fig, filename=f'{title}.html', auto_open=False)
@@ -251,7 +253,7 @@ class VRTraces:
                 # data.append(centers)
         return data
 
-    def plot_sphere_voro_with_vp(self, spherical_voronoi: SphericalVoronoi, title_sufix="", to_html=False):
+    def plot_sphere_voro_with_vp(self, spherical_voronoi: SphericalVoronoi, to_html=False):
         data = self._sphere_data_voro(spherical_voronoi)
         for trace in self.traces:
             phi_vp, theta_vp = cartesian_to_eulerian(trace[0], trace[1], trace[2])
@@ -265,14 +267,14 @@ class VRTraces:
                 edge = go.Scatter3d(x=result[..., 0], y=result[..., 1], z=result[..., 2], mode='lines', line={
                     'width': 5, 'color': 'red'}, name='vp edge', showlegend=False)
                 data.append(edge)
-        title = f"vp_voro{len(spherical_voronoi.points)}_" + title_sufix
+        title = f"vp_voro{len(spherical_voronoi.points)}_" + self.title_sufix
         fig = go.Figure(data=data, layout=layout_with_title(title))
         if to_html:
             plotly.offline.plot(fig, filename=f'{title}.html', auto_open=False)
         else:
             fig.show()
 
-    def plot_sphere_rectan_with_vp(self, t_hor, t_vert, title_sufix="", to_html=False):
+    def plot_sphere_rectan_with_vp(self, t_hor, t_vert, to_html=False):
         data = self._sphere_data_rectan_tiles(t_hor, t_vert)
         for trace in self.traces:
             phi_vp, theta_vp = cartesian_to_eulerian(trace[0], trace[1], trace[2])
@@ -286,17 +288,17 @@ class VRTraces:
                 edge = go.Scatter3d(x=result[..., 0], y=result[..., 1], z=result[..., 2], mode='lines', line={
                     'width': 5, 'color': 'red'}, name='vp edge', showlegend=False)
                 data.append(edge)
-        title = f"vp_rectan{t_hor}x{t_vert}_" + title_sufix
+        title = f"vp_rectan{t_hor}x{t_vert}_" + self.title_sufix
         fig = go.Figure(data=data, layout=layout_with_title(title))
         if to_html:
             plotly.offline.plot(fig, filename=f'{title}.html', auto_open=False)
         else:
             fig.show()
 
-    def plot_sphere_rectan(self, t_hor, t_vert, title_sufix="", to_html=False):
+    def plot_sphere_rectan(self, t_hor, t_vert, to_html=False):
         data = self._sphere_data_rectan_tiles(t_hor, t_vert)
         self._sphere_data_add_user(data)
-        title = f"traces_rectan{t_hor}x{t_vert}_" + title_sufix
+        title = f"traces_rectan{t_hor}x{t_vert}_" + self.title_sufix
         fig = go.Figure(data=data, layout=layout_with_title(title))
         if to_html:
             plotly.offline.plot(fig, filename=f'{title}.html', auto_open=False)
@@ -305,7 +307,7 @@ class VRTraces:
 
     # -- tiles funcs
 
-    def req_plot_per_func(self, func_list,
+    def plot_per_req_func(self, func_list,
                           plot_lines=False, plot_heatmaps=False):
         fig_reqs = go.Figure(layout=LAYOUT)
         fig_areas = go.Figure(layout=LAYOUT)
@@ -350,9 +352,10 @@ class VRTraces:
 
         # line fig reqs areas
         if(plot_lines):
-            fig_reqs.update_layout(xaxis_title="user trace", title="req_tiles",).show()
-            fig_areas.update_layout(xaxis_title="user trace", title="avg req_tiles view_ratio",).show()
-            fig_quality.update_layout(xaxis_title="user trace", title="avg quality ratio",).show()
+            fig_reqs.update_layout(xaxis_title="user trace", title="req_tiles " + self.title_sufix).show()
+            fig_areas.update_layout(xaxis_title="user trace",
+                                    title="avg req_tiles view_ratio " + self.title_sufix).show()
+            fig_quality.update_layout(xaxis_title="user trace", title="avg quality ratio " + self.title_sufix).show()
 
         # bar fig funcs_n_reqs funcs_avg_area
         funcs_names = [str(func.__name__) for func in func_list]
@@ -364,7 +367,7 @@ class VRTraces:
         funcs_score = [funcs_vp_quality[i] * (1 / (funcs_n_reqs[i] * (1 - funcs_avg_area[i])))
                        for i, _ in enumerate(funcs_n_reqs)]
         fig_bar.add_trace(go.Bar(y=funcs_names, x=funcs_score, orientation='h'), row=1, col=4)
-        fig_bar.update_layout(width=1500, showlegend=False)
+        fig_bar.update_layout(width=1500, showlegend=False, title_text=self.title_sufix)
         fig_bar.update_layout(barmode="stack")
         fig_bar.show()
 
