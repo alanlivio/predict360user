@@ -122,6 +122,11 @@ class VRUsers:
                 count += 1
         return traces
 
+    def get_traces_random_one_user(self, num):
+        one_user = self.get_traces_one_video_one_user()
+        step = int(len(one_user)/num)
+        return one_user[::step]
+
 
 class VRTraces:
     def __init__(self, traces, verbose=False):
@@ -345,9 +350,9 @@ class VRTraces:
 
         # line fig reqs areas
         if(plot_lines):
-            fig_reqs.update_layout(xaxis_title="user position", title="req_tiles",).show()
-            fig_areas.update_layout(xaxis_title="user position", title="avg req_tiles view_ratio",).show()
-            fig_quality.update_layout(xaxis_title="user position", title="avg quality ratio",).show()
+            fig_reqs.update_layout(xaxis_title="user trace", title="req_tiles",).show()
+            fig_areas.update_layout(xaxis_title="user trace", title="avg req_tiles view_ratio",).show()
+            fig_quality.update_layout(xaxis_title="user trace", title="avg quality ratio",).show()
 
         # bar fig funcs_n_reqs funcs_avg_area
         funcs_names = [str(func.__name__) for func in func_list]
