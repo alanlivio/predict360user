@@ -70,7 +70,7 @@ def points_fov_cartesian(phi_vp, theta_vp) -> np.ndarray:
     return polygon_fov
 
 
-class VRUsers:
+class Users360:
     SAMPLE_DATASET = None
     SAMPLE_DATASET_PICKLE = 'SAMPLE_DATASET.pickle'
 
@@ -78,25 +78,29 @@ class VRUsers:
         if dataset is None:
             self.dataset = self._get_sample_dataset()
 
+    # -- dataset funcs
+
     def _get_sample_dataset(self, load=False):
-        if VRUsers.SAMPLE_DATASET is None:
-            if load or not exists(VRUsers.SAMPLE_DATASET_PICKLE):
+        if Users360.SAMPLE_DATASET is None:
+            if load or not exists(Users360.SAMPLE_DATASET_PICKLE):
                 sys.path.append('head_motion_prediction')
                 from head_motion_prediction.David_MMSys_18.Read_Dataset import load_sampled_dataset
                 project_path = "head_motion_prediction"
                 cwd = os.getcwd()
                 if os.path.basename(cwd) != project_path:
-                    print(f"-- get VRUsers.SAMPLE_DATASET from {project_path}")
+                    print(f"-- get Users360.SAMPLE_DATASET from {project_path}")
                     os.chdir(project_path)
-                    VRUsers.SAMPLE_DATASET = load_sampled_dataset()
+                    Users360.SAMPLE_DATASET = load_sampled_dataset()
                     os.chdir(cwd)
-                    with open(VRUsers.SAMPLE_DATASET_PICKLE, 'wb') as f:
-                        pickle.dump(VRUsers.SAMPLE_DATASET, f, protocol=pickle.HIGHEST_PROTOCOL)
+                    with open(Users360.SAMPLE_DATASET_PICKLE, 'wb') as f:
+                        pickle.dump(Users360.SAMPLE_DATASET, f, protocol=pickle.HIGHEST_PROTOCOL)
             else:
-                print(f"-- get VRUsers.SAMPLE_DATASET from {VRUsers.SAMPLE_DATASET_PICKLE}")
-                with open(VRUsers.SAMPLE_DATASET_PICKLE, 'rb') as f:
-                    VRUsers.SAMPLE_DATASET = pickle.load(f)
-        return VRUsers.SAMPLE_DATASET
+                print(f"-- get Users360.SAMPLE_DATASET from {Users360.SAMPLE_DATASET_PICKLE}")
+                with open(Users360.SAMPLE_DATASET_PICKLE, 'rb') as f:
+                    Users360.SAMPLE_DATASET = pickle.load(f)
+        return Users360.SAMPLE_DATASET
+
+    # -- trace funcs
 
     def get_one_trace_eulerian(self):
         trace_cartesian = self.get_one_trace()
@@ -107,16 +111,15 @@ class VRUsers:
 
     def get_one_trace(self):
         return self.dataset[ONE_USER][ONE_VIDEO][:, 1:][:1]
-        # VRUsers().get_traces_one_video_one_user()[:1]
+        # Users360().get_traces_one_video_one_user()[:1]
         # return self.dataset[ONE_USER][ONE_VIDEO][0, 1:]
 
     def get_traces_one_video_all_users(self):
-        dataset = self.dataset
-        n_traces = len(dataset[ONE_USER][ONE_VIDEO][:, 1:])
-        traces = np.ndarray((len(dataset.keys())*n_traces, 3))
+        n_traces = len(self.dataset[ONE_USER][ONE_VIDEO][:, 1:])
+        traces = np.ndarray((len(self.dataset.keys())*n_traces, 3))
         count = 0
-        for user in dataset.keys():
-            for i in dataset[user][ONE_VIDEO][:, 1:]:
+        for user in self.dataset.keys():
+            for i in self.dataset[user][ONE_VIDEO][:, 1:]:
                 traces.itemset((count, 0), i[0])
                 traces.itemset((count, 1), i[1])
                 traces.itemset((count, 2), i[2])
@@ -129,13 +132,13 @@ class VRUsers:
         return one_user[::step]
 
 
-class VRTraces:
+class Traces360:
     def __init__(self, traces, title_sufix="", verbose=False):
         self.verbose = verbose
         self.traces = traces
         self.title_sufix = str(len(traces)) + "_traces" if not title_sufix else title_sufix
         if self.verbose:
-            print("VRUsers.traces.shape is " + str(traces.shape))
+            print("Users360.traces.shape is " + str(traces.shape))
 
     def plot_sphere_voro_matplot(self, spherical_voronoi: SphericalVoronoi = VORONOI_SPHERE_14P):
         """
