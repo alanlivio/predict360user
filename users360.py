@@ -43,6 +43,7 @@ def points_voroni(npatchs) -> SphericalVoronoi:
 VORONOI_SPHERE_14P = points_voroni(TRINITY_NPATCHS)
 VORONOI_SPHERE_24P = points_voroni(24)
 
+
 def cart_to_spher(x, y, z):
     phi = np.arctan2(y, x)
     if phi < 0:
@@ -57,10 +58,12 @@ def spher_to_cart(phi, theta):
     z = np.cos(theta)
     return x, y, z
 
+
 def arc_dist(phi_1, theta_1, phi_2, theta_2):
     t_1 = np.cos(theta_1) * np.cos(theta_2)
     t_2 = np.sin(theta_1) * np.sin(theta_2) * np.cos(phi_1 - phi_2)
     return np.arccos(t_1 + t_2)
+
 
 def points_rectan_tile_cartesian(i, j, t_hor, t_vert) -> Tuple[np.ndarray, float, float]:
     d_hor = np.deg2rad(360/t_hor)
@@ -88,8 +91,8 @@ def points_fov_cartesian(phi_vp, theta_vp) -> np.ndarray:
 
 
 class Users360:
-    SAMPLE_DATASET = None
-    SAMPLE_DATASET_PICKLE = 'SAMPLE_DATASET.pickle'
+    sample_dataset = None
+    sample_dataset_pickle = 'users360.pickle'
 
     def __init__(self, dataset=None):
         if dataset is None:
@@ -98,26 +101,26 @@ class Users360:
     # -- dataset funcs
 
     def _get_sample_dataset(self, load=False):
-        if Users360.SAMPLE_DATASET is None:
-            if load or not exists(Users360.SAMPLE_DATASET_PICKLE):
+        if Users360.sample_dataset is None:
+            if load or not exists(Users360.sample_dataset_pickle):
                 sys.path.append('head_motion_prediction')
                 from head_motion_prediction.David_MMSys_18.Read_Dataset import load_sampled_dataset
                 project_path = "head_motion_prediction"
                 cwd = os.getcwd()
                 if os.path.basename(cwd) != project_path:
-                    print(f"-- get Users360.SAMPLE_DATASET from {project_path}")
+                    print(f"-- get Users360.sample_dataset from {project_path}")
                     os.chdir(project_path)
-                    Users360.SAMPLE_DATASET = load_sampled_dataset()
+                    Users360.sample_dataset = load_sampled_dataset()
                     os.chdir(cwd)
-                    with open(Users360.SAMPLE_DATASET_PICKLE, 'wb') as f:
-                        pickle.dump(Users360.SAMPLE_DATASET, f, protocol=pickle.HIGHEST_PROTOCOL)
+                    with open(Users360.sample_dataset_pickle, 'wb') as f:
+                        pickle.dump(Users360.sample_dataset, f, protocol=pickle.HIGHEST_PROTOCOL)
             else:
-                print(f"-- get Users360.SAMPLE_DATASET from {Users360.SAMPLE_DATASET_PICKLE}")
-                with open(Users360.SAMPLE_DATASET_PICKLE, 'rb') as f:
-                    Users360.SAMPLE_DATASET = pickle.load(f)
-        return Users360.SAMPLE_DATASET
+                print(f"-- get Users360.sample_dataset from {Users360.sample_dataset_pickle}")
+                with open(Users360.sample_dataset_pickle, 'rb') as f:
+                    Users360.sample_dataset = pickle.load(f)
+        return Users360.sample_dataset
 
-    # -- trace funcs
+    # -- traces funcs
 
     def get_one_trace_eulerian(self):
         trace_cartesian = self.get_one_trace()
