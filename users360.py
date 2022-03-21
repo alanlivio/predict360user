@@ -6,6 +6,7 @@ from scipy.spatial import SphericalVoronoi, geometric_slerp
 from spherical_geometry import polygon
 from typing import List, Callable, Tuple, Any
 import math
+from scipy.stats import entropy
 import numpy as np
 import os
 import pickle
@@ -131,12 +132,11 @@ class Users360:
 
     def get_one_trace(self):
         return self.dataset[ONE_USER][ONE_VIDEO][:, 1:][:1]
-        # Users360().get_traces_one_video_one_user()[:1]
-        # return self.dataset[ONE_USER][ONE_VIDEO][0, 1:]
 
     def get_traces_one_video_all_users(self):
+        n_videos = len(self.dataset[ONE_USER])
         n_traces = len(self.dataset[ONE_USER][ONE_VIDEO][:, 1:])
-        traces = np.ndarray((len(self.dataset.keys())*n_traces, 3))
+        traces = np.ndarray((n_videos*n_traces, 3))
         count = 0
         for user in self.dataset.keys():
             for i in self.dataset[user][ONE_VIDEO][:, 1:]:
@@ -153,12 +153,76 @@ class Users360:
 
 
 class Traces360:
-    def __init__(self, traces, title_sufix="", verbose=False):
+    def __init__(self, traces: np.ndarray, title_sufix="", verbose=False):
+        assert traces.shape[1] == 3  # check cartesian ndarray
         self.verbose = verbose
         self.traces = traces
         self.title_sufix = str(len(traces)) + "_traces" if not title_sufix else title_sufix
         if self.verbose:
             print("Users360.traces.shape is " + str(traces.shape))
+
+    # -- sphere funcs
+
+    def _sphere_data_voro(self, spherical_voronoi: SphericalVoronoi):
+        data = []
+
+        # add generator points
+        # gens = go.Scatter3d(x=spherical_voronoi.points[:, 0], y=spherical_voronoi.points[:, 1], z=spherical_voronoi.points[:, 2], mode='markers', marker={
+        #                     'size': 1, 'opacity': 1.0, 'color': 'blue'}, name='voronoi center')
+        # data.append(gens)
+
+        # -- add vortonoi vertices
+        # vrts = go.Scatter3d(x=spherical_voronoi.vertices[:, 0],
+        #                     y=spherical_voronoi.vertices[:, 1],
+        #                     z=spherical_voronoi.vertices[:, 2],
+        #                     mode='markers', marker={'size': 1, 'opacity': 1.0, 'color': 'green'}, name='voronoi Vertices')
+        # data.append(vrts)
+
+        # add vortonoi edges
+        for region in spherical_voronoi.regions:
+            n = len(region)
+            t = np.linspace(0, 1, 100)
+            for i in range(n):
+                start = spherical_voronoi.vertices[region][i]
+                end = spherical_voronoi.vertices[region][(i + 1) % n]
+                result = np.array(geometric_slerp(start, end, t))
+                edge = go.Scatter3d(x=result[..., 0], y=result[..., 1], z=result[..., 2], mode='lines', line={
+                                    'width': 5, 'color': 'black'}, name='region edge', showlegend=False)
+                data.append(edge)
+        return data
+
+    def _sphere_data_add_user(self, data):
+        trajc = go.Scatter3d(x=self.traces[:, 0],
+                             y=self.traces[:, 1],
+                             z=self.traces[:, 2],
+                             mode='lines',
+                             line={'width': 1, 'color': 'blue'},
+                             name='trajectory', showlegend=False)
+        data.append(trajc)
+
+    def _sphere_data_rectan_tiles(self, t_hor, t_vert):
+        data = []
+        for i in range(t_hor+1):
+            for j in range(t_vert+1):
+                # -- add rectan tiles edges
+                rectan_tile_points, phi_c, theta_c = points_rectan_tile_cartesian(i, j, t_hor, t_vert)
+                n = len(rectan_tile_points)
+                t = np.linspace(0, 1, 100)
+                for index in range(n):
+                    start = rectan_tile_points[index]
+                    end = rectan_tile_points[(index + 1) % n]
+                    result = np.array(geometric_slerp(start, end, t))
+                    edge = go.Scatter3d(x=result[..., 0], y=result[..., 1], z=result[..., 2], mode='lines', line={
+                        'width': 5, 'color': 'black'}, name='region edge', showlegend=False)
+                    data.append(edge)
+                # x, y, z = eulerian_to_cartesian(phi_c, theta_c)
+                # corners = go.Scatter3d(x=rectan_tile_points[:, 0], y=rectan_tile_points[:, 1], z=rectan_tile_points[:, 2], mode='markers', marker={
+                #     'size': 2, 'opacity': 1.0, 'color': 'blue'}, name='tile corners', showlegend=False)
+                # data.append(corners)
+                # centers = go.Scatter3d(x=[x], y=[y], z=[z], mode='markers', marker={
+                #     'size': 2, 'opacity': 1.0, 'color': 'red'}, name='tile center', showlegend=False)
+                # data.append(centers)
+        return data
 
     def plot_sphere_voro_matplot(self, spherical_voronoi: SphericalVoronoi = VORONOI_SPHERE_14P):
         """
@@ -205,43 +269,6 @@ class Traces360:
                 self.traces[:, 2], label='parametric curve')
         plt.show()
 
-    def _sphere_data_voro(self, spherical_voronoi: SphericalVoronoi):
-        data = []
-
-        # -- add generator points
-        # gens = go.Scatter3d(x=spherical_voronoi.points[:, 0], y=spherical_voronoi.points[:, 1], z=spherical_voronoi.points[:, 2], mode='markers', marker={
-        #                     'size': 1, 'opacity': 1.0, 'color': 'blue'}, name='voronoi center')
-        # data.append(gens)
-
-        # -- add vortonoi vertices
-        # vrts = go.Scatter3d(x=spherical_voronoi.vertices[:, 0],
-        #                     y=spherical_voronoi.vertices[:, 1],
-        #                     z=spherical_voronoi.vertices[:, 2],
-        #                     mode='markers', marker={'size': 1, 'opacity': 1.0, 'color': 'green'}, name='voronoi Vertices')
-        # data.append(vrts)
-
-        # -- add vortonoi edges
-        for region in spherical_voronoi.regions:
-            n = len(region)
-            t = np.linspace(0, 1, 100)
-            for i in range(n):
-                start = spherical_voronoi.vertices[region][i]
-                end = spherical_voronoi.vertices[region][(i + 1) % n]
-                result = np.array(geometric_slerp(start, end, t))
-                edge = go.Scatter3d(x=result[..., 0], y=result[..., 1], z=result[..., 2], mode='lines', line={
-                                    'width': 5, 'color': 'black'}, name='region edge', showlegend=False)
-                data.append(edge)
-        return data
-
-    def _sphere_data_add_user(self, data):
-        trajc = go.Scatter3d(x=self.traces[:, 0],
-                             y=self.traces[:, 1],
-                             z=self.traces[:, 2],
-                             mode='lines',
-                             line={'width': 1, 'color': 'blue'},
-                             name='trajectory', showlegend=False)
-        data.append(trajc)
-
     def plot_sphere_voro(self, spherical_voronoi: SphericalVoronoi, to_html=False):
         data = self._sphere_data_voro(spherical_voronoi)
         self._sphere_data_add_user(data)
@@ -251,30 +278,6 @@ class Traces360:
             plotly.offline.plot(fig, filename=f'{title}.html', auto_open=False)
         else:
             fig.show()
-
-    def _sphere_data_rectan_tiles(self, t_hor, t_vert):
-        data = []
-        for i in range(t_hor+1):
-            for j in range(t_vert+1):
-                # -- add rectan tiles edges
-                rectan_tile_points, phi_c, theta_c = points_rectan_tile_cartesian(i, j, t_hor, t_vert)
-                n = len(rectan_tile_points)
-                t = np.linspace(0, 1, 100)
-                for index in range(n):
-                    start = rectan_tile_points[index]
-                    end = rectan_tile_points[(index + 1) % n]
-                    result = np.array(geometric_slerp(start, end, t))
-                    edge = go.Scatter3d(x=result[..., 0], y=result[..., 1], z=result[..., 2], mode='lines', line={
-                        'width': 5, 'color': 'black'}, name='region edge', showlegend=False)
-                    data.append(edge)
-                # x, y, z = eulerian_to_cartesian(phi_c, theta_c)
-                # corners = go.Scatter3d(x=rectan_tile_points[:, 0], y=rectan_tile_points[:, 1], z=rectan_tile_points[:, 2], mode='markers', marker={
-                #     'size': 2, 'opacity': 1.0, 'color': 'blue'}, name='tile corners', showlegend=False)
-                # data.append(corners)
-                # centers = go.Scatter3d(x=[x], y=[y], z=[z], mode='markers', marker={
-                #     'size': 2, 'opacity': 1.0, 'color': 'red'}, name='tile center', showlegend=False)
-                # data.append(centers)
-        return data
 
     def plot_sphere_voro_with_vp(self, spherical_voronoi: SphericalVoronoi, to_html=False):
         data = self._sphere_data_voro(spherical_voronoi)
@@ -328,10 +331,22 @@ class Traces360:
         else:
             fig.show()
 
-    # -- tiles funcs
+    # -- erp funcs
 
-    def plot_per_req_func(self, func_list,
-                          plot_lines=False, plot_heatmaps=False):
+    def plot_erp_heatmap(self):
+        heatmaps = []
+        for i in self.traces:
+            _, _, _, heatmap = req_tiles_rectan_fov_110radius_cover_center(*cartesian_to_eulerian(i[0], i[1], i[2]))
+            heatmaps.append(heatmap)
+        fig_heatmap = px.imshow(np.sum(heatmaps, axis=0), labels=dict(
+            x="longitude", y="latitude", color="requests", title=f"reqs={str(np.sum(heatmaps))}"))
+        fig_heatmap.update_layout(LAYOUT)
+        fig_heatmap.show()
+
+    # -- reqs funcs
+
+    def plot_reqs_per_func(self, func_list,
+                           plot_lines=False, plot_heatmaps=False):
         fig_reqs = go.Figure(layout=LAYOUT)
         fig_areas = go.Figure(layout=LAYOUT)
         fig_quality = go.Figure(layout=LAYOUT)
