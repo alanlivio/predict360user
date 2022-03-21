@@ -5,7 +5,6 @@ from os.path import exists
 from scipy.spatial import SphericalVoronoi, geometric_slerp
 from spherical_geometry import polygon
 from typing import List, Callable, Tuple, Any
-from VRClient.src.help_functions import *
 import math
 import numpy as np
 import os
@@ -44,6 +43,24 @@ def points_voroni(npatchs) -> SphericalVoronoi:
 VORONOI_SPHERE_14P = points_voroni(TRINITY_NPATCHS)
 VORONOI_SPHERE_24P = points_voroni(24)
 
+def cart_to_spher(x, y, z):
+    phi = np.arctan2(y, x)
+    if phi < 0:
+        phi += 2 * np.pi
+    theta = np.arccos(z)
+    return phi, theta
+
+
+def spher_to_cart(phi, theta):
+    x = np.sin(theta) * np.cos(phi)
+    y = np.sin(theta) * np.sin(phi)
+    z = np.cos(theta)
+    return x, y, z
+
+def arc_dist(phi_1, theta_1, phi_2, theta_2):
+    t_1 = np.cos(theta_1) * np.cos(theta_2)
+    t_2 = np.sin(theta_1) * np.sin(theta_2) * np.cos(phi_1 - phi_2)
+    return np.arccos(t_1 + t_2)
 
 def points_rectan_tile_cartesian(i, j, t_hor, t_vert) -> Tuple[np.ndarray, float, float]:
     d_hor = np.deg2rad(360/t_hor)

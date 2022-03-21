@@ -132,6 +132,7 @@ dmypy.json
 # added
 *.html
 head_motion_prediction/
+VRClient/
 OpCASH/
 PARIMA/
 TileRateSelector_360videos/
