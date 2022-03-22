@@ -47,21 +47,6 @@ VORONOI_14P = points_voroni(TRINITY_NPATCHS)
 VORONOI_24P = points_voroni(24)
 
 
-def cart_to_spher(x, y, z):
-    phi = np.arctan2(y, x)
-    if phi < 0:
-        phi += 2 * np.pi
-    theta = np.arccos(z)
-    return phi, theta
-
-
-def spher_to_cart(phi, theta):
-    x = np.sin(theta) * np.cos(phi)
-    y = np.sin(theta) * np.sin(phi)
-    z = np.cos(theta)
-    return x, y, z
-
-
 def arc_dist(phi_1, theta_1, phi_2, theta_2):
     t_1 = np.cos(theta_1) * np.cos(theta_2)
     t_2 = np.sin(theta_1) * np.sin(theta_2) * np.cos(phi_1 - phi_2)
@@ -71,25 +56,25 @@ def arc_dist(phi_1, theta_1, phi_2, theta_2):
 def points_rectan_tile_cartesian(i, j, t_hor, t_vert) -> Tuple[np.ndarray, float, float]:
     d_hor = np.deg2rad(360/t_hor)
     d_vert = np.deg2rad(180/t_vert)
-    phi_c = d_hor * (j + 0.5)
-    theta_c = d_vert * (i + 0.5)
+    theta_c = d_hor * (j + 0.5)
+    phi_c = d_vert * (i + 0.5)
     polygon_rectan_tile = np.array([
         eulerian_to_cartesian(d_hor * j, d_vert * (i+1)),
         eulerian_to_cartesian(d_hor * (j+1), d_vert * (i+1)),
         eulerian_to_cartesian(d_hor * (j+1), d_vert * i),
         eulerian_to_cartesian(d_hor * j, d_vert * i)])
-    return polygon_rectan_tile, phi_c, theta_c
+    return polygon_rectan_tile, theta_c, phi_c
 
 
-def points_fov_cartesian(phi_vp, theta_vp) -> np.ndarray:
+def points_fov_cartesian(theta_vp, phi_vp) -> np.ndarray:
     # https://daglar-cizmeci.com/how-does-virtual-reality-work/
     margin_lateral = np.deg2rad(90/2)
     margin_ab = np.deg2rad(110/2)
     polygon_fov = np.array([
-        eulerian_to_cartesian(phi_vp-margin_ab, theta_vp+margin_lateral),
-        eulerian_to_cartesian(phi_vp+margin_ab, theta_vp+margin_lateral),
-        eulerian_to_cartesian(phi_vp+margin_ab, theta_vp-margin_lateral),
-        eulerian_to_cartesian(phi_vp-margin_ab, theta_vp-margin_lateral)])
+        eulerian_to_cartesian(theta_vp+margin_lateral, phi_vp-margin_ab),
+        eulerian_to_cartesian(theta_vp+margin_lateral, phi_vp+margin_ab),
+        eulerian_to_cartesian(theta_vp-margin_lateral, phi_vp+margin_ab),
+        eulerian_to_cartesian(theta_vp-margin_lateral, phi_vp-margin_ab)])
     return polygon_fov
 
 
@@ -206,7 +191,7 @@ class Traces360:
         for i in range(t_hor+1):
             for j in range(t_vert+1):
                 # -- add rectan tiles edges
-                rectan_tile_points, phi_c, theta_c = points_rectan_tile_cartesian(i, j, t_hor, t_vert)
+                rectan_tile_points, theta_c, phi_c = points_rectan_tile_cartesian(i, j, t_hor, t_vert)
                 n = len(rectan_tile_points)
                 t = np.linspace(0, 1, 100)
                 for index in range(n):
@@ -216,7 +201,7 @@ class Traces360:
                     edge = go.Scatter3d(x=result[..., 0], y=result[..., 1], z=result[..., 2], mode='lines', line={
                         'width': 5, 'color': 'black'}, name='region edge', showlegend=False)
                     data.append(edge)
-                # x, y, z = eulerian_to_cartesian(phi_c, theta_c)
+                # x, y, z = eulerian_to_cartesian(theta_c, phi_c)
                 # corners = go.Scatter3d(x=rectan_tile_points[:, 0], y=rectan_tile_points[:, 1], z=rectan_tile_points[:, 2], mode='markers', marker={
                 #     'size': 2, 'opacity': 1.0, 'color': 'blue'}, name='tile corners', showlegend=False)
                 # data.append(corners)
@@ -283,8 +268,8 @@ class Traces360:
     def plot_sphere_voro_with_vp(self, spherical_voronoi: SphericalVoronoi, to_html=False):
         data = self._sphere_data_voro(spherical_voronoi)
         for trace in self.traces:
-            phi_vp, theta_vp = cartesian_to_eulerian(trace[0], trace[1], trace[2])
-            fov_polygon = points_fov_cartesian(phi_vp, theta_vp)
+            theta_vp, phi_vp = cartesian_to_eulerian(trace[0], trace[1], trace[2])
+            fov_polygon = points_fov_cartesian(theta_vp, phi_vp)
             n = len(fov_polygon)
             t = np.linspace(0, 1, 100)
             for index in range(n):
@@ -304,8 +289,8 @@ class Traces360:
     def plot_sphere_rectan_with_vp(self, t_hor, t_vert, to_html=False):
         data = self._sphere_data_rectan_tiles(t_hor, t_vert)
         for trace in self.traces:
-            phi_vp, theta_vp = cartesian_to_eulerian(trace[0], trace[1], trace[2])
-            fov_polygon = points_fov_cartesian(phi_vp, theta_vp)
+            theta_vp, phi_vp = cartesian_to_eulerian(trace[0], trace[1], trace[2])
+            fov_polygon = points_fov_cartesian(theta_vp, phi_vp)
             n = len(fov_polygon)
             t = np.linspace(0, 1, 100)
             for index in range(n):
@@ -419,7 +404,7 @@ class FoV360:
         ONLY20PERC = auto()
         ONLY33PERC = auto()
 
-    def request(self, phi_vp, theta_vp):
+    def request(self, theta_vp, phi_vp):
         pass
 
 
@@ -439,18 +424,18 @@ class FoV360TilesRect(FoV360):
             case FoV360.Cover.ONLY33PERC:
                 return f'rect_tiles_{self.t_hor}x{self.t_vert}_33perc'
 
-    def request(self, phi_vp, theta_vp):
+    def request(self, theta_vp, phi_vp):
         match self.cover:
             case FoV360.Cover.ANY:
                 raise NotImplementedError()
             case FoV360.Cover.CENTER:
-                return self.request_110radius_center(phi_vp, theta_vp)
+                return self.request_110radius_center(theta_vp, phi_vp)
             case FoV360.Cover.ONLY20PERC:
-                return self.request_only(phi_vp, theta_vp, 0.2)
+                return self.request_only(theta_vp, phi_vp, 0.2)
             case FoV360.Cover.ONLY33PERC:
-                return self.request_only(phi_vp, theta_vp, 0.33)
+                return self.request_only(theta_vp, phi_vp, 0.33)
 
-    def request_only(self, phi_vp, theta_vp, required_intersec):
+    def request_only(self, theta_vp, phi_vp, required_intersec):
         # t_hor, t_vert = TILES_H6, TILES_V4
         projection = np.ndarray((self.t_vert, self.t_hor))
         areas_in = []
@@ -458,11 +443,11 @@ class FoV360TilesRect(FoV360):
         vp_threshold = np.deg2rad(110/2)
         for i in range(self.t_vert):
             for j in range(self.t_hor):
-                rectan_tile_points, phi_c, theta_c = points_rectan_tile_cartesian(i, j, self.t_hor, self.t_vert)
-                dist = arc_dist(phi_vp, theta_vp, phi_c, theta_c)
+                rectan_tile_points, theta_c, phi_c = points_rectan_tile_cartesian(i, j, self.t_hor, self.t_vert)
+                dist = arc_dist(theta_vp, phi_vp, theta_c, phi_c)
                 if dist <= vp_threshold:
                     rectan_tile_polygon = polygon.SphericalPolygon(rectan_tile_points)
-                    fov_polygon = polygon.SphericalPolygon(points_fov_cartesian(phi_vp, theta_vp))
+                    fov_polygon = polygon.SphericalPolygon(points_fov_cartesian(theta_vp, phi_vp))
                     view_area = rectan_tile_polygon.overlap(fov_polygon)
                     if view_area > required_intersec:
                         projection[i][j] = 1
@@ -474,7 +459,7 @@ class FoV360TilesRect(FoV360):
         heatmap = projection
         return reqs, vp_quality, areas_in, heatmap
 
-    def request_110radius_center(self, phi_vp, theta_vp):
+    def request_110radius_center(self, theta_vp, phi_vp):
         # t_hor, t_vert = TILES_H6, TILES_V4
         projection = np.ndarray((self.t_vert, self.t_hor))
         # vp_110d = 110
@@ -484,12 +469,12 @@ class FoV360TilesRect(FoV360):
         vp_quality = 0.0
         for i in range(self.t_vert):
             for j in range(self.t_hor):
-                rectan_tile_points, phi_c, theta_c = points_rectan_tile_cartesian(i, j, self.t_hor, self.t_vert)
-                dist = arc_dist(phi_vp, theta_vp, phi_c, theta_c)
+                rectan_tile_points, theta_c, phi_c = points_rectan_tile_cartesian(i, j, self.t_hor, self.t_vert)
+                dist = arc_dist(theta_vp, phi_vp, theta_c, phi_c)
                 if dist <= vp_110_rad_half:
                     projection[i][j] = 1
                     rectan_tile_polygon = polygon.SphericalPolygon(rectan_tile_points)
-                    fov_polygon = polygon.SphericalPolygon(points_fov_cartesian(phi_vp, theta_vp))
+                    fov_polygon = polygon.SphericalPolygon(points_fov_cartesian(theta_vp, phi_vp))
                     view_area = rectan_tile_polygon.overlap(fov_polygon)
                     areas_in.append(view_area)
                     vp_quality += fov_polygon.overlap(rectan_tile_polygon)
@@ -516,18 +501,18 @@ class FoV360TilesVoro(FoV360):
             case FoV360.Cover.ONLY33PERC:
                 return f'voroni_tiles_{len(self.spherical_voronoi.points)}_33perc'
 
-    def request(self, phi_vp, theta_vp):
+    def request(self, theta_vp, phi_vp):
         match self.cover:
             case FoV360.Cover.ANY:
-                return self.request_110x90_any(phi_vp, theta_vp)
+                return self.request_110x90_any(theta_vp, phi_vp)
             case FoV360.Cover.CENTER:
-                return self.request_110radius_center(phi_vp, theta_vp)
+                return self.request_110radius_center(theta_vp, phi_vp)
             case FoV360.Cover.ONLY20PERC:
-                return self.request_required_intersec(phi_vp, theta_vp, 0.2)
+                return self.request_required_intersec(theta_vp, phi_vp, 0.2)
             case FoV360.Cover.ONLY33PERC:
-                return self.request_required_intersec(phi_vp, theta_vp, 0.33)
+                return self.request_required_intersec(theta_vp, phi_vp, 0.33)
 
-    def request_110radius_center(self, phi_vp, theta_vp):
+    def request_110radius_center(self, theta_vp, phi_vp):
         # t_hor, t_vert = TILES_H6, TILES_V4
         # vp_110d = 110
         # vp_110_rad = vp_110d * np.pi / 180
@@ -538,12 +523,12 @@ class FoV360TilesVoro(FoV360):
 
         # reqs, area
         for index, region in enumerate(self.spherical_voronoi.regions):
-            phi_c, theta_c = cart_to_spher(*self.spherical_voronoi.points[index])
-            dist = arc_dist(phi_vp, theta_vp, phi_c, theta_c)
+            theta_c, phi_c = cartesian_to_eulerian(*self.spherical_voronoi.points[index])
+            dist = arc_dist(theta_vp, phi_vp, theta_c, phi_c)
             if dist <= vp_110_rad_half:
                 reqs += 1
                 voroni_tile_polygon = polygon.SphericalPolygon(self.spherical_voronoi.vertices[region])
-                fov_polygon = polygon.SphericalPolygon(points_fov_cartesian(phi_vp, theta_vp))
+                fov_polygon = polygon.SphericalPolygon(points_fov_cartesian(theta_vp, phi_vp))
                 view_area = voroni_tile_polygon.overlap(fov_polygon)
                 areas_in.append(view_area)
                 vp_quality += fov_polygon.overlap(voroni_tile_polygon)
@@ -553,19 +538,19 @@ class FoV360TilesVoro(FoV360):
         # for i in range(t_vert):
         #     for j in range(t_hor):
         #         index = i * t_hor + j
-        #         phi_c, theta_c = cart_to_spher(*spherical_voronoi.points[index])
-        #         dist = arc_dist(phi_vp, theta_vp, phi_c, theta_c)
+        #         theta_c, phi_c = cart_to_spher(*spherical_voronoi.points[index])
+        #         dist = arc_dist(theta_vp, phi_vp, theta_c, phi_c)
         #         projection[i][j] = 1 if dist <= vp_110_rad_half else 0
         # heatmap = projection
         return reqs, vp_quality, areas_in, None
 
-    def request_110x90_any(self, phi_vp, theta_vp):
+    def request_110x90_any(self, theta_vp, phi_vp):
         reqs = 0
         areas_in = []
         vp_quality = 0.0
         for region in self.spherical_voronoi.regions:
             voroni_tile_polygon = polygon.SphericalPolygon(self.spherical_voronoi.vertices[region])
-            fov_polygon = polygon.SphericalPolygon(points_fov_cartesian(phi_vp, theta_vp))
+            fov_polygon = polygon.SphericalPolygon(points_fov_cartesian(theta_vp, phi_vp))
             view_area = voroni_tile_polygon.overlap(fov_polygon)
             if view_area > 0:
                 reqs += 1
@@ -573,13 +558,13 @@ class FoV360TilesVoro(FoV360):
                 vp_quality += fov_polygon.overlap(voroni_tile_polygon)
         return reqs, vp_quality, areas_in, None
 
-    def request_required_intersec(self, phi_vp, theta_vp, required_intersec):
+    def request_required_intersec(self, theta_vp, phi_vp, required_intersec):
         reqs = 0
         areas_in = []
         vp_quality = 0.0
         for region in self.spherical_voronoi.regions:
             voroni_tile_polygon = polygon.SphericalPolygon(self.spherical_voronoi.vertices[region])
-            fov_polygon = polygon.SphericalPolygon(points_fov_cartesian(phi_vp, theta_vp))
+            fov_polygon = polygon.SphericalPolygon(points_fov_cartesian(theta_vp, phi_vp))
             view_area = voroni_tile_polygon.overlap(fov_polygon)
             if view_area > required_intersec:
                 reqs += 1
