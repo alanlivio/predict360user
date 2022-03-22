@@ -261,7 +261,7 @@ class Traces360:
         title = f"traces_voro{len(spherical_voronoi.points)}_" + self.title_sufix
         fig = go.Figure(data=data, layout=layout_with_title(title))
         if to_html:
-            plotly.offline.plot(fig, filename=f'{title}.html', auto_open=False)
+            plotly.offline.plot(fig, filename=f'./plot_figs/{title}.html', auto_open=False)
         else:
             fig.show()
 
@@ -282,7 +282,7 @@ class Traces360:
         title = f"FoV_voro{len(spherical_voronoi.points)}_" + self.title_sufix
         fig = go.Figure(data=data, layout=layout_with_title(title))
         if to_html:
-            plotly.offline.plot(fig, filename=f'{title}.html', auto_open=False)
+            plotly.offline.plot(fig, filename=f'./plot_figs/{title}.html', auto_open=False)
         else:
             fig.show()
 
@@ -303,7 +303,7 @@ class Traces360:
         title = f"FoV_rectan{t_hor}x{t_vert}_" + self.title_sufix
         fig = go.Figure(data=data, layout=layout_with_title(title))
         if to_html:
-            plotly.offline.plot(fig, filename=f'{title}.html', auto_open=False)
+            plotly.offline.plot(fig, filename=f'./plot_figs/{title}.html', auto_open=False)
         else:
             fig.show()
 
@@ -313,7 +313,7 @@ class Traces360:
         title = f"traces_rectan{t_hor}x{t_vert}_" + self.title_sufix
         fig = go.Figure(data=data, layout=layout_with_title(title))
         if to_html:
-            plotly.offline.plot(fig, filename=f'{title}.html', auto_open=False)
+            plotly.offline.plot(fig, filename=f'./plot_figs/{title}.html', auto_open=False)
         else:
             fig.show()
 
@@ -332,7 +332,7 @@ class Traces360:
 
     # -- reqs funcs
 
-    def plot_reqs_per_func(self, func_list,
+    def plot_reqs_per_func(self, func_list, plot_bars=True,
                            plot_lines=False, plot_heatmaps=False):
         fig_reqs = go.Figure(layout=LAYOUT)
         fig_areas = go.Figure(layout=LAYOUT)
@@ -394,7 +394,8 @@ class Traces360:
         fig_bar.add_trace(go.Bar(y=funcs_names, x=funcs_score, orientation='h'), row=1, col=4)
         fig_bar.update_layout(width=1500, showlegend=False, title_text=self.title_sufix)
         fig_bar.update_layout(barmode="stack")
-        fig_bar.show()
+        if(plot_bars):
+            fig_bar.show()
 
 
 class FoV360:

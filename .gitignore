@@ -130,7 +130,7 @@ dmypy.json
 .pyre/
 
 # added
-*.html
+plot_figs/*
 head_motion_prediction/
 VRClient/
 OpCASH/
