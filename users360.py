@@ -47,7 +47,7 @@ VORONOI_14P = points_voroni(TRINITY_NPATCHS)
 VORONOI_24P = points_voroni(24)
 
 
-def points_rectan_tile_cartesian(i, j, t_hor, t_vert):
+def points_rectan_tile_cartesian(i, j, t_hor, t_vert) -> Tuple[np.ndarray, np.ndarray]:
     d_hor = np.deg2rad(360/t_hor)
     d_vert = np.deg2rad(180/t_vert)
     theta_c = d_hor * (j + 0.5)
@@ -57,7 +57,6 @@ def points_rectan_tile_cartesian(i, j, t_hor, t_vert):
         eulerian_to_cartesian(d_hor * (j+1), d_vert * (i+1)),
         eulerian_to_cartesian(d_hor * (j+1), d_vert * i),
         eulerian_to_cartesian(d_hor * j, d_vert * i)])
-
     return polygon_rectan_tile, eulerian_to_cartesian(theta_c, phi_c)
 
 
@@ -106,17 +105,13 @@ class Users360:
 
     # -- traces funcs
 
-    def get_one_trace(self):
+    def get_one_trace(self) -> np.ndarray:
         return self.dataset[ONE_USER][ONE_VIDEO][:, 1:][:1]
 
-    def get_one_trace_eulerian(self):
-        trace_cartesian = self.get_one_trace()[0]
-        return cartesian_to_eulerian(trace_cartesian[0], trace_cartesian[1], trace_cartesian[2])
-
-    def get_traces_one_video_one_user(self):
+    def get_traces_one_video_one_user(self) -> np.ndarray:
         return self.dataset[ONE_USER][ONE_VIDEO][:, 1:]
 
-    def get_traces_one_video_all_users(self):
+    def get_traces_one_video_all_users(self) -> np.ndarray:
         n_traces = len(self.dataset[ONE_USER][ONE_VIDEO][:, 1:])
         traces = np.ndarray((len(self.dataset.keys())*n_traces, 3))
         count = 0
@@ -128,7 +123,7 @@ class Users360:
                 count += 1
         return traces
 
-    def get_traces_random_one_user(self, num):
+    def get_traces_random_one_user(self, num) -> np.ndarray:
         one_user = self.get_traces_one_video_one_user()
         step = int(len(one_user)/num)
         return one_user[::step]
@@ -197,13 +192,6 @@ class Traces360:
                     edge = go.Scatter3d(x=result[..., 0], y=result[..., 1], z=result[..., 2], mode='lines', line={
                         'width': 5, 'color': 'black'}, name='region edge', showlegend=False)
                     data.append(edge)
-                # x, y, z = eulerian_to_cartesian(theta_c, phi_c)
-                # corners = go.Scatter3d(x=rectan_tile_points[:, 0], y=rectan_tile_points[:, 1], z=rectan_tile_points[:, 2], mode='markers', marker={
-                #     'size': 2, 'opacity': 1.0, 'color': 'blue'}, name='tile corners', showlegend=False)
-                # data.append(corners)
-                # centers = go.Scatter3d(x=[x], y=[y], z=[z], mode='markers', marker={
-                #     'size': 2, 'opacity': 1.0, 'color': 'red'}, name='tile center', showlegend=False)
-                # data.append(centers)
         return data
 
     def plot_sphere_voro_matplot(self, spherical_voronoi: SphericalVoronoi = VORONOI_14P):
@@ -340,18 +328,15 @@ class Traces360:
             traces_areas_svg = []
             traces_heatmaps = []
             traces_vp_quality = []
-            # func_funcs_avg_area = [] # to calc avg funcs_avg_area
             # call func per trace
             for t in self.traces:
                 req_in, quality_in, areas_in, heatmap_in = func.request(t[0], t[1], t[2])
-                # print(areas_in)
                 traces_n_reqs.append(req_in)
                 traces_areas.append(areas_in)
                 traces_areas_svg.append(np.average(areas_in))
                 traces_vp_quality.append(quality_in)
                 if heatmap_in is not None:
                     traces_heatmaps.append(heatmap_in)
-                # func_funcs_avg_area.append(areas_in)
             # line reqs
             fig_reqs.add_trace(go.Scatter(y=traces_n_reqs, mode='lines', name=f"{func.title()}"))
             # line areas
@@ -455,17 +440,12 @@ class FoV360TilesRect(FoV360):
         return reqs, vp_quality, areas_in, heatmap
 
     def request_110radius_center(self, x, y, z):
-        # t_hor, t_vert = TILES_H6, TILES_V4
         projection = np.ndarray((self.t_vert, self.t_hor))
-        # vp_110d = 110
-        # vp_110_rad = vp_110d * np.pi / 180
         vp_110_rad_half = np.deg2rad(110/2)
         areas_in = []
         vp_quality = 0.0
         for i in range(self.t_vert):
             for j in range(self.t_hor):
-                # rectan_tile_points, theta_c, phi_c = points_rectan_tile_cartesian(i, j, self.t_hor, self.t_vert)
-                # dist = arc_dist(theta_vp, phi_vp, theta_c, phi_c)
                 rectan_tile_points, tile_center = points_rectan_tile_cartesian(i, j, self.t_hor, self.t_vert)
                 dist = compute_orthodromic_distance([x, y, z], tile_center)
                 if dist <= vp_110_rad_half:
@@ -510,9 +490,6 @@ class FoV360TilesVoro(FoV360):
                 return self.request_required_intersec(x, y, z, 0.33)
 
     def request_110radius_center(self, x, y, z):
-        # t_hor, t_vert = TILES_H6, TILES_V4
-        # vp_110d = 110
-        # vp_110_rad = vp_110d * np.pi / 180
         vp_110_rad_half = np.deg2rad(110/2)
         reqs = 0
         areas_in = []
@@ -520,8 +497,6 @@ class FoV360TilesVoro(FoV360):
 
         # reqs, area
         for index, region in enumerate(self.spherical_voronoi.regions):
-            # theta_c, phi_c = cartesian_to_eulerian(*self.spherical_voronoi.points[index])
-            # dist = arc_dist(theta_vp, phi_vp, theta_c, phi_c)
             dist = compute_orthodromic_distance([x, y, z], self.spherical_voronoi.points[index])
             if dist <= vp_110_rad_half:
                 reqs += 1

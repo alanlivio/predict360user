@@ -21,6 +21,7 @@ https://github.com/V-Sense/VR_user_behaviour
 https://github.com/afshin-aero/360dataset
 https://gitlab.com/miguelfromeror/head-motion-prediction
 https://github.com/V-Sense/VR_user_behaviour
+https://github.com/mylenefarias/UnB_360_videos_database
 
 * tiled stream  
 https://github.com/jvdrhoof/VRClient/blob/master/src/rate_adaptation.py
@@ -57,3 +58,4 @@ https://github.com/jonkhler/s2cnn
 * others  
 https://github.com/hsientzucheng/awesome-360-vision
 https://github.com/xiangjieSui/Awesome-360-processing
+https://github.com/MyllenaAPrado/360RAT
