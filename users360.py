@@ -1,21 +1,21 @@
 # %%
 from enum import Enum, auto
-from plotly.subplots import make_subplots
 from head_motion_prediction.Utils import *
 from os.path import exists
+from plotly.subplots import make_subplots
 from scipy.spatial import SphericalVoronoi, geometric_slerp
+from scipy.stats import entropy
 from spherical_geometry import polygon
 from typing import List, Callable, Tuple, Any
 import math
-from scipy.stats import entropy
 import numpy as np
 import os
 import pickle
 import plotly
 import plotly.express as px
 import plotly.graph_objs as go
-import sys
 import scipy.stats
+import sys
 
 
 ONE_USER = '0'
@@ -123,7 +123,8 @@ class Dataset:
             users_entropy[index] = scipy.stats.entropy(sum)
             # print(users_entropy[index])
         # define class threshold
-
+        # https://www.askpython.com/python/normal-distribution
+        # https://matthew-brett.github.io/teaching/random_fields.html
         return users_entropy
 
     def get_one_trace(self) -> np.ndarray:
@@ -329,15 +330,15 @@ class Plot:
 
     # -- reqs funcs
 
-    def plot_reqs_per_func(self, func_list, plot_bars=True,
-                           plot_lines=False, plot_heatmaps=False):
+    def plot_vp_extractions(self, vp_extrac_list, plot_bars=True,
+                            plot_lines=False, plot_heatmaps=False):
         fig_reqs = go.Figure(layout=LAYOUT)
         fig_areas = go.Figure(layout=LAYOUT)
         fig_quality = go.Figure(layout=LAYOUT)
-        funcs_n_reqs = []
-        funcs_avg_area = []
-        funcs_vp_quality = []
-        for func in func_list:
+        vp_extract_n_reqs = []
+        vp_extract_avg_area = []
+        vp_extract_quality = []
+        for vp_extract in vp_extrac_list:
             traces_n_reqs = []
             traces_areas = []
             traces_areas_svg = []
@@ -345,7 +346,7 @@ class Plot:
             traces_vp_quality = []
             # call func per trace
             for t in self.traces:
-                req_in, quality_in, areas_in, heatmap_in = func.request(t[0], t[1], t[2])
+                req_in, quality_in, areas_in, heatmap_in = vp_extract.request(t[0], t[1], t[2])
                 traces_n_reqs.append(req_in)
                 traces_areas.append(areas_in)
                 traces_areas_svg.append(np.average(areas_in))
@@ -353,21 +354,22 @@ class Plot:
                 if heatmap_in is not None:
                     traces_heatmaps.append(heatmap_in)
             # line reqs
-            fig_reqs.add_trace(go.Scatter(y=traces_n_reqs, mode='lines', name=f"{func.title()}"))
+            fig_reqs.add_trace(go.Scatter(y=traces_n_reqs, mode='lines', name=f"{vp_extract.title()}"))
             # line areas
-            fig_areas.add_trace(go.Scatter(y=traces_areas_svg, mode='lines', name=f"{func.title()}"))
+            fig_areas.add_trace(go.Scatter(y=traces_areas_svg, mode='lines', name=f"{vp_extract.title()}"))
             # line quality
-            fig_quality.add_trace(go.Scatter(y=traces_vp_quality, mode='lines', name=f"{func.title()}"))
+            fig_quality.add_trace(go.Scatter(y=traces_vp_quality, mode='lines', name=f"{vp_extract.title()}"))
             # heatmap
             if(plot_heatmaps and len(traces_heatmaps)):
-                fig_heatmap = px.imshow(np.sum(traces_heatmaps, axis=0), title=f"{func.title()}",
-                                        labels=dict(x="longitude", y="latitude", color="VPExtracts"))
+                fig_heatmap = px.imshow(np.sum(traces_heatmaps, axis=0).reshape(
+                    vp_extract.shape), title=f"{vp_extract.title()}",
+                    labels=dict(x="longitude", y="latitude", color="VP_Extracts"))
                 fig_heatmap.update_layout(LAYOUT)
                 fig_heatmap.show()
             # sum
-            funcs_n_reqs.append(np.sum(traces_n_reqs))
-            funcs_avg_area.append(np.average(traces_areas_svg))
-            funcs_vp_quality.append(np.average(traces_vp_quality))
+            vp_extract_n_reqs.append(np.sum(traces_n_reqs))
+            vp_extract_avg_area.append(np.average(traces_areas_svg))
+            vp_extract_quality.append(np.average(traces_vp_quality))
 
         # line fig reqs areas
         if(plot_lines):
@@ -376,22 +378,23 @@ class Plot:
                                     title="avg req_tiles view_ratio " + self.title_sufix).show()
             fig_quality.update_layout(xaxis_title="user trace", title="avg quality ratio " + self.title_sufix).show()
 
-        # bar fig funcs_n_reqs funcs_avg_area
-        funcs_names = [str(func.title()) for func in func_list]
+        # bar fig vp_extract_n_reqs vp_extract_avg_area
+        vp_extract_names = [str(func.title()) for func in vp_extrac_list]
         fig_bar = make_subplots(rows=1, cols=4,  subplot_titles=(
             "req_tiles", "avg req_tiles view_ratio", "avg VP quality_ratio", "score=quality_ratio/(req_tiles*(1-view_ratio)))"), shared_yaxes=True)
-        fig_bar.add_trace(go.Bar(y=funcs_names, x=funcs_n_reqs, orientation='h'), row=1, col=1)
-        fig_bar.add_trace(go.Bar(y=funcs_names, x=funcs_avg_area, orientation='h'), row=1, col=2)
-        fig_bar.add_trace(go.Bar(y=funcs_names, x=funcs_vp_quality, orientation='h'), row=1, col=3)
-        funcs_score = [funcs_vp_quality[i] * (1 / (funcs_n_reqs[i] * (1 - funcs_avg_area[i])))
-                       for i, _ in enumerate(funcs_n_reqs)]
-        fig_bar.add_trace(go.Bar(y=funcs_names, x=funcs_score, orientation='h'), row=1, col=4)
+        fig_bar.add_trace(go.Bar(y=vp_extract_names, x=vp_extract_n_reqs, orientation='h'), row=1, col=1)
+        fig_bar.add_trace(go.Bar(y=vp_extract_names, x=vp_extract_avg_area, orientation='h'), row=1, col=2)
+        fig_bar.add_trace(go.Bar(y=vp_extract_names, x=vp_extract_quality, orientation='h'), row=1, col=3)
+        vp_extract_score = [vp_extract_quality[i] * (1 / (vp_extract_n_reqs[i] * (1 - vp_extract_avg_area[i])))
+                            for i, _ in enumerate(vp_extract_n_reqs)]
+        fig_bar.add_trace(go.Bar(y=vp_extract_names, x=vp_extract_score, orientation='h'), row=1, col=4)
         fig_bar.update_layout(width=1500, showlegend=False, title_text=self.title_sufix)
         fig_bar.update_layout(barmode="stack")
         if(plot_bars):
             fig_bar.show()
 
-class VPExtract:
+
+class VPExtract():
     class Cover(Enum):
         ANY = auto()
         CENTER = auto()
@@ -404,35 +407,38 @@ class VPExtract:
     def title(self):
         pass
 
+
 class VPExtractTilesRect(VPExtract):
     def __init__(self, t_hor, t_vert, cover: VPExtract.Cover):
         self.t_hor, self.t_vert = t_hor, t_vert
         self.cover = cover
+        self.shape = (self.t_vert, self.t_hor)
 
     def title(self):
+        prefix = f'rect_tiles_{self.t_hor}x{self.t_vert}'
         match self.cover:
             case VPExtract.Cover.ANY:
-                return f'rect_tiles_{self.t_hor}x{self.t_vert}_any'
+                return f'{prefix}_any'
             case VPExtract.Cover.CENTER:
-                return f'rect_tiles_{self.t_hor}x{self.t_vert}_center'
+                return f'{prefix}_center'
             case VPExtract.Cover.ONLY20PERC:
-                return f'rect_tiles_{self.t_hor}x{self.t_vert}_20perc'
+                return f'{prefix}_20perc'
             case VPExtract.Cover.ONLY33PERC:
-                return f'rect_tiles_{self.t_hor}x{self.t_vert}_33perc'
+                return f'{prefix}_33perc'
 
     def request(self, x, y, z):
         match self.cover:
-            case VPExtract.Cover.ANY:
-                raise NotImplementedError()
             case VPExtract.Cover.CENTER:
                 return self._request_110radius_center(x, y, z)
+            case VPExtract.Cover.ANY:
+                return self._request_min_cover(x, y, z, 0.0)
             case VPExtract.Cover.ONLY20PERC:
-                return self._request_only(x, y, z, 0.2)
+                return self._request_min_cover(x, y, z, 0.2)
             case VPExtract.Cover.ONLY33PERC:
-                return self._request_only(x, y, z, 0.33)
+                return self._request_min_cover(x, y, z, 0.33)
 
-    def _request_only(self, x, y, z, required_cover: float):
-        projection = np.ndarray((self.t_vert, self.t_hor))
+    def _request_min_cover(self, x, y, z, required_cover: float):
+        heatmap = np.zeros((self.t_vert, self.t_hor))
         areas_in = []
         vp_quality = 0.0
         vp_threshold = np.deg2rad(110/2)
@@ -445,17 +451,14 @@ class VPExtractTilesRect(VPExtract):
                     fov_polygon = polygon.SphericalPolygon(points_fov_cartesian(x, y, z))
                     view_area = rectan_tile_polygon.overlap(fov_polygon)
                     if view_area > required_cover:
-                        projection[i][j] = 1
+                        heatmap[i][j] = 1
                         areas_in.append(view_area)
                         vp_quality += fov_polygon.overlap(rectan_tile_polygon)
-                else:
-                    projection[i][j] = 0
-        reqs = np.sum(projection)
-        heatmap = projection
+        reqs = np.sum(heatmap)
         return reqs, vp_quality, areas_in, heatmap
 
     def _request_110radius_center(self, x, y, z):
-        projection = np.ndarray((self.t_vert, self.t_hor))
+        heatmap = np.zeros((self.t_vert, self.t_hor))
         vp_110_rad_half = np.deg2rad(110/2)
         areas_in = []
         vp_quality = 0.0
@@ -464,16 +467,13 @@ class VPExtractTilesRect(VPExtract):
                 rectan_tile_points, tile_center = points_rectan_tile_cartesian(i, j, self.t_hor, self.t_vert)
                 dist = compute_orthodromic_distance([x, y, z], tile_center)
                 if dist <= vp_110_rad_half:
-                    projection[i][j] = 1
+                    heatmap[i][j] = 1
                     rectan_tile_polygon = polygon.SphericalPolygon(rectan_tile_points)
                     fov_polygon = polygon.SphericalPolygon(points_fov_cartesian(x, y, z))
                     view_area = rectan_tile_polygon.overlap(fov_polygon)
                     areas_in.append(view_area)
                     vp_quality += fov_polygon.overlap(rectan_tile_polygon)
-                else:
-                    projection[i][j] = 0
-        reqs = np.sum(projection)
-        heatmap = projection
+        reqs = np.sum(heatmap)
         return reqs, vp_quality, areas_in, heatmap
 
 
@@ -481,97 +481,82 @@ class VPExtractTilesVoro(VPExtract):
     def __init__(self, spherical_voronoi: SphericalVoronoi, cover: VPExtract.Cover):
         self.spherical_voronoi = spherical_voronoi
         self.cover = cover
+        self.shape = (len(spherical_voronoi.points)//6, -1)
 
     def title(self):
+        prefix = f'voroni_tiles_{len(self.spherical_voronoi.points)}'
         match self.cover:
             case VPExtract.Cover.ANY:
-                return f'voroni_tiles_{len(self.spherical_voronoi.points)}_any'
+                return f'{prefix}_any'
             case VPExtract.Cover.CENTER:
-                return f'voroni_tiles_{len(self.spherical_voronoi.points)}_center'
+                return f'{prefix}_center'
             case VPExtract.Cover.ONLY20PERC:
-                return f'voroni_tiles_{len(self.spherical_voronoi.points)}_20perc'
+                return f'{prefix}_20perc'
             case VPExtract.Cover.ONLY33PERC:
-                return f'voroni_tiles_{len(self.spherical_voronoi.points)}_33perc'
+                return f'{prefix}_33perc'
 
     def request(self, x, y, z):
         match self.cover:
-            case VPExtract.Cover.ANY:
-                return self._request_any(x, y, z)
             case VPExtract.Cover.CENTER:
                 return self._request_110radius_center(x, y, z)
+            case VPExtract.Cover.ANY:
+                return self._request_min_cover(x, y, z, 0)
             case VPExtract.Cover.ONLY20PERC:
-                return self._request_required_cover(x, y, z, 0.2)
+                return self._request_min_cover(x, y, z, 0.2)
             case VPExtract.Cover.ONLY33PERC:
-                return self._request_required_cover(x, y, z, 0.33)
+                return self._request_min_cover(x, y, z, 0.33)
 
     def _request_110radius_center(self, x, y, z):
         vp_110_rad_half = np.deg2rad(110/2)
         reqs = 0
         areas_in = []
         vp_quality = 0.0
-
-        # reqs, area
+        heatmap = np.zeros(len(self.spherical_voronoi.points))
         for index, region in enumerate(self.spherical_voronoi.regions):
             dist = compute_orthodromic_distance([x, y, z], self.spherical_voronoi.points[index])
             if dist <= vp_110_rad_half:
                 reqs += 1
+                heatmap[index] += 1
                 voroni_tile_polygon = polygon.SphericalPolygon(self.spherical_voronoi.vertices[region])
                 fov_polygon = polygon.SphericalPolygon(points_fov_cartesian(x, y, z))
                 view_area = voroni_tile_polygon.overlap(fov_polygon)
                 areas_in.append(view_area)
                 vp_quality += fov_polygon.overlap(voroni_tile_polygon)
+        return reqs, vp_quality, areas_in, heatmap
 
-        # heatmap # TODO review
-        # projection = np.ndarray((t_vert, t_hor))
-        # for i in range(t_vert):
-        #     for j in range(t_hor):
-        #         index = i * t_hor + j
-        #         theta_c, phi_c = cart_to_spher(*spherical_voronoi.points[index])
-        #         dist = arc_dist(theta_vp, phi_vp, theta_c, phi_c)
-        #         projection[i][j] = 1 if dist <= vp_110_rad_half else 0
-        # heatmap = projection
-        return reqs, vp_quality, areas_in, None
-
-    def _request_any(self, x, y, z):
+    def _request_min_cover(self, x, y, z, required_cover: float):
         reqs = 0
         areas_in = []
         vp_quality = 0.0
-        for region in self.spherical_voronoi.regions:
-            voroni_tile_polygon = polygon.SphericalPolygon(self.spherical_voronoi.vertices[region])
-            fov_polygon = polygon.SphericalPolygon(points_fov_cartesian(x, y, z))
-            view_area = voroni_tile_polygon.overlap(fov_polygon)
-            if view_area > 0:
-                reqs += 1
-                areas_in.append(view_area)
-                vp_quality += fov_polygon.overlap(voroni_tile_polygon)
-        return reqs, vp_quality, areas_in, None
-
-    def _request_required_cover(self, x, y, z, required_cover: float):
-        reqs = 0
-        areas_in = []
-        vp_quality = 0.0
-        for region in self.spherical_voronoi.regions:
+        heatmap = np.zeros(len(self.spherical_voronoi.points))
+        for index, region in enumerate(self.spherical_voronoi.regions):
             voroni_tile_polygon = polygon.SphericalPolygon(self.spherical_voronoi.vertices[region])
             fov_polygon = polygon.SphericalPolygon(points_fov_cartesian(x, y, z))
             view_area = voroni_tile_polygon.overlap(fov_polygon)
             if view_area > required_cover:
                 reqs += 1
+                heatmap[index] += 1
                 # view_area = 1 if view_area > 1 else view_area  # fixed with compute_orthodromic_distance
                 areas_in.append(view_area)
                 vp_quality += fov_polygon.overlap(voroni_tile_polygon)
-        return reqs, vp_quality, areas_in, None
+        return reqs, vp_quality, areas_in, heatmap
 
-VPEXTRACT_METHODS = [
+
+VP_EXTRACTS_VORO = [
     VPExtractTilesVoro(VORONOI_24P, VPExtract.Cover.CENTER),
     VPExtractTilesVoro(VORONOI_14P, VPExtract.Cover.CENTER),
     VPExtractTilesVoro(VORONOI_24P, VPExtract.Cover.ANY),
     VPExtractTilesVoro(VORONOI_14P, VPExtract.Cover.ANY),
-    VPExtractTilesRect(6, 4, VPExtract.Cover.ONLY33PERC),
-    VPExtractTilesRect(6, 4, VPExtract.Cover.ONLY20PERC),
-    VPExtractTilesRect(6, 4, VPExtract.Cover.CENTER),
     VPExtractTilesVoro(VORONOI_14P, VPExtract.Cover.ONLY20PERC),
     VPExtractTilesVoro(VORONOI_14P, VPExtract.Cover.ONLY33PERC),
     VPExtractTilesVoro(VORONOI_24P, VPExtract.Cover.ONLY20PERC),
     VPExtractTilesVoro(VORONOI_24P, VPExtract.Cover.ONLY33PERC),
 ]
+VP_EXTRACTS_RECT = [
+    VPExtractTilesRect(6, 4, VPExtract.Cover.ONLY33PERC),
+    VPExtractTilesRect(6, 4, VPExtract.Cover.ONLY20PERC),
+    VPExtractTilesRect(6, 4, VPExtract.Cover.CENTER),
+]
+
+VPEXTRACT_METHODS = [* VP_EXTRACTS_VORO, *VP_EXTRACTS_RECT]
 # %%
