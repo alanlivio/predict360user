@@ -29,11 +29,11 @@ class User360Test(unittest.TestCase):
 
     def test_plot_vp_extract_voro(self):
         some_users = Plot(Dataset().get_traces_random_one_user(4), verbose=True)
-        some_users.plot_vp_extractions(VP_EXTRACTS_VORO, plot_bars=False, plot_lines=False, plot_heatmaps=False)
+        some_users.plot_vp_extractions(VP_EXTRACTS_VORO, plot_bars=False, plot_traces=False, plot_heatmaps=False)
 
     def test_plot_vp_extract_rect(self):
         some_users = Plot(Dataset().get_traces_random_one_user(4), verbose=True)
-        some_users.plot_vp_extractions(VP_EXTRACTS_RECT, plot_bars=False, plot_lines=False, plot_heatmaps=False)
+        some_users.plot_vp_extractions(VP_EXTRACTS_RECT, plot_bars=False, plot_traces=False, plot_heatmaps=False)
 
 
 if __name__ == '__main__':

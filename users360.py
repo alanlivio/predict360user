@@ -115,7 +115,7 @@ class Dataset:
         for index, user in enumerate(self.users_id[:1]):
             heatmaps = []
             for trace in self.dataset[user][ONE_VIDEO][:, 1:]:
-                _, _, _, heatmap = vp.request(*trace)
+                heatmap, _, _ = vp.request(*trace)
                 heatmaps.append(heatmap)
             sum = np.sum(heatmaps, axis=0).reshape((-1))
             print(sum)
@@ -321,7 +321,7 @@ class Plot:
         heatmaps = []
         fov = VPExtractTilesRect(6, 4, VPExtract.Cover.CENTER)
         for i in self.traces:
-            _, _, _, heatmap = fov.request(i[0], i[1], i[2])
+            heatmap, _, _,  = fov.request(i[0], i[1], i[2])
             heatmaps.append(heatmap)
         fig_heatmap = px.imshow(np.sum(heatmaps, axis=0), labels=dict(
             x="longitude", y="latitude", color="requests", title=f"reqs={str(np.sum(heatmaps))}"))
@@ -331,7 +331,7 @@ class Plot:
     # -- reqs funcs
 
     def plot_vp_extractions(self, vp_extrac_list, plot_bars=True,
-                            plot_lines=False, plot_heatmaps=False):
+                            plot_traces=False, plot_heatmaps=False):
         fig_reqs = go.Figure(layout=LAYOUT)
         fig_areas = go.Figure(layout=LAYOUT)
         fig_quality = go.Figure(layout=LAYOUT)
@@ -346,13 +346,12 @@ class Plot:
             traces_vp_quality = []
             # call func per trace
             for t in self.traces:
-                req_in, quality_in, areas_in, heatmap_in = vp_extract.request(t[0], t[1], t[2])
-                traces_n_reqs.append(req_in)
+                heatmap_in, quality_in, areas_in = vp_extract.request(t[0], t[1], t[2])
+                traces_n_reqs.append(np.sum(heatmap_in))
+                traces_heatmaps.append(heatmap_in)
                 traces_areas.append(areas_in)
                 traces_areas_svg.append(np.average(areas_in))
                 traces_vp_quality.append(quality_in)
-                if heatmap_in is not None:
-                    traces_heatmaps.append(heatmap_in)
             # line reqs
             fig_reqs.add_trace(go.Scatter(y=traces_n_reqs, mode='lines', name=f"{vp_extract.title()}"))
             # line areas
@@ -372,7 +371,7 @@ class Plot:
             vp_extract_quality.append(np.average(traces_vp_quality))
 
         # line fig reqs areas
-        if(plot_lines):
+        if(plot_traces):
             fig_reqs.update_layout(xaxis_title="user trace", title="req_tiles " + self.title_sufix).show()
             fig_areas.update_layout(xaxis_title="user trace",
                                     title="avg req_tiles view_ratio " + self.title_sufix).show()
@@ -454,8 +453,7 @@ class VPExtractTilesRect(VPExtract):
                         heatmap[i][j] = 1
                         areas_in.append(view_area)
                         vp_quality += fov_polygon.overlap(rectan_tile_polygon)
-        reqs = np.sum(heatmap)
-        return reqs, vp_quality, areas_in, heatmap
+        return heatmap, vp_quality, areas_in
 
     def _request_110radius_center(self, x, y, z):
         heatmap = np.zeros((self.t_vert, self.t_hor))
@@ -473,8 +471,7 @@ class VPExtractTilesRect(VPExtract):
                     view_area = rectan_tile_polygon.overlap(fov_polygon)
                     areas_in.append(view_area)
                     vp_quality += fov_polygon.overlap(rectan_tile_polygon)
-        reqs = np.sum(heatmap)
-        return reqs, vp_quality, areas_in, heatmap
+        return heatmap, vp_quality, areas_in
 
 
 class VPExtractTilesVoro(VPExtract):
@@ -508,38 +505,34 @@ class VPExtractTilesVoro(VPExtract):
 
     def _request_110radius_center(self, x, y, z):
         vp_110_rad_half = np.deg2rad(110/2)
-        reqs = 0
         areas_in = []
         vp_quality = 0.0
-        heatmap = np.zeros(len(self.spherical_voronoi.points))
+        heatmap = np.zeros(len(self.spherical_voronoi.regions))
         for index, region in enumerate(self.spherical_voronoi.regions):
             dist = compute_orthodromic_distance([x, y, z], self.spherical_voronoi.points[index])
             if dist <= vp_110_rad_half:
-                reqs += 1
                 heatmap[index] += 1
                 voroni_tile_polygon = polygon.SphericalPolygon(self.spherical_voronoi.vertices[region])
                 fov_polygon = polygon.SphericalPolygon(points_fov_cartesian(x, y, z))
                 view_area = voroni_tile_polygon.overlap(fov_polygon)
                 areas_in.append(view_area)
                 vp_quality += fov_polygon.overlap(voroni_tile_polygon)
-        return reqs, vp_quality, areas_in, heatmap
+        return heatmap, vp_quality, areas_in
 
     def _request_min_cover(self, x, y, z, required_cover: float):
-        reqs = 0
         areas_in = []
         vp_quality = 0.0
-        heatmap = np.zeros(len(self.spherical_voronoi.points))
+        heatmap = np.zeros(len(self.spherical_voronoi.regions))
         for index, region in enumerate(self.spherical_voronoi.regions):
             voroni_tile_polygon = polygon.SphericalPolygon(self.spherical_voronoi.vertices[region])
             fov_polygon = polygon.SphericalPolygon(points_fov_cartesian(x, y, z))
             view_area = voroni_tile_polygon.overlap(fov_polygon)
             if view_area > required_cover:
-                reqs += 1
                 heatmap[index] += 1
                 # view_area = 1 if view_area > 1 else view_area  # fixed with compute_orthodromic_distance
                 areas_in.append(view_area)
                 vp_quality += fov_polygon.overlap(voroni_tile_polygon)
-        return reqs, vp_quality, areas_in, heatmap
+        return heatmap, vp_quality, areas_in
 
 
 VP_EXTRACTS_VORO = [
