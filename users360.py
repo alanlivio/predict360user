@@ -131,7 +131,7 @@ class Users360:
 
 class Traces360:
     def __init__(self, traces: np.ndarray, title_sufix="", verbose=False):
-        assert traces.shape[1] == 3  # check cartesian ndarray
+        assert traces.shape[1] == 3  # check if cartesian
         self.verbose = verbose
         self.traces = traces
         self.title_sufix = str(len(traces)) + "_traces" if not title_sufix else title_sufix
@@ -140,20 +140,14 @@ class Traces360:
 
     # -- sphere funcs
 
-    def _sphere_data_voro(self, spherical_voronoi: SphericalVoronoi):
+    def _sphere_data_voro(self, spherical_voronoi: SphericalVoronoi, with_generators=False):
         data = []
 
         # add generator points
-        # gens = go.Scatter3d(x=spherical_voronoi.points[:, 0], y=spherical_voronoi.points[:, 1], z=spherical_voronoi.points[:, 2], mode='markers', marker={
-        #                     'size': 1, 'opacity': 1.0, 'color': 'blue'}, name='voronoi center')
-        # data.append(gens)
-
-        # -- add vortonoi vertices
-        # vrts = go.Scatter3d(x=spherical_voronoi.vertices[:, 0],
-        #                     y=spherical_voronoi.vertices[:, 1],
-        #                     z=spherical_voronoi.vertices[:, 2],
-        #                     mode='markers', marker={'size': 1, 'opacity': 1.0, 'color': 'green'}, name='voronoi Vertices')
-        # data.append(vrts)
+        if with_generators:
+            gens = go.Scatter3d(x=spherical_voronoi.points[:, 0], y=spherical_voronoi.points[:, 1], z=spherical_voronoi.points[:, 2], mode='markers', marker={
+                                'size': 1, 'opacity': 1.0, 'color': 'blue'}, name='voronoi center')
+            data.append(gens)
 
         # add vortonoi edges
         for region in spherical_voronoi.regions:
@@ -303,7 +297,7 @@ class Traces360:
 
     def plot_erp_heatmap(self):
         heatmaps = []
-        fov = FoV360TilesRect(6, 4, FoV360.Cover.CENTER)
+        fov = VPExtractTilesRect(6, 4, VPExtract.Cover.CENTER)
         for i in self.traces:
             _, _, _, heatmap = fov.request(i[0], i[1], i[2])
             heatmaps.append(heatmap)
@@ -346,7 +340,7 @@ class Traces360:
             # heatmap
             if(plot_heatmaps and len(traces_heatmaps)):
                 fig_heatmap = px.imshow(np.sum(traces_heatmaps, axis=0), title=f"{func.title()}",
-                                        labels=dict(x="longitude", y="latitude", color="FoV360s"))
+                                        labels=dict(x="longitude", y="latitude", color="VPExtracts"))
                 fig_heatmap.update_layout(LAYOUT)
                 fig_heatmap.show()
             # sum
@@ -377,7 +371,7 @@ class Traces360:
             fig_bar.show()
 
 
-class FoV360:
+class VPExtract:
     class Cover(Enum):
         ANY = auto()
         CENTER = auto()
@@ -387,36 +381,38 @@ class FoV360:
     def request(self, x, y, z):
         pass
 
+    def title(self):
+        pass
 
-class FoV360TilesRect(FoV360):
-    def __init__(self, t_hor, t_vert, cover: FoV360.Cover):
+
+class VPExtractTilesRect(VPExtract):
+    def __init__(self, t_hor, t_vert, cover: VPExtract.Cover):
         self.t_hor, self.t_vert = t_hor, t_vert
         self.cover = cover
 
     def title(self):
         match self.cover:
-            case FoV360.Cover.ANY:
+            case VPExtract.Cover.ANY:
                 return f'rect_tiles_{self.t_hor}x{self.t_vert}_any'
-            case FoV360.Cover.CENTER:
+            case VPExtract.Cover.CENTER:
                 return f'rect_tiles_{self.t_hor}x{self.t_vert}_center'
-            case FoV360.Cover.ONLY20PERC:
+            case VPExtract.Cover.ONLY20PERC:
                 return f'rect_tiles_{self.t_hor}x{self.t_vert}_20perc'
-            case FoV360.Cover.ONLY33PERC:
+            case VPExtract.Cover.ONLY33PERC:
                 return f'rect_tiles_{self.t_hor}x{self.t_vert}_33perc'
 
     def request(self, x, y, z):
         match self.cover:
-            case FoV360.Cover.ANY:
+            case VPExtract.Cover.ANY:
                 raise NotImplementedError()
-            case FoV360.Cover.CENTER:
-                return self.request_110radius_center(x, y, z)
-            case FoV360.Cover.ONLY20PERC:
-                return self.request_only(x, y, z, 0.2)
-            case FoV360.Cover.ONLY33PERC:
-                return self.request_only(x, y, z, 0.33)
+            case VPExtract.Cover.CENTER:
+                return self._request_110radius_center(x, y, z)
+            case VPExtract.Cover.ONLY20PERC:
+                return self._request_only(x, y, z, 0.2)
+            case VPExtract.Cover.ONLY33PERC:
+                return self._request_only(x, y, z, 0.33)
 
-    def request_only(self, x, y, z, required_intersec):
-        # t_hor, t_vert = TILES_H6, TILES_V4
+    def _request_only(self, x, y, z, required_cover: float):
         projection = np.ndarray((self.t_vert, self.t_hor))
         areas_in = []
         vp_quality = 0.0
@@ -429,7 +425,7 @@ class FoV360TilesRect(FoV360):
                     rectan_tile_polygon = polygon.SphericalPolygon(rectan_tile_points)
                     fov_polygon = polygon.SphericalPolygon(points_fov_cartesian(x, y, z))
                     view_area = rectan_tile_polygon.overlap(fov_polygon)
-                    if view_area > required_intersec:
+                    if view_area > required_cover:
                         projection[i][j] = 1
                         areas_in.append(view_area)
                         vp_quality += fov_polygon.overlap(rectan_tile_polygon)
@@ -439,7 +435,7 @@ class FoV360TilesRect(FoV360):
         heatmap = projection
         return reqs, vp_quality, areas_in, heatmap
 
-    def request_110radius_center(self, x, y, z):
+    def _request_110radius_center(self, x, y, z):
         projection = np.ndarray((self.t_vert, self.t_hor))
         vp_110_rad_half = np.deg2rad(110/2)
         areas_in = []
@@ -462,34 +458,34 @@ class FoV360TilesRect(FoV360):
         return reqs, vp_quality, areas_in, heatmap
 
 
-class FoV360TilesVoro(FoV360):
-    def __init__(self, spherical_voronoi: SphericalVoronoi, cover: FoV360.Cover):
+class VPExtractTilesVoro(VPExtract):
+    def __init__(self, spherical_voronoi: SphericalVoronoi, cover: VPExtract.Cover):
         self.spherical_voronoi = spherical_voronoi
         self.cover = cover
 
     def title(self):
         match self.cover:
-            case FoV360.Cover.ANY:
+            case VPExtract.Cover.ANY:
                 return f'voroni_tiles_{len(self.spherical_voronoi.points)}_any'
-            case FoV360.Cover.CENTER:
+            case VPExtract.Cover.CENTER:
                 return f'voroni_tiles_{len(self.spherical_voronoi.points)}_center'
-            case FoV360.Cover.ONLY20PERC:
+            case VPExtract.Cover.ONLY20PERC:
                 return f'voroni_tiles_{len(self.spherical_voronoi.points)}_20perc'
-            case FoV360.Cover.ONLY33PERC:
+            case VPExtract.Cover.ONLY33PERC:
                 return f'voroni_tiles_{len(self.spherical_voronoi.points)}_33perc'
 
     def request(self, x, y, z):
         match self.cover:
-            case FoV360.Cover.ANY:
-                return self.request_110x90_any(x, y, z)
-            case FoV360.Cover.CENTER:
-                return self.request_110radius_center(x, y, z)
-            case FoV360.Cover.ONLY20PERC:
-                return self.request_required_intersec(x, y, z, 0.2)
-            case FoV360.Cover.ONLY33PERC:
-                return self.request_required_intersec(x, y, z, 0.33)
+            case VPExtract.Cover.ANY:
+                return self._request_any(x, y, z)
+            case VPExtract.Cover.CENTER:
+                return self._request_110radius_center(x, y, z)
+            case VPExtract.Cover.ONLY20PERC:
+                return self._request_required_cover(x, y, z, 0.2)
+            case VPExtract.Cover.ONLY33PERC:
+                return self._request_required_cover(x, y, z, 0.33)
 
-    def request_110radius_center(self, x, y, z):
+    def _request_110radius_center(self, x, y, z):
         vp_110_rad_half = np.deg2rad(110/2)
         reqs = 0
         areas_in = []
@@ -517,7 +513,7 @@ class FoV360TilesVoro(FoV360):
         # heatmap = projection
         return reqs, vp_quality, areas_in, None
 
-    def request_110x90_any(self, x, y, z):
+    def _request_any(self, x, y, z):
         reqs = 0
         areas_in = []
         vp_quality = 0.0
@@ -531,7 +527,7 @@ class FoV360TilesVoro(FoV360):
                 vp_quality += fov_polygon.overlap(voroni_tile_polygon)
         return reqs, vp_quality, areas_in, None
 
-    def request_required_intersec(self, x, y, z, required_intersec):
+    def _request_required_cover(self, x, y, z, required_cover: float):
         reqs = 0
         areas_in = []
         vp_quality = 0.0
@@ -539,7 +535,7 @@ class FoV360TilesVoro(FoV360):
             voroni_tile_polygon = polygon.SphericalPolygon(self.spherical_voronoi.vertices[region])
             fov_polygon = polygon.SphericalPolygon(points_fov_cartesian(x, y, z))
             view_area = voroni_tile_polygon.overlap(fov_polygon)
-            if view_area > required_intersec:
+            if view_area > required_cover:
                 reqs += 1
                 # view_area = 1 if view_area > 1 else view_area  # fixed with compute_orthodromic_distance
                 areas_in.append(view_area)

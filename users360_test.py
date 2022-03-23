@@ -1,6 +1,5 @@
 from users360 import *
 import unittest
-import plotly.graph_objs as go
 
 class User360Test(unittest.TestCase):
     def test_one_user(self):
@@ -26,17 +25,17 @@ class User360Test(unittest.TestCase):
     def test_plot_per_fov(self):
         some_users = Traces360(Users360().get_traces_random_one_user(4), verbose=True)
         some_users.plot_reqs_per_func([
-            FoV360TilesVoro(VORONOI_24P, FoV360.Cover.CENTER),
-            FoV360TilesVoro(VORONOI_14P, FoV360.Cover.CENTER),
-            FoV360TilesVoro(VORONOI_24P, FoV360.Cover.ANY),
-            FoV360TilesVoro(VORONOI_14P, FoV360.Cover.ANY),
-            FoV360TilesRect(6, 4, FoV360.Cover.ONLY33PERC),
-            FoV360TilesRect(6, 4, FoV360.Cover.ONLY20PERC),
-            FoV360TilesRect(6, 4, FoV360.Cover.CENTER),
-            FoV360TilesVoro(VORONOI_14P, FoV360.Cover.ONLY20PERC),
-            FoV360TilesVoro(VORONOI_14P, FoV360.Cover.ONLY33PERC),
-            FoV360TilesVoro(VORONOI_24P, FoV360.Cover.ONLY20PERC),
-            FoV360TilesVoro(VORONOI_24P, FoV360.Cover.ONLY33PERC),
+            VPExtractTilesVoro(VORONOI_24P, VPExtract.Cover.CENTER),
+            VPExtractTilesVoro(VORONOI_14P, VPExtract.Cover.CENTER),
+            VPExtractTilesVoro(VORONOI_24P, VPExtract.Cover.ANY),
+            VPExtractTilesVoro(VORONOI_14P, VPExtract.Cover.ANY),
+            VPExtractTilesRect(6, 4, VPExtract.Cover.ONLY33PERC),
+            VPExtractTilesRect(6, 4, VPExtract.Cover.ONLY20PERC),
+            VPExtractTilesRect(6, 4, VPExtract.Cover.CENTER),
+            VPExtractTilesVoro(VORONOI_14P, VPExtract.Cover.ONLY20PERC),
+            VPExtractTilesVoro(VORONOI_14P, VPExtract.Cover.ONLY33PERC),
+            VPExtractTilesVoro(VORONOI_24P, VPExtract.Cover.ONLY20PERC),
+            VPExtractTilesVoro(VORONOI_24P, VPExtract.Cover.ONLY33PERC),
         ], plot_bars=False, plot_lines=False, plot_heatmaps=False)
 
 if __name__ == '__main__':
