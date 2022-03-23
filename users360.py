@@ -16,6 +16,8 @@ import plotly
 import plotly.express as px
 import plotly.graph_objs as go
 import sys
+import scipy.stats
+
 
 ONE_USER = '0'
 ONE_VIDEO = '10_Cows'
@@ -80,6 +82,7 @@ class Users360:
     def __init__(self, dataset=None):
         if dataset is None:
             self.dataset = self._get_sample_dataset()
+            self.users_id = [key for key in self.dataset.keys()]
 
     # -- dataset funcs
 
@@ -103,8 +106,27 @@ class Users360:
                     Users360.sample_dataset = pickle.load(f)
         return Users360.sample_dataset
 
-    # -- traces funcs
+    # -- cluster funcs
 
+    def get_cluster_entropy_by_vpextract(self, vp=None):
+        if vp is None:
+            vp = VPExtractTilesRect(6, 4, cover=VPExtract.Cover.CENTER)
+        users_entropy = np.ndarray(len(self.users_id))
+        # fill users_entropy
+        for index, user in enumerate(self.users_id[:1]):
+            heatmaps = []
+            for trace in self.dataset[user][ONE_VIDEO][:, 1:]:
+                _, _, _, heatmap = vp.request(*trace)
+                heatmaps.append(heatmap)
+            sum = np.sum(heatmaps, axis=0).reshape((-1))
+            print(sum)
+            # https://stackoverflow.com/questions/15450192/fastest-way-to-compute-entropy-in-python
+            users_entropy[index] = scipy.stats.entropy(sum)
+            # print(users_entropy[index])
+        # define class threshold
+        
+        return users_entropy
+        
     def get_one_trace(self) -> np.ndarray:
         return self.dataset[ONE_USER][ONE_VIDEO][:, 1:][:1]
 
