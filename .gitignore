@@ -130,7 +130,8 @@ dmypy.json
 .pyre/
 
 # added
-plot_figs/*
+**/plot_figs/
+**/users360.pickle
 head_motion_prediction/
 VRClient/
 OpCASH/
@@ -138,4 +139,3 @@ PARIMA/
 TileRateSelector_360videos/
 MV_SalGAN360/
 PanoProject/
-users360.pickle

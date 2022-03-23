@@ -1,5 +1,4 @@
 # %%
-from users360 import *
 from enum import Enum, auto
 from plotly.subplots import make_subplots
 from head_motion_prediction.Utils import *
@@ -75,7 +74,7 @@ def points_fov_cartesian(x, y, z) -> np.ndarray:
     return polygon_fov
 
 
-class Users360:
+class Dataset:
     sample_dataset = None
     sample_dataset_pickle = 'users360.pickle'
 
@@ -87,24 +86,24 @@ class Users360:
     # -- dataset funcs
 
     def _get_sample_dataset(self, load=False):
-        if Users360.sample_dataset is None:
-            if load or not exists(Users360.sample_dataset_pickle):
+        if Dataset.sample_dataset is None:
+            if load or not exists(Dataset.sample_dataset_pickle):
                 sys.path.append('head_motion_prediction')
                 from head_motion_prediction.David_MMSys_18.Read_Dataset import load_sampled_dataset
                 project_path = "head_motion_prediction"
                 cwd = os.getcwd()
                 if os.path.basename(cwd) != project_path:
-                    print(f"-- get Users360.sample_dataset from {project_path}")
+                    print(f"-- get Dataset.sample_dataset from {project_path}")
                     os.chdir(project_path)
-                    Users360.sample_dataset = load_sampled_dataset()
+                    Dataset.sample_dataset = load_sampled_dataset()
                     os.chdir(cwd)
-                    with open(Users360.sample_dataset_pickle, 'wb') as f:
-                        pickle.dump(Users360.sample_dataset, f, protocol=pickle.HIGHEST_PROTOCOL)
+                    with open(Dataset.sample_dataset_pickle, 'wb') as f:
+                        pickle.dump(Dataset.sample_dataset, f, protocol=pickle.HIGHEST_PROTOCOL)
             else:
-                print(f"-- get Users360.sample_dataset from {Users360.sample_dataset_pickle}")
-                with open(Users360.sample_dataset_pickle, 'rb') as f:
-                    Users360.sample_dataset = pickle.load(f)
-        return Users360.sample_dataset
+                print(f"-- get Dataset.sample_dataset from {Dataset.sample_dataset_pickle}")
+                with open(Dataset.sample_dataset_pickle, 'rb') as f:
+                    Dataset.sample_dataset = pickle.load(f)
+        return Dataset.sample_dataset
 
     # -- cluster funcs
 
@@ -124,9 +123,9 @@ class Users360:
             users_entropy[index] = scipy.stats.entropy(sum)
             # print(users_entropy[index])
         # define class threshold
-        
+
         return users_entropy
-        
+
     def get_one_trace(self) -> np.ndarray:
         return self.dataset[ONE_USER][ONE_VIDEO][:, 1:][:1]
 
@@ -151,14 +150,14 @@ class Users360:
         return one_user[::step]
 
 
-class Traces360:
+class Plot:
     def __init__(self, traces: np.ndarray, title_sufix="", verbose=False):
         assert traces.shape[1] == 3  # check if cartesian
         self.verbose = verbose
         self.traces = traces
         self.title_sufix = str(len(traces)) + "_traces" if not title_sufix else title_sufix
         if self.verbose:
-            print("Users360.traces.shape is " + str(traces.shape))
+            print("Dataset.traces.shape is " + str(traces.shape))
 
     # -- sphere funcs
 
@@ -392,7 +391,6 @@ class Traces360:
         if(plot_bars):
             fig_bar.show()
 
-
 class VPExtract:
     class Cover(Enum):
         ANY = auto()
@@ -405,7 +403,6 @@ class VPExtract:
 
     def title(self):
         pass
-
 
 class VPExtractTilesRect(VPExtract):
     def __init__(self, t_hor, t_vert, cover: VPExtract.Cover):
@@ -564,4 +561,17 @@ class VPExtractTilesVoro(VPExtract):
                 vp_quality += fov_polygon.overlap(voroni_tile_polygon)
         return reqs, vp_quality, areas_in, None
 
+VPEXTRACT_METHODS = [
+    VPExtractTilesVoro(VORONOI_24P, VPExtract.Cover.CENTER),
+    VPExtractTilesVoro(VORONOI_14P, VPExtract.Cover.CENTER),
+    VPExtractTilesVoro(VORONOI_24P, VPExtract.Cover.ANY),
+    VPExtractTilesVoro(VORONOI_14P, VPExtract.Cover.ANY),
+    VPExtractTilesRect(6, 4, VPExtract.Cover.ONLY33PERC),
+    VPExtractTilesRect(6, 4, VPExtract.Cover.ONLY20PERC),
+    VPExtractTilesRect(6, 4, VPExtract.Cover.CENTER),
+    VPExtractTilesVoro(VORONOI_14P, VPExtract.Cover.ONLY20PERC),
+    VPExtractTilesVoro(VORONOI_14P, VPExtract.Cover.ONLY33PERC),
+    VPExtractTilesVoro(VORONOI_24P, VPExtract.Cover.ONLY20PERC),
+    VPExtractTilesVoro(VORONOI_24P, VPExtract.Cover.ONLY33PERC),
+]
 # %%
