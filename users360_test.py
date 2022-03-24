@@ -22,8 +22,8 @@ class User360Test(unittest.TestCase):
         self.assertIsNotNone(self.one_trace)
         self.assertIsInstance(self.one_trace.traces, ndarray)
 
-    def test_plot_sphere_rectan(self):
-        self.one_user.sphere_rectan(6, 4, to_html=True)
+    def test_plot_sphere_rect(self):
+        self.one_user.sphere_rect(6, 4, to_html=True)
         self.one_trace.sphere_rect_with_vp(VPEXTRACTS_RECT[0], to_html=True)
         self.some_users.metrics_vpextract(VPEXTRACTS_RECT, plot_bars=False,
                                                plot_traces=False, plot_heatmaps=False)

@@ -370,7 +370,7 @@ class Plot:
         data = []
         for i in range(t_hor+1):
             for j in range(t_vert+1):
-                # -- add rectan tiles edges
+                # -- add rect tiles edges
                 rect_tile_points, _ = points_rect_tile_cartesian(i, j, t_hor, t_vert)
                 n = len(rect_tile_points)
                 t = np.linspace(0, 1, 100)
@@ -421,10 +421,10 @@ class Plot:
                 self.traces[:, 2], label='parametric curve')
         plt.show()
 
-    def sphere_rectan(self, t_hor, t_vert, to_html=False):
+    def sphere_rect(self, t_hor, t_vert, to_html=False):
         data = self._sphere_data_rect_tiles(t_hor, t_vert)
         self._sphere_data_add_user(data)
-        title = f"{self.title} rectan{t_hor}x{t_vert}"
+        title = f"{self.title} rect{t_hor}x{t_vert}"
         fig = go.Figure(data=data, layout=layout_with_title(title))
         if to_html:
             plotly.offline.plot(fig, filename=f'./plot_figs/{title}.html', auto_open=False)
