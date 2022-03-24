@@ -165,13 +165,13 @@ class VPExtract(ABC):
     def request(self, x, y, z) -> tuple[ndarray, float, list]:
         pass
 
-    @abstractmethod
+    @property
     def title(self):
         pass
 
     def title_with_sum_heatmaps(self, heatmaps):
         reqs_sum = np.sum(np.sum(heatmaps, axis=0))
-        return f"{self.title()} (reqs={reqs_sum})"
+        return f"{self.title} (reqs={reqs_sum})"
 
     cover: Cover
     shape: tuple[float, float]
@@ -183,6 +183,7 @@ class VPExtractTilesRect(VPExtract):
         self.cover = cover
         self.shape = (self.t_vert, self.t_hor)
 
+    @property
     def title(self):
         prefix = f'vpextract_rect{self.t_hor}x{self.t_vert}'
         match self.cover:
@@ -250,6 +251,7 @@ class VPExtractTilesVoro(VPExtract):
         self.cover = cover
         self.shape = (len(sphere_voro.points)//6, -1)
 
+    @property
     def title(self):
         prefix = f'vpextract_voro{len(self.sphere_voro.points)}'
         match self.cover:
@@ -512,7 +514,7 @@ class Plot:
 
     # -- vpextract funcs
 
-    def metrics_vpextract(self, vp_extrac_list: Iterable[VPExtract], plot_bars=True,
+    def metrics_vpextract(self, vpextrac_l: Iterable[VPExtract], plot_bars=True,
                           plot_traces=False, plot_heatmaps=False):
         fig_reqs = go.Figure(layout=LAYOUT)
         fig_areas = go.Figure(layout=LAYOUT)
@@ -520,7 +522,7 @@ class Plot:
         vpextract_n_reqs = []
         vpextract_avg_area = []
         vpextract_quality = []
-        for vpextract in vp_extrac_list:
+        for vpextract in vpextrac_l:
             traces_n_reqs = []
             traces_areas = []
             traces_areas_svg = []
@@ -535,11 +537,11 @@ class Plot:
                 traces_areas_svg.append(np.average(areas_in))
                 traces_vp_quality.append(quality_in)
             # line reqs
-            fig_reqs.add_trace(go.Scatter(y=traces_n_reqs, mode='lines', name=f"{vpextract.title()}"))
+            fig_reqs.add_trace(go.Scatter(y=traces_n_reqs, mode='lines', name=f"{vpextract.title}"))
             # line areas
-            fig_areas.add_trace(go.Scatter(y=traces_areas_svg, mode='lines', name=f"{vpextract.title()}"))
+            fig_areas.add_trace(go.Scatter(y=traces_areas_svg, mode='lines', name=f"{vpextract.title}"))
             # line quality
-            fig_quality.add_trace(go.Scatter(y=traces_vp_quality, mode='lines', name=f"{vpextract.title()}"))
+            fig_quality.add_trace(go.Scatter(y=traces_vp_quality, mode='lines', name=f"{vpextract.title}"))
             # heatmap
             if(plot_heatmaps and len(traces_heatmaps)):
                 fig_heatmap = px.imshow(
@@ -561,7 +563,7 @@ class Plot:
             fig_quality.update_layout(xaxis_title="user trace", title="avg quality ratio " + self.title).show()
 
         # bar fig vpextract_n_reqs vpextract_avg_area
-        vpextract_names = [str(func.title()) for func in vp_extrac_list]
+        vpextract_names = [str(vpextract.title) for vpextract in vpextrac_l]
         fig_bar = make_subplots(rows=1, cols=4,  subplot_titles=(
             "req_tiles", "avg req_tiles view_ratio", "avg VP quality_ratio", "score=quality_ratio/(req_tiles*(1-view_ratio)))"), shared_yaxes=True)
         fig_bar.add_trace(go.Bar(y=vpextract_names, x=vpextract_n_reqs, orientation='h'), row=1, col=1)
