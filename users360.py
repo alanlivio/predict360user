@@ -139,11 +139,13 @@ class Dataset:
     def get_traces_one_video_all_users(self) -> ndarray:
         n_traces = len(self.dataset[ONE_USER][ONE_VIDEO][:, 1:])
         traces = np.ndarray((len(self.dataset.keys())*n_traces, 3))
+        count = 0
         for user in self.dataset.keys():
-            for index, trace in enumerate(self.dataset[user][ONE_VIDEO][:, 1:]):
-                traces.itemset((index, 0), trace[0])
-                traces.itemset((index, 1), trace[1])
-                traces.itemset((index, 2), trace[2])
+            for trace in self.dataset[user][ONE_VIDEO][:, 1:]:
+                traces.itemset((count, 0), trace[0])
+                traces.itemset((count, 1), trace[1])
+                traces.itemset((count, 2), trace[2])
+                count += 1
         return traces
 
     def get_traces_random_one_user(self, num) -> ndarray:
