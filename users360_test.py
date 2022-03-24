@@ -10,7 +10,7 @@ class User360Test(unittest.TestCase):
         cls.one_user = Plot(Dataset().get_traces_one_video_one_user(), title_sufix="one_video_one_user")
         cls.all_users = Plot(Dataset().get_traces_one_video_all_users(), title_sufix="one_video_all_users")
         cls.some_users = Plot(Dataset().get_traces_random_one_user(4), title_sufix="some_users")
-        cls.one_trace = Plot(Dataset().get_one_trace(), title_sufix="1_trace")
+        cls.one_trace = Plot(Dataset().get_one_trace())
 
     def test_plot_traces_shape(self):
         self.assertIsNotNone(self.one_trace)
@@ -24,18 +24,15 @@ class User360Test(unittest.TestCase):
 
     def test_plot_sphere_rectan(self):
         self.one_user.sphere_rectan(6, 4, to_html=True)
-        self.one_user.sphere_rectan(8, 6, to_html=True)
-        self.one_trace.sphere_rectan_with_vp(6, 4, to_html=True)
-        self.one_trace.sphere_rectan_with_vp(8, 6, to_html=True)
-        self.some_users.metrics_vpextract(VPEXTRACS_RECT, plot_bars=False,
+        self.one_trace.sphere_rect_with_vp(VPEXTRACTS_RECT[0], to_html=True)
+        self.some_users.metrics_vpextract(VPEXTRACTS_RECT, plot_bars=False,
                                                plot_traces=False, plot_heatmaps=False)
 
     def test_plot_shpere_voro(self):
         self.one_user.sphere_voro(VORONOI_14P, to_html=True)
         self.one_user.sphere_voro(VORONOI_24P, to_html=True)
-        self.one_trace.sphere_voro_with_vp(VORONOI_24P, to_html=True)
-        self.one_trace.sphere_voro_with_vp(VORONOI_24P, to_html=True)
-        self.some_users.metrics_vpextract(VPEXTRACS_VORO, plot_bars=False,
+        self.one_trace.sphere_voro_with_vp(VPEXTRACTS_VORO[0], to_html=True)
+        self.some_users.metrics_vpextract(VPEXTRACTS_VORO, plot_bars=False,
                                                plot_traces=False, plot_heatmaps=False)
 
     def test_plot_erp(self):

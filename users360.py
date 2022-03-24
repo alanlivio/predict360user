@@ -51,17 +51,17 @@ VORONOI_14P = points_voro(TRINITY_NPATCHS)
 VORONOI_24P = points_voro(24)
 
 
-def points_rectan_tile_cartesian(i, j, t_hor, t_vert) -> Tuple[ndarray, ndarray]:
+def points_rect_tile_cartesian(i, j, t_hor, t_vert) -> Tuple[ndarray, ndarray]:
     d_hor = np.deg2rad(360/t_hor)
     d_vert = np.deg2rad(180/t_vert)
     theta_c = d_hor * (j + 0.5)
     phi_c = d_vert * (i + 0.5)
-    polygon_rectan_tile = np.array([
+    polygon_rect_tile = np.array([
         eulerian_to_cartesian(d_hor * j, d_vert * (i+1)),
         eulerian_to_cartesian(d_hor * (j+1), d_vert * (i+1)),
         eulerian_to_cartesian(d_hor * (j+1), d_vert * i),
         eulerian_to_cartesian(d_hor * j, d_vert * i)])
-    return polygon_rectan_tile, eulerian_to_cartesian(theta_c, phi_c)
+    return polygon_rect_tile, eulerian_to_cartesian(theta_c, phi_c)
 
 
 def points_fov_cartesian(x, y, z) -> ndarray:
@@ -167,6 +167,10 @@ class VPExtract(ABC):
     def title(self):
         pass
 
+    def title_with_sum_heatmaps(self, heatmaps):
+        reqs_sum = np.sum(np.sum(heatmaps, axis=0))
+        return f"{self.title()} (reqs={reqs_sum})"
+
     cover: Cover
     shape: tuple[float, float]
 
@@ -178,7 +182,7 @@ class VPExtractTilesRect(VPExtract):
         self.shape = (self.t_vert, self.t_hor)
 
     def title(self):
-        prefix = f'vpextract_rect_{self.t_hor}x{self.t_vert}'
+        prefix = f'vpextract_rect{self.t_hor}x{self.t_vert}'
         match self.cover:
             case VPExtract.Cover.ANY:
                 return f'{prefix}_any'
@@ -207,16 +211,16 @@ class VPExtractTilesRect(VPExtract):
         vp_threshold = np.deg2rad(110/2)
         for i in range(self.t_vert):
             for j in range(self.t_hor):
-                rectan_tile_points, tile_center = points_rectan_tile_cartesian(i, j, self.t_hor, self.t_vert)
+                rect_tile_points, tile_center = points_rect_tile_cartesian(i, j, self.t_hor, self.t_vert)
                 dist = compute_orthodromic_distance([x, y, z], tile_center)
                 if dist <= vp_threshold:
-                    rectan_tile_polygon = polygon.SphericalPolygon(rectan_tile_points)
+                    rect_tile_polygon = polygon.SphericalPolygon(rect_tile_points)
                     fov_polygon = polygon.SphericalPolygon(points_fov_cartesian(x, y, z))
-                    view_area = rectan_tile_polygon.overlap(fov_polygon)
+                    view_area = rect_tile_polygon.overlap(fov_polygon)
                     if view_area > required_cover:
                         heatmap[i][j] = 1
                         areas_in.append(view_area)
-                        vp_quality += fov_polygon.overlap(rectan_tile_polygon)
+                        vp_quality += fov_polygon.overlap(rect_tile_polygon)
         return heatmap, vp_quality, areas_in
 
     def _request_110radius_center(self, x, y, z):
@@ -226,15 +230,15 @@ class VPExtractTilesRect(VPExtract):
         vp_quality = 0.0
         for i in range(self.t_vert):
             for j in range(self.t_hor):
-                rectan_tile_points, tile_center = points_rectan_tile_cartesian(i, j, self.t_hor, self.t_vert)
+                rect_tile_points, tile_center = points_rect_tile_cartesian(i, j, self.t_hor, self.t_vert)
                 dist = compute_orthodromic_distance([x, y, z], tile_center)
                 if dist <= vp_110_rad_half:
                     heatmap[i][j] = 1
-                    rectan_tile_polygon = polygon.SphericalPolygon(rectan_tile_points)
+                    rect_tile_polygon = polygon.SphericalPolygon(rect_tile_points)
                     fov_polygon = polygon.SphericalPolygon(points_fov_cartesian(x, y, z))
-                    view_area = rectan_tile_polygon.overlap(fov_polygon)
+                    view_area = rect_tile_polygon.overlap(fov_polygon)
                     areas_in.append(view_area)
-                    vp_quality += fov_polygon.overlap(rectan_tile_polygon)
+                    vp_quality += fov_polygon.overlap(rect_tile_polygon)
         return heatmap, vp_quality, areas_in
 
 
@@ -299,23 +303,23 @@ class VPExtractTilesVoro(VPExtract):
         return heatmap, vp_quality, areas_in
 
 
-VPEXTRACS_VORO = [
-    VPExtractTilesVoro(VORONOI_24P, VPExtract.Cover.CENTER),
+VPEXTRACTS_VORO = [
     VPExtractTilesVoro(VORONOI_14P, VPExtract.Cover.CENTER),
-    VPExtractTilesVoro(VORONOI_24P, VPExtract.Cover.ANY),
+    VPExtractTilesVoro(VORONOI_24P, VPExtract.Cover.CENTER),
     VPExtractTilesVoro(VORONOI_14P, VPExtract.Cover.ANY),
+    VPExtractTilesVoro(VORONOI_24P, VPExtract.Cover.ANY),
     VPExtractTilesVoro(VORONOI_14P, VPExtract.Cover.ONLY20PERC),
-    VPExtractTilesVoro(VORONOI_14P, VPExtract.Cover.ONLY33PERC),
     VPExtractTilesVoro(VORONOI_24P, VPExtract.Cover.ONLY20PERC),
+    VPExtractTilesVoro(VORONOI_14P, VPExtract.Cover.ONLY33PERC),
     VPExtractTilesVoro(VORONOI_24P, VPExtract.Cover.ONLY33PERC),
 ]
-VPEXTRACS_RECT = [
+VPEXTRACTS_RECT = [
+    VPExtractTilesRect(6, 4, VPExtract.Cover.CENTER),
     VPExtractTilesRect(6, 4, VPExtract.Cover.ONLY33PERC),
     VPExtractTilesRect(6, 4, VPExtract.Cover.ONLY20PERC),
-    VPExtractTilesRect(6, 4, VPExtract.Cover.CENTER),
 ]
 
-VPEXTRACT_METHODS = [*VPEXTRACS_VORO, *VPEXTRACS_RECT]
+VPEXTRACT_METHODS = [*VPEXTRACTS_VORO, *VPEXTRACTS_RECT]
 
 
 class Plot:
@@ -323,7 +327,7 @@ class Plot:
         assert traces.shape[1] == 3  # check if cartesian
         self.verbose = verbose
         self.traces = traces
-        self.title_sufix = str(len(traces)) + "_traces" if not title_sufix else title_sufix
+        self.title = f"{str(len(traces))}_traces{title_sufix}"
         if self.verbose:
             print("Dataset.traces.shape is " + str(traces.shape))
 
@@ -360,17 +364,17 @@ class Plot:
                              name='trajectory', showlegend=False)
         data.append(trajc)
 
-    def _sphere_data_rectan_tiles(self, t_hor, t_vert):
+    def _sphere_data_rect_tiles(self, t_hor, t_vert):
         data = []
         for i in range(t_hor+1):
             for j in range(t_vert+1):
                 # -- add rectan tiles edges
-                rectan_tile_points, _ = points_rectan_tile_cartesian(i, j, t_hor, t_vert)
-                n = len(rectan_tile_points)
+                rect_tile_points, _ = points_rect_tile_cartesian(i, j, t_hor, t_vert)
+                n = len(rect_tile_points)
                 t = np.linspace(0, 1, 100)
                 for index in range(n):
-                    start = rectan_tile_points[index]
-                    end = rectan_tile_points[(index + 1) % n]
+                    start = rect_tile_points[index]
+                    end = rect_tile_points[(index + 1) % n]
                     result = np.array(geometric_slerp(start, end, t))
                     edge = go.Scatter3d(x=result[..., 0], y=result[..., 1], z=result[..., 2], mode='lines', line={
                         'width': 5, 'color': 'black'}, name='region edge', showlegend=False)
@@ -415,19 +419,29 @@ class Plot:
                 self.traces[:, 2], label='parametric curve')
         plt.show()
 
+    def sphere_rectan(self, t_hor, t_vert, to_html=False):
+        data = self._sphere_data_rect_tiles(t_hor, t_vert)
+        self._sphere_data_add_user(data)
+        title = f"{self.title} rectan{t_hor}x{t_vert}"
+        fig = go.Figure(data=data, layout=layout_with_title(title))
+        if to_html:
+            plotly.offline.plot(fig, filename=f'./plot_figs/{title}.html', auto_open=False)
+        else:
+            fig.show()
+
     def sphere_voro(self, sphere_voro: SphericalVoronoi, to_html=False):
         data = self._sphere_data_voro(sphere_voro)
         self._sphere_data_add_user(data)
-        title = f"traces_voro{len(sphere_voro.points)}_" + self.title_sufix
+        title = f"{self.title} voro{len(sphere_voro.points)}"
         fig = go.Figure(data=data, layout=layout_with_title(title))
         if to_html:
             plotly.offline.plot(fig, filename=f'./plot_figs/{title}.html', auto_open=False)
         else:
             fig.show()
 
-    def sphere_voro_with_vp(self, sphere_voro: SphericalVoronoi, to_html=False):
-        data = self._sphere_data_voro(sphere_voro)
-        for trace in self.traces:
+    def sphere_voro_with_vp(self, vpextract: VPExtractTilesVoro, to_html=False):
+        data = self._sphere_data_voro(vpextract.sphere_voro)
+        for trace in [self.traces[0]]:
             fov_polygon = points_fov_cartesian(trace[0], trace[1], trace[2])
             n = len(fov_polygon)
             t = np.linspace(0, 1, 100)
@@ -438,16 +452,18 @@ class Plot:
                 edge = go.Scatter3d(x=result[..., 0], y=result[..., 1], z=result[..., 2], mode='lines', line={
                     'width': 5, 'color': 'red'}, name='vp edge', showlegend=False)
                 data.append(edge)
-        title = f"vpextract_voro{len(sphere_voro.points)}_" + self.title_sufix
+        heatmap, _, _ = vpextract.request(*self.traces[0])
+        title = f"{self.title} {vpextract.title_with_sum_heatmaps([heatmap])}"
         fig = go.Figure(data=data, layout=layout_with_title(title))
         if to_html:
             plotly.offline.plot(fig, filename=f'./plot_figs/{title}.html', auto_open=False)
         else:
             fig.show()
 
-    def sphere_rectan_with_vp(self, t_hor, t_vert, to_html=False):
-        data = self._sphere_data_rectan_tiles(t_hor, t_vert)
-        for trace in self.traces:
+    def sphere_rect_with_vp(self, vpextract: VPExtractTilesRect, to_html=False):
+        t_hor, t_vert = vpextract.shape
+        data = self._sphere_data_rect_tiles(t_hor, t_vert)
+        for trace in [self.traces[0]]:
             fov_polygon = points_fov_cartesian(trace[0], trace[1], trace[2])
             n = len(fov_polygon)
             t = np.linspace(0, 1, 100)
@@ -458,17 +474,8 @@ class Plot:
                 edge = go.Scatter3d(x=result[..., 0], y=result[..., 1], z=result[..., 2], mode='lines', line={
                     'width': 5, 'color': 'red'}, name='vp edge', showlegend=False)
                 data.append(edge)
-        title = f"vpextract_rectan{t_hor}x{t_vert}_" + self.title_sufix
-        fig = go.Figure(data=data, layout=layout_with_title(title))
-        if to_html:
-            plotly.offline.plot(fig, filename=f'./plot_figs/{title}.html', auto_open=False)
-        else:
-            fig.show()
-
-    def sphere_rectan(self, t_hor, t_vert, to_html=False):
-        data = self._sphere_data_rectan_tiles(t_hor, t_vert)
-        self._sphere_data_add_user(data)
-        title = f"traces_rectan{t_hor}x{t_vert}_" + self.title_sufix
+        heatmap, _, _ = vpextract.request(*self.traces[0])
+        title = f"{self.title} {vpextract.title_with_sum_heatmaps([heatmap])}"
         fig = go.Figure(data=data, layout=layout_with_title(title))
         if to_html:
             plotly.offline.plot(fig, filename=f'./plot_figs/{title}.html', auto_open=False)
@@ -483,8 +490,8 @@ class Plot:
             heatmap, _, _,  = vpextract.request(i[0], i[1], i[2])
             heatmaps.append(heatmap)
         fig = px.imshow(np.sum(heatmaps, axis=0), labels=dict(
-            x="longitude", y="latitude", color="requests", title=f"reqs={str(np.sum(heatmaps))}"))
-        title = f"traces_rectan{vpextract.shape[0]}x{vpextract.shape[1]}_" + self.title_sufix
+            x="longitude", y="latitude", color="requests"))
+        title = f"{self.title} {vpextract.title_with_sum_heatmaps(heatmaps)}"
         fig.update_layout(layout_with_title(title))
         if to_html:
             plotly.offline.plot(fig, filename=f'./plot_figs/{title}.html', auto_open=False)
@@ -494,7 +501,7 @@ class Plot:
     # -- vpextract funcs
 
     def metrics_vpextract(self, vp_extrac_list: Iterable[VPExtract], plot_bars=True,
-                               plot_traces=False, plot_heatmaps=False):
+                          plot_traces=False, plot_heatmaps=False):
         fig_reqs = go.Figure(layout=LAYOUT)
         fig_areas = go.Figure(layout=LAYOUT)
         fig_quality = go.Figure(layout=LAYOUT)
@@ -523,8 +530,9 @@ class Plot:
             fig_quality.add_trace(go.Scatter(y=traces_vp_quality, mode='lines', name=f"{vpextract.title()}"))
             # heatmap
             if(plot_heatmaps and len(traces_heatmaps)):
-                fig_heatmap = px.imshow(np.sum(traces_heatmaps, axis=0).reshape(
-                    vpextract.shape), title=f"{vpextract.title()}",
+                fig_heatmap = px.imshow(
+                    np.sum(traces_heatmaps, axis=0).reshape(vpextract.shape),
+                    title=f"{vpextract.title_with_sum_heatmaps(traces_heatmaps)}",
                     labels=dict(x="longitude", y="latitude", color="VP_Extracts"))
                 fig_heatmap.update_layout(LAYOUT)
                 fig_heatmap.show()
@@ -535,10 +543,10 @@ class Plot:
 
         # line fig reqs areas
         if(plot_traces):
-            fig_reqs.update_layout(xaxis_title="user trace", title="req_tiles " + self.title_sufix).show()
+            fig_reqs.update_layout(xaxis_title="user trace", title="req_tiles " + self.title).show()
             fig_areas.update_layout(xaxis_title="user trace",
-                                    title="avg req_tiles view_ratio " + self.title_sufix).show()
-            fig_quality.update_layout(xaxis_title="user trace", title="avg quality ratio " + self.title_sufix).show()
+                                    title="avg req_tiles view_ratio " + self.title).show()
+            fig_quality.update_layout(xaxis_title="user trace", title="avg quality ratio " + self.title).show()
 
         # bar fig vpextract_n_reqs vpextract_avg_area
         vpextract_names = [str(func.title()) for func in vp_extrac_list]
@@ -548,9 +556,9 @@ class Plot:
         fig_bar.add_trace(go.Bar(y=vpextract_names, x=vpextract_avg_area, orientation='h'), row=1, col=2)
         fig_bar.add_trace(go.Bar(y=vpextract_names, x=vpextract_quality, orientation='h'), row=1, col=3)
         vpextract_score = [vpextract_quality[i] * (1 / (vpextract_n_reqs[i] * (1 - vpextract_avg_area[i])))
-                            for i, _ in enumerate(vpextract_n_reqs)]
+                           for i, _ in enumerate(vpextract_n_reqs)]
         fig_bar.add_trace(go.Bar(y=vpextract_names, x=vpextract_score, orientation='h'), row=1, col=4)
-        fig_bar.update_layout(width=1500, showlegend=False, title_text=self.title_sufix)
+        fig_bar.update_layout(width=1500, showlegend=False, title_text=self.title)
         fig_bar.update_layout(barmode="stack")
         if(plot_bars):
             fig_bar.show()
