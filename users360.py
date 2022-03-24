@@ -335,16 +335,26 @@ class Plot:
 
     # -- sphere funcs
 
+    def _sphere_data_surface(self):
+        theta = np.linspace(0, 2*np.pi, 100)
+        phi = np.linspace(0, np.pi, 100)
+        x = np.outer(np.cos(theta), np.sin(phi))*0.98
+        y = np.outer(np.sin(theta), np.sin(phi))*0.98
+        z = np.outer(np.ones(100), np.cos(phi))*0.98
+        # https://community.plotly.com/t/3d-surface-bug-a-custom-colorscale-defined-with-rgba-values-ignores-the-alpha-specification/30809
+        colorscale = [[0, "rgba(200, 0, 0, 0.1)"], [1.0, "rgba(255, 0, 0, 0.1)"]]
+        return go.Surface(x=x, y=y, z=z, colorscale=colorscale, showlegend=False, showscale=False)
+
     def _sphere_data_voro(self, sphere_voro: SphericalVoronoi, with_generators=False):
-        data = []
+        data = [self._sphere_data_surface()]
 
         # add generator points
         if with_generators:
             gens = go.Scatter3d(x=sphere_voro.points[:, 0], y=sphere_voro.points[:, 1], z=sphere_voro.points[:, 2], mode='markers', marker={
-                                'size': 1, 'opacity': 1.0, 'color': 'blue'}, name='voronoi center')
+                                'size': 1, 'opacity': 1.0, 'color': 'blue'}, name='voron center')
             data.append(gens)
 
-        # add vortonoi edges
+        # add voro edges
         for region in sphere_voro.regions:
             n = len(region)
             t = np.linspace(0, 1, 100)
@@ -367,7 +377,7 @@ class Plot:
         data.append(trajc)
 
     def _sphere_data_rect_tiles(self, t_hor, t_vert):
-        data = []
+        data = [self._sphere_data_surface()]
         for i in range(t_hor+1):
             for j in range(t_vert+1):
                 # -- add rect tiles edges
@@ -401,10 +411,10 @@ class Plot:
         t_vals = np.linspace(0, 1, 2000)
         # plot generator
         ax.scatter(sphere_voro.points[:, 0], sphere_voro.points[:, 1], sphere_voro.points[:, 2], c='b')
-        # plot voronoi vertices
+        # plot voro vertices
         ax.scatter(sphere_voro.vertices[:, 0], sphere_voro.vertices[:, 1], sphere_voro.vertices[:, 2],
                    c='g')
-        # indicate voronoi regions (as Euclidean polygons)
+        # indicate voro regions (as Euclidean polygons)
         for region in sphere_voro.regions:
             n = len(region)
             for i in range(n):
@@ -452,7 +462,7 @@ class Plot:
                 end = fov_polygon[(index + 1) % n]
                 result = np.array(geometric_slerp(start, end, t))
                 edge = go.Scatter3d(x=result[..., 0], y=result[..., 1], z=result[..., 2], mode='lines', line={
-                    'width': 5, 'color': 'red'}, name='vp edge', showlegend=False)
+                    'width': 5, 'color': 'blue'}, name='vp edge', showlegend=False)
                 data.append(edge)
         heatmap, _, _ = vpextract.request(*self.traces[0])
         title = f"{self.title} {vpextract.title_with_sum_heatmaps([heatmap])}"
@@ -474,7 +484,7 @@ class Plot:
                 end = fov_polygon[(index + 1) % n]
                 result = np.array(geometric_slerp(start, end, t))
                 edge = go.Scatter3d(x=result[..., 0], y=result[..., 1], z=result[..., 2], mode='lines', line={
-                    'width': 5, 'color': 'red'}, name='vp edge', showlegend=False)
+                    'width': 5, 'color': 'blue'}, name='vp edge', showlegend=False)
                 data.append(edge)
         heatmap, _, _ = vpextract.request(*self.traces[0])
         title = f"{self.title} {vpextract.title_with_sum_heatmaps([heatmap])}"
