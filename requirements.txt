@@ -1,20 +1,15 @@
-spherical_geometry
+# healpy # exp_healpix.ipynb
 argparse
+jupyter
 matplotlib
 mpl-toolkits.clifford
-opencv-python
+nbformat
 numpy
+opencv-python
 pandas
+pickle5
+plotly
 pyquaternion
 scipy
-nbformat
 sklearn
-plotly
-jupyter
-pickle5
-
-# exp_healpix.ipynb
-# healpy
-
-# TileRateSelector_360videos
-# pyqt5
+spherical_geometry

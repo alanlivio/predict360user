@@ -1,4 +1,5 @@
 # %%
+from abc import abstractmethod
 from enum import Enum, auto
 from head_motion_prediction.Utils import *
 from os.path import exists
@@ -6,9 +7,11 @@ from plotly.subplots import make_subplots
 from scipy.spatial import SphericalVoronoi, geometric_slerp
 from scipy.stats import entropy
 from spherical_geometry import polygon
-from typing import List, Callable, Tuple, Any
+from typing import Tuple, Iterable
+from abc import ABC
 import math
 import numpy as np
+from numpy import ndarray
 import os
 import pickle
 import plotly
@@ -29,7 +32,7 @@ def layout_with_title(title):
     return go.Layout(width=800, title=title)
 
 
-def points_voroni(npatchs) -> SphericalVoronoi:
+def points_voro(npatchs) -> SphericalVoronoi:
     points = np.empty((0, 3))
     for i in range(0, npatchs):
         zi = (1 - 1.0/npatchs) * (1 - 2.0*i / (npatchs - 1))
@@ -44,11 +47,11 @@ def points_voroni(npatchs) -> SphericalVoronoi:
     return sv
 
 
-VORONOI_14P = points_voroni(TRINITY_NPATCHS)
-VORONOI_24P = points_voroni(24)
+VORONOI_14P = points_voro(TRINITY_NPATCHS)
+VORONOI_24P = points_voro(24)
 
 
-def points_rectan_tile_cartesian(i, j, t_hor, t_vert) -> Tuple[np.ndarray, np.ndarray]:
+def points_rectan_tile_cartesian(i, j, t_hor, t_vert) -> Tuple[ndarray, ndarray]:
     d_hor = np.deg2rad(360/t_hor)
     d_vert = np.deg2rad(180/t_vert)
     theta_c = d_hor * (j + 0.5)
@@ -61,7 +64,7 @@ def points_rectan_tile_cartesian(i, j, t_hor, t_vert) -> Tuple[np.ndarray, np.nd
     return polygon_rectan_tile, eulerian_to_cartesian(theta_c, phi_c)
 
 
-def points_fov_cartesian(x, y, z) -> np.ndarray:
+def points_fov_cartesian(x, y, z) -> ndarray:
     # https://daglar-cizmeci.com/how-does-virtual-reality-work/
     margin_lateral = np.deg2rad(90/2)
     margin_ab = np.deg2rad(110/2)
@@ -127,32 +130,196 @@ class Dataset:
         # https://matthew-brett.github.io/teaching/random_fields.html
         return users_entropy
 
-    def get_one_trace(self) -> np.ndarray:
+    def get_one_trace(self) -> ndarray:
         return self.dataset[ONE_USER][ONE_VIDEO][:, 1:][:1]
 
-    def get_traces_one_video_one_user(self) -> np.ndarray:
+    def get_traces_one_video_one_user(self) -> ndarray:
         return self.dataset[ONE_USER][ONE_VIDEO][:, 1:]
 
-    def get_traces_one_video_all_users(self) -> np.ndarray:
+    def get_traces_one_video_all_users(self) -> ndarray:
         n_traces = len(self.dataset[ONE_USER][ONE_VIDEO][:, 1:])
         traces = np.ndarray((len(self.dataset.keys())*n_traces, 3))
-        count = 0
         for user in self.dataset.keys():
-            for i in self.dataset[user][ONE_VIDEO][:, 1:]:
-                traces.itemset((count, 0), i[0])
-                traces.itemset((count, 1), i[1])
-                traces.itemset((count, 2), i[2])
-                count += 1
+            for index, trace in enumerate(self.dataset[user][ONE_VIDEO][:, 1:]):
+                traces.itemset((index, 0), trace[0])
+                traces.itemset((index, 1), trace[1])
+                traces.itemset((index, 2), trace[2])
         return traces
 
-    def get_traces_random_one_user(self, num) -> np.ndarray:
+    def get_traces_random_one_user(self, num) -> ndarray:
         one_user = self.get_traces_one_video_one_user()
         step = int(len(one_user)/num)
         return one_user[::step]
 
 
+class VPExtract(ABC):
+    class Cover(Enum):
+        ANY = auto()
+        CENTER = auto()
+        ONLY20PERC = auto()
+        ONLY33PERC = auto()
+
+    @abstractmethod
+    def request(self, x, y, z) -> tuple[ndarray, float, list]:
+        pass
+
+    @abstractmethod
+    def title(self):
+        pass
+
+    cover: Cover
+    shape: tuple[float, float]
+
+
+class VPExtractTilesRect(VPExtract):
+    def __init__(self, t_hor, t_vert, cover: VPExtract.Cover):
+        self.t_hor, self.t_vert = t_hor, t_vert
+        self.cover = cover
+        self.shape = (self.t_vert, self.t_hor)
+
+    def title(self):
+        prefix = f'vpextract_rect_{self.t_hor}x{self.t_vert}'
+        match self.cover:
+            case VPExtract.Cover.ANY:
+                return f'{prefix}_any'
+            case VPExtract.Cover.CENTER:
+                return f'{prefix}_center'
+            case VPExtract.Cover.ONLY20PERC:
+                return f'{prefix}_20perc'
+            case VPExtract.Cover.ONLY33PERC:
+                return f'{prefix}_33perc'
+
+    def request(self, x, y, z):
+        match self.cover:
+            case VPExtract.Cover.CENTER:
+                return self._request_110radius_center(x, y, z)
+            case VPExtract.Cover.ANY:
+                return self._request_min_cover(x, y, z, 0.0)
+            case VPExtract.Cover.ONLY20PERC:
+                return self._request_min_cover(x, y, z, 0.2)
+            case VPExtract.Cover.ONLY33PERC:
+                return self._request_min_cover(x, y, z, 0.33)
+
+    def _request_min_cover(self, x, y, z, required_cover: float):
+        heatmap = np.zeros((self.t_vert, self.t_hor), dtype=np.int32)
+        areas_in = []
+        vp_quality = 0.0
+        vp_threshold = np.deg2rad(110/2)
+        for i in range(self.t_vert):
+            for j in range(self.t_hor):
+                rectan_tile_points, tile_center = points_rectan_tile_cartesian(i, j, self.t_hor, self.t_vert)
+                dist = compute_orthodromic_distance([x, y, z], tile_center)
+                if dist <= vp_threshold:
+                    rectan_tile_polygon = polygon.SphericalPolygon(rectan_tile_points)
+                    fov_polygon = polygon.SphericalPolygon(points_fov_cartesian(x, y, z))
+                    view_area = rectan_tile_polygon.overlap(fov_polygon)
+                    if view_area > required_cover:
+                        heatmap[i][j] = 1
+                        areas_in.append(view_area)
+                        vp_quality += fov_polygon.overlap(rectan_tile_polygon)
+        return heatmap, vp_quality, areas_in
+
+    def _request_110radius_center(self, x, y, z):
+        heatmap = np.zeros((self.t_vert, self.t_hor), dtype=np.int32)
+        vp_110_rad_half = np.deg2rad(110/2)
+        areas_in = []
+        vp_quality = 0.0
+        for i in range(self.t_vert):
+            for j in range(self.t_hor):
+                rectan_tile_points, tile_center = points_rectan_tile_cartesian(i, j, self.t_hor, self.t_vert)
+                dist = compute_orthodromic_distance([x, y, z], tile_center)
+                if dist <= vp_110_rad_half:
+                    heatmap[i][j] = 1
+                    rectan_tile_polygon = polygon.SphericalPolygon(rectan_tile_points)
+                    fov_polygon = polygon.SphericalPolygon(points_fov_cartesian(x, y, z))
+                    view_area = rectan_tile_polygon.overlap(fov_polygon)
+                    areas_in.append(view_area)
+                    vp_quality += fov_polygon.overlap(rectan_tile_polygon)
+        return heatmap, vp_quality, areas_in
+
+
+class VPExtractTilesVoro(VPExtract):
+    def __init__(self, sphere_voro: SphericalVoronoi, cover: VPExtract.Cover):
+        self.sphere_voro = sphere_voro
+        self.cover = cover
+        self.shape = (len(sphere_voro.points)//6, -1)
+
+    def title(self):
+        prefix = f'vpextract_voro{len(self.sphere_voro.points)}'
+        match self.cover:
+            case VPExtract.Cover.ANY:
+                return f'{prefix}_any'
+            case VPExtract.Cover.CENTER:
+                return f'{prefix}_center'
+            case VPExtract.Cover.ONLY20PERC:
+                return f'{prefix}_20perc'
+            case VPExtract.Cover.ONLY33PERC:
+                return f'{prefix}_33perc'
+
+    def request(self, x, y, z):
+        match self.cover:
+            case VPExtract.Cover.CENTER:
+                return self._request_110radius_center(x, y, z)
+            case VPExtract.Cover.ANY:
+                return self._request_min_cover(x, y, z, 0)
+            case VPExtract.Cover.ONLY20PERC:
+                return self._request_min_cover(x, y, z, 0.2)
+            case VPExtract.Cover.ONLY33PERC:
+                return self._request_min_cover(x, y, z, 0.33)
+
+    def _request_110radius_center(self, x, y, z):
+        vp_110_rad_half = np.deg2rad(110/2)
+        areas_in = []
+        vp_quality = 0.0
+        heatmap = np.zeros(len(self.sphere_voro.regions))
+        for index, region in enumerate(self.sphere_voro.regions):
+            dist = compute_orthodromic_distance([x, y, z], self.sphere_voro.points[index])
+            if dist <= vp_110_rad_half:
+                heatmap[index] += 1
+                voro_tile_polygon = polygon.SphericalPolygon(self.sphere_voro.vertices[region])
+                fov_polygon = polygon.SphericalPolygon(points_fov_cartesian(x, y, z))
+                view_area = voro_tile_polygon.overlap(fov_polygon)
+                areas_in.append(view_area)
+                vp_quality += fov_polygon.overlap(voro_tile_polygon)
+        return heatmap, vp_quality, areas_in
+
+    def _request_min_cover(self, x, y, z, required_cover: float):
+        areas_in = []
+        vp_quality = 0.0
+        heatmap = np.zeros(len(self.sphere_voro.regions))
+        for index, region in enumerate(self.sphere_voro.regions):
+            voro_tile_polygon = polygon.SphericalPolygon(self.sphere_voro.vertices[region])
+            fov_polygon = polygon.SphericalPolygon(points_fov_cartesian(x, y, z))
+            view_area = voro_tile_polygon.overlap(fov_polygon)
+            if view_area > required_cover:
+                heatmap[index] += 1
+                # view_area = 1 if view_area > 1 else view_area  # fixed with compute_orthodromic_distance
+                areas_in.append(view_area)
+                vp_quality += fov_polygon.overlap(voro_tile_polygon)
+        return heatmap, vp_quality, areas_in
+
+
+VPEXTRACS_VORO = [
+    VPExtractTilesVoro(VORONOI_24P, VPExtract.Cover.CENTER),
+    VPExtractTilesVoro(VORONOI_14P, VPExtract.Cover.CENTER),
+    VPExtractTilesVoro(VORONOI_24P, VPExtract.Cover.ANY),
+    VPExtractTilesVoro(VORONOI_14P, VPExtract.Cover.ANY),
+    VPExtractTilesVoro(VORONOI_14P, VPExtract.Cover.ONLY20PERC),
+    VPExtractTilesVoro(VORONOI_14P, VPExtract.Cover.ONLY33PERC),
+    VPExtractTilesVoro(VORONOI_24P, VPExtract.Cover.ONLY20PERC),
+    VPExtractTilesVoro(VORONOI_24P, VPExtract.Cover.ONLY33PERC),
+]
+VPEXTRACS_RECT = [
+    VPExtractTilesRect(6, 4, VPExtract.Cover.ONLY33PERC),
+    VPExtractTilesRect(6, 4, VPExtract.Cover.ONLY20PERC),
+    VPExtractTilesRect(6, 4, VPExtract.Cover.CENTER),
+]
+
+VPEXTRACT_METHODS = [*VPEXTRACS_VORO, *VPEXTRACS_RECT]
+
+
 class Plot:
-    def __init__(self, traces: np.ndarray, title_sufix="", verbose=False):
+    def __init__(self, traces: ndarray, title_sufix="", verbose=False):
         assert traces.shape[1] == 3  # check if cartesian
         self.verbose = verbose
         self.traces = traces
@@ -162,22 +329,22 @@ class Plot:
 
     # -- sphere funcs
 
-    def _sphere_data_voro(self, spherical_voronoi: SphericalVoronoi, with_generators=False):
+    def _sphere_data_voro(self, sphere_voro: SphericalVoronoi, with_generators=False):
         data = []
 
         # add generator points
         if with_generators:
-            gens = go.Scatter3d(x=spherical_voronoi.points[:, 0], y=spherical_voronoi.points[:, 1], z=spherical_voronoi.points[:, 2], mode='markers', marker={
+            gens = go.Scatter3d(x=sphere_voro.points[:, 0], y=sphere_voro.points[:, 1], z=sphere_voro.points[:, 2], mode='markers', marker={
                                 'size': 1, 'opacity': 1.0, 'color': 'blue'}, name='voronoi center')
             data.append(gens)
 
         # add vortonoi edges
-        for region in spherical_voronoi.regions:
+        for region in sphere_voro.regions:
             n = len(region)
             t = np.linspace(0, 1, 100)
             for i in range(n):
-                start = spherical_voronoi.vertices[region][i]
-                end = spherical_voronoi.vertices[region][(i + 1) % n]
+                start = sphere_voro.vertices[region][i]
+                end = sphere_voro.vertices[region][(i + 1) % n]
                 result = np.array(geometric_slerp(start, end, t))
                 edge = go.Scatter3d(x=result[..., 0], y=result[..., 1], z=result[..., 2], mode='lines', line={
                                     'width': 5, 'color': 'black'}, name='region edge', showlegend=False)
@@ -210,10 +377,10 @@ class Plot:
                     data.append(edge)
         return data
 
-    def plot_sphere_voro_matplot(self, spherical_voronoi: SphericalVoronoi = VORONOI_14P):
+    def sphere_voro_matplot(self, sphere_voro: SphericalVoronoi = VORONOI_14P):
         """
         Example:
-            plot_sphere_voro_matplot(get_traces_one_video_one_user())
+            sphere_voro_matplot(get_traces_one_video_one_user())
         """
         import matplotlib.pyplot as plt
         fig = plt.figure()
@@ -226,24 +393,17 @@ class Plot:
         ax.set_ylabel('Y')
         ax.set_zlabel('Z')
         t_vals = np.linspace(0, 1, 2000)
-        # plot the unit sphere for reference (optional)
-        u = np.linspace(0, 2 * np.pi, 100)
-        v = np.linspace(0, np.pi, 100)
-        x = np.outer(np.cos(u), np.sin(v))
-        y = np.outer(np.sin(u), np.sin(v))
-        z = np.outer(np.ones(np.size(u)), np.cos(v))
-        # plot generator VORONOI_CPOINTS_14P
-        ax.scatter(spherical_voronoi.points[:, 0], spherical_voronoi.points[:,
-                                                                            1], spherical_voronoi.points[:, 2], c='b')
+        # plot generator
+        ax.scatter(sphere_voro.points[:, 0], sphere_voro.points[:, 1], sphere_voro.points[:, 2], c='b')
         # plot voronoi vertices
-        ax.scatter(spherical_voronoi.vertices[:, 0], spherical_voronoi.vertices[:, 1], spherical_voronoi.vertices[:, 2],
+        ax.scatter(sphere_voro.vertices[:, 0], sphere_voro.vertices[:, 1], sphere_voro.vertices[:, 2],
                    c='g')
         # indicate voronoi regions (as Euclidean polygons)
-        for region in spherical_voronoi.regions:
+        for region in sphere_voro.regions:
             n = len(region)
             for i in range(n):
-                start = spherical_voronoi.vertices[region][i]
-                end = spherical_voronoi.vertices[region][(i + 1) % n]
+                start = sphere_voro.vertices[region][i]
+                end = sphere_voro.vertices[region][(i + 1) % n]
                 result = geometric_slerp(start, end, t_vals)
                 ax.plot(result[..., 0],
                         result[..., 1],
@@ -255,18 +415,18 @@ class Plot:
                 self.traces[:, 2], label='parametric curve')
         plt.show()
 
-    def plot_sphere_voro(self, spherical_voronoi: SphericalVoronoi, to_html=False):
-        data = self._sphere_data_voro(spherical_voronoi)
+    def sphere_voro(self, sphere_voro: SphericalVoronoi, to_html=False):
+        data = self._sphere_data_voro(sphere_voro)
         self._sphere_data_add_user(data)
-        title = f"traces_voro{len(spherical_voronoi.points)}_" + self.title_sufix
+        title = f"traces_voro{len(sphere_voro.points)}_" + self.title_sufix
         fig = go.Figure(data=data, layout=layout_with_title(title))
         if to_html:
             plotly.offline.plot(fig, filename=f'./plot_figs/{title}.html', auto_open=False)
         else:
             fig.show()
 
-    def plot_sphere_voro_with_vp(self, spherical_voronoi: SphericalVoronoi, to_html=False):
-        data = self._sphere_data_voro(spherical_voronoi)
+    def sphere_voro_with_vp(self, sphere_voro: SphericalVoronoi, to_html=False):
+        data = self._sphere_data_voro(sphere_voro)
         for trace in self.traces:
             fov_polygon = points_fov_cartesian(trace[0], trace[1], trace[2])
             n = len(fov_polygon)
@@ -278,14 +438,14 @@ class Plot:
                 edge = go.Scatter3d(x=result[..., 0], y=result[..., 1], z=result[..., 2], mode='lines', line={
                     'width': 5, 'color': 'red'}, name='vp edge', showlegend=False)
                 data.append(edge)
-        title = f"FoV_voro{len(spherical_voronoi.points)}_" + self.title_sufix
+        title = f"vpextract_voro{len(sphere_voro.points)}_" + self.title_sufix
         fig = go.Figure(data=data, layout=layout_with_title(title))
         if to_html:
             plotly.offline.plot(fig, filename=f'./plot_figs/{title}.html', auto_open=False)
         else:
             fig.show()
 
-    def plot_sphere_rectan_with_vp(self, t_hor, t_vert, to_html=False):
+    def sphere_rectan_with_vp(self, t_hor, t_vert, to_html=False):
         data = self._sphere_data_rectan_tiles(t_hor, t_vert)
         for trace in self.traces:
             fov_polygon = points_fov_cartesian(trace[0], trace[1], trace[2])
@@ -298,14 +458,14 @@ class Plot:
                 edge = go.Scatter3d(x=result[..., 0], y=result[..., 1], z=result[..., 2], mode='lines', line={
                     'width': 5, 'color': 'red'}, name='vp edge', showlegend=False)
                 data.append(edge)
-        title = f"FoV_rectan{t_hor}x{t_vert}_" + self.title_sufix
+        title = f"vpextract_rectan{t_hor}x{t_vert}_" + self.title_sufix
         fig = go.Figure(data=data, layout=layout_with_title(title))
         if to_html:
             plotly.offline.plot(fig, filename=f'./plot_figs/{title}.html', auto_open=False)
         else:
             fig.show()
 
-    def plot_sphere_rectan(self, t_hor, t_vert, to_html=False):
+    def sphere_rectan(self, t_hor, t_vert, to_html=False):
         data = self._sphere_data_rectan_tiles(t_hor, t_vert)
         self._sphere_data_add_user(data)
         title = f"traces_rectan{t_hor}x{t_vert}_" + self.title_sufix
@@ -317,28 +477,31 @@ class Plot:
 
     # -- erp funcs
 
-    def plot_erp_heatmap(self):
+    def erp_heatmap(self, vpextract: VPExtract, to_html=False):
         heatmaps = []
-        fov = VPExtractTilesRect(6, 4, VPExtract.Cover.CENTER)
         for i in self.traces:
-            heatmap, _, _,  = fov.request(i[0], i[1], i[2])
+            heatmap, _, _,  = vpextract.request(i[0], i[1], i[2])
             heatmaps.append(heatmap)
-        fig_heatmap = px.imshow(np.sum(heatmaps, axis=0), labels=dict(
+        fig = px.imshow(np.sum(heatmaps, axis=0), labels=dict(
             x="longitude", y="latitude", color="requests", title=f"reqs={str(np.sum(heatmaps))}"))
-        fig_heatmap.update_layout(LAYOUT)
-        fig_heatmap.show()
+        title = f"traces_rectan{vpextract.shape[0]}x{vpextract.shape[1]}_" + self.title_sufix
+        fig.update_layout(layout_with_title(title))
+        if to_html:
+            plotly.offline.plot(fig, filename=f'./plot_figs/{title}.html', auto_open=False)
+        else:
+            fig.show()
 
-    # -- reqs funcs
+    # -- vpextract funcs
 
-    def plot_vp_extractions(self, vp_extrac_list, plot_bars=True,
-                            plot_traces=False, plot_heatmaps=False):
+    def metrics_vpextract(self, vp_extrac_list: Iterable[VPExtract], plot_bars=True,
+                               plot_traces=False, plot_heatmaps=False):
         fig_reqs = go.Figure(layout=LAYOUT)
         fig_areas = go.Figure(layout=LAYOUT)
         fig_quality = go.Figure(layout=LAYOUT)
-        vp_extract_n_reqs = []
-        vp_extract_avg_area = []
-        vp_extract_quality = []
-        for vp_extract in vp_extrac_list:
+        vpextract_n_reqs = []
+        vpextract_avg_area = []
+        vpextract_quality = []
+        for vpextract in vp_extrac_list:
             traces_n_reqs = []
             traces_areas = []
             traces_areas_svg = []
@@ -346,29 +509,29 @@ class Plot:
             traces_vp_quality = []
             # call func per trace
             for t in self.traces:
-                heatmap_in, quality_in, areas_in = vp_extract.request(t[0], t[1], t[2])
+                heatmap_in, quality_in, areas_in = vpextract.request(t[0], t[1], t[2])
                 traces_n_reqs.append(np.sum(heatmap_in))
                 traces_heatmaps.append(heatmap_in)
                 traces_areas.append(areas_in)
                 traces_areas_svg.append(np.average(areas_in))
                 traces_vp_quality.append(quality_in)
             # line reqs
-            fig_reqs.add_trace(go.Scatter(y=traces_n_reqs, mode='lines', name=f"{vp_extract.title()}"))
+            fig_reqs.add_trace(go.Scatter(y=traces_n_reqs, mode='lines', name=f"{vpextract.title()}"))
             # line areas
-            fig_areas.add_trace(go.Scatter(y=traces_areas_svg, mode='lines', name=f"{vp_extract.title()}"))
+            fig_areas.add_trace(go.Scatter(y=traces_areas_svg, mode='lines', name=f"{vpextract.title()}"))
             # line quality
-            fig_quality.add_trace(go.Scatter(y=traces_vp_quality, mode='lines', name=f"{vp_extract.title()}"))
+            fig_quality.add_trace(go.Scatter(y=traces_vp_quality, mode='lines', name=f"{vpextract.title()}"))
             # heatmap
             if(plot_heatmaps and len(traces_heatmaps)):
                 fig_heatmap = px.imshow(np.sum(traces_heatmaps, axis=0).reshape(
-                    vp_extract.shape), title=f"{vp_extract.title()}",
+                    vpextract.shape), title=f"{vpextract.title()}",
                     labels=dict(x="longitude", y="latitude", color="VP_Extracts"))
                 fig_heatmap.update_layout(LAYOUT)
                 fig_heatmap.show()
             # sum
-            vp_extract_n_reqs.append(np.sum(traces_n_reqs))
-            vp_extract_avg_area.append(np.average(traces_areas_svg))
-            vp_extract_quality.append(np.average(traces_vp_quality))
+            vpextract_n_reqs.append(np.sum(traces_n_reqs))
+            vpextract_avg_area.append(np.average(traces_areas_svg))
+            vpextract_quality.append(np.average(traces_vp_quality))
 
         # line fig reqs areas
         if(plot_traces):
@@ -377,179 +540,19 @@ class Plot:
                                     title="avg req_tiles view_ratio " + self.title_sufix).show()
             fig_quality.update_layout(xaxis_title="user trace", title="avg quality ratio " + self.title_sufix).show()
 
-        # bar fig vp_extract_n_reqs vp_extract_avg_area
-        vp_extract_names = [str(func.title()) for func in vp_extrac_list]
+        # bar fig vpextract_n_reqs vpextract_avg_area
+        vpextract_names = [str(func.title()) for func in vp_extrac_list]
         fig_bar = make_subplots(rows=1, cols=4,  subplot_titles=(
             "req_tiles", "avg req_tiles view_ratio", "avg VP quality_ratio", "score=quality_ratio/(req_tiles*(1-view_ratio)))"), shared_yaxes=True)
-        fig_bar.add_trace(go.Bar(y=vp_extract_names, x=vp_extract_n_reqs, orientation='h'), row=1, col=1)
-        fig_bar.add_trace(go.Bar(y=vp_extract_names, x=vp_extract_avg_area, orientation='h'), row=1, col=2)
-        fig_bar.add_trace(go.Bar(y=vp_extract_names, x=vp_extract_quality, orientation='h'), row=1, col=3)
-        vp_extract_score = [vp_extract_quality[i] * (1 / (vp_extract_n_reqs[i] * (1 - vp_extract_avg_area[i])))
-                            for i, _ in enumerate(vp_extract_n_reqs)]
-        fig_bar.add_trace(go.Bar(y=vp_extract_names, x=vp_extract_score, orientation='h'), row=1, col=4)
+        fig_bar.add_trace(go.Bar(y=vpextract_names, x=vpextract_n_reqs, orientation='h'), row=1, col=1)
+        fig_bar.add_trace(go.Bar(y=vpextract_names, x=vpextract_avg_area, orientation='h'), row=1, col=2)
+        fig_bar.add_trace(go.Bar(y=vpextract_names, x=vpextract_quality, orientation='h'), row=1, col=3)
+        vpextract_score = [vpextract_quality[i] * (1 / (vpextract_n_reqs[i] * (1 - vpextract_avg_area[i])))
+                            for i, _ in enumerate(vpextract_n_reqs)]
+        fig_bar.add_trace(go.Bar(y=vpextract_names, x=vpextract_score, orientation='h'), row=1, col=4)
         fig_bar.update_layout(width=1500, showlegend=False, title_text=self.title_sufix)
         fig_bar.update_layout(barmode="stack")
         if(plot_bars):
             fig_bar.show()
 
-
-class VPExtract():
-    class Cover(Enum):
-        ANY = auto()
-        CENTER = auto()
-        ONLY20PERC = auto()
-        ONLY33PERC = auto()
-
-    def request(self, x, y, z):
-        pass
-
-    def title(self):
-        pass
-
-
-class VPExtractTilesRect(VPExtract):
-    def __init__(self, t_hor, t_vert, cover: VPExtract.Cover):
-        self.t_hor, self.t_vert = t_hor, t_vert
-        self.cover = cover
-        self.shape = (self.t_vert, self.t_hor)
-
-    def title(self):
-        prefix = f'rect_tiles_{self.t_hor}x{self.t_vert}'
-        match self.cover:
-            case VPExtract.Cover.ANY:
-                return f'{prefix}_any'
-            case VPExtract.Cover.CENTER:
-                return f'{prefix}_center'
-            case VPExtract.Cover.ONLY20PERC:
-                return f'{prefix}_20perc'
-            case VPExtract.Cover.ONLY33PERC:
-                return f'{prefix}_33perc'
-
-    def request(self, x, y, z):
-        match self.cover:
-            case VPExtract.Cover.CENTER:
-                return self._request_110radius_center(x, y, z)
-            case VPExtract.Cover.ANY:
-                return self._request_min_cover(x, y, z, 0.0)
-            case VPExtract.Cover.ONLY20PERC:
-                return self._request_min_cover(x, y, z, 0.2)
-            case VPExtract.Cover.ONLY33PERC:
-                return self._request_min_cover(x, y, z, 0.33)
-
-    def _request_min_cover(self, x, y, z, required_cover: float):
-        heatmap = np.zeros((self.t_vert, self.t_hor))
-        areas_in = []
-        vp_quality = 0.0
-        vp_threshold = np.deg2rad(110/2)
-        for i in range(self.t_vert):
-            for j in range(self.t_hor):
-                rectan_tile_points, tile_center = points_rectan_tile_cartesian(i, j, self.t_hor, self.t_vert)
-                dist = compute_orthodromic_distance([x, y, z], tile_center)
-                if dist <= vp_threshold:
-                    rectan_tile_polygon = polygon.SphericalPolygon(rectan_tile_points)
-                    fov_polygon = polygon.SphericalPolygon(points_fov_cartesian(x, y, z))
-                    view_area = rectan_tile_polygon.overlap(fov_polygon)
-                    if view_area > required_cover:
-                        heatmap[i][j] = 1
-                        areas_in.append(view_area)
-                        vp_quality += fov_polygon.overlap(rectan_tile_polygon)
-        return heatmap, vp_quality, areas_in
-
-    def _request_110radius_center(self, x, y, z):
-        heatmap = np.zeros((self.t_vert, self.t_hor))
-        vp_110_rad_half = np.deg2rad(110/2)
-        areas_in = []
-        vp_quality = 0.0
-        for i in range(self.t_vert):
-            for j in range(self.t_hor):
-                rectan_tile_points, tile_center = points_rectan_tile_cartesian(i, j, self.t_hor, self.t_vert)
-                dist = compute_orthodromic_distance([x, y, z], tile_center)
-                if dist <= vp_110_rad_half:
-                    heatmap[i][j] = 1
-                    rectan_tile_polygon = polygon.SphericalPolygon(rectan_tile_points)
-                    fov_polygon = polygon.SphericalPolygon(points_fov_cartesian(x, y, z))
-                    view_area = rectan_tile_polygon.overlap(fov_polygon)
-                    areas_in.append(view_area)
-                    vp_quality += fov_polygon.overlap(rectan_tile_polygon)
-        return heatmap, vp_quality, areas_in
-
-
-class VPExtractTilesVoro(VPExtract):
-    def __init__(self, spherical_voronoi: SphericalVoronoi, cover: VPExtract.Cover):
-        self.spherical_voronoi = spherical_voronoi
-        self.cover = cover
-        self.shape = (len(spherical_voronoi.points)//6, -1)
-
-    def title(self):
-        prefix = f'voroni_tiles_{len(self.spherical_voronoi.points)}'
-        match self.cover:
-            case VPExtract.Cover.ANY:
-                return f'{prefix}_any'
-            case VPExtract.Cover.CENTER:
-                return f'{prefix}_center'
-            case VPExtract.Cover.ONLY20PERC:
-                return f'{prefix}_20perc'
-            case VPExtract.Cover.ONLY33PERC:
-                return f'{prefix}_33perc'
-
-    def request(self, x, y, z):
-        match self.cover:
-            case VPExtract.Cover.CENTER:
-                return self._request_110radius_center(x, y, z)
-            case VPExtract.Cover.ANY:
-                return self._request_min_cover(x, y, z, 0)
-            case VPExtract.Cover.ONLY20PERC:
-                return self._request_min_cover(x, y, z, 0.2)
-            case VPExtract.Cover.ONLY33PERC:
-                return self._request_min_cover(x, y, z, 0.33)
-
-    def _request_110radius_center(self, x, y, z):
-        vp_110_rad_half = np.deg2rad(110/2)
-        areas_in = []
-        vp_quality = 0.0
-        heatmap = np.zeros(len(self.spherical_voronoi.regions))
-        for index, region in enumerate(self.spherical_voronoi.regions):
-            dist = compute_orthodromic_distance([x, y, z], self.spherical_voronoi.points[index])
-            if dist <= vp_110_rad_half:
-                heatmap[index] += 1
-                voroni_tile_polygon = polygon.SphericalPolygon(self.spherical_voronoi.vertices[region])
-                fov_polygon = polygon.SphericalPolygon(points_fov_cartesian(x, y, z))
-                view_area = voroni_tile_polygon.overlap(fov_polygon)
-                areas_in.append(view_area)
-                vp_quality += fov_polygon.overlap(voroni_tile_polygon)
-        return heatmap, vp_quality, areas_in
-
-    def _request_min_cover(self, x, y, z, required_cover: float):
-        areas_in = []
-        vp_quality = 0.0
-        heatmap = np.zeros(len(self.spherical_voronoi.regions))
-        for index, region in enumerate(self.spherical_voronoi.regions):
-            voroni_tile_polygon = polygon.SphericalPolygon(self.spherical_voronoi.vertices[region])
-            fov_polygon = polygon.SphericalPolygon(points_fov_cartesian(x, y, z))
-            view_area = voroni_tile_polygon.overlap(fov_polygon)
-            if view_area > required_cover:
-                heatmap[index] += 1
-                # view_area = 1 if view_area > 1 else view_area  # fixed with compute_orthodromic_distance
-                areas_in.append(view_area)
-                vp_quality += fov_polygon.overlap(voroni_tile_polygon)
-        return heatmap, vp_quality, areas_in
-
-
-VP_EXTRACTS_VORO = [
-    VPExtractTilesVoro(VORONOI_24P, VPExtract.Cover.CENTER),
-    VPExtractTilesVoro(VORONOI_14P, VPExtract.Cover.CENTER),
-    VPExtractTilesVoro(VORONOI_24P, VPExtract.Cover.ANY),
-    VPExtractTilesVoro(VORONOI_14P, VPExtract.Cover.ANY),
-    VPExtractTilesVoro(VORONOI_14P, VPExtract.Cover.ONLY20PERC),
-    VPExtractTilesVoro(VORONOI_14P, VPExtract.Cover.ONLY33PERC),
-    VPExtractTilesVoro(VORONOI_24P, VPExtract.Cover.ONLY20PERC),
-    VPExtractTilesVoro(VORONOI_24P, VPExtract.Cover.ONLY33PERC),
-]
-VP_EXTRACTS_RECT = [
-    VPExtractTilesRect(6, 4, VPExtract.Cover.ONLY33PERC),
-    VPExtractTilesRect(6, 4, VPExtract.Cover.ONLY20PERC),
-    VPExtractTilesRect(6, 4, VPExtract.Cover.CENTER),
-]
-
-VPEXTRACT_METHODS = [* VP_EXTRACTS_VORO, *VP_EXTRACTS_RECT]
 # %%
