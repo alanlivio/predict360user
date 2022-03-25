@@ -96,14 +96,14 @@ class Dataset:
                 project_path = "head_motion_prediction"
                 cwd = os.getcwd()
                 if os.path.basename(cwd) != project_path:
-                    print(f"-- get Dataset.sample_dataset from {project_path}")
+                    print(f"Dataset.sample_dataset from {project_path}")
                     os.chdir(project_path)
                     Dataset.sample_dataset = load_sampled_dataset()
                     os.chdir(cwd)
                     with open(Dataset.sample_dataset_pickle, 'wb') as f:
                         pickle.dump(Dataset.sample_dataset, f, protocol=pickle.HIGHEST_PROTOCOL)
             else:
-                print(f"-- get Dataset.sample_dataset from {Dataset.sample_dataset_pickle}")
+                print(f"Dataset.sample_dataset from {Dataset.sample_dataset_pickle}")
                 with open(Dataset.sample_dataset_pickle, 'rb') as f:
                     Dataset.sample_dataset = pickle.load(f)
         return Dataset.sample_dataset
@@ -327,13 +327,11 @@ VPEXTRACT_METHODS = [*VPEXTRACTS_VORO, *VPEXTRACTS_RECT]
 
 
 class Plot:
-    def __init__(self, traces: ndarray, title_sufix="", verbose=False):
+    def __init__(self, traces: ndarray, title_sufix=""):
         assert traces.shape[1] == 3  # check if cartesian
-        self.verbose = verbose
         self.traces = traces
         self.title = f"{str(len(traces))}_traces{title_sufix}"
-        if self.verbose:
-            print("Dataset.traces.shape is " + str(traces.shape))
+        print("Dataset.traces.shape is " + str(traces.shape))
 
     # -- sphere funcs
 
@@ -349,14 +347,12 @@ class Plot:
 
     def _sphere_data_voro(self, sphere_voro: SphericalVoronoi, with_generators=False):
         data = [self._sphere_data_surface()]
-
-        # add generator points
+        # generator points
         if with_generators:
-            gens = go.Scatter3d(x=sphere_voro.points[:, 0], y=sphere_voro.points[:, 1], z=sphere_voro.points[:, 2], mode='markers', marker={
-                                'size': 1, 'opacity': 1.0, 'color': 'blue'}, name='voron center')
+            gens = go.Scatter3d(x=sphere_voro.points[:, 0], y=sphere_voro.points[:, 1], z=sphere_voro.points[:, 2],
+                                mode='markers', marker={'size': 1, 'opacity': 1.0, 'color': 'blue'}, name='voron center')
             data.append(gens)
-
-        # add voro edges
+        # edges
         for region in sphere_voro.regions:
             n = len(region)
             t = np.linspace(0, 1, 100)
@@ -373,9 +369,7 @@ class Plot:
         trajc = go.Scatter3d(x=self.traces[:, 0],
                              y=self.traces[:, 1],
                              z=self.traces[:, 2],
-                             mode='lines',
-                             line={'width': 1, 'color': 'blue'},
-                             name='trajectory', showlegend=False)
+                             mode='lines', line={'width': 1, 'color': 'blue'}, name='trajectory', showlegend=False)
         data.append(trajc)
 
     def _sphere_data_rect_tiles(self, t_hor, t_vert):
@@ -395,24 +389,22 @@ class Plot:
                     data.append(edge)
         return data
 
-    def sphere_voro_matplot(self, sphere_voro: SphericalVoronoi = VORONOI_14P):
+    def sphere_voro_matplot(self, sphere_voro: SphericalVoronoi = VORONOI_14P, with_generators=False):
         import matplotlib.pyplot as plt
         fig = plt.figure()
         fig.set_size_inches(18.5, 10.5)
         u, v = np.mgrid[0: 2 * np.pi: 20j, 0: np.pi: 10j]
         ax = fig.add_subplot(111, projection='3d')
-        ax.plot_surface(np.cos(u) * np.sin(v), np.sin(u) *
-                        np.sin(v), np.cos(v), alpha=0.1, color="r")
+        ax.plot_surface(np.cos(u) * np.sin(v), np.sin(u) * np.sin(v), np.cos(v), alpha=0.1, color="r")
         ax.set_xlabel('X')
         ax.set_ylabel('Y')
         ax.set_zlabel('Z')
         t_vals = np.linspace(0, 1, 2000)
-        # plot generator
-        ax.scatter(sphere_voro.points[:, 0], sphere_voro.points[:, 1], sphere_voro.points[:, 2], c='b')
-        # plot voro vertices
-        ax.scatter(sphere_voro.vertices[:, 0], sphere_voro.vertices[:, 1], sphere_voro.vertices[:, 2],
-                   c='g')
-        # indicate voro regions (as Euclidean polygons)
+        # generator points
+        if with_generators:
+            ax.scatter(sphere_voro.points[:, 0], sphere_voro.points[:, 1], sphere_voro.points[:, 2], c='b')
+            ax.scatter(sphere_voro.vertices[:, 0], sphere_voro.vertices[:, 1], sphere_voro.vertices[:, 2], c='g')
+        # edges
         for region in sphere_voro.regions:
             n = len(region)
             for i in range(n):
@@ -423,10 +415,8 @@ class Plot:
                         result[..., 1],
                         result[..., 2],
                         c='k')
-
         # trajectory = get_traces_one_video_one_user()
-        ax.plot(self.traces[:, 0], self.traces[:, 1],
-                self.traces[:, 2], label='parametric curve')
+        ax.plot(self.traces[:, 0], self.traces[:, 1], self.traces[:, 2], label='parametric curve')
         plt.show()
 
     def sphere_rect(self, t_hor, t_vert, to_html=False):
@@ -510,7 +500,7 @@ class Plot:
 
     # -- vpextract funcs
 
-    def metrics_vpextract(self, vpextrac_l: Iterable[VPExtract], plot_bars=True,
+    def metrics_vpextract(self, vpextract_l: Iterable[VPExtract], plot_bars=True,
                           plot_traces=False, plot_heatmaps=False):
         fig_reqs = go.Figure(layout=LAYOUT)
         fig_areas = go.Figure(layout=LAYOUT)
@@ -518,7 +508,7 @@ class Plot:
         vpextract_n_reqs = []
         vpextract_avg_area = []
         vpextract_quality = []
-        for vpextract in vpextrac_l:
+        for vpextract in vpextract_l:
             traces_n_reqs = []
             traces_areas = []
             traces_areas_svg = []
@@ -559,7 +549,7 @@ class Plot:
             fig_quality.update_layout(xaxis_title="user trace", title="avg quality ratio " + self.title).show()
 
         # bar fig vpextract_n_reqs vpextract_avg_area
-        vpextract_names = [str(vpextract.title) for vpextract in vpextrac_l]
+        vpextract_names = [str(vpextract.title) for vpextract in vpextract_l]
         fig_bar = make_subplots(rows=1, cols=4,  subplot_titles=(
             "req_tiles", "avg req_tiles view_ratio", "avg VP quality_ratio", "score=quality_ratio/(req_tiles*(1-view_ratio)))"), shared_yaxes=True)
         fig_bar.add_trace(go.Bar(y=vpextract_names, x=vpextract_n_reqs, orientation='h'), row=1, col=1)
