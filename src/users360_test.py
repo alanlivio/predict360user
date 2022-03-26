@@ -22,24 +22,22 @@ class User360Test(unittest.TestCase):
         self.assertIsNotNone(self.one_trace)
         self.assertIsInstance(self.one_trace.traces, ndarray)
 
-    def test_plot_sphere_rect(self):
-        self.one_user.sphere_rect(6, 4, to_html=True)
-        self.one_trace.sphere_rect_with_vp(VPEXTRACTS_RECT[0], to_html=True)
+    def test_plot_sphere(self):
+        self.one_user.sphere(VPEXTRACT_RECT_6_4_CENTER, to_html=True)
+        self.one_trace.sphere_show_one_trace_vp(VPEXTRACT_RECT_6_4_CENTER, to_html=True)
         self.some_users.metrics_vpextract(VPEXTRACTS_RECT, plot_bars=False,
                                                plot_traces=False, plot_heatmaps=False)
 
     def test_plot_shpere_voro(self):
-        self.one_user.sphere_voro(VORONOI_14P, to_html=True)
-        self.one_user.sphere_voro(VORONOI_24P, to_html=True)
-        self.one_trace.sphere_voro_with_vp(VPEXTRACTS_VORO[0], to_html=True)
-        self.some_users.metrics_vpextract(VPEXTRACTS_VORO, plot_bars=False,
-                                               plot_traces=False, plot_heatmaps=False)
+        self.one_user.sphere(VPEXTRACT_VORO_14_CENTER, to_html=True)
+        self.one_trace.sphere_show_one_trace_vp(VPEXTRACT_VORO_14_CENTER, to_html=True)
+        self.some_users.metrics_vpextract(VPEXTRACTS_VORO, plot_bars=False, plot_traces=False, plot_heatmaps=False)
 
     def test_plot_erp(self):
-        self.one_user.erp_heatmap(VPExtractTilesRect(6, 4, VPExtract.Cover.CENTER), to_html=True)
+        self.one_user.erp_heatmap(VPEXTRACT_RECT_6_4_CENTER, to_html=True)
 
     def test_entropy(self):
-        users_entropy = Dataset().get_cluster_entropy_by_vpextract()
+        users_entropy = Dataset().get_users_entropy()
         self.assertIsNotNone(users_entropy)
 
 

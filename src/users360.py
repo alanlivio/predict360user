@@ -107,7 +107,7 @@ class Dataset:
 
     # -- cluster funcs
 
-    def get_cluster_entropy_by_vpextract(self, vp=None):
+    def get_users_entropy(self, vp=None):
         if vp is None:
             vp = VPExtractTilesRect(6, 4, cover=VPExtract.Cover.CENTER)
         users_entropy = np.ndarray(len(self.users_id))
@@ -126,18 +126,18 @@ class Dataset:
         # https://matthew-brett.github.io/teaching/random_fields.html
         return users_entropy
 
-    def get_one_trace(self) -> ndarray:
-        return self.dataset[ONE_USER][ONE_VIDEO][:, 1:][:1]
+    def get_one_trace(self, user=ONE_USER, video=ONE_VIDEO) -> ndarray:
+        return self.dataset[user][video][:, 1:][:1]
 
-    def get_traces_one_video_one_user(self) -> ndarray:
-        return self.dataset[ONE_USER][ONE_VIDEO][:, 1:]
+    def get_traces_one_video_one_user(self, user=ONE_USER, video=ONE_VIDEO) -> ndarray:
+        return self.dataset[user][video][:, 1:]
 
-    def get_traces_one_video_all_users(self) -> ndarray:
-        n_traces = len(self.dataset[ONE_USER][ONE_VIDEO][:, 1:])
+    def get_traces_one_video_all_users(self, video=ONE_VIDEO) -> ndarray:
+        n_traces = len(self.dataset[ONE_USER][video][:, 1:])
         traces = np.ndarray((len(self.dataset.keys())*n_traces, 3))
         count = 0
         for user in self.dataset.keys():
-            for trace in self.dataset[user][ONE_VIDEO][:, 1:]:
+            for trace in self.dataset[user][video][:, 1:]:
                 traces.itemset((count, 0), trace[0])
                 traces.itemset((count, 1), trace[1])
                 traces.itemset((count, 2), trace[2])
@@ -306,6 +306,10 @@ class VPExtractTilesVoro(VPExtract):
         return heatmap, vp_quality, areas_in
 
 
+VPEXTRACT_VORO_14_CENTER = VPExtractTilesVoro(VORONOI_14P, VPExtract.Cover.CENTER)
+VPEXTRACT_RECT_6_4_CENTER = VPExtractTilesRect(6, 4, VPExtract.Cover.CENTER)
+VPEXTRACT_RECT_8_6_CENTER = VPExtractTilesRect(8, 6, VPExtract.Cover.CENTER)
+
 VPEXTRACTS_VORO = [
     VPExtractTilesVoro(VORONOI_14P, VPExtract.Cover.CENTER),
     VPExtractTilesVoro(VORONOI_24P, VPExtract.Cover.CENTER),
@@ -318,10 +322,9 @@ VPEXTRACTS_VORO = [
 ]
 VPEXTRACTS_RECT = [
     VPExtractTilesRect(6, 4, VPExtract.Cover.CENTER),
-    VPExtractTilesRect(6, 4, VPExtract.Cover.ONLY33PERC),
     VPExtractTilesRect(6, 4, VPExtract.Cover.ONLY20PERC),
+    VPExtractTilesRect(6, 4, VPExtract.Cover.ONLY33PERC),
 ]
-
 VPEXTRACT_METHODS = [*VPEXTRACTS_VORO, *VPEXTRACTS_RECT]
 
 
@@ -364,11 +367,13 @@ class Plot:
                 data.append(edge)
         return data
 
-    def _sphere_data_add_user(self, data):
+    def _sphere_data_add_user(self, data, data_request):
         trajc = go.Scatter3d(x=self.traces[:, 0],
                              y=self.traces[:, 1],
                              z=self.traces[:, 2],
-                             mode='lines', line={'width': 1, 'color': 'blue'}, name='trajectory', showlegend=False)
+                             hovertemplate= "<b>requested tiles=%{text}</b>",
+                             text=data_request,
+                             mode='lines', line={'width': 3, 'color': 'blue'}, name='trajectory', showlegend=False)
         data.append(trajc)
 
     def _sphere_data_rect_tiles(self, t_hor, t_vert):
@@ -418,62 +423,40 @@ class Plot:
         ax.plot(self.traces[:, 0], self.traces[:, 1], self.traces[:, 2], label='parametric curve')
         plt.show()
 
-    def sphere_rect(self, t_hor, t_vert, to_html=False):
-        data = self._sphere_data_rect_tiles(t_hor, t_vert)
-        self._sphere_data_add_user(data)
-        title = f"{self.title} rect{t_hor}x{t_vert}"
+    def sphere(self, vpextract: VPExtract, to_html=False):
+        data, title = [], ""
+        if isinstance(vpextract, VPExtractTilesRect):
+            data = self._sphere_data_rect_tiles(vpextract.t_hor, vpextract.t_vert)
+            title = f"{self.title} rect{vpextract.t_hor}x{vpextract.t_vert}"
+        elif isinstance(vpextract, VPExtractTilesVoro):
+            data = self._sphere_data_voro(vpextract.sphere_voro)
+            title = f"{self.title} voro{len(vpextract.sphere_voro.points)}"
+        data_request = [np.sum(vpextract.request(trace)[0]) for trace in self.traces]
+        self._sphere_data_add_user(data, data_request)
         fig = go.Figure(data=data, layout=layout_with_title(title))
         if to_html:
             plotly.offline.plot(fig, filename=f'./plot_figs/{title}.html', auto_open=False)
         else:
             fig.show()
 
-    def sphere_voro(self, sphere_voro: SphericalVoronoi, to_html=False):
-        data = self._sphere_data_voro(sphere_voro)
-        self._sphere_data_add_user(data)
-        title = f"{self.title} voro{len(sphere_voro.points)}"
-        fig = go.Figure(data=data, layout=layout_with_title(title))
-        if to_html:
-            plotly.offline.plot(fig, filename=f'./plot_figs/{title}.html', auto_open=False)
-        else:
-            fig.show()
-
-    def sphere_voro_with_vp(self, vpextract: VPExtractTilesVoro, to_html=False):
-        data = self._sphere_data_voro(vpextract.sphere_voro)
-        for trace in [self.traces[0]]:
-            fov_polygon = points_fov_cartesian(trace)
-            n = len(fov_polygon)
-            t = np.linspace(0, 1, 100)
-            for index in range(n):
-                start = fov_polygon[index]
-                end = fov_polygon[(index + 1) % n]
-                result = np.array(geometric_slerp(start, end, t))
-                edge = go.Scatter3d(x=result[..., 0], y=result[..., 1], z=result[..., 2], mode='lines', line={
-                    'width': 5, 'color': 'blue'}, name='vp edge', showlegend=False)
-                data.append(edge)
-        heatmap, _, _ = vpextract.request(self.traces[0])
-        title = f"{self.title} {vpextract.title_with_sum_heatmaps([heatmap])}"
-        fig = go.Figure(data=data, layout=layout_with_title(title))
-        if to_html:
-            plotly.offline.plot(fig, filename=f'./plot_figs/{title}.html', auto_open=False)
-        else:
-            fig.show()
-
-    def sphere_rect_with_vp(self, vpextract: VPExtractTilesRect, to_html=False):
-        t_hor, t_vert = vpextract.shape
-        data = self._sphere_data_rect_tiles(t_hor, t_vert)
-        for trace in [self.traces[0]]:
-            fov_polygon = points_fov_cartesian(trace)
-            n = len(fov_polygon)
-            t = np.linspace(0, 1, 100)
-            for index in range(n):
-                start = fov_polygon[index]
-                end = fov_polygon[(index + 1) % n]
-                result = np.array(geometric_slerp(start, end, t))
-                edge = go.Scatter3d(x=result[..., 0], y=result[..., 1], z=result[..., 2], mode='lines', line={
-                    'width': 5, 'color': 'blue'}, name='vp edge', showlegend=False)
-                data.append(edge)
-        heatmap, _, _ = vpextract.request(self.traces[0])
+    def sphere_show_one_trace_vp(self, vpextract: VPExtract,trace=None, to_html=False):
+        trace = trace if trace is not None else self.traces[0]
+        data, title = [], ""
+        if isinstance(vpextract, VPExtractTilesRect):
+            data = self._sphere_data_rect_tiles(vpextract.t_hor, vpextract.t_vert)
+        elif isinstance(vpextract, VPExtractTilesVoro):
+            data = self._sphere_data_voro(vpextract.sphere_voro)
+        fov_polygon = points_fov_cartesian(trace)
+        n = len(fov_polygon)
+        t = np.linspace(0, 1, 100)
+        for index in range(n):
+            start = fov_polygon[index]
+            end = fov_polygon[(index + 1) % n]
+            result = np.array(geometric_slerp(start, end, t))
+            edge = go.Scatter3d(x=result[..., 0], y=result[..., 1], z=result[..., 2], mode='lines', line={
+                'width': 5, 'color': 'blue'}, name='vp edge', showlegend=False)
+            data.append(edge)
+        heatmap, _, _ = vpextract.request(trace)
         title = f"{self.title} {vpextract.title_with_sum_heatmaps([heatmap])}"
         fig = go.Figure(data=data, layout=layout_with_title(title))
         if to_html:
