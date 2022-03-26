@@ -1,8 +1,8 @@
 # %%
+import os
+from head_motion_prediction.Utils import *
 from abc import abstractmethod
 from enum import Enum, auto
-from head_motion_prediction.Utils import *
-from os.path import exists
 from plotly.subplots import make_subplots
 from scipy.spatial import SphericalVoronoi, geometric_slerp
 from scipy.stats import entropy
@@ -12,14 +12,12 @@ from abc import ABC
 import math
 import numpy as np
 from numpy import ndarray
-import os
+from os.path import exists
 import pickle
 import plotly
 import plotly.express as px
 import plotly.graph_objs as go
 import scipy.stats
-import sys
-
 
 ONE_USER = '0'
 ONE_VIDEO = '10_Cows'
@@ -91,14 +89,14 @@ class Dataset:
     def _get_sample_dataset(self, load=False):
         if Dataset.sample_dataset is None:
             if load or not exists(Dataset.sample_dataset_pickle):
-                sys.path.append('head_motion_prediction')
-                from head_motion_prediction.David_MMSys_18.Read_Dataset import load_sampled_dataset
                 project_path = "head_motion_prediction"
                 cwd = os.getcwd()
+                print(cwd)
                 if os.path.basename(cwd) != project_path:
                     print(f"Dataset.sample_dataset from {project_path}")
                     os.chdir(project_path)
-                    Dataset.sample_dataset = load_sampled_dataset()
+                    import head_motion_prediction.David_MMSys_18.Read_Dataset as david
+                    Dataset.sample_dataset = david.load_sampled_dataset()
                     os.chdir(cwd)
                     with open(Dataset.sample_dataset_pickle, 'wb') as f:
                         pickle.dump(Dataset.sample_dataset, f, protocol=pickle.HIGHEST_PROTOCOL)
