@@ -91,7 +91,6 @@ class Dataset:
             if load or not exists(Dataset.sample_dataset_pickle):
                 project_path = "head_motion_prediction"
                 cwd = os.getcwd()
-                print(cwd)
                 if os.path.basename(cwd) != project_path:
                     print(f"Dataset.sample_dataset from {project_path}")
                     os.chdir(project_path)
@@ -113,16 +112,15 @@ class Dataset:
             vp = VPExtractTilesRect(6, 4, cover=VPExtract.Cover.CENTER)
         users_entropy = np.ndarray(len(self.users_id))
         # fill users_entropy
-        for index, user in enumerate(self.users_id[:1]):
+        for index, user in enumerate(self.users_id):
             heatmaps = []
             for trace in self.dataset[user][ONE_VIDEO][:, 1:]:
                 heatmap, _, _ = vp.request(trace)
                 heatmaps.append(heatmap)
             sum = np.sum(heatmaps, axis=0).reshape((-1))
-            print(sum)
+            # print(sum)
             # https://stackoverflow.com/questions/15450192/fastest-way-to-compute-entropy-in-python
             users_entropy[index] = scipy.stats.entropy(sum)
-            # print(users_entropy[index])
         # define class threshold
         # https://www.askpython.com/python/normal-distribution
         # https://matthew-brett.github.io/teaching/random_fields.html
@@ -160,7 +158,7 @@ class VPExtract(ABC):
         ONLY33PERC = auto()
 
     @abstractmethod
-    def request(self, trace) -> tuple[ndarray, float, list]:
+    def request(self, trace, return_metrics=False) -> tuple[ndarray, float, list]:
         pass
 
     @property
@@ -194,18 +192,18 @@ class VPExtractTilesRect(VPExtract):
             case VPExtract.Cover.ONLY33PERC:
                 return f'{prefix}_33perc'
 
-    def request(self, trace):
+    def request(self, trace: ndarray, return_metrics=False):
         match self.cover:
             case VPExtract.Cover.CENTER:
-                return self._request_110radius_center(trace)
+                return self._request_110radius_center(trace, return_metrics)
             case VPExtract.Cover.ANY:
-                return self._request_min_cover(trace, 0.0)
+                return self._request_min_cover(trace, 0.0,return_metrics)
             case VPExtract.Cover.ONLY20PERC:
-                return self._request_min_cover(trace, 0.2)
+                return self._request_min_cover(trace, 0.2, return_metrics)
             case VPExtract.Cover.ONLY33PERC:
-                return self._request_min_cover(trace, 0.33)
+                return self._request_min_cover(trace, 0.33, return_metrics)
 
-    def _request_min_cover(self, trace, required_cover: float):
+    def _request_min_cover(self, trace, required_cover: float, return_metrics):
         heatmap = np.zeros((self.t_vert, self.t_hor), dtype=np.int32)
         areas_in = []
         vp_quality = 0.0
@@ -220,11 +218,12 @@ class VPExtractTilesRect(VPExtract):
                     view_area = rect_tile_polygon.overlap(fov_polygon)
                     if view_area > required_cover:
                         heatmap[i][j] = 1
-                        areas_in.append(view_area)
-                        vp_quality += fov_polygon.overlap(rect_tile_polygon)
+                        if (return_metrics):
+                            areas_in.append(view_area)
+                            vp_quality += fov_polygon.overlap(rect_tile_polygon)
         return heatmap, vp_quality, areas_in
 
-    def _request_110radius_center(self, trace):
+    def _request_110radius_center(self, trace, return_metrics):
         heatmap = np.zeros((self.t_vert, self.t_hor), dtype=np.int32)
         vp_110_rad_half = np.deg2rad(110/2)
         areas_in = []
@@ -235,13 +234,13 @@ class VPExtractTilesRect(VPExtract):
                 dist = compute_orthodromic_distance(trace, tile_center)
                 if dist <= vp_110_rad_half:
                     heatmap[i][j] = 1
-                    rect_tile_polygon = polygon.SphericalPolygon(rect_tile_points)
-                    fov_polygon = polygon.SphericalPolygon(points_fov_cartesian(trace))
-                    view_area = rect_tile_polygon.overlap(fov_polygon)
-                    areas_in.append(view_area)
-                    vp_quality += fov_polygon.overlap(rect_tile_polygon)
+                    if (return_metrics):
+                        rect_tile_polygon = polygon.SphericalPolygon(rect_tile_points)
+                        fov_polygon = polygon.SphericalPolygon(points_fov_cartesian(trace))
+                        view_area = rect_tile_polygon.overlap(fov_polygon)
+                        areas_in.append(view_area)
+                        vp_quality += fov_polygon.overlap(rect_tile_polygon)
         return heatmap, vp_quality, areas_in
-
 
 class VPExtractTilesVoro(VPExtract):
     def __init__(self, sphere_voro: SphericalVoronoi, cover: VPExtract.Cover):
@@ -262,18 +261,18 @@ class VPExtractTilesVoro(VPExtract):
             case VPExtract.Cover.ONLY33PERC:
                 return f'{prefix}_33perc'
 
-    def request(self, trace):
+    def request(self, trace, return_metrics=False):
         match self.cover:
             case VPExtract.Cover.CENTER:
-                return self._request_110radius_center(trace)
+                return self._request_110radius_center(trace, return_metrics)
             case VPExtract.Cover.ANY:
-                return self._request_min_cover(trace, 0)
+                return self._request_min_cover(trace, 0, return_metrics)
             case VPExtract.Cover.ONLY20PERC:
-                return self._request_min_cover(trace, 0.2)
+                return self._request_min_cover(trace, 0.2, return_metrics)
             case VPExtract.Cover.ONLY33PERC:
-                return self._request_min_cover(trace, 0.33)
+                return self._request_min_cover(trace, 0.33,return_metrics)
 
-    def _request_110radius_center(self, trace):
+    def _request_110radius_center(self, trace,return_metrics):
         vp_110_rad_half = np.deg2rad(110/2)
         areas_in = []
         vp_quality = 0.0
@@ -282,14 +281,15 @@ class VPExtractTilesVoro(VPExtract):
             dist = compute_orthodromic_distance(trace, self.sphere_voro.points[index])
             if dist <= vp_110_rad_half:
                 heatmap[index] += 1
-                voro_tile_polygon = polygon.SphericalPolygon(self.sphere_voro.vertices[region])
-                fov_polygon = polygon.SphericalPolygon(points_fov_cartesian(trace))
-                view_area = voro_tile_polygon.overlap(fov_polygon)
-                areas_in.append(view_area)
-                vp_quality += fov_polygon.overlap(voro_tile_polygon)
+                if(return_metrics):
+                    voro_tile_polygon = polygon.SphericalPolygon(self.sphere_voro.vertices[region])
+                    fov_polygon = polygon.SphericalPolygon(points_fov_cartesian(trace))
+                    view_area = voro_tile_polygon.overlap(fov_polygon)
+                    areas_in.append(view_area)
+                    vp_quality += fov_polygon.overlap(voro_tile_polygon)
         return heatmap, vp_quality, areas_in
 
-    def _request_min_cover(self, trace, required_cover: float):
+    def _request_min_cover(self, trace, required_cover: float, return_metrics):
         areas_in = []
         vp_quality = 0.0
         heatmap = np.zeros(len(self.sphere_voro.regions))
@@ -300,8 +300,9 @@ class VPExtractTilesVoro(VPExtract):
             if view_area > required_cover:
                 heatmap[index] += 1
                 # view_area = 1 if view_area > 1 else view_area  # fixed with compute_orthodromic_distance
-                areas_in.append(view_area)
-                vp_quality += fov_polygon.overlap(voro_tile_polygon)
+                if(return_metrics):
+                    areas_in.append(view_area)
+                    vp_quality += fov_polygon.overlap(voro_tile_polygon)
         return heatmap, vp_quality, areas_in
 
 
@@ -514,7 +515,7 @@ class Plot:
             traces_vp_quality = []
             # call func per trace
             for trace in self.traces:
-                heatmap_in, quality_in, areas_in = vpextract.request(trace)
+                heatmap_in, quality_in, areas_in = vpextract.request(trace,return_metrics=True)
                 traces_n_reqs.append(np.sum(heatmap_in))
                 traces_heatmaps.append(heatmap_in)
                 traces_areas.append(areas_in)
