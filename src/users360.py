@@ -50,8 +50,8 @@ VORONOI_24P = points_voro(24)
 
 
 def points_rect_tile_cartesian(i, j, t_hor, t_vert) -> Tuple[NDArray, NDArray]:
-    d_hor = np.deg2rad(360/t_hor)
-    d_vert = np.deg2rad(180/t_vert)
+    d_hor = degrees_to_radian(360/t_hor)
+    d_vert = degrees_to_radian(180/t_vert)
     theta_c = d_hor * (j + 0.5)
     phi_c = d_vert * (i + 0.5)
     polygon_rect_tile = np.array([
@@ -62,16 +62,53 @@ def points_rect_tile_cartesian(i, j, t_hor, t_vert) -> Tuple[NDArray, NDArray]:
     return polygon_rect_tile, eulerian_to_cartesian(theta_c, phi_c)
 
 
+rad360 = degrees_to_radian(360)
+rad180 = degrees_to_radian(180)
+margin_theta = degrees_to_radian(110/2)
+margin_thi = degrees_to_radian(90/2)
+
 def points_fov_cartesian(trace) -> NDArray:
-    # https://daglar-cizmeci.com/how-does-virtual-reality-work/
-    margin_lateral = np.deg2rad(90/2)
-    margin_ab = np.deg2rad(110/2)
+    # https://daglar-cizmeci.com/how-does-virtual-reality-work/#:~:text=Vive%20and%20Rift%20each%20have%20a%20110%2Ddegree%20field%20of%20vision
     theta_vp, phi_vp = cartesian_to_eulerian(*trace)
+    theta_vp_left = theta_vp-margin_theta
+    theta_vp_right = theta_vp+margin_theta
+    phi_vp_bottom = phi_vp-margin_thi
+    phi_vp_top = phi_vp+margin_thi
+    
+    # second
+    # polygon_fov = np.array([
+    #     eulerian_to_cartesian(theta_vp-margin_thi, phi_vp+margin_theta),
+    #     eulerian_to_cartesian(theta_vp+margin_thi, phi_vp+margin_theta),
+    #     eulerian_to_cartesian(theta_vp+margin_thi, phi_vp-margin_theta),
+    #     eulerian_to_cartesian(theta_vp-margin_thi, phi_vp-margin_theta),
+    # ])
+    
+    # third
+    # if theta_vp_left < 0 :
+    #     theta_vp_left = rad360-(abs(theta_vp_left) % rad360)
+    # if theta_vp_right > rad360:
+    #     theta_vp_right = theta_vp_right % rad360
+    # if phi_vp_bottom < 0:
+    #     phi_vp_bottom = abs(phi_vp_bottom)
+    # if phi_vp_top > rad180:
+    #     phi_vp_top = rad180-(abs(phi_vp_top) % rad180)
+    
+    # polygon_fov_eur = np.array([
+    #     (theta_vp_right, phi_vp_bottom),
+    #     (theta_vp_right, phi_vp_top),
+    #     (theta_vp_left, phi_vp_top),
+    #     (theta_vp_left, phi_vp_bottom)  
+    # ])
     polygon_fov = np.array([
-        eulerian_to_cartesian(theta_vp+margin_lateral, phi_vp-margin_ab),
-        eulerian_to_cartesian(theta_vp+margin_lateral, phi_vp+margin_ab),
-        eulerian_to_cartesian(theta_vp-margin_lateral, phi_vp+margin_ab),
-        eulerian_to_cartesian(theta_vp-margin_lateral, phi_vp-margin_ab)])
+        eulerian_to_cartesian(theta_vp_right, phi_vp_bottom),
+        eulerian_to_cartesian(theta_vp_right, phi_vp_top),
+        eulerian_to_cartesian(theta_vp_left, phi_vp_top),
+        eulerian_to_cartesian(theta_vp_left, phi_vp_bottom)
+    ])
+    
+    # print(polygon_fov_eur)
+    # print(polygon_fov)
+    
     return polygon_fov
 
 
@@ -229,13 +266,13 @@ class VPExtractTilesRect(VPExtract):
         heatmap = np.zeros((self.t_vert, self.t_hor), dtype=np.int32)
         areas_in = []
         vp_quality = 0.0
-        vp_threshold = np.deg2rad(110/2)
+        vp_threshold = degrees_to_radian(110/2)
         for i in range(self.t_vert):
             for j in range(self.t_hor):
                 rect_tile_points, tile_center = points_rect_tile_cartesian(i, j, self.t_hor, self.t_vert)
                 dist = compute_orthodromic_distance(trace, tile_center)
                 if dist <= vp_threshold:
-                    rect_tile_polygon = polygon.SphericalPolygon(rect_tile_points)
+                    rect_tile_polygon = polygon.SphericalPolygon(rect_tile_points,)
                     fov_polygon = polygon.SphericalPolygon(points_fov_cartesian(trace))
                     view_area = rect_tile_polygon.overlap(fov_polygon)
                     if view_area > required_cover:
@@ -247,7 +284,7 @@ class VPExtractTilesRect(VPExtract):
 
     def _request_110radius_center(self, trace, return_metrics):
         heatmap = np.zeros((self.t_vert, self.t_hor), dtype=np.int32)
-        vp_110_rad_half = np.deg2rad(110/2)
+        vp_110_rad_half = degrees_to_radian(110/2)
         areas_in = []
         vp_quality = 0.0
         for i in range(self.t_vert):
@@ -295,7 +332,7 @@ class VPExtractTilesVoro(VPExtract):
                 return self._request_min_cover(trace, 0.33,return_metrics)
 
     def _request_110radius_center(self, trace,return_metrics):
-        vp_110_rad_half = np.deg2rad(110/2)
+        vp_110_rad_half = degrees_to_radian(110/2)
         areas_in = []
         vp_quality = 0.0
         heatmap = np.zeros(len(self.sphere_voro.regions))
@@ -384,8 +421,7 @@ class Traces:
                 start = sphere_voro.vertices[region][i]
                 end = sphere_voro.vertices[region][(i + 1) % n]
                 result = np.array(geometric_slerp(start, end, t))
-                edge = go.Scatter3d(x=result[..., 0], y=result[..., 1], z=result[..., 2], mode='lines', line={
-                                    'width': 5, 'color': 'black'}, name='region edge', showlegend=False)
+                edge = go.Scatter3d(x=result[..., 0], y=result[..., 1], z=result[..., 2], mode='lines', line={'width': 5, 'color': 'black'}, name='region edge', showlegend=False)
                 data.append(edge)
         return data
 
@@ -470,13 +506,15 @@ class Traces:
             data = self._sphere_data_voro(vpextract.sphere_voro)
         fov_polygon = points_fov_cartesian(trace)
         n = len(fov_polygon)
+        gens = go.Scatter3d(x=fov_polygon[:, 0], y=fov_polygon[:, 1], z=fov_polygon[:, 2],
+                            mode='markers', marker={'size': 5, 'opacity': 1.0, 'color': 'blue'}, name='fov corner', showlegend=False)
+        data.append(gens)
         t = np.linspace(0, 1, 100)
         for index in range(n):
             start = fov_polygon[index]
             end = fov_polygon[(index + 1) % n]
             result = np.array(geometric_slerp(start, end, t))
-            edge = go.Scatter3d(x=result[..., 0], y=result[..., 1], z=result[..., 2], mode='lines', line={
-                'width': 5, 'color': 'blue'}, name='vp edge', showlegend=False)
+            edge = go.Scatter3d(x=result[..., 0], y=result[..., 1], z=result[..., 2], mode='lines', line={'width': 5, 'color': 'blue'}, name='vp edge', showlegend=False)
             data.append(edge)
         heatmap, _, _ = vpextract.request(trace)
         title = f"{self.title} {vpextract.title_with_sum_heatmaps([heatmap])}"
@@ -566,8 +604,5 @@ class Traces:
         fig_bar.update_layout(barmode="stack")
         if(plot_bars):
             fig_bar.show()
-
-# dataset = Dataset.singleton()
-# Traces(dataset.traces_one_video(dataset.users_hight)).sphere(VPEXTRACT_RECT_6_4_CENTER)
 
 # %%

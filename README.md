@@ -24,13 +24,13 @@ https://github.com/V-Sense/VR_user_behaviour
 https://github.com/mylenefarias/UnB_360_videos_database
 
 * tiled stream  
+https://github.com/jvdrhoof/VRClient
+https://github.com/manojMadarasingha/OpCASH
+https://github.com/blackwiz4rd/TileRateSelector_360videos
 https://github.com/jvdrhoof/VRClient/blob/master/src/rate_adaptation.py
 https://github.com/EricLindskog/REEFT-360/blob/main/Requester/WaterfillRequester.cs
 https://github.com/xmar/360Transformations
-https://github.com/manojMadarasingha/OpCASH
-https://github.com/blackwiz4rd/TileRateSelector_360videos
 https://github.com/EricLindskog/REEFT-360
-https://github.com/jvdrhoof/VRClient
 https://github.com/confiwent/video2DASH
 https://github.com/Yang-Jace-Liu/dash-360
 https://github.com/gpac/gpac/wiki/Tiled-Streaming
