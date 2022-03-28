@@ -78,6 +78,7 @@ def points_fov_cartesian(trace) -> NDArray:
 class Dataset:
     sample_dataset = None
     sample_dataset_pickle = 'users360.pickle'
+    _singleton = None
 
     def __init__(self, dataset=None):
         if dataset is None:
@@ -85,6 +86,12 @@ class Dataset:
             self.users_id = np.array([key for key in self.dataset.keys()])
             self.users_len = len(self.users_id)
 
+    @classmethod
+    def singleton(cls):
+        if cls._singleton is None:
+            cls._singleton = Dataset()
+        return cls._singleton
+        
     # -- dataset funcs
 
     def _sample_dataset(self, load=False):
@@ -552,7 +559,5 @@ class Traces:
         if(plot_bars):
             fig_bar.show()
 
-
-_, _, hight = Dataset().users_entropy(VPEXTRACT_RECT_6_4_CENTER)
 
 # %%
