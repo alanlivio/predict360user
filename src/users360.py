@@ -11,7 +11,7 @@ from typing import Tuple, Iterable
 from abc import ABC
 import math
 import numpy as np
-from numpy import ndarray
+from numpy.typing import NDArray
 from os.path import exists
 import pickle
 import plotly
@@ -49,7 +49,7 @@ VORONOI_14P = points_voro(TRINITY_NPATCHS)
 VORONOI_24P = points_voro(24)
 
 
-def points_rect_tile_cartesian(i, j, t_hor, t_vert) -> Tuple[ndarray, ndarray]:
+def points_rect_tile_cartesian(i, j, t_hor, t_vert) -> Tuple[NDArray, NDArray]:
     d_hor = np.deg2rad(360/t_hor)
     d_vert = np.deg2rad(180/t_vert)
     theta_c = d_hor * (j + 0.5)
@@ -62,7 +62,7 @@ def points_rect_tile_cartesian(i, j, t_hor, t_vert) -> Tuple[ndarray, ndarray]:
     return polygon_rect_tile, eulerian_to_cartesian(theta_c, phi_c)
 
 
-def points_fov_cartesian(trace) -> ndarray:
+def points_fov_cartesian(trace) -> NDArray:
     # https://daglar-cizmeci.com/how-does-virtual-reality-work/
     margin_lateral = np.deg2rad(90/2)
     margin_ab = np.deg2rad(110/2)
@@ -82,7 +82,8 @@ class Dataset:
     def __init__(self, dataset=None):
         if dataset is None:
             self.dataset = self._get_sample_dataset()
-            self.users_id = [key for key in self.dataset.keys()]
+            self.users_id = np.array([key for key in self.dataset.keys()])
+            self.users_len = len(self.users_id)
 
     # -- dataset funcs
 
@@ -107,32 +108,38 @@ class Dataset:
 
     # -- cluster funcs
 
-    def get_users_entropy(self, vp=None):
-        if vp is None:
-            vp = VPExtractTilesRect(6, 4, cover=VPExtract.Cover.CENTER)
-        users_entropy = np.ndarray(len(self.users_id))
+    def get_users_entropy(self, vpextract, plot_histogram=False):
         # fill users_entropy
+        users_entropy = np.ndarray(self.users_len)
         for index, user in enumerate(self.users_id):
             heatmaps = []
             for trace in self.dataset[user][ONE_VIDEO][:, 1:]:
-                heatmap, _, _ = vp.request(trace)
+                heatmap, _, _ = vpextract.request(trace)
                 heatmaps.append(heatmap)
             sum = np.sum(heatmaps, axis=0).reshape((-1))
-            # print(sum)
             # https://stackoverflow.com/questions/15450192/fastest-way-to-compute-entropy-in-python
-            users_entropy[index] = scipy.stats.entropy(sum)
+            users_entropy[index] = scipy.stats.entropy(sum) # type: ignore
         # define class threshold
-        # https://www.askpython.com/python/normal-distribution
-        # https://matthew-brett.github.io/teaching/random_fields.html
-        return users_entropy
+        # https://stackoverflow.com/questions/1903462/how-can-i-zip-sort-parallel-numpy-arrays
+        if plot_histogram:
+            px.scatter(y=users_entropy, labels={"y":"entropy"}).show()
+            go.Figure(data=[go.Histogram(x=users_entropy)]).show()
+        p_sort = users_entropy.argsort()
+        users_id_s_e = self.users_id[p_sort]
+        threshold_medium = int(self.users_len * .60)
+        threshold_hight = int(self.users_len * .80)
+        users_low = users_id_s_e[:threshold_medium]
+        users_medium = users_id_s_e[threshold_medium:threshold_hight]
+        users_hight = users_id_s_e[threshold_hight:]
+        return users_low, users_medium, users_hight
 
-    def get_one_trace(self, user=ONE_USER, video=ONE_VIDEO) -> ndarray:
+    def get_one_trace(self, user=ONE_USER, video=ONE_VIDEO) -> NDArray:
         return self.dataset[user][video][:, 1:][:1]
 
-    def get_traces_one_video_one_user(self, user=ONE_USER, video=ONE_VIDEO) -> ndarray:
+    def get_traces_one_video_one_user(self, user=ONE_USER, video=ONE_VIDEO) -> NDArray:
         return self.dataset[user][video][:, 1:]
 
-    def get_traces_one_video_all_users(self, video=ONE_VIDEO) -> ndarray:
+    def get_traces_one_video_all_users(self, video=ONE_VIDEO) -> NDArray:
         n_traces = len(self.dataset[ONE_USER][video][:, 1:])
         traces = np.ndarray((len(self.dataset.keys())*n_traces, 3))
         count = 0
@@ -144,7 +151,7 @@ class Dataset:
                 count += 1
         return traces
 
-    def get_traces_random_one_user(self, num) -> ndarray:
+    def get_traces_random_one_user(self, num) -> NDArray:
         one_user = self.get_traces_one_video_one_user()
         step = int(len(one_user)/num)
         return one_user[::step]
@@ -158,7 +165,7 @@ class VPExtract(ABC):
         ONLY33PERC = auto()
 
     @abstractmethod
-    def request(self, trace, return_metrics=False) -> tuple[ndarray, float, list]:
+    def request(self, trace, return_metrics=False) -> tuple[NDArray, float, list]:
         pass
 
     @property
@@ -192,7 +199,7 @@ class VPExtractTilesRect(VPExtract):
             case VPExtract.Cover.ONLY33PERC:
                 return f'{prefix}_33perc'
 
-    def request(self, trace: ndarray, return_metrics=False):
+    def request(self, trace: NDArray, return_metrics=False):
         match self.cover:
             case VPExtract.Cover.CENTER:
                 return self._request_110radius_center(trace, return_metrics)
@@ -329,11 +336,11 @@ VPEXTRACT_METHODS = [*VPEXTRACTS_VORO, *VPEXTRACTS_RECT]
 
 
 class Plot:
-    def __init__(self, traces: ndarray, title_sufix=""):
+    def __init__(self, traces: NDArray, title_sufix=""):
         assert traces.shape[1] == 3  # check if cartesian
         self.traces = traces
+        print("Plot.traces.shape is " + str(traces.shape))
         self.title = f"{str(len(traces))}_traces{title_sufix}"
-        print("Dataset.traces.shape is " + str(traces.shape))
 
     # -- sphere funcs
 
@@ -544,5 +551,8 @@ class Plot:
         fig_bar.update_layout(barmode="stack")
         if(plot_bars):
             fig_bar.show()
+
+
+_, _, hight = Dataset().get_users_entropy(VPEXTRACT_RECT_6_4_CENTER)
 
 # %%

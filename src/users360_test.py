@@ -37,8 +37,10 @@ class User360Test(unittest.TestCase):
         self.one_user.erp_heatmap(VPEXTRACT_RECT_6_4_CENTER, to_html=True)
 
     def test_entropy(self):
-        users_entropy = Dataset().get_users_entropy()
-        self.assertIsNotNone(users_entropy)
+        low, medium, hight = Dataset().get_users_entropy(VPEXTRACT_RECT_6_4_CENTER)
+        self.assertIsNotNone(low)
+        self.assertIsNotNone(medium)
+        self.assertIsNotNone(hight)
 
 
 if __name__ == '__main__':
