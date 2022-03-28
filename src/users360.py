@@ -115,29 +115,26 @@ class Dataset:
 
     # -- cluster funcs
 
-    def users_entropy(self, vpextract, plot_histogram=False):
+    def users_entropy(self, vpextract, plot_scatter=False):
         # fill users_entropy
         users_entropy = np.ndarray(self.users_len)
-        for index, user in enumerate(self.users_id):
+        for user in self.users_id:
             heatmaps = []
             for trace in self.dataset[user][ONE_VIDEO][:, 1:]:
                 heatmap, _, _ = vpextract.request(trace)
                 heatmaps.append(heatmap)
             sum = np.sum(heatmaps, axis=0).reshape((-1))
             # https://stackoverflow.com/questions/15450192/fastest-way-to-compute-entropy-in-python
-            users_entropy[index] = scipy.stats.entropy(sum) # type: ignore
+            users_entropy[int(user)] = scipy.stats.entropy(sum) # type: ignore
         # define class threshold
-        # https://stackoverflow.com/questions/1903462/how-can-i-zip-sort-parallel-numpy-arrays
-        if plot_histogram:
-            px.scatter(y=users_entropy, labels={"y":"entropy"}).show()
-            go.Figure(data=[go.Histogram(x=users_entropy)]).show()
+        if plot_scatter:
+            px.scatter(y=users_entropy, labels={"y":"entropy"}, width=600).show()
         p_sort = users_entropy.argsort()
-        users_id_s_e = self.users_id[p_sort]
         threshold_medium = int(self.users_len * .60)
         threshold_hight = int(self.users_len * .80)
-        users_low = users_id_s_e[:threshold_medium]
-        users_medium = users_id_s_e[threshold_medium:threshold_hight]
-        users_hight = users_id_s_e[threshold_hight:]
+        users_low = [str(x) for x in p_sort[:threshold_medium]]
+        users_medium =  [str(x) for x in p_sort[threshold_medium:threshold_hight]]
+        users_hight =  [str(x) for x in p_sort[threshold_hight:]]
         return users_low, users_medium, users_hight
 
     def one_trace(self, user=ONE_USER, video=ONE_VIDEO) -> NDArray:
@@ -559,5 +556,6 @@ class Traces:
         if(plot_bars):
             fig_bar.show()
 
+# print(Dataset.singleton().users_entropy(VPEXTRACT_RECT_6_4_CENTER, plot_scatter=True))
 
 # %%
