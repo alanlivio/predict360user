@@ -152,11 +152,13 @@ class Dataset:
     def traces_one_video_one_user(self, user=ONE_USER, video=ONE_VIDEO) -> NDArray:
         return self.dataset[user][video][:, 1:]
 
-    def traces_one_video_all_users(self, video=ONE_VIDEO) -> NDArray:
-        n_traces = len(self.dataset[ONE_USER][video][:, 1:])
-        traces = np.ndarray((len(self.dataset.keys())*n_traces, 3))
+    def traces_one_video(self, users=None, video=ONE_VIDEO) -> NDArray:
         count = 0
-        for user in self.dataset.keys():
+        if users is None:
+            users = self.dataset.keys()
+        n_traces = len(self.dataset[ONE_USER][video][:, 1:])
+        traces = np.ndarray((len(users)*n_traces, 3))
+        for user in users:
             for trace in self.dataset[user][video][:, 1:]:
                 traces.itemset((count, 0), trace[0])
                 traces.itemset((count, 1), trace[1])
@@ -565,6 +567,7 @@ class Traces:
         if(plot_bars):
             fig_bar.show()
 
-# print(Dataset.singleton().users_entropy(VPEXTRACT_RECT_6_4_CENTER, plot_scatter=True))
+# dataset = Dataset.singleton()
+# Traces(dataset.traces_one_video(dataset.users_hight)).sphere(VPEXTRACT_RECT_6_4_CENTER)
 
 # %%
