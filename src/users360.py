@@ -81,13 +81,13 @@ class Dataset:
 
     def __init__(self, dataset=None):
         if dataset is None:
-            self.dataset = self._get_sample_dataset()
+            self.dataset = self._sample_dataset()
             self.users_id = np.array([key for key in self.dataset.keys()])
             self.users_len = len(self.users_id)
 
     # -- dataset funcs
 
-    def _get_sample_dataset(self, load=False):
+    def _sample_dataset(self, load=False):
         if Dataset.sample_dataset is None:
             if load or not exists(Dataset.sample_dataset_pickle):
                 project_path = "head_motion_prediction"
@@ -108,7 +108,7 @@ class Dataset:
 
     # -- cluster funcs
 
-    def get_users_entropy(self, vpextract, plot_histogram=False):
+    def users_entropy(self, vpextract, plot_histogram=False):
         # fill users_entropy
         users_entropy = np.ndarray(self.users_len)
         for index, user in enumerate(self.users_id):
@@ -133,13 +133,13 @@ class Dataset:
         users_hight = users_id_s_e[threshold_hight:]
         return users_low, users_medium, users_hight
 
-    def get_one_trace(self, user=ONE_USER, video=ONE_VIDEO) -> NDArray:
+    def one_trace(self, user=ONE_USER, video=ONE_VIDEO) -> NDArray:
         return self.dataset[user][video][:, 1:][:1]
 
-    def get_traces_one_video_one_user(self, user=ONE_USER, video=ONE_VIDEO) -> NDArray:
+    def traces_one_video_one_user(self, user=ONE_USER, video=ONE_VIDEO) -> NDArray:
         return self.dataset[user][video][:, 1:]
 
-    def get_traces_one_video_all_users(self, video=ONE_VIDEO) -> NDArray:
+    def traces_one_video_all_users(self, video=ONE_VIDEO) -> NDArray:
         n_traces = len(self.dataset[ONE_USER][video][:, 1:])
         traces = np.ndarray((len(self.dataset.keys())*n_traces, 3))
         count = 0
@@ -151,8 +151,8 @@ class Dataset:
                 count += 1
         return traces
 
-    def get_traces_random_one_user(self, num) -> NDArray:
-        one_user = self.get_traces_one_video_one_user()
+    def traces_random_one_user(self, num) -> NDArray:
+        one_user = self.traces_one_video_one_user()
         step = int(len(one_user)/num)
         return one_user[::step]
 
@@ -335,11 +335,11 @@ VPEXTRACTS_RECT = [
 VPEXTRACT_METHODS = [*VPEXTRACTS_VORO, *VPEXTRACTS_RECT]
 
 
-class Plot:
+class Traces:
     def __init__(self, traces: NDArray, title_sufix=""):
         assert traces.shape[1] == 3  # check if cartesian
         self.traces = traces
-        print("Plot.traces.shape is " + str(traces.shape))
+        print("Traces.traces.shape is " + str(traces.shape))
         self.title = f"{str(len(traces))}_traces{title_sufix}"
 
     # -- sphere funcs
@@ -426,7 +426,7 @@ class Plot:
                         result[..., 1],
                         result[..., 2],
                         c='k')
-        # trajectory = get_traces_one_video_one_user()
+        # trajectory = traces_one_video_one_user()
         ax.plot(self.traces[:, 0], self.traces[:, 1], self.traces[:, 2], label='parametric curve')
         plt.show()
 
@@ -553,6 +553,6 @@ class Plot:
             fig_bar.show()
 
 
-_, _, hight = Dataset().get_users_entropy(VPEXTRACT_RECT_6_4_CENTER)
+_, _, hight = Dataset().users_entropy(VPEXTRACT_RECT_6_4_CENTER)
 
 # %%

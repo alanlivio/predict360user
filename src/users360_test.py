@@ -7,10 +7,10 @@ class User360Test(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.one_user = Plot(Dataset().get_traces_one_video_one_user(), title_sufix="one_video_one_user")
-        cls.all_users = Plot(Dataset().get_traces_one_video_all_users(), title_sufix="one_video_all_users")
-        cls.some_users = Plot(Dataset().get_traces_random_one_user(4), title_sufix="some_users")
-        cls.one_trace = Plot(Dataset().get_one_trace())
+        cls.one_user = Traces(Dataset().traces_one_video_one_user(), title_sufix="one_video_one_user")
+        cls.all_users = Traces(Dataset().traces_one_video_all_users(), title_sufix="one_video_all_users")
+        cls.some_users = Traces(Dataset().traces_random_one_user(4), title_sufix="some_users")
+        cls.one_trace = Traces(Dataset().one_trace())
 
     def test_plot_traces_shape(self):
         self.assertIsNotNone(self.one_trace)
@@ -37,7 +37,7 @@ class User360Test(unittest.TestCase):
         self.one_user.erp_heatmap(VPEXTRACT_RECT_6_4_CENTER, to_html=True)
 
     def test_entropy(self):
-        low, medium, hight = Dataset().get_users_entropy(VPEXTRACT_RECT_6_4_CENTER)
+        low, medium, hight = Dataset().users_entropy(VPEXTRACT_RECT_6_4_CENTER)
         self.assertIsNotNone(low)
         self.assertIsNotNone(medium)
         self.assertIsNotNone(hight)
