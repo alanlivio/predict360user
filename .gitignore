@@ -131,7 +131,7 @@ dmypy.json
 
 # added
 src/plot_figs/
-src/users360.pickle
+**/*.pickle
 src/head_motion_prediction/
 src/VRClient/
 src/OpCASH/

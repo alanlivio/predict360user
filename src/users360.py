@@ -77,8 +77,9 @@ def points_fov_cartesian(trace) -> NDArray:
 
 class Dataset:
     sample_dataset = None
-    sample_dataset_pickle = 'users360.pickle'
+    sample_dataset_pickle = 'david.pickle'
     _singleton = None
+    _singleton_pickle = 'singleton.pickle'
 
     def __init__(self, dataset=None):
         if dataset is None:
@@ -87,16 +88,25 @@ class Dataset:
             self.users_len = len(self.users_id)
 
     @classmethod
+    def singleton_dump(cls):
+        with open(cls._singleton_pickle, 'wb') as f:
+            pickle.dump(cls._singleton, f)
+        
+    @classmethod
     def singleton(cls):
         if cls._singleton is None:
-            cls._singleton = Dataset()
+            if exists(cls._singleton_pickle):
+                with open(cls._singleton_pickle, 'rb') as f:
+                    cls._singleton = pickle.load(f)
+            else:
+                cls._singleton = Dataset()
         return cls._singleton
         
     # -- dataset funcs
 
-    def _sample_dataset(self, load=False):
+    def _sample_dataset(self):
         if Dataset.sample_dataset is None:
-            if load or not exists(Dataset.sample_dataset_pickle):
+            if not exists(Dataset.sample_dataset_pickle):
                 project_path = "head_motion_prediction"
                 cwd = os.getcwd()
                 if os.path.basename(cwd) != project_path:
@@ -106,7 +116,7 @@ class Dataset:
                     Dataset.sample_dataset = david.load_sampled_dataset()
                     os.chdir(cwd)
                     with open(Dataset.sample_dataset_pickle, 'wb') as f:
-                        pickle.dump(Dataset.sample_dataset, f, protocol=pickle.HIGHEST_PROTOCOL)
+                        pickle.dump(Dataset.sample_dataset, f)
             else:
                 print(f"Dataset.sample_dataset from {Dataset.sample_dataset_pickle}")
                 with open(Dataset.sample_dataset_pickle, 'rb') as f:
@@ -132,10 +142,9 @@ class Dataset:
         p_sort = users_entropy.argsort()
         threshold_medium = int(self.users_len * .60)
         threshold_hight = int(self.users_len * .80)
-        users_low = [str(x) for x in p_sort[:threshold_medium]]
-        users_medium =  [str(x) for x in p_sort[threshold_medium:threshold_hight]]
-        users_hight =  [str(x) for x in p_sort[threshold_hight:]]
-        return users_low, users_medium, users_hight
+        self.users_low = [str(x) for x in p_sort[:threshold_medium]]
+        self.users_medium =  [str(x) for x in p_sort[threshold_medium:threshold_hight]]
+        self.users_hight =  [str(x) for x in p_sort[threshold_hight:]]
 
     def one_trace(self, user=ONE_USER, video=ONE_VIDEO) -> NDArray:
         return self.dataset[user][video][:, 1:][:1]
