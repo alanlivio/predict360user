@@ -1,4 +1,5 @@
 # %%
+from cmath import cos
 import os
 from head_motion_prediction.Utils import *
 from abc import abstractmethod
@@ -6,6 +7,7 @@ from enum import Enum, auto
 from plotly.subplots import make_subplots
 from scipy.spatial import SphericalVoronoi, geometric_slerp
 from scipy.stats import entropy
+from scipy.spatial.transform import Rotation
 from spherical_geometry import polygon
 from typing import Tuple, Iterable
 from abc import ABC
@@ -62,6 +64,51 @@ def points_rect_tile_cartesian(i, j, t_hor, t_vert) -> Tuple[NDArray, NDArray]:
     return polygon_rect_tile, eulerian_to_cartesian(theta_c, phi_c)
 
 
+def eurelian_sum_to_cartesian(phi_a, theta_a, phi_b, theta_b) -> NDArray:
+    # https://math.stackexchange.com/questions/1587910/sum-of-two-vectors-in-spherical-coordinates
+    x = np.cos(theta_a) * np.sin(phi_a) + np.cos(theta_b) * np.sin(phi_b)
+    y = np.sin(theta_a) * np.sin(phi_a) + np.sin(theta_b) * np.sin(phi_b)
+    z = (np.cos(phi_a) + np.cos(phi_b))  # % 1
+    return np.array([x, y, z])
+
+
+def rotation_matrix_x(angle):
+    c = np.cos(angle)
+    s = np.sin(angle)
+    return np.array([
+        [1, 0, 0],
+        [0, c, -s],
+        [0, s, c]
+    ])
+
+
+def rotation_matrix_y(angle):
+    c = np.cos(angle)
+    s = np.sin(angle)
+    return np.array([
+        [c, 0, s],
+        [0, 1, 0],
+        [-s, 0, c]
+    ])
+
+
+def rotation_matrix_z(angle):
+    c = np.cos(angle)
+    s = np.sin(angle)
+    return np.array([
+        [c, -s, 0],
+        [s, c, 0],
+        [0, 0, 1]
+    ])
+
+
+def rotated_vector(yaw, pitch, roll, v):
+    res = np.matmul(rotation_matrix_z(yaw), np.matmul(rotation_matrix_y(pitch), np.matmul(rotation_matrix_x(roll), v)))
+    x, y, z = res[0], res[1], res[2]
+    return [x, y, z]
+
+
+
 rad360 = degrees_to_radian(360)
 rad180 = degrees_to_radian(180)
 margin_theta = degrees_to_radian(110/2)
@@ -69,46 +116,118 @@ margin_thi = degrees_to_radian(90/2)
 
 def points_fov_cartesian(trace) -> NDArray:
     # https://daglar-cizmeci.com/how-does-virtual-reality-work/#:~:text=Vive%20and%20Rift%20each%20have%20a%20110%2Ddegree%20field%20of%20vision
-    theta_vp, phi_vp = cartesian_to_eulerian(*trace)
-    theta_vp_left = theta_vp-margin_theta
-    theta_vp_right = theta_vp+margin_theta
-    phi_vp_bottom = phi_vp-margin_thi
-    phi_vp_top = phi_vp+margin_thi
-    
-    # second
+
+    # current try (working)
+    # theta_vp, phi_vp = cartesian_to_eulerian(*trace)
+    # theta_vp_left = theta_vp-margin_theta
+    # theta_vp_right = theta_vp+margin_theta
+    # phi_vp_bottom = phi_vp-margin_thi
+    # phi_vp_top = phi_vp+margin_thi
     # polygon_fov = np.array([
-    #     eulerian_to_cartesian(theta_vp-margin_thi, phi_vp+margin_theta),
-    #     eulerian_to_cartesian(theta_vp+margin_thi, phi_vp+margin_theta),
-    #     eulerian_to_cartesian(theta_vp+margin_thi, phi_vp-margin_theta),
-    #     eulerian_to_cartesian(theta_vp-margin_thi, phi_vp-margin_theta),
+    #     eulerian_to_cartesian(theta_vp_right, phi_vp_bottom),
+    #     eulerian_to_cartesian(theta_vp_right, phi_vp_top),
+    #     eulerian_to_cartesian(theta_vp_left, phi_vp_top),
+    #     eulerian_to_cartesian(theta_vp_left, phi_vp_bottom)
     # ])
-    
-    # third
+    # # current try fix
     # if theta_vp_left < 0 :
-    #     theta_vp_left = rad360-(abs(theta_vp_left) % rad360)
+    #     theta_vp_left = rad360-abs(theta_vp_left)
     # if theta_vp_right > rad360:
     #     theta_vp_right = theta_vp_right % rad360
     # if phi_vp_bottom < 0:
-    #     phi_vp_bottom = abs(phi_vp_bottom)
+    #     phi_vp_bottom = rad180-abs(phi_vp_bottom)
     # if phi_vp_top > rad180:
-    #     phi_vp_top = rad180-(abs(phi_vp_top) % rad180)
-    
-    # polygon_fov_eur = np.array([
-    #     (theta_vp_right, phi_vp_bottom),
-    #     (theta_vp_right, phi_vp_top),
-    #     (theta_vp_left, phi_vp_top),
-    #     (theta_vp_left, phi_vp_bottom)  
+    #     phi_vp_top = phi_vp_top % rad180
+
+    # try sum cartesian
+    #  https://math.stackexchange.com/questions/1587910/sum-of-two-vectors-in-spherical-coordinates
+    # theta_vp, phi_vp = cartesian_to_eulerian(*trace)
+    # theta_vp, phi_vp = eulerian_in_range(theta_vp, phi_vp)
+    # margin_theta = degrees_to_radian(110/2)
+    # margin_thi = degrees_to_radian(90/2)
+    # polygon_fov = np.array([
+    #     eurelian_sum_to_cartesian(theta_vp, phi_vp, margin_theta,-margin_thi),
+    #     eurelian_sum_to_cartesian(theta_vp, phi_vp, margin_theta, margin_thi),
+    #     eurelian_sum_to_cartesian(theta_vp, phi_vp, -margin_theta, margin_thi),
+    #     eurelian_sum_to_cartesian(theta_vp, phi_vp, -margin_theta, -margin_thi)
     # ])
-    polygon_fov = np.array([
-        eulerian_to_cartesian(theta_vp_right, phi_vp_bottom),
-        eulerian_to_cartesian(theta_vp_right, phi_vp_top),
-        eulerian_to_cartesian(theta_vp_left, phi_vp_top),
-        eulerian_to_cartesian(theta_vp_left, phi_vp_bottom)
+
+    # try rotation from VRClient
+    # margin_theta = degrees_to_radian(110/2)
+    # margin_thi = degrees_to_radian(90/2)
+    # polygon_fov = np.array([
+    #     rotated_vector(margin_theta,-margin_thi, 0, trace),
+    #     rotated_vector(margin_theta,margin_thi, 0,trace),
+    #     rotated_vector(-margin_theta,margin_thi, 0,trace),
+    #     rotated_vector( -margin_theta,-margin_thi, 0, trace)
+    # ])
+
+    # try https://pypi.org/project/squaternion/
+    # # q_margin_theta = Rotation.from_euler('x', 110/2, degrees=True)
+    # # q_margin_thi = Rotation.from_euler('x', 90/2, degrees=True)
+
+    # try quarternio 1
+    # http://kieranwynn.github.io/pyquaternion/?#from-scalar
+    # https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.transform.Rotation.html
+    # theta_vp, phi_vp = cartesian_to_eulerian(*trace)
+    # theta_vp, phi_vp = eulerian_in_range(theta_vp, phi_vp)
+    # margin_theta = degrees_to_radian(110/2)
+    # margin_thi = degrees_to_radian(90/2)
+    # polygon_fov = np.array([
+    #     Rotation.from_euler('xzy', [1, margin_theta,  -margin_thi]).apply(trace),
+    #     Rotation.from_euler('xzy', [1, margin_theta,   margin_thi]).apply(trace),
+    #     Rotation.from_euler('xzy', [1, -margin_theta,   margin_thi]).apply(trace),
+    #     Rotation.from_euler('xzy', [1, -margin_theta,  -margin_thi]).apply(trace)
+    # ])
+
+    #  try quarterion 2
+    # polygon_fov_x1y0z0 = np.array([
+    #     eulerian_to_cartesian(margin_theta, -margin_thi),
+    #     eulerian_to_cartesian(margin_theta, margin_thi),
+    #     eulerian_to_cartesian(-margin_theta, margin_thi),
+    #     eulerian_to_cartesian(-margin_theta, -margin_thi)
+    # ])
+    # x1y0z0 = np.array([[1, 0, 0]])
+    # trace = np.array([trace])
+    # print (x1y0z0.shape)
+    # print (trace.shape)
+    # rotation, _ = Rotation.align_vectors([x1y0z0], [trace])
+    # polygon_fov = np.array([
+    #     rotation.apply(polygon_fov_x1y0z0[0]),
+    #     rotation.apply(polygon_fov_x1y0z0[1]),
+    #     rotation.apply(polygon_fov_x1y0z0[2]),
+    #     rotation.apply(polygon_fov_x1y0z0[3]),
+    # ])
+    # print(polygon_fov_x1y0z0)
+
+    # try quaterion 3 (working)
+    margin_theta =  degrees_to_radian(90/2)
+    margin_thi = degrees_to_radian(110/2)
+    polygon_fov_x1y0z0 = np.array([
+        eulerian_in_range(margin_theta, -margin_thi),
+        eulerian_in_range(margin_theta, margin_thi),
+        eulerian_in_range(-margin_theta, margin_thi),
+        eulerian_in_range(-margin_theta, -margin_thi)
     ])
-    
-    # print(polygon_fov_eur)
+    polygon_fov_x1y0z0 = np.array([
+        eulerian_to_cartesian(*polygon_fov_x1y0z0[0]),
+        eulerian_to_cartesian(*polygon_fov_x1y0z0[1]),
+        eulerian_to_cartesian(*polygon_fov_x1y0z0[2]),
+        eulerian_to_cartesian(*polygon_fov_x1y0z0[3])
+    ])
+    x1y0z0 = np.array([1, 0, 0])
+    trace = np.array(trace)
+    rotation = rotationBetweenVectors(x1y0z0, trace)
+    polygon_fov = np.array([
+        rotation.rotate(polygon_fov_x1y0z0[0]),
+        rotation.rotate(polygon_fov_x1y0z0[1]),
+        rotation.rotate(polygon_fov_x1y0z0[2]),
+        rotation.rotate(polygon_fov_x1y0z0[3]),
+    ])
+    # print(polygon_fov_x1y0z0)
+    # print(theta_vp, phi_vp)
     # print(polygon_fov)
-    
+
     return polygon_fov
 
 
@@ -124,12 +243,12 @@ class Dataset:
             self.users_id = np.array([key for key in self.dataset.keys()])
             self.users_len = len(self.users_id)
 
-    @classmethod
+    @ classmethod
     def singleton_dump(cls):
         with open(cls._singleton_pickle, 'wb') as f:
             pickle.dump(cls._singleton, f)
-        
-    @classmethod
+
+    @ classmethod
     def singleton(cls):
         if cls._singleton is None:
             if exists(cls._singleton_pickle):
@@ -138,7 +257,7 @@ class Dataset:
             else:
                 cls._singleton = Dataset()
         return cls._singleton
-        
+
     # -- dataset funcs
 
     def _sample_dataset(self):
@@ -172,19 +291,19 @@ class Dataset:
                 heatmaps.append(heatmap)
             sum = np.sum(heatmaps, axis=0).reshape((-1))
             # https://stackoverflow.com/questions/15450192/fastest-way-to-compute-entropy-in-python
-            users_entropy[int(user)] = scipy.stats.entropy(sum) # type: ignore
+            users_entropy[int(user)] = scipy.stats.entropy(sum)  # type: ignore
         # define class threshold
         if plot_scatter:
-            px.scatter(y=users_entropy, labels={"y":"entropy"}, width=600).show()
+            px.scatter(y=users_entropy, labels={"y": "entropy"}, width=600).show()
         p_sort = users_entropy.argsort()
         threshold_medium = int(self.users_len * .60)
         threshold_hight = int(self.users_len * .80)
         self.users_low = [str(x) for x in p_sort[:threshold_medium]]
-        self.users_medium =  [str(x) for x in p_sort[threshold_medium:threshold_hight]]
-        self.users_hight =  [str(x) for x in p_sort[threshold_hight:]]
+        self.users_medium = [str(x) for x in p_sort[threshold_medium:threshold_hight]]
+        self.users_hight = [str(x) for x in p_sort[threshold_hight:]]
 
     def one_trace(self, user=ONE_USER, video=ONE_VIDEO) -> NDArray:
-        return self.dataset[user][video][:, 1:][:1]
+        return self.dataset[user][video][:, 1:][: 1]
 
     def traces_one_video_one_user(self, user=ONE_USER, video=ONE_VIDEO) -> NDArray:
         return self.dataset[user][video][:, 1:]
@@ -206,7 +325,7 @@ class Dataset:
     def traces_random_one_user(self, num) -> NDArray:
         one_user = self.traces_one_video_one_user()
         step = int(len(one_user)/num)
-        return one_user[::step]
+        return one_user[:: step]
 
 
 class VPExtract(ABC):
@@ -216,11 +335,11 @@ class VPExtract(ABC):
         ONLY20PERC = auto()
         ONLY33PERC = auto()
 
-    @abstractmethod
+    @ abstractmethod
     def request(self, trace, return_metrics=False) -> tuple[NDArray, float, list]:
         pass
 
-    @property
+    @ property
     def title(self):
         pass
 
@@ -238,7 +357,7 @@ class VPExtractTilesRect(VPExtract):
         self.cover = cover
         self.shape = (self.t_vert, self.t_hor)
 
-    @property
+    @ property
     def title(self):
         prefix = f'vpextract_rect{self.t_hor}x{self.t_vert}'
         match self.cover:
@@ -256,13 +375,13 @@ class VPExtractTilesRect(VPExtract):
             case VPExtract.Cover.CENTER:
                 return self._request_110radius_center(trace, return_metrics)
             case VPExtract.Cover.ANY:
-                return self._request_min_cover(trace, 0.0,return_metrics)
+                return self._request_min_cover(trace, 0.0, return_metrics)
             case VPExtract.Cover.ONLY20PERC:
                 return self._request_min_cover(trace, 0.2, return_metrics)
             case VPExtract.Cover.ONLY33PERC:
                 return self._request_min_cover(trace, 0.33, return_metrics)
 
-    def _request_min_cover(self, trace, required_cover: float, return_metrics):
+    def _request_min_cover(self, trace: NDArray, required_cover: float, return_metrics):
         heatmap = np.zeros((self.t_vert, self.t_hor), dtype=np.int32)
         areas_in = []
         vp_quality = 0.0
@@ -329,9 +448,9 @@ class VPExtractTilesVoro(VPExtract):
             case VPExtract.Cover.ONLY20PERC:
                 return self._request_min_cover(trace, 0.2, return_metrics)
             case VPExtract.Cover.ONLY33PERC:
-                return self._request_min_cover(trace, 0.33,return_metrics)
+                return self._request_min_cover(trace, 0.33, return_metrics)
 
-    def _request_110radius_center(self, trace,return_metrics):
+    def _request_110radius_center(self, trace, return_metrics):
         vp_110_rad_half = degrees_to_radian(110/2)
         areas_in = []
         vp_quality = 0.0
@@ -371,18 +490,19 @@ VPEXTRACT_RECT_8_6_CENTER = VPExtractTilesRect(8, 6, VPExtract.Cover.CENTER)
 
 VPEXTRACTS_VORO = [
     VPExtractTilesVoro(VORONOI_14P, VPExtract.Cover.CENTER),
-    VPExtractTilesVoro(VORONOI_24P, VPExtract.Cover.CENTER),
     VPExtractTilesVoro(VORONOI_14P, VPExtract.Cover.ANY),
-    VPExtractTilesVoro(VORONOI_24P, VPExtract.Cover.ANY),
     VPExtractTilesVoro(VORONOI_14P, VPExtract.Cover.ONLY20PERC),
-    VPExtractTilesVoro(VORONOI_24P, VPExtract.Cover.ONLY20PERC),
-    VPExtractTilesVoro(VORONOI_14P, VPExtract.Cover.ONLY33PERC),
-    VPExtractTilesVoro(VORONOI_24P, VPExtract.Cover.ONLY33PERC),
+    # VPExtractTilesVoro(VORONOI_14P, VPExtract.Cover.ONLY33PERC),
+    # VPExtractTilesVoro(VORONOI_24P, VPExtract.Cover.CENTER),
+    # VPExtractTilesVoro(VORONOI_24P, VPExtract.Cover.ANY),
+    # VPExtractTilesVoro(VORONOI_24P, VPExtract.Cover.ONLY33PERC),
+    # VPExtractTilesVoro(VORONOI_24P, VPExtract.Cover.ONLY20PERC),
 ]
 VPEXTRACTS_RECT = [
+    VPExtractTilesRect(6, 4, VPExtract.Cover.ANY),
     VPExtractTilesRect(6, 4, VPExtract.Cover.CENTER),
     VPExtractTilesRect(6, 4, VPExtract.Cover.ONLY20PERC),
-    VPExtractTilesRect(6, 4, VPExtract.Cover.ONLY33PERC),
+    # VPExtractTilesRect(6, 4, VPExtract.Cover.ONLY33PERC),
 ]
 VPEXTRACT_METHODS = [*VPEXTRACTS_VORO, *VPEXTRACTS_RECT]
 
@@ -390,9 +510,11 @@ VPEXTRACT_METHODS = [*VPEXTRACTS_VORO, *VPEXTRACTS_RECT]
 class Traces:
     def __init__(self, traces: NDArray, title_sufix=""):
         assert traces.shape[1] == 3  # check if cartesian
+        # self.traces = traces[np.sqrt(np.power(traces[:, 0], 2) +
+        #                              np.power(traces[:, 1], 2) + np.power(traces[:, 2], 2)) == 1]
         self.traces = traces
         print("Traces.traces.shape is " + str(traces.shape))
-        self.title = f"{str(len(traces))}_traces{title_sufix}"
+        self.title = f"{str(len(traces))}_traces {title_sufix}"
 
     # -- sphere funcs
 
@@ -421,7 +543,8 @@ class Traces:
                 start = sphere_voro.vertices[region][i]
                 end = sphere_voro.vertices[region][(i + 1) % n]
                 result = np.array(geometric_slerp(start, end, t))
-                edge = go.Scatter3d(x=result[..., 0], y=result[..., 1], z=result[..., 2], mode='lines', line={'width': 5, 'color': 'black'}, name='region edge', showlegend=False)
+                edge = go.Scatter3d(x=result[..., 0], y=result[..., 1], z=result[..., 2], mode='lines', line={
+                    'width': 5, 'color': 'black'}, name='region edge', showlegend=False)
                 data.append(edge)
         return data
 
@@ -429,7 +552,7 @@ class Traces:
         trajc = go.Scatter3d(x=self.traces[:, 0],
                              y=self.traces[:, 1],
                              z=self.traces[:, 2],
-                             hovertemplate= "<b>requested tiles=%{text}</b>",
+                             hovertemplate="<b>requested tiles=%{text}</b>",
                              text=data_request,
                              mode='lines', line={'width': 3, 'color': 'blue'}, name='trajectory', showlegend=False)
         data.append(trajc)
@@ -497,24 +620,33 @@ class Traces:
         else:
             fig.show()
 
-    def sphere_show_one_trace_vp(self, vpextract: VPExtract,trace=None, to_html=False):
+    def sphere_show_one_trace_vp(self, vpextract: VPExtract, trace=None, to_html=False):
         trace = trace if trace is not None else self.traces[0]
+        # if np.sqrt(trace[0]**2 + trace[1]**2 + trace[2]**2) != 1:
+        #     raise Exception("trace no normalized")
         data, title = [], ""
         if isinstance(vpextract, VPExtractTilesRect):
             data = self._sphere_data_rect_tiles(vpextract.t_hor, vpextract.t_vert)
         elif isinstance(vpextract, VPExtractTilesVoro):
             data = self._sphere_data_voro(vpextract.sphere_voro)
+        # trace
+        data.append(go.Scatter3d(x=[trace[0]], y=[trace[1]], z=[trace[2]],
+                                 mode='markers', marker={'size': 5, 'opacity': 1.0, 'color': 'red'}, name='center'))
+        # vp
         fov_polygon = points_fov_cartesian(trace)
         n = len(fov_polygon)
         gens = go.Scatter3d(x=fov_polygon[:, 0], y=fov_polygon[:, 1], z=fov_polygon[:, 2],
-                            mode='markers', marker={'size': 5, 'opacity': 1.0, 'color': 'blue'}, name='fov corner', showlegend=False)
+                            mode='markers', marker={'size': 5, 'opacity': 1.0,
+                                                    'color': [f'rgb({np.random.randint(0,256)}, {np.random.randint(0,256)}, {np.random.randint(0,256)})' for _ in range(len(fov_polygon))]},
+                            name='fov corner', showlegend=False)
         data.append(gens)
         t = np.linspace(0, 1, 100)
         for index in range(n):
             start = fov_polygon[index]
             end = fov_polygon[(index + 1) % n]
             result = np.array(geometric_slerp(start, end, t))
-            edge = go.Scatter3d(x=result[..., 0], y=result[..., 1], z=result[..., 2], mode='lines', line={'width': 5, 'color': 'blue'}, name='vp edge', showlegend=False)
+            edge = go.Scatter3d(x=result[..., 0], y=result[..., 1], z=result[..., 2], mode='lines', line={
+                                'width': 5, 'color': 'blue'}, name='vp edge', showlegend=False)
             data.append(edge)
         heatmap, _, _ = vpextract.request(trace)
         title = f"{self.title} {vpextract.title_with_sum_heatmaps([heatmap])}"
@@ -529,7 +661,7 @@ class Traces:
     def erp_heatmap(self, vpextract: VPExtract, to_html=False):
         heatmaps = []
         for trace in self.traces:
-            heatmap, _, _,  = vpextract.request(trace)
+            heatmap, _, _, = vpextract.request(trace)
             heatmaps.append(heatmap)
         fig = px.imshow(np.sum(heatmaps, axis=0), labels=dict(
             x="longitude", y="latitude", color="requests"))
@@ -558,12 +690,17 @@ class Traces:
             traces_vp_quality = []
             # call func per trace
             for trace in self.traces:
-                heatmap_in, quality_in, areas_in = vpextract.request(trace,return_metrics=True)
+                try:
+                    heatmap_in, quality_in, areas_in = vpextract.request(trace, return_metrics=True)
+                except:
+                    continue
                 traces_n_reqs.append(np.sum(heatmap_in))
                 traces_heatmaps.append(heatmap_in)
                 traces_areas.append(areas_in)
                 traces_areas_svg.append(np.average(areas_in))
                 traces_vp_quality.append(quality_in)
+            if not len(traces_n_reqs):
+                continue
             # line reqs
             fig_reqs.add_trace(go.Scatter(y=traces_n_reqs, mode='lines', name=f"{vpextract.title}"))
             # line areas
