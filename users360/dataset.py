@@ -3,12 +3,12 @@ from cmath import cos
 import os
 import pathlib
 from head_motion_prediction.Utils import *
+from .vpextract import *
 from scipy.stats import entropy
 from scipy.spatial.transform import Rotation
 from typing import Tuple, Iterable
 from spherical_geometry import polygon
 from abc import ABC
-import math
 import numpy as np
 from numpy.typing import NDArray
 from os.path import exists
@@ -20,7 +20,7 @@ import scipy.stats
 
 ONE_USER = '0'
 ONE_VIDEO = '10_Cows'
-LAYOUT = go.Layout(width=600)
+
 
 class Dataset:
     sample_dataset = None
@@ -28,8 +28,8 @@ class Dataset:
     _singleton = None
     _singleton_pickle = pathlib.Path(__file__).parent.parent/'output/singleton.pickle'
 
-    def __init__(self, dataset=None):
-        if dataset is None:
+    def __init__(self, dataset={}):
+        if not dataset:
             self.dataset = self._sample_dataset()
             self.users_id = np.array([key for key in self.dataset.keys()])
             self.users_len = len(self.users_id)
@@ -113,7 +113,7 @@ class Dataset:
                 count += 1
         return traces
 
-    def traces_random_one_user(self, num, user=ONE_USER, video=ONE_VIDEO) -> NDArray:
+    def traces_one_user_steped(self, num, user=ONE_USER, video=ONE_VIDEO) -> NDArray:
         one_user = self.traces_one_video_one_user(user)
         step = int(len(one_user)/num)
         return one_user[:: step]

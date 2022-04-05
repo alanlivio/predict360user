@@ -1,4 +1,6 @@
-from users360 import *
+import pathlib
+from .vpextract import *
+from head_motion_prediction.Utils import *
 from plotly.subplots import make_subplots
 from scipy.spatial import SphericalVoronoi, geometric_slerp
 from scipy.stats import entropy
@@ -7,8 +9,11 @@ from typing import Tuple, Iterable
 from spherical_geometry import polygon
 import numpy as np
 from numpy.typing import NDArray
+import plotly
 import plotly.express as px
 import plotly.graph_objs as go
+
+LAYOUT = go.Layout(width=600)
 
 
 class Traces:
