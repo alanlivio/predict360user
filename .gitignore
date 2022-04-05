@@ -1,4 +1,3 @@
-
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -130,12 +129,11 @@ dmypy.json
 .pyre/
 
 # added
-**/*.pickle
-users360/plot_figs/
-users360/head_motion_prediction/
-users360/VRClient/
-users360/OpCASH/
-users360/PARIMA/
-users360/TileRateSelector_360videos/
-users360/MV_SalGAN360/
-users360/PanoProject/
+output/*
+head_motion_prediction/
+VRClient/
+OpCASH/
+PARIMA/
+TileRateSelector_360videos/
+MV_SalGAN360/
+PanoProject/

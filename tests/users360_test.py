@@ -1,4 +1,3 @@
-import pathlib
 from users360 import *
 import unittest
 from numpy import ndarray
@@ -8,9 +7,6 @@ class User360Test(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cwd = os.getcwd()
-        if os.path.basename(cwd) != 'user360':
-            os.chdir(pathlib.Path(__file__).parent.parent/'users360')
         cls.dataset = Dataset.singleton()
         cls.one_user = Traces(cls.dataset.traces_one_video_one_user(), title_sufix="one_video_one_user")
         cls.all_users = Traces(cls.dataset.traces_one_video(), title_sufix="one_video_all_users")
