@@ -16,13 +16,13 @@ import plotly.graph_objs as go
 LAYOUT = go.Layout(width=600)
 
 
-class Traces:
+class Projection:
     def __init__(self, traces: NDArray, title_sufix=""):
         assert traces.shape[1] == 3  # check if cartesian
         # self.traces = traces[np.sqrt(np.power(traces[:, 0], 2) +
         #                              np.power(traces[:, 1], 2) + np.power(traces[:, 2], 2)) == 1]
         self.traces = traces
-        print("Traces.traces.shape is " + str(traces.shape))
+        print("Projection.traces.shape is " + str(traces.shape))
         self.title = f"{str(len(traces))}_traces_{title_sufix}"
         self.output_folder = pathlib.Path(__file__).parent.parent/'output'
 

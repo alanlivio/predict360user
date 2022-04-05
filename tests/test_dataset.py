@@ -3,7 +3,7 @@ import unittest
 from numpy import ndarray
 
 
-class TracesTest(unittest.TestCase):
+class DatasetTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
