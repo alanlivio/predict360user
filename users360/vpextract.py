@@ -8,11 +8,12 @@ from abc import ABC
 import math
 import numpy as np
 from numpy.typing import NDArray
-from os.path import exists
 import plotly.graph_objs as go
 
 TILES_H6, TILES_V4 = 6, 4
 TRINITY_NPATCHS = 14
+
+LAYOUT = go.Layout(width=600)
 
 
 def layout_with_title(title):

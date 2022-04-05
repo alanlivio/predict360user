@@ -1,19 +1,16 @@
 # %%
-from cmath import cos
-import os
-import pathlib
-from head_motion_prediction.Utils import *
 from .vpextract import *
-from scipy.stats import entropy
-from scipy.spatial.transform import Rotation
-from typing import Tuple, Iterable
-from spherical_geometry import polygon
-from abc import ABC
-import numpy as np
+from cmath import cos
+from head_motion_prediction.Utils import *
 from numpy.typing import NDArray
 from os.path import exists
+from plotly.subplots import make_subplots
+from scipy.stats import entropy
+from typing import Tuple, Iterable
+import numpy as np
+import os
+import pathlib
 import pickle
-import plotly
 import plotly.express as px
 import plotly.graph_objs as go
 import scipy.stats
@@ -147,4 +144,77 @@ class Dataset:
                     traces.itemset((count, 2), trace[2])
                     count += 1
         return traces[:count]
+
+    # -- vpextract funcs
+
+    def metrics_vpextract(self, vpextract_l: Iterable[VPExtract], users=None, video=ONE_VIDEO, plot_bars=True,
+                          plot_traces=False, plot_heatmaps=False):
+        if users is None:
+            users = self.dataset.keys()
+        fig_reqs = go.Figure(layout=LAYOUT)
+        fig_areas = go.Figure(layout=LAYOUT)
+        fig_quality = go.Figure(layout=LAYOUT)
+        vpextract_avg_n_reqs = []
+        vpextract_avg_area = []
+        vpextract_quality = []
+        for vpextract in vpextract_l:
+            traces_n_reqs = []
+            traces_areas = []
+            traces_areas_svg = []
+            traces_heatmaps = []
+            traces_vp_quality = []
+            # call func per trace
+            for user in users:
+                for trace in self.dataset[user][video][:, 1:]:
+                    try:
+                        heatmap_in, quality_in, areas_in = vpextract.request(trace, return_metrics=True)
+                    except:
+                        continue
+                    traces_n_reqs.append(np.sum(heatmap_in))
+                    traces_heatmaps.append(heatmap_in)
+                    traces_areas.append(areas_in)
+                    traces_areas_svg.append(np.average(areas_in))
+                    traces_vp_quality.append(quality_in)
+            if not len(traces_n_reqs):
+                continue
+            # line reqs
+            fig_reqs.add_trace(go.Scatter(y=traces_n_reqs, mode='lines', name=f"{vpextract.title}"))
+            # line areas
+            fig_areas.add_trace(go.Scatter(y=traces_areas_svg, mode='lines', name=f"{vpextract.title}"))
+            # line quality
+            fig_quality.add_trace(go.Scatter(y=traces_vp_quality, mode='lines', name=f"{vpextract.title}"))
+            # heatmap
+            if(plot_heatmaps and len(traces_heatmaps)):
+                fig_heatmap = px.imshow(
+                    np.sum(traces_heatmaps, axis=0).reshape(vpextract.shape),
+                    title=f"{vpextract.title_with_sum_heatmaps(traces_heatmaps)}",
+                    labels=dict(x="longitude", y="latitude", color="VP_Extracts"))
+                fig_heatmap.update_layout(LAYOUT)
+                fig_heatmap.show()
+            # sum
+            vpextract_avg_n_reqs.append(np.average(traces_n_reqs))
+            vpextract_avg_area.append(np.average(traces_areas_svg))
+            vpextract_quality.append(np.average(traces_vp_quality))
+
+        # line fig reqs areas
+        if(plot_traces):
+            fig_reqs.update_layout(xaxis_title="user trace", title="req_tiles").show()
+            fig_areas.update_layout(xaxis_title="user trace",
+                                    title="avg req_tiles view_ratio").show()
+            fig_quality.update_layout(xaxis_title="user trace", title="avg quality ratio").show()
+
+        # bar fig vpextract_avg_n_reqs vpextract_avg_area
+        vpextract_names = [str(vpextract.title) for vpextract in vpextract_l]
+        fig_bar = make_subplots(rows=1, cols=4,  subplot_titles=(
+            "avg VP n_tiles", "avg VP tiles_viewing", "avg VP quality", "score=quality/n_tiles*(1-tiles_viewing)"), shared_yaxes=True)
+        fig_bar.add_trace(go.Bar(y=vpextract_names, x=vpextract_avg_n_reqs, orientation='h'), row=1, col=1)
+        fig_bar.add_trace(go.Bar(y=vpextract_names, x=vpextract_avg_area, orientation='h'), row=1, col=2)
+        fig_bar.add_trace(go.Bar(y=vpextract_names, x=vpextract_quality, orientation='h'), row=1, col=3)
+        vpextract_score = [vpextract_quality[i] * (1 / (vpextract_avg_n_reqs[i] * (1 - vpextract_avg_area[i])))
+                           for i, _ in enumerate(vpextract_avg_n_reqs)]
+        fig_bar.add_trace(go.Bar(y=vpextract_names, x=vpextract_score, orientation='h'), row=1, col=4)
+        fig_bar.update_layout(width=1500, showlegend=False, title_text="metrics_vpextract")
+        fig_bar.update_layout(barmode="stack")
+        if(plot_bars):
+            fig_bar.show()
 # %%

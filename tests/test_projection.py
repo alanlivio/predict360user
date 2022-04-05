@@ -26,13 +26,12 @@ class ProjectionTest(unittest.TestCase):
     def test_sphere_rect(self):
         self.one_user.sphere(VPEXTRACT_RECT_6_4_CENTER, to_html=True)
         self.one_trace.sphere_show_one_trace_vp(VPEXTRACT_RECT_6_4_CENTER, to_html=True)
-        self.some_users.metrics_vpextract(VPEXTRACTS_RECT, plot_bars=False,
-                                          plot_traces=False, plot_heatmaps=False)
+        # self.some_users.metrics_vpextract(VPEXTRACTS_RECT, plot_bars=False, plot_traces=False, plot_heatmaps=False)
 
     def test_shpere_voro(self):
         self.one_user.sphere(VPEXTRACT_VORO_14_CENTER, to_html=True)
         self.one_trace.sphere_show_one_trace_vp(VPEXTRACT_VORO_14_CENTER, to_html=True)
-        self.some_users.metrics_vpextract(VPEXTRACTS_VORO, plot_bars=False, plot_traces=False, plot_heatmaps=False)
+        # self.some_users.metrics_vpextract(VPEXTRACTS_VORO, plot_bars=False, plot_traces=False, plot_heatmaps=False)
 
     def test_erp(self):
         self.one_user.erp_heatmap(VPEXTRACT_RECT_6_4_CENTER, to_html=True)
