@@ -130,12 +130,12 @@ dmypy.json
 .pyre/
 
 # added
-src/plot_figs/
 **/*.pickle
-src/head_motion_prediction/
-src/VRClient/
-src/OpCASH/
-src/PARIMA/
-src/TileRateSelector_360videos/
-src/MV_SalGAN360/
-src/PanoProject/
+users360/plot_figs/
+users360/head_motion_prediction/
+users360/VRClient/
+users360/OpCASH/
+users360/PARIMA/
+users360/TileRateSelector_360videos/
+users360/MV_SalGAN360/
+users360/PanoProject/

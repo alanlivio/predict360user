@@ -1,7 +1,7 @@
 # %%
 from cmath import cos
 import os
-from head_motion_prediction.Utils import *
+from .head_motion_prediction.Utils import *
 from abc import abstractmethod
 from enum import Enum, auto
 from plotly.subplots import make_subplots
@@ -545,7 +545,7 @@ class Traces:
         #                              np.power(traces[:, 1], 2) + np.power(traces[:, 2], 2)) == 1]
         self.traces = traces
         print("Traces.traces.shape is " + str(traces.shape))
-        self.title = f"{str(len(traces))}_traces {title_sufix}"
+        self.title = f"{str(len(traces))}_traces_{title_sufix}"
 
     # -- sphere funcs
 
@@ -647,7 +647,7 @@ class Traces:
         self._sphere_data_add_user(data, data_request)
         fig = go.Figure(data=data, layout=layout_with_title(title))
         if to_html:
-            plotly.offline.plot(fig, filename=f'./plot_figs/{title}.html', auto_open=False)
+            plotly.offline.plot(fig, filename=f'plot_figs/{title}.html', auto_open=False)
         else:
             fig.show()
 
@@ -683,7 +683,7 @@ class Traces:
         title = f"{self.title} {vpextract.title_with_sum_heatmaps([heatmap])}"
         fig = go.Figure(data=data, layout=layout_with_title(title))
         if to_html:
-            plotly.offline.plot(fig, filename=f'./plot_figs/{title}.html', auto_open=False)
+            plotly.offline.plot(fig, filename=f'plot_figs/{title}.html', auto_open=False)
         else:
             fig.show()
 
@@ -699,7 +699,7 @@ class Traces:
         title = f"{self.title} {vpextract.title_with_sum_heatmaps(heatmaps)}"
         fig.update_layout(layout_with_title(title))
         if to_html:
-            plotly.offline.plot(fig, filename=f'./plot_figs/{title}.html', auto_open=False)
+            plotly.offline.plot(fig, filename=f'plot_figs/{title}.html', auto_open=False)
         else:
             fig.show()
 

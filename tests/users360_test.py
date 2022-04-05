@@ -1,3 +1,4 @@
+import pathlib
 from users360 import *
 import unittest
 from numpy import ndarray
@@ -7,6 +8,9 @@ class User360Test(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        cwd = os.getcwd()
+        if os.path.basename(cwd) != 'user360':
+            os.chdir(pathlib.Path(__file__).parent.parent/'users360')
         cls.dataset = Dataset.singleton()
         cls.one_user = Traces(cls.dataset.traces_one_video_one_user(), title_sufix="one_video_one_user")
         cls.all_users = Traces(cls.dataset.traces_one_video(), title_sufix="one_video_all_users")
@@ -27,7 +31,7 @@ class User360Test(unittest.TestCase):
         self.one_user.sphere(VPEXTRACT_RECT_6_4_CENTER, to_html=True)
         self.one_trace.sphere_show_one_trace_vp(VPEXTRACT_RECT_6_4_CENTER, to_html=True)
         self.some_users.metrics_vpextract(VPEXTRACTS_RECT, plot_bars=False,
-                                               plot_traces=False, plot_heatmaps=False)
+                                          plot_traces=False, plot_heatmaps=False)
 
     def test_plot_shpere_voro(self):
         self.one_user.sphere(VPEXTRACT_VORO_14_CENTER, to_html=True)
