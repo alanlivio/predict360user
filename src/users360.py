@@ -108,11 +108,11 @@ def rotated_vector(yaw, pitch, roll, v):
     return [x, y, z]
 
 
-
 rad360 = degrees_to_radian(360)
 rad180 = degrees_to_radian(180)
 margin_theta = degrees_to_radian(110/2)
 margin_thi = degrees_to_radian(90/2)
+
 
 def points_fov_cartesian(trace) -> NDArray:
     # https://daglar-cizmeci.com/how-does-virtual-reality-work/#:~:text=Vive%20and%20Rift%20each%20have%20a%20110%2Ddegree%20field%20of%20vision
@@ -201,7 +201,7 @@ def points_fov_cartesian(trace) -> NDArray:
     # print(polygon_fov_x1y0z0)
 
     # try quaterion 3 (working)
-    margin_theta =  degrees_to_radian(90/2)
+    margin_theta = degrees_to_radian(90/2)
     margin_thi = degrees_to_radian(110/2)
     polygon_fov_x1y0z0 = np.array([
         eulerian_in_range(margin_theta, -margin_thi),
@@ -243,12 +243,12 @@ class Dataset:
             self.users_id = np.array([key for key in self.dataset.keys()])
             self.users_len = len(self.users_id)
 
-    @ classmethod
+    @classmethod
     def singleton_dump(cls):
         with open(cls._singleton_pickle, 'wb') as f:
             pickle.dump(cls._singleton, f)
 
-    @ classmethod
+    @classmethod
     def singleton(cls):
         if cls._singleton is None:
             if exists(cls._singleton_pickle):
@@ -322,10 +322,40 @@ class Dataset:
                 count += 1
         return traces
 
-    def traces_random_one_user(self, num) -> NDArray:
-        one_user = self.traces_one_video_one_user()
+    def traces_random_one_user(self, num, user=ONE_USER, video=ONE_VIDEO) -> NDArray:
+        one_user = self.traces_one_video_one_user(user)
         step = int(len(one_user)/num)
         return one_user[:: step]
+
+    def traces_on_poles(self, users=None, video=ONE_VIDEO) -> NDArray:
+        count = 0
+        if users is None:
+            users = self.dataset.keys()
+        n_traces = len(self.dataset[ONE_USER][video][:, 1:])
+        traces = np.ndarray((len(users)*n_traces, 3))
+        for user in users:
+            for trace in self.dataset[user][video][:, 1:]:
+                if abs(trace[2]) > 0.7: # z-axis
+                    traces.itemset((count, 0), trace[0])
+                    traces.itemset((count, 1), trace[1])
+                    traces.itemset((count, 2), trace[2])
+                    count += 1
+        return traces[:count]
+
+    def traces_on_equator(self, users=None, video=ONE_VIDEO) -> NDArray:
+        count = 0
+        if users is None:
+            users = self.dataset.keys()
+        n_traces = len(self.dataset[ONE_USER][video][:, 1:])
+        traces = np.ndarray((len(users)*n_traces, 3))
+        for user in users:
+            for trace in self.dataset[user][video][:, 1:]:
+                if abs(trace[2]) < 0.7: # z-axis
+                    traces.itemset((count, 0), trace[0])
+                    traces.itemset((count, 1), trace[1])
+                    traces.itemset((count, 2), trace[2])
+                    count += 1
+        return traces[:count]
 
 
 class VPExtract(ABC):
@@ -357,7 +387,7 @@ class VPExtractTilesRect(VPExtract):
         self.cover = cover
         self.shape = (self.t_vert, self.t_hor)
 
-    @ property
+    @property
     def title(self):
         prefix = f'vpextract_rect{self.t_hor}x{self.t_vert}'
         match self.cover:
@@ -419,6 +449,7 @@ class VPExtractTilesRect(VPExtract):
                         areas_in.append(view_area)
                         vp_quality += fov_polygon.overlap(rect_tile_polygon)
         return heatmap, vp_quality, areas_in
+
 
 class VPExtractTilesVoro(VPExtract):
     def __init__(self, sphere_voro: SphericalVoronoi, cover: VPExtract.Cover):
@@ -679,7 +710,7 @@ class Traces:
         fig_reqs = go.Figure(layout=LAYOUT)
         fig_areas = go.Figure(layout=LAYOUT)
         fig_quality = go.Figure(layout=LAYOUT)
-        vpextract_n_reqs = []
+        vpextract_avg_n_reqs = []
         vpextract_avg_area = []
         vpextract_quality = []
         for vpextract in vpextract_l:
@@ -716,7 +747,7 @@ class Traces:
                 fig_heatmap.update_layout(LAYOUT)
                 fig_heatmap.show()
             # sum
-            vpextract_n_reqs.append(np.sum(traces_n_reqs))
+            vpextract_avg_n_reqs.append(np.average(traces_n_reqs))
             vpextract_avg_area.append(np.average(traces_areas_svg))
             vpextract_quality.append(np.average(traces_vp_quality))
 
@@ -727,15 +758,15 @@ class Traces:
                                     title="avg req_tiles view_ratio " + self.title).show()
             fig_quality.update_layout(xaxis_title="user trace", title="avg quality ratio " + self.title).show()
 
-        # bar fig vpextract_n_reqs vpextract_avg_area
+        # bar fig vpextract_avg_n_reqs vpextract_avg_area
         vpextract_names = [str(vpextract.title) for vpextract in vpextract_l]
         fig_bar = make_subplots(rows=1, cols=4,  subplot_titles=(
-            "req_tiles", "avg req_tiles view_ratio", "avg VP quality_ratio", "score=quality_ratio/(req_tiles*(1-view_ratio)))"), shared_yaxes=True)
-        fig_bar.add_trace(go.Bar(y=vpextract_names, x=vpextract_n_reqs, orientation='h'), row=1, col=1)
+            "avg VP n_tiles", "avg VP tiles_viewing", "avg VP quality", "score=quality/n_tiles*(1-tiles_viewing)"), shared_yaxes=True)
+        fig_bar.add_trace(go.Bar(y=vpextract_names, x=vpextract_avg_n_reqs, orientation='h'), row=1, col=1)
         fig_bar.add_trace(go.Bar(y=vpextract_names, x=vpextract_avg_area, orientation='h'), row=1, col=2)
         fig_bar.add_trace(go.Bar(y=vpextract_names, x=vpextract_quality, orientation='h'), row=1, col=3)
-        vpextract_score = [vpextract_quality[i] * (1 / (vpextract_n_reqs[i] * (1 - vpextract_avg_area[i])))
-                           for i, _ in enumerate(vpextract_n_reqs)]
+        vpextract_score = [vpextract_quality[i] * (1 / (vpextract_avg_n_reqs[i] * (1 - vpextract_avg_area[i])))
+                           for i, _ in enumerate(vpextract_avg_n_reqs)]
         fig_bar.add_trace(go.Bar(y=vpextract_names, x=vpextract_score, orientation='h'), row=1, col=4)
         fig_bar.update_layout(width=1500, showlegend=False, title_text=self.title)
         fig_bar.update_layout(barmode="stack")
