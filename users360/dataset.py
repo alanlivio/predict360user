@@ -1,12 +1,10 @@
 # %%
 from .vpextract import *
-from cmath import cos
 from head_motion_prediction.Utils import *
 from numpy.typing import NDArray
 from os.path import exists
 from plotly.subplots import make_subplots
-from scipy.stats import entropy
-from typing import Tuple, Iterable
+from typing import Iterable
 import numpy as np
 import os
 import pathlib
@@ -46,7 +44,7 @@ class Dataset:
                 cls._singleton = Dataset()
         return cls._singleton
 
-    # -- dataset funcs
+    # -- dataset
 
     def _sample_dataset(self):
         if Dataset.sample_dataset is None:
@@ -67,7 +65,7 @@ class Dataset:
                     Dataset.sample_dataset = pickle.load(f)
         return Dataset.sample_dataset
 
-    # -- cluster funcs
+    # -- cluster
 
     def users_entropy(self, vpextract, plot_scatter=False):
         # fill users_entropy
@@ -90,13 +88,20 @@ class Dataset:
         self.users_medium = [str(x) for x in p_sort[threshold_medium:threshold_hight]]
         self.users_hight = [str(x) for x in p_sort[threshold_hight:]]
 
+    # -- traces
+
     def one_trace(self, user=ONE_USER, video=ONE_VIDEO) -> NDArray:
         return self.dataset[user][video][:, 1:][: 1]
 
     def traces_one_video_one_user(self, user=ONE_USER, video=ONE_VIDEO) -> NDArray:
         return self.dataset[user][video][:, 1:]
 
-    def traces_one_video(self, users=None, video=ONE_VIDEO) -> NDArray:
+    def traces_one_video_one_user_n(self, n_traces, user=ONE_USER, video=ONE_VIDEO) -> NDArray:
+        one_user = self.dataset[user][video][:, 1:]
+        step = int(len(one_user)/n_traces)
+        return one_user[::step]
+
+    def traces_one_video_users(self, users=None, video=ONE_VIDEO) -> NDArray:
         count = 0
         if users is None:
             users = self.dataset.keys()
@@ -109,11 +114,6 @@ class Dataset:
                 traces.itemset((count, 2), trace[2])
                 count += 1
         return traces
-
-    def traces_one_user_steped(self, num, user=ONE_USER, video=ONE_VIDEO) -> NDArray:
-        one_user = self.traces_one_video_one_user(user)
-        step = int(len(one_user)/num)
-        return one_user[:: step]
 
     def traces_on_poles(self, users=None, video=ONE_VIDEO) -> NDArray:
         count = 0
@@ -145,9 +145,9 @@ class Dataset:
                     count += 1
         return traces[:count]
 
-    # -- vpextract funcs
+    # -- vpextract
 
-    def metrics_vpextract(self, vpextract_l: Iterable[VPExtract], users=None, video=ONE_VIDEO, plot_bars=True,
+    def metrics_vpextract_users(self, vpextract_l: Iterable[VPExtract], users=None, video=ONE_VIDEO, plot_bars=True,
                           plot_traces=False, plot_heatmaps=False):
         if users is None:
             users = self.dataset.keys()
@@ -213,7 +213,7 @@ class Dataset:
         vpextract_score = [vpextract_quality[i] * (1 / (vpextract_avg_n_reqs[i] * (1 - vpextract_avg_area[i])))
                            for i, _ in enumerate(vpextract_avg_n_reqs)]
         fig_bar.add_trace(go.Bar(y=vpextract_names, x=vpextract_score, orientation='h'), row=1, col=4)
-        fig_bar.update_layout(width=1500, showlegend=False, title_text="metrics_vpextract")
+        fig_bar.update_layout(width=1500, showlegend=False, title_text="metrics_vpextract_users")
         fig_bar.update_layout(barmode="stack")
         if(plot_bars):
             fig_bar.show()
