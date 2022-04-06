@@ -77,36 +77,6 @@ class Projection:
                     data.append(edge)
         return data
 
-    def sphere_voro_matplot(self, sphere_voro: SphericalVoronoi = VORONOI_14P, with_generators=False):
-        import matplotlib.pyplot as plt
-        fig = plt.figure()
-        fig.set_size_inches(18.5, 10.5)
-        u, v = np.mgrid[0: 2 * np.pi: 20j, 0: np.pi: 10j]
-        ax = fig.add_subplot(111, projection='3d')
-        ax.plot_surface(np.cos(u) * np.sin(v), np.sin(u) * np.sin(v), np.cos(v), alpha=0.1, color="r")
-        ax.set_xlabel('X')
-        ax.set_ylabel('Y')
-        ax.set_zlabel('Z')
-        t_vals = np.linspace(0, 1, 2000)
-        # generator points
-        if with_generators:
-            ax.scatter(sphere_voro.points[:, 0], sphere_voro.points[:, 1], sphere_voro.points[:, 2], c='b')
-            ax.scatter(sphere_voro.vertices[:, 0], sphere_voro.vertices[:, 1], sphere_voro.vertices[:, 2], c='g')
-        # edges
-        for region in sphere_voro.regions:
-            n = len(region)
-            for i in range(n):
-                start = sphere_voro.vertices[region][i]
-                end = sphere_voro.vertices[region][(i + 1) % n]
-                result = geometric_slerp(start, end, t_vals)
-                ax.plot(result[..., 0],
-                        result[..., 1],
-                        result[..., 2],
-                        c='k')
-        # trajectory = traces_one_video_one_user()
-        ax.plot(self.traces[:, 0], self.traces[:, 1], self.traces[:, 2], label='parametric curve')
-        plt.show()
-
     def sphere(self, vpextract: VPExtract, to_html=False):
         data, title = [], ""
         if isinstance(vpextract, VPExtractTilesRect):
