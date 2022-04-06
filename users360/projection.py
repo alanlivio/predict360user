@@ -93,8 +93,9 @@ class Projection:
         else:
             fig.show()
 
-    def sphere_vp_trace(self, vpextract: VPExtract, trace=None, to_html=False):
-        trace = trace if trace is not None else self.traces[0]
+    def sphere_vp_trace(self, vpextract: VPExtract, trace=[], to_html=False):
+        if not trace:
+            trace = self.traces[0]
         # if np.sqrt(trace[0]**2 + trace[1]**2 + trace[2]**2) != 1:
         #     raise Exception("trace no normalized")
         data, title = [], ""

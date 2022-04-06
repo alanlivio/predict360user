@@ -93,17 +93,17 @@ class Dataset:
     def one_trace(self, user=ONE_USER, video=ONE_VIDEO) -> NDArray:
         return self.dataset[user][video][:, 1:][: 1]
 
-    def traces_one_video_one_user(self, user=ONE_USER, video=ONE_VIDEO) -> NDArray:
+    def traces_video_user(self, user=ONE_USER, video=ONE_VIDEO) -> NDArray:
         return self.dataset[user][video][:, 1:]
 
-    def traces_one_video_one_user_n(self, n_traces, user=ONE_USER, video=ONE_VIDEO) -> NDArray:
+    def traces_video_user_n(self, n_traces, user=ONE_USER, video=ONE_VIDEO) -> NDArray:
         one_user = self.dataset[user][video][:, 1:]
         step = int(len(one_user)/n_traces)
         return one_user[::step]
 
-    def traces_one_video_users(self, users=None, video=ONE_VIDEO) -> NDArray:
+    def traces_video(self, users=[], video=ONE_VIDEO) -> NDArray:
         count = 0
-        if users is None:
+        if not users:
             users = self.dataset.keys()
         n_traces = len(self.dataset[ONE_USER][video][:, 1:])
         traces = np.ndarray((len(users)*n_traces, 3))
@@ -115,9 +115,9 @@ class Dataset:
                 count += 1
         return traces
 
-    def traces_on_poles(self, users=None, video=ONE_VIDEO) -> NDArray:
+    def traces_video_poles(self, users=[], video=ONE_VIDEO) -> NDArray:
         count = 0
-        if users is None:
+        if not users:
             users = self.dataset.keys()
         n_traces = len(self.dataset[ONE_USER][video][:, 1:])
         traces = np.ndarray((len(users)*n_traces, 3))
@@ -130,9 +130,9 @@ class Dataset:
                     count += 1
         return traces[:count]
 
-    def traces_on_equator(self, users=None, video=ONE_VIDEO) -> NDArray:
+    def traces_video_equator(self, users=[], video=ONE_VIDEO) -> NDArray:
         count = 0
-        if users is None:
+        if not users:
             users = self.dataset.keys()
         n_traces = len(self.dataset[ONE_USER][video][:, 1:])
         traces = np.ndarray((len(users)*n_traces, 3))
@@ -147,9 +147,9 @@ class Dataset:
 
     # -- vpextract
 
-    def metrics_vpextract_users(self, vpextract_l: Iterable[VPExtract], users=None, video=ONE_VIDEO, plot_bars=True,
-                          plot_traces=False, plot_heatmaps=False):
-        if users is None:
+    def metrics_vpextract_video(self, vpextract_l: Iterable[VPExtract], users=[], video=ONE_VIDEO, plot_bars=True,
+                                plot_traces=False, plot_heatmaps=False):
+        if not users:
             users = self.dataset.keys()
         fig_reqs = go.Figure(layout=LAYOUT)
         fig_areas = go.Figure(layout=LAYOUT)
@@ -213,7 +213,7 @@ class Dataset:
         vpextract_score = [vpextract_quality[i] * (1 / (vpextract_avg_n_reqs[i] * (1 - vpextract_avg_area[i])))
                            for i, _ in enumerate(vpextract_avg_n_reqs)]
         fig_bar.add_trace(go.Bar(y=vpextract_names, x=vpextract_score, orientation='h'), row=1, col=4)
-        fig_bar.update_layout(width=1500, showlegend=False, title_text="metrics_vpextract_users")
+        fig_bar.update_layout(width=1500, showlegend=False, title_text="metrics_vpextract_video")
         fig_bar.update_layout(barmode="stack")
         if(plot_bars):
             fig_bar.show()

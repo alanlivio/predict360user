@@ -16,8 +16,8 @@ class DatasetTest(unittest.TestCase):
         self.assertIsNotNone(self.dataset.users_hight)
 
     def test_poles(self):
-        poles = self.dataset.traces_on_poles()
-        equator = self.dataset.traces_on_equator()
+        poles = self.dataset.traces_video_poles()
+        equator = self.dataset.traces_video_equator()
         self.assertIsNotNone(poles)
         self.assertIsNotNone(equator)
 
