@@ -8,7 +8,7 @@ class ProjectionTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.dataset = Dataset.singleton()
-        cls.some_traces = Projection(cls.dataset.traces_video_user_n(4), title_sufix="some_traces")
+        cls.some_traces = Projection(cls.dataset.traces_video_user_perc(0.1), title_sufix="some_traces")
         cls.one_user = Projection(cls.dataset.traces_video_user(), title_sufix="one_video_one_user")
         cls.all_users = Projection(cls.dataset.traces_video(), title_sufix="one_video_all_users")
         cls.one_trace = Projection(cls.dataset.one_trace())
