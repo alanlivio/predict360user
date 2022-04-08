@@ -102,8 +102,9 @@ class PlotVP():
 
     def erp_heatmap(self, vpextract: VPExtract, to_html=False):
         heatmap, _, _, = vpextract.request(self.trace)
-        fig = px.imshow(heatmap, labels=dict(
-            x="longitude", y="latitude", color="requests"))
+        if isinstance(vpextract, VPExtractTilesVoro):
+            heatmap = np.reshape(heatmap, vpextract.shape)
+        fig = px.imshow(heatmap, labels=dict(x="longitude", y="latitude", color="requests"))
         title = f"{self.title} {vpextract.title_with_sum_heatmaps([heatmap])}"
         fig.update_layout(layout_with_title(title))
         if to_html:
@@ -151,8 +152,9 @@ class PlotTraces():
         for trace in self.traces:
             heatmap, _, _, = vpextract.request(trace)
             heatmaps.append(heatmap)
-        fig = px.imshow(np.sum(heatmaps, axis=0), labels=dict(
-            x="longitude", y="latitude", color="requests"))
+        if isinstance(vpextract, VPExtractTilesVoro):
+            heatmap = np.reshape(heatmaps, vpextract.shape)
+        fig = px.imshow(np.sum(heatmaps, axis=0), labels=dict(x="longitude", y="latitude", color="requests"))
         title = f"{self.title} {vpextract.title_with_sum_heatmaps(heatmaps)}"
         fig.update_layout(layout_with_title(title))
         if to_html:

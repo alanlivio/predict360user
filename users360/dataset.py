@@ -1,4 +1,3 @@
-# %%
 from .vpextract import *
 from head_motion_prediction.Utils import *
 from numpy.typing import NDArray
@@ -18,54 +17,52 @@ ONE_VIDEO = '10_Cows'
 
 
 class Dataset:
-    _dataset = None
-    _dataset_pickle = pathlib.Path(__file__).parent.parent/'output/david.pickle'
-    _singleton = None
-    _singleton_pickle = pathlib.Path(__file__).parent.parent/'output/singleton.pickle'
-
+    dataset = None
+    dataset_pickle = pathlib.Path(__file__).parent.parent/'output/david.pickle'
+    instance = None
+    instance_pickle = pathlib.Path(__file__).parent.parent/'output/singleton.pickle'
+    met_vpext = None
+    
     def __init__(self, dataset={}):
         if not dataset:
-            self.dataset = self._load_dataset()
+            self.dataset = self.load_dataset()
             self.users_id = np.array([key for key in self.dataset.keys()])
             self.users_len = len(self.users_id)
 
     @classmethod
-    def singleton_dump(cls):
-        with open(cls._singleton_pickle, 'wb') as f:
-            pickle.dump(cls._singleton, f)
+    def dump(cls):
+        with open(cls.instance_pickle, 'wb') as f:
+            pickle.dump(cls.instance, f)
 
     @classmethod
     def singleton(cls):
-        if cls._singleton is None:
-            if exists(cls._singleton_pickle):
-                with open(cls._singleton_pickle, 'rb') as f:
-                    cls._singleton = pickle.load(f)
+        if cls.instance is None:
+            if exists(cls.instance_pickle):
+                with open(cls.instance_pickle, 'rb') as f:
+                    cls.instance = pickle.load(f)
             else:
-                cls._singleton = Dataset()
-        return cls._singleton
+                cls.instance = Dataset()
+        return cls.instance
 
-    # -- dataset
-
-    def _load_dataset(self):
-        if Dataset._dataset is None:
-            if not exists(Dataset._dataset_pickle):
+    def     load_dataset(self):
+        print("loading dataset")
+        if Dataset.dataset is None:
+            if not exists(Dataset.dataset_pickle):
                 project_path = "head_motion_prediction"
                 cwd = os.getcwd()
                 if os.path.basename(cwd) != project_path:
-                    print(f"Dataset._dataset from {project_path}")
+                    print(f"Dataset.dataset from {project_path}")
                     os.chdir(pathlib.Path(__file__).parent.parent/'head_motion_prediction')
                     from .head_motion_prediction.David_MMSys_18 import Read_Dataset as david
-                    Dataset._dataset = david.load_sampled_dataset()
+                    Dataset.dataset = david.load_sampled_dataset()
                     os.chdir(cwd)
-                    with open(Dataset._dataset_pickle, 'wb') as f:
-                        pickle.dump(Dataset._dataset, f)
+                    with open(Dataset.dataset_pickle, 'wb') as f:
+                        pickle.dump(Dataset.dataset, f)
             else:
-                print(f"Dataset._dataset from {Dataset._dataset_pickle}")
-                with open(Dataset._dataset_pickle, 'rb') as f:
-                    Dataset._dataset = pickle.load(f)
-        return Dataset._dataset
-
-    # -- cluster
+                print(f"Dataset.dataset from {Dataset.dataset_pickle}")
+                with open(Dataset.dataset_pickle, 'rb') as f:
+                    Dataset.dataset = pickle.load(f)
+        return Dataset.dataset
 
     def users_entropy(self, vpextract, plot_scatter=False):
         # fill users_entropy
@@ -88,19 +85,18 @@ class Dataset:
         self.users_medium = [str(x) for x in p_sort[threshold_medium:threshold_hight]]
         self.users_hight = [str(x) for x in p_sort[threshold_hight:]]
 
-    # -- traces
-
     def one_trace(self, user=ONE_USER, video=ONE_VIDEO) -> NDArray:
         return self.dataset[user][video][:, 1:][0]
 
     def traces_video_user(self, perc_traces=1.0, user=ONE_USER, video=ONE_VIDEO) -> NDArray:
-        one_user = self.dataset[user][video][:, 1:]
         assert (perc_traces <= 1.0 and perc_traces >= 0.0)
-        step = 1
-        if perc_traces is not 1.0:
-            one_user_len = len(self.dataset[user][video][:, 1:])
+        if perc_traces == 1.0:
+            return self.dataset[user][video][:, 1:]
+        else:
+            on_user = self.dataset[user][video][:, 1:]
+            one_user_len = len(on_user)
             step = int(one_user_len/(one_user_len*perc_traces))
-        return one_user[::step]
+            return on_user[::step]
 
     def traces_video(self, users=[], video=ONE_VIDEO) -> NDArray:
         count = 0
@@ -146,9 +142,43 @@ class Dataset:
                     count += 1
         return traces[:count]
 
-    # -- vpextract
+    def metrics_vpextract_video(self, vpextract_l: list[VPExtract], users=[], video=ONE_VIDEO, perc_traces=1.0):
+        if not users:
+            users = self.dataset.keys()
+        # 3 metrics for each user/vpextrac = reqs, avg area, avg quality
+        if self.met_vpext is None:
+            self.met_vpext = np.empty((len(vpextract_l), len(users), 3))
+            for indexvp, vpextract in enumerate(vpextract_l):
+                for indexuser, user in enumerate(users):
+                    traces = self.traces_video_user(user=user, video=video, perc_traces=perc_traces)
+                    def fn(trace):
+                        heatmap, vp_quality, areas_in = vpextract.request(trace, return_metrics=True)
+                        return np.hstack([np.sum(heatmap), areas_in/np.sum(heatmap), vp_quality])
+                    traces_res = np.apply_along_axis(fn, 1, traces)
+                    self.met_vpext[indexvp][indexuser][0] = np.average(traces_res[:, 0])
+                    self.met_vpext[indexvp][indexuser][1] = np.average(traces_res[:, 1])
+                    self.met_vpext[indexvp][indexuser][2] = np.average(traces_res[:, 2])
+        trace_len = len(self.traces_video_user(user=ONE_USER, video=ONE_VIDEO, perc_traces=perc_traces))
+        print(f"Dataset.met_vpext.shape={self.met_vpext.shape} traces {trace_len}")
+        vpextract_reqs = np.average(self.met_vpext[:, :, 0], axis=1)
+        vpextract_reqs_use = np.average(self.met_vpext[:, :, 1], axis=1)
+        vpextract_vp_quality = np.average(self.met_vpext[:, :, 2], axis=1)
 
-    def metrics_vpextract_video(self, vpextract_l: Iterable[VPExtract], users=[], video=ONE_VIDEO, perc_traces=1.0, plot_traces=False, plot_heatmaps=False):
+        # figs from metrics
+        vpextract_names = [str(vpextract.title) for vpextract in vpextract_l]
+        fig_bar = make_subplots(rows=1, cols=4,  subplot_titles=(
+            "avg tiles_reqs", "avg reqs_use", "avg vp_quality", "score=vp_quality/(tiles_reqs*(1-reqs_use))"), shared_yaxes=True)
+        fig_bar.add_trace(go.Bar(y=vpextract_names, x=vpextract_reqs, orientation='h'), row=1, col=1)
+        fig_bar.add_trace(go.Bar(y=vpextract_names, x=vpextract_reqs_use, orientation='h'), row=1, col=2)
+        fig_bar.add_trace(go.Bar(y=vpextract_names, x=vpextract_vp_quality, orientation='h'), row=1, col=3)
+        vpextract_score = [vpextract_vp_quality[i] / (vpextract_reqs[i] * (1 - vpextract_reqs_use[i]))
+                           for i, _ in enumerate(vpextract_reqs)]
+        fig_bar.add_trace(go.Bar(y=vpextract_names, x=vpextract_score, orientation='h'), row=1, col=4)
+        fig_bar.update_layout(width=1500, showlegend=False, title_text="metrics_vpextract_video")
+        fig_bar.update_layout(barmode="stack")
+        fig_bar.show()
+
+    def metrics_vpextract_video_old(self, vpextract_l: Iterable[VPExtract], users=[], video=ONE_VIDEO, perc_traces=1.0):
         if not users:
             users = self.dataset.keys()
         # fig_reqs = go.Figure(layout=LAYOUT)
@@ -176,7 +206,7 @@ class Dataset:
                     except:
                         continue
                     user_reqs.append(np.sum(heatmap))
-                    user_reqs_use.append(areas_in)
+                    user_reqs_use.append(areas_in/np.sum(heatmap))
                     user_quality.append(vp_quality)
                     # user_heatmaps.append(heatmap)
                     # user_reqs_use.append(areas_in)
@@ -203,9 +233,9 @@ class Dataset:
             vpextract_reqs.append(np.average(users_reqs))
             vpextract_reqs_use.append(np.average(users_reqs_use))
             vpextract_vp_quality.append(np.average(users_quality))
-        print(vpextract_reqs)
-        print(vpextract_reqs_use)
-        print(vpextract_vp_quality)
+        # print(vpextract_reqs)
+        # print(vpextract_reqs_use)
+        # print(vpextract_vp_quality)
         # line fig reqs areas
         # if(plot_traces):
         #     fig_reqs.update_layout(xaxis_title="user trace", title="req_tiles").show()
@@ -226,4 +256,3 @@ class Dataset:
         fig_bar.update_layout(width=1500, showlegend=False, title_text="metrics_vpextract_video")
         fig_bar.update_layout(barmode="stack")
         fig_bar.show()
-# %%

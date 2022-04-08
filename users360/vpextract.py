@@ -239,7 +239,7 @@ class VPExtract(ABC):
         return f"{self.title} (reqs={reqs_sum})"
 
     cover: Cover
-    shape: tuple[float, float]
+    shape: tuple[int, int]
 
 
 class VPExtractTilesRect(VPExtract):
@@ -290,7 +290,7 @@ class VPExtractTilesRect(VPExtract):
                         if (return_metrics):
                             areas_in.append(view_area)
                             vp_quality += fov_polygon.overlap(rect_tile_polygon)
-        return heatmap, vp_quality, areas_in
+        return heatmap, vp_quality, np.sum(areas_in)
 
     def _request_110radius_center(self, trace, return_metrics):
         heatmap = np.zeros((self.t_vert, self.t_hor), dtype=np.int32)
@@ -309,7 +309,7 @@ class VPExtractTilesRect(VPExtract):
                         view_area = rect_tile_polygon.overlap(fov_polygon)
                         areas_in.append(view_area)
                         vp_quality += fov_polygon.overlap(rect_tile_polygon)
-        return heatmap, vp_quality, areas_in
+        return heatmap, vp_quality, np.sum(areas_in)
 
 
 class VPExtractTilesVoro(VPExtract):
@@ -357,7 +357,7 @@ class VPExtractTilesVoro(VPExtract):
                     view_area = voro_tile_polygon.overlap(fov_polygon)
                     areas_in.append(view_area)
                     vp_quality += fov_polygon.overlap(voro_tile_polygon)
-        return heatmap, vp_quality, areas_in
+        return heatmap, vp_quality, np.sum(areas_in)
 
     def _request_min_cover(self, trace, required_cover: float, return_metrics):
         areas_in = []
@@ -373,7 +373,7 @@ class VPExtractTilesVoro(VPExtract):
                 if(return_metrics):
                     areas_in.append(view_area)
                     vp_quality += fov_polygon.overlap(voro_tile_polygon)
-        return heatmap, vp_quality, areas_in
+        return heatmap, vp_quality, np.sum(areas_in)
 
 
 VPEXTRACT_VORO_14_CENTER = VPExtractTilesVoro(VORONOI_14P, VPExtract.Cover.CENTER)

@@ -22,7 +22,7 @@ class DatasetTest(unittest.TestCase):
         self.assertIsNotNone(equator)
 
     def test_vp(self):
-        onevp = PlotVP(self.dataset.one_trace())
+        onevp = PlotVP(Dataset.singleton().one_trace())
         self.assertIsNotNone(onevp)
         onevp.sphere_vp_trace(VPEXTRACT_RECT_6_4_CENTER, to_html=True)
         onevp.sphere_vp_trace(VPEXTRACT_VORO_14_CENTER, to_html=True)
