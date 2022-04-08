@@ -18,14 +18,14 @@ ONE_VIDEO = '10_Cows'
 
 
 class Dataset:
-    sample_dataset = None
-    sample_dataset_pickle = pathlib.Path(__file__).parent.parent/'output/david.pickle'
+    _dataset = None
+    _dataset_pickle = pathlib.Path(__file__).parent.parent/'output/david.pickle'
     _singleton = None
     _singleton_pickle = pathlib.Path(__file__).parent.parent/'output/singleton.pickle'
 
     def __init__(self, dataset={}):
         if not dataset:
-            self.dataset = self._sample_dataset()
+            self.dataset = self._load_dataset()
             self.users_id = np.array([key for key in self.dataset.keys()])
             self.users_len = len(self.users_id)
 
@@ -46,24 +46,24 @@ class Dataset:
 
     # -- dataset
 
-    def _sample_dataset(self):
-        if Dataset.sample_dataset is None:
-            if not exists(Dataset.sample_dataset_pickle):
+    def _load_dataset(self):
+        if Dataset._dataset is None:
+            if not exists(Dataset._dataset_pickle):
                 project_path = "head_motion_prediction"
                 cwd = os.getcwd()
                 if os.path.basename(cwd) != project_path:
-                    print(f"Dataset.sample_dataset from {project_path}")
+                    print(f"Dataset._dataset from {project_path}")
                     os.chdir(pathlib.Path(__file__).parent.parent/'head_motion_prediction')
                     from .head_motion_prediction.David_MMSys_18 import Read_Dataset as david
-                    Dataset.sample_dataset = david.load_sampled_dataset()
+                    Dataset._dataset = david.load_sampled_dataset()
                     os.chdir(cwd)
-                    with open(Dataset.sample_dataset_pickle, 'wb') as f:
-                        pickle.dump(Dataset.sample_dataset, f)
+                    with open(Dataset._dataset_pickle, 'wb') as f:
+                        pickle.dump(Dataset._dataset, f)
             else:
-                print(f"Dataset.sample_dataset from {Dataset.sample_dataset_pickle}")
-                with open(Dataset.sample_dataset_pickle, 'rb') as f:
-                    Dataset.sample_dataset = pickle.load(f)
-        return Dataset.sample_dataset
+                print(f"Dataset._dataset from {Dataset._dataset_pickle}")
+                with open(Dataset._dataset_pickle, 'rb') as f:
+                    Dataset._dataset = pickle.load(f)
+        return Dataset._dataset
 
     # -- cluster
 
@@ -91,15 +91,15 @@ class Dataset:
     # -- traces
 
     def one_trace(self, user=ONE_USER, video=ONE_VIDEO) -> NDArray:
-        return self.dataset[user][video][:, 1:][: 1]
+        return self.dataset[user][video][:, 1:][0]
 
-    def traces_video_user(self, user=ONE_USER, video=ONE_VIDEO) -> NDArray:
-        return self.dataset[user][video][:, 1:]
-
-    def traces_video_user_perc(self, perc_traces: float, user=ONE_USER, video=ONE_VIDEO) -> NDArray:
+    def traces_video_user(self, perc_traces=1.0, user=ONE_USER, video=ONE_VIDEO) -> NDArray:
         one_user = self.dataset[user][video][:, 1:]
-        one_user_len = len(self.dataset[user][video][:, 1:])
-        step = int(one_user_len/(one_user_len*perc_traces))
+        assert (perc_traces <= 1.0 and perc_traces >= 0.0)
+        step = 1
+        if perc_traces is not 1.0:
+            one_user_len = len(self.dataset[user][video][:, 1:])
+            step = int(one_user_len/(one_user_len*perc_traces))
         return one_user[::step]
 
     def traces_video(self, users=[], video=ONE_VIDEO) -> NDArray:
@@ -170,7 +170,7 @@ class Dataset:
                 user_quality = []
                 # user_reqs_use = []
                 # user_heatmaps = []
-                for trace in self.traces_video_user_perc(user=user, video=video, perc_traces=perc_traces):
+                for trace in self.traces_video_user(user=user, video=video, perc_traces=perc_traces):
                     try:
                         heatmap, vp_quality, areas_in = vpextract.request(trace, return_metrics=True)
                     except:
