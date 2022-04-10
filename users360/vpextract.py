@@ -316,7 +316,7 @@ class VPExtractTilesVoro(VPExtract):
     def __init__(self, sphere_voro: SphericalVoronoi, cover: VPExtract.Cover):
         self.sphere_voro = sphere_voro
         self.cover = cover
-        self.shape = (len(sphere_voro.points)//6, -1)
+        self.shape = (2, -1)
 
     @property
     def title(self):

@@ -68,15 +68,16 @@ class PlotVP():
         self.output_folder = pathlib.Path(__file__).parent.parent/'output'
 
     def show(self, vpextract: VPExtract, to_html=False):
+        # trace
         data, title = [], ""
         if isinstance(vpextract, VPExtractTilesRect):
             data = _sphere_data_rect_tiles(vpextract.t_hor, vpextract.t_vert)
         elif isinstance(vpextract, VPExtractTilesVoro):
             data = _sphere_data_voro(vpextract.sphere_voro)
-        # trace
         data.append(go.Scatter3d(x=[self.trace[0]], y=[self.trace[1]], z=[self.trace[2]],
                                  mode='markers', marker={'size': 5, 'opacity': 1.0, 'color': 'red'}))
-        # vp
+        
+        # vp trace
         fov_polygon = points_fov_cartesian(self.trace)
         n = len(fov_polygon)
         gens = go.Scatter3d(x=fov_polygon[:, 0], y=fov_polygon[:, 1], z=fov_polygon[:, 2], mode='markers', 
@@ -91,11 +92,10 @@ class PlotVP():
                                 'width': 5, 'color': 'blue'}, name='vp edge', showlegend=False)
             data.append(edge)
         
-        # calc request
+        # erp heatmap
         heatmap, _, _ = vpextract.request(self.trace)
         
-        # https://plotly.com/python/subplots/
-        # https://stackoverflow.com/questions/67291178/how-to-create-subplots-using-plotly-express
+        # subplot two figures https://stackoverflow.com/questions/67291178/how-to-create-subplots-using-plotly-express
         fig = make_subplots(rows=1, cols=2,specs=[[{"type": "surface"}, {"type": "image"}]])
         for trace in data:
             fig.append_trace(trace, row=1, col=1)    
@@ -106,7 +106,7 @@ class PlotVP():
             fig.append_trace(trace, row=1, col=2)
         
         title = f"{self.title} {vpextract.title_with_sum_heatmaps([heatmap])}"
-        fig.update_layout(width=1500, showlegend=False, title_text=title)
+        fig.update_layout(width=800, showlegend=False, title_text=title)
         if to_html:
             plotly.offline.plot(fig, filename=f'{self.output_folder}/{title}.html', auto_open=False)
         else:
@@ -131,32 +131,38 @@ class PlotTraces():
                              mode='lines', line={'width': 3, 'color': 'blue'}, name='trajectory', showlegend=False)
         data.append(trajc)
 
-    def sphere(self, vpextract: VPExtract, to_html=False):
-        data, title = [], ""
+    def show(self, vpextract: VPExtract, to_html=False):
+        # traces
+        data=[]
         if isinstance(vpextract, VPExtractTilesRect):
             data = _sphere_data_rect_tiles(vpextract.t_hor, vpextract.t_vert)
-            title = f"{self.title} rect{vpextract.t_hor}x{vpextract.t_vert}"
         elif isinstance(vpextract, VPExtractTilesVoro):
             data = _sphere_data_voro(vpextract.sphere_voro)
-            title = f"{self.title} voro{len(vpextract.sphere_voro.points)}"
-        vpinfo = [np.sum(vpextract.request(trace)[0]) for trace in self.traces]
-        self._sphere_data_add_user(data, vpinfo)
-        fig = go.Figure(data=data, layout=layout_with_title(title))
-        if to_html:
-            plotly.offline.plot(fig, filename=f'{self.output_folder}/{title}.html', auto_open=False)
-        else:
-            fig.show()
-
-    def erp_heatmap(self, vpextract: VPExtract, to_html=False):
+        
+        # erp heatmap
         heatmaps = []
         for trace in self.traces:
             heatmap, _, _, = vpextract.request(trace)
             heatmaps.append(heatmap)
+            
+        # traces vp info on mouseover
+        vpinfo = [np.sum(heatmap) for heatmap in heatmaps]
+        self._sphere_data_add_user(data, vpinfo)
+        
+        # erp heatmap image
+        heatmap_sum = np.sum(heatmaps, axis=0)
         if isinstance(vpextract, VPExtractTilesVoro):
-            heatmap = np.reshape(heatmaps, vpextract.shape)
-        fig = px.imshow(np.sum(heatmaps, axis=0), labels=dict(x="longitude", y="latitude", color="requests"))
+            heatmap_sum = np.reshape(heatmap_sum, vpextract.shape)
+        erp_heatmap = px.imshow(heatmap_sum)
+
+        # subplot two figures https://stackoverflow.com/questions/67291178/how-to-create-subplots-using-plotly-express
+        fig = make_subplots(rows=1, cols=2,specs=[[{"type": "surface"}, {"type": "image"}]])
+        for trace in data:
+            fig.append_trace(trace, row=1, col=1)    
+        for trace in erp_heatmap["data"]:
+            fig.append_trace(trace, row=1, col=2)
         title = f"{self.title} {vpextract.title_with_sum_heatmaps(heatmaps)}"
-        fig.update_layout(layout_with_title(title))
+        fig.update_layout(width=800, showlegend=False, title_text=title)
         if to_html:
             plotly.offline.plot(fig, filename=f'{self.output_folder}/{title}.html', auto_open=False)
         else:

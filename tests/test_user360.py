@@ -33,15 +33,15 @@ class DatasetTest(unittest.TestCase):
         one_user = PlotTraces(self.dataset.traces_video_user(), title_sufix="one_video_one_user")
         self.assertIsNotNone(one_user)
         self.assertIsInstance(one_user.traces, ndarray)
-        one_user.erp_heatmap(VPEXTRACT_RECT_6_4_CENTER, to_html=True)
+        one_user.show(VPEXTRACT_RECT_6_4_CENTER, to_html=True)
         all_users = PlotTraces(self.dataset.traces_video(), title_sufix="one_video_all_users")
         self.assertIsNotNone(all_users)
         self.assertIsInstance(all_users.traces, ndarray)
-        all_users.erp_heatmap(VPEXTRACT_RECT_6_4_CENTER, to_html=True)
+        all_users.show(VPEXTRACT_RECT_6_4_CENTER, to_html=True)
         some_traces = PlotTraces(self.dataset.traces_video_user(0.1), title_sufix="some_traces")
         self.assertIsNotNone(some_traces)
         self.assertIsInstance(some_traces.traces, ndarray)
-        some_traces.erp_heatmap(VPEXTRACT_RECT_6_4_CENTER, to_html=True)
+        some_traces.show(VPEXTRACT_RECT_6_4_CENTER, to_html=True)
 
 
 if __name__ == '__main__':
