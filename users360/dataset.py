@@ -66,7 +66,7 @@ class Dataset:
 
     def users_entropy(self, vpextract, plot_scatter=False):
         # fill users_entropy
-        users_entropy = np.ndarray(self.users_len)
+        users_entropy = np.zeros(self.users_len,dtype=float)
         for user in self.users_id:
             heatmaps = []
             for trace in self.dataset[user][ONE_VIDEO][:, 1:]:
@@ -74,7 +74,7 @@ class Dataset:
                 heatmaps.append(heatmap)
             sum = np.sum(heatmaps, axis=0).reshape((-1))
             # https://stackoverflow.com/questions/15450192/fastest-way-to-compute-entropy-in-python
-            users_entropy[int(user)] = scipy.stats.entropy(sum)  # type: ignore
+            users_entropy[int(user)] = scipy.stats.entropy(sum)
         # define class threshold
         if plot_scatter:
             px.scatter(y=users_entropy, labels={"y": "entropy"}, width=600).show()
@@ -103,7 +103,7 @@ class Dataset:
         if not users:
             users = self.dataset.keys()
         n_traces = len(self.dataset[ONE_USER][video][:, 1:])
-        traces = np.ndarray((len(users)*n_traces, 3))
+        traces = np.zeros((len(users)*n_traces, 3),dtype=float)
         for user in users:
             for trace in self.dataset[user][video][:, 1:]:
                 traces.itemset((count, 0), trace[0])
@@ -117,7 +117,7 @@ class Dataset:
         if not users:
             users = self.dataset.keys()
         n_traces = len(self.dataset[ONE_USER][video][:, 1:])
-        traces = np.ndarray((len(users)*n_traces, 3))
+        traces = np.zeros((len(users)*n_traces, 3),dtype=float)
         for user in users:
             for trace in self.dataset[user][video][:, 1:]:
                 if abs(trace[2]) > 0.7:  # z-axis
@@ -132,7 +132,7 @@ class Dataset:
         if not users:
             users = self.dataset.keys()
         n_traces = len(self.dataset[ONE_USER][video][:, 1:])
-        traces = np.ndarray((len(users)*n_traces, 3))
+        traces = np.zeros((len(users)*n_traces, 3),dtype=float)
         for user in users:
             for trace in self.dataset[user][video][:, 1:]:
                 if abs(trace[2]) < 0.7:  # z-axis
