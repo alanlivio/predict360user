@@ -7,7 +7,7 @@ from numpy.typing import NDArray
 import plotly
 import plotly.express as px
 import plotly.graph_objs as go
-
+from plotly.subplots import make_subplots
 
 def _sphere_data_surface():
     theta = np.linspace(0, 2*np.pi, 100)
@@ -67,7 +67,7 @@ class PlotVP():
         self.trace = trace
         self.output_folder = pathlib.Path(__file__).parent.parent/'output'
 
-    def sphere_vp_trace(self, vpextract: VPExtract, to_html=False):
+    def show(self, vpextract: VPExtract, to_html=False):
         data, title = [], ""
         if isinstance(vpextract, VPExtractTilesRect):
             data = _sphere_data_rect_tiles(vpextract.t_hor, vpextract.t_vert)
@@ -75,14 +75,12 @@ class PlotVP():
             data = _sphere_data_voro(vpextract.sphere_voro)
         # trace
         data.append(go.Scatter3d(x=[self.trace[0]], y=[self.trace[1]], z=[self.trace[2]],
-                                 mode='markers', marker={'size': 5, 'opacity': 1.0, 'color': 'red'}, name='center'))
+                                 mode='markers', marker={'size': 5, 'opacity': 1.0, 'color': 'red'}))
         # vp
         fov_polygon = points_fov_cartesian(self.trace)
         n = len(fov_polygon)
-        gens = go.Scatter3d(x=fov_polygon[:, 0], y=fov_polygon[:, 1], z=fov_polygon[:, 2],
-                            mode='markers', marker={'size': 5, 'opacity': 1.0,
-                                                    'color': [f'rgb({np.random.randint(0,256)}, {np.random.randint(0,256)}, {np.random.randint(0,256)})' for _ in range(len(fov_polygon))]},
-                            name='fov corner', showlegend=False)
+        gens = go.Scatter3d(x=fov_polygon[:, 0], y=fov_polygon[:, 1], z=fov_polygon[:, 2], mode='markers', 
+            marker={'size': 5, 'opacity': 1.0,'color': [f'rgb({np.random.randint(0,256)}, {np.random.randint(0,256)}, {np.random.randint(0,256)})' for _ in range(len(fov_polygon))]}, name='fov corner', showlegend=False)
         data.append(gens)
         t = np.linspace(0, 1, 100)
         for index in range(n):
@@ -92,26 +90,28 @@ class PlotVP():
             edge = go.Scatter3d(x=result[..., 0], y=result[..., 1], z=result[..., 2], mode='lines', line={
                                 'width': 5, 'color': 'blue'}, name='vp edge', showlegend=False)
             data.append(edge)
+        
+        # calc request
         heatmap, _, _ = vpextract.request(self.trace)
-        title = f"{self.title} {vpextract.title_with_sum_heatmaps([heatmap])}"
-        fig = go.Figure(data=data, layout=layout_with_title(title))
-        if to_html:
-            plotly.offline.plot(fig, filename=f'{self.output_folder}/{title}.html', auto_open=False)
-        else:
-            fig.show()
-
-    def erp_heatmap(self, vpextract: VPExtract, to_html=False):
-        heatmap, _, _, = vpextract.request(self.trace)
+        
+        # https://plotly.com/python/subplots/
+        # https://stackoverflow.com/questions/67291178/how-to-create-subplots-using-plotly-express
+        fig = make_subplots(rows=1, cols=2,specs=[[{"type": "surface"}, {"type": "image"}]])
+        for trace in data:
+            fig.append_trace(trace, row=1, col=1)    
         if isinstance(vpextract, VPExtractTilesVoro):
             heatmap = np.reshape(heatmap, vpextract.shape)
-        fig = px.imshow(heatmap, labels=dict(x="longitude", y="latitude", color="requests"))
+        erp_heatmap = px.imshow(heatmap)
+        for trace in erp_heatmap["data"]:
+            fig.append_trace(trace, row=1, col=2)
+        
         title = f"{self.title} {vpextract.title_with_sum_heatmaps([heatmap])}"
-        fig.update_layout(layout_with_title(title))
+        fig.update_layout(width=1500, showlegend=False, title_text=title)
         if to_html:
             plotly.offline.plot(fig, filename=f'{self.output_folder}/{title}.html', auto_open=False)
         else:
             fig.show()
-
+    
 
 class PlotTraces():
 

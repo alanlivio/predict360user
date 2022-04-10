@@ -24,10 +24,10 @@ class DatasetTest(unittest.TestCase):
     def test_vp(self):
         onevp = PlotVP(Dataset.singleton().one_trace())
         self.assertIsNotNone(onevp)
-        onevp.sphere_vp_trace(VPEXTRACT_RECT_6_4_CENTER, to_html=True)
-        onevp.sphere_vp_trace(VPEXTRACT_VORO_14_CENTER, to_html=True)
-        onevp.erp_heatmap(VPEXTRACT_RECT_6_4_CENTER, to_html=True)
-        onevp.erp_heatmap(VPEXTRACT_VORO_14_CENTER, to_html=True)
+        onevp.show(VPEXTRACT_RECT_6_4_CENTER, to_html=True)
+        onevp.show(VPEXTRACT_VORO_14_CENTER, to_html=True)
+        onevp.show(VPEXTRACT_RECT_6_4_CENTER, to_html=True)
+        onevp.show(VPEXTRACT_VORO_14_CENTER, to_html=True)
 
     def test_traces(self):
         one_user = PlotTraces(self.dataset.traces_video_user(), title_sufix="one_video_one_user")
