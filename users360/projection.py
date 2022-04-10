@@ -101,7 +101,9 @@ class PlotVP():
             fig.append_trace(trace, row=1, col=1)    
         if isinstance(vpextract, VPExtractTilesVoro):
             heatmap = np.reshape(heatmap, vpextract.shape)
-        erp_heatmap = px.imshow(heatmap)
+        erp_heatmap = px.imshow(heatmap, text_auto=True, 
+                                x=[str(x) for x in range(1,heatmap.shape[1]+1)],
+                                y=[str(y) for y in range(1,heatmap.shape[0]+1)])
         for trace in erp_heatmap["data"]:
             fig.append_trace(trace, row=1, col=2)
         
@@ -153,8 +155,10 @@ class PlotTraces():
         heatmap_sum = np.sum(heatmaps, axis=0)
         if isinstance(vpextract, VPExtractTilesVoro):
             heatmap_sum = np.reshape(heatmap_sum, vpextract.shape)
-        erp_heatmap = px.imshow(heatmap_sum)
-
+        erp_heatmap = px.imshow(heatmap_sum, text_auto=True, 
+                                x=[str(x) for x in range(1,heatmap_sum.shape[1]+1)],
+                                y=[str(y) for y in range(1,heatmap_sum.shape[0]+1)])
+                                
         # subplot two figures https://stackoverflow.com/questions/67291178/how-to-create-subplots-using-plotly-express
         fig = make_subplots(rows=1, cols=2,specs=[[{"type": "surface"}, {"type": "image"}]])
         for trace in data:
