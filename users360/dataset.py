@@ -38,19 +38,20 @@ class Dataset:
         if cls.instance is None:
             if exists(cls.instance_pickle):
                 with open(cls.instance_pickle, 'rb') as f:
+                    print(f"Dataset.instance from {cls.instance_pickle}")
                     cls.instance = pickle.load(f)
             else:
                 cls.instance = Dataset()
         return cls.instance
 
-    def     load_dataset(self):
+    def load_dataset(self):
         print("loading dataset")
         if Dataset.dataset is None:
             if not exists(Dataset.dataset_pickle):
                 project_path = "head_motion_prediction"
                 cwd = os.getcwd()
                 if os.path.basename(cwd) != project_path:
-                    print(f"Dataset.dataset from {project_path}")
+                    print(f"Dataset.dataset from {Dataset.dataset_pickle}")
                     os.chdir(pathlib.Path(__file__).parent.parent/'head_motion_prediction')
                     from .head_motion_prediction.David_MMSys_18 import Read_Dataset as david
                     Dataset.dataset = david.load_sampled_dataset()
@@ -141,11 +142,12 @@ class Dataset:
                     count += 1
         return traces[:count]
 
-    def metrics_vpextract_video(self, vpextract_l: list[VPExtract], users=[], video=ONE_VIDEO, perc_traces=1.0):
+    def metrics_vpextract_video(self, vpextract_l, users=[], video=ONE_VIDEO, perc_traces=1.0):
         if not users:
             users = self.dataset.keys()
         # 3 metrics for each user/vpextrac = reqs, avg area, avg quality
         if self.met_vpext is None:
+            print(f"Dataset.met_vpext processing")
             self.met_vpext = np.empty((len(vpextract_l), len(users), 3))
             for indexvp, vpextract in enumerate(vpextract_l):
                 for indexuser, user in enumerate(users):
@@ -165,16 +167,15 @@ class Dataset:
 
         # figs from metrics
         vpextract_names = [str(vpextract.title) for vpextract in vpextract_l]
-        fig_bar = make_subplots(rows=1, cols=4,  subplot_titles=(
-            "avg tiles_reqs", "avg reqs_use", "avg vp_quality", "score=vp_quality/(tiles_reqs*(1-reqs_use))"), shared_yaxes=True)
+        fig_bar = make_subplots(rows=1, cols=4,  subplot_titles=( "avg tiles_reqs", "avg reqs_use", "avg vp_quality", 
+                    "score=vp_quality/(tiles_reqs*(1-reqs_use))"), shared_yaxes=True)
         fig_bar.add_trace(go.Bar(y=vpextract_names, x=vpextract_reqs, orientation='h'), row=1, col=1)
         fig_bar.add_trace(go.Bar(y=vpextract_names, x=vpextract_reqs_use, orientation='h'), row=1, col=2)
         fig_bar.add_trace(go.Bar(y=vpextract_names, x=vpextract_vp_quality, orientation='h'), row=1, col=3)
         vpextract_score = [vpextract_vp_quality[i] / (vpextract_reqs[i] * (1 - vpextract_reqs_use[i]))
                            for i, _ in enumerate(vpextract_reqs)]
         fig_bar.add_trace(go.Bar(y=vpextract_names, x=vpextract_score, orientation='h'), row=1, col=4)
-        fig_bar.update_layout(width=1500, showlegend=False, title_text="metrics_vpextract_video")
-        fig_bar.update_layout(barmode="stack")
+        fig_bar.update_layout(width=1500, showlegend=False, barmode="stack", title_text="met_vpext")
         fig_bar.show()
 
     def metrics_vpextract_video_old(self, vpextract_l: Iterable[VPExtract], users=[], video=ONE_VIDEO, perc_traces=1.0):
