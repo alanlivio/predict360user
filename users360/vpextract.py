@@ -13,13 +13,6 @@ import plotly.graph_objs as go
 TILES_H6, TILES_V4 = 6, 4
 TRINITY_NPATCHS = 14
 
-LAYOUT = go.Layout(width=600)
-
-
-def layout_with_title(title):
-    return go.Layout(width=800, title=title)
-
-
 def points_voro(npatchs) -> SphericalVoronoi:
     points = np.empty((0, 3))
     for i in range(0, npatchs):
@@ -52,170 +45,37 @@ def points_rect_tile_cartesian(i, j, t_hor, t_vert) -> Tuple[NDArray, NDArray]:
     return polygon_rect_tile, eulerian_to_cartesian(theta_c, phi_c)
 
 
-def eurelian_sum_to_cartesian(phi_a, theta_a, phi_b, theta_b) -> NDArray:
-    # https://math.stackexchange.com/questions/1587910/sum-of-two-vectors-in-spherical-coordinates
-    x = np.cos(theta_a) * np.sin(phi_a) + np.cos(theta_b) * np.sin(phi_b)
-    y = np.sin(theta_a) * np.sin(phi_a) + np.sin(theta_b) * np.sin(phi_b)
-    z = (np.cos(phi_a) + np.cos(phi_b))  # % 1
-    return np.array([x, y, z])
-
-
-def rotation_matrix_x(angle):
-    c = np.cos(angle)
-    s = np.sin(angle)
-    return np.array([
-        [1, 0, 0],
-        [0, c, -s],
-        [0, s, c]
-    ])
-
-
-def rotation_matrix_y(angle):
-    c = np.cos(angle)
-    s = np.sin(angle)
-    return np.array([
-        [c, 0, s],
-        [0, 1, 0],
-        [-s, 0, c]
-    ])
-
-
-def rotation_matrix_z(angle):
-    c = np.cos(angle)
-    s = np.sin(angle)
-    return np.array([
-        [c, -s, 0],
-        [s, c, 0],
-        [0, 0, 1]
-    ])
-
-
-def rotated_vector(yaw, pitch, roll, v):
-    res = np.matmul(rotation_matrix_z(yaw), np.matmul(rotation_matrix_y(pitch), np.matmul(rotation_matrix_x(roll), v)))
-    x, y, z = res[0], res[1], res[2]
-    return [x, y, z]
-
-
-rad360 = degrees_to_radian(360)
-rad180 = degrees_to_radian(180)
 margin_theta = degrees_to_radian(110/2)
 margin_thi = degrees_to_radian(90/2)
 
-
 def points_fov_cartesian(trace) -> NDArray:
-    # https://daglar-cizmeci.com/how-does-virtual-reality-work/#:~:text=Vive%20and%20Rift%20each%20have%20a%20110%2Ddegree%20field%20of%20vision
-
-    # current try (working)
-    # theta_vp, phi_vp = cartesian_to_eulerian(*trace)
-    # theta_vp_left = theta_vp-margin_theta
-    # theta_vp_right = theta_vp+margin_theta
-    # phi_vp_bottom = phi_vp-margin_thi
-    # phi_vp_top = phi_vp+margin_thi
-    # polygon_fov = np.array([
-    #     eulerian_to_cartesian(theta_vp_right, phi_vp_bottom),
-    #     eulerian_to_cartesian(theta_vp_right, phi_vp_top),
-    #     eulerian_to_cartesian(theta_vp_left, phi_vp_top),
-    #     eulerian_to_cartesian(theta_vp_left, phi_vp_bottom)
-    # ])
-    # # current try fix
-    # if theta_vp_left < 0 :
-    #     theta_vp_left = rad360-abs(theta_vp_left)
-    # if theta_vp_right > rad360:
-    #     theta_vp_right = theta_vp_right % rad360
-    # if phi_vp_bottom < 0:
-    #     phi_vp_bottom = rad180-abs(phi_vp_bottom)
-    # if phi_vp_top > rad180:
-    #     phi_vp_top = phi_vp_top % rad180
-
-    # try sum cartesian
-    #  https://math.stackexchange.com/questions/1587910/sum-of-two-vectors-in-spherical-coordinates
-    # theta_vp, phi_vp = cartesian_to_eulerian(*trace)
-    # theta_vp, phi_vp = eulerian_in_range(theta_vp, phi_vp)
-    # margin_theta = degrees_to_radian(110/2)
-    # margin_thi = degrees_to_radian(90/2)
-    # polygon_fov = np.array([
-    #     eurelian_sum_to_cartesian(theta_vp, phi_vp, margin_theta,-margin_thi),
-    #     eurelian_sum_to_cartesian(theta_vp, phi_vp, margin_theta, margin_thi),
-    #     eurelian_sum_to_cartesian(theta_vp, phi_vp, -margin_theta, margin_thi),
-    #     eurelian_sum_to_cartesian(theta_vp, phi_vp, -margin_theta, -margin_thi)
-    # ])
-
-    # try rotation from VRClient
-    # margin_theta = degrees_to_radian(110/2)
-    # margin_thi = degrees_to_radian(90/2)
-    # polygon_fov = np.array([
-    #     rotated_vector(margin_theta,-margin_thi, 0, trace),
-    #     rotated_vector(margin_theta,margin_thi, 0,trace),
-    #     rotated_vector(-margin_theta,margin_thi, 0,trace),
-    #     rotated_vector( -margin_theta,-margin_thi, 0, trace)
-    # ])
-
-    # try https://pypi.org/project/squaternion/
-    # # q_margin_theta = Rotation.from_euler('x', 110/2, degrees=True)
-    # # q_margin_thi = Rotation.from_euler('x', 90/2, degrees=True)
-
-    # try quarternio 1
-    # http://kieranwynn.github.io/pyquaternion/?#from-scalar
-    # https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.transform.Rotation.html
-    # theta_vp, phi_vp = cartesian_to_eulerian(*trace)
-    # theta_vp, phi_vp = eulerian_in_range(theta_vp, phi_vp)
-    # margin_theta = degrees_to_radian(110/2)
-    # margin_thi = degrees_to_radian(90/2)
-    # polygon_fov = np.array([
-    #     Rotation.from_euler('xzy', [1, margin_theta,  -margin_thi]).apply(trace),
-    #     Rotation.from_euler('xzy', [1, margin_theta,   margin_thi]).apply(trace),
-    #     Rotation.from_euler('xzy', [1, -margin_theta,   margin_thi]).apply(trace),
-    #     Rotation.from_euler('xzy', [1, -margin_theta,  -margin_thi]).apply(trace)
-    # ])
-
-    #  try quarterion 2
-    # polygon_fov_x1y0z0 = np.array([
-    #     eulerian_to_cartesian(margin_theta, -margin_thi),
-    #     eulerian_to_cartesian(margin_theta, margin_thi),
-    #     eulerian_to_cartesian(-margin_theta, margin_thi),
-    #     eulerian_to_cartesian(-margin_theta, -margin_thi)
-    # ])
-    # x1y0z0 = np.array([[1, 0, 0]])
-    # trace = np.array([trace])
-    # print (x1y0z0.shape)
-    # print (trace.shape)
-    # rotation, _ = Rotation.align_vectors([x1y0z0], [trace])
-    # polygon_fov = np.array([
-    #     rotation.apply(polygon_fov_x1y0z0[0]),
-    #     rotation.apply(polygon_fov_x1y0z0[1]),
-    #     rotation.apply(polygon_fov_x1y0z0[2]),
-    #     rotation.apply(polygon_fov_x1y0z0[3]),
-    # ])
-    # print(polygon_fov_x1y0z0)
-
-    # try quaterion 3 (working)
-    margin_theta = degrees_to_radian(90/2)
-    margin_thi = degrees_to_radian(110/2)
     polygon_fov_x1y0z0 = np.array([
-        eulerian_in_range(margin_theta, -margin_thi),
-        eulerian_in_range(margin_theta, margin_thi),
         eulerian_in_range(-margin_theta, margin_thi),
+        eulerian_in_range(margin_theta, margin_thi),
+        eulerian_in_range(margin_theta, -margin_thi),
         eulerian_in_range(-margin_theta, -margin_thi)
     ])
+    # polygon_fov_x1y0z0_degrees = np.array([
+    #     [radian_to_degrees(polygon_fov_x1y0z0[0][0]),radian_to_degrees(polygon_fov_x1y0z0[0][1])],
+    #     [radian_to_degrees(polygon_fov_x1y0z0[1][0]),radian_to_degrees(polygon_fov_x1y0z0[1][1])],
+    #     [radian_to_degrees(polygon_fov_x1y0z0[2][0]),radian_to_degrees(polygon_fov_x1y0z0[2][1])],
+    #     [radian_to_degrees(polygon_fov_x1y0z0[3][0]),radian_to_degrees(polygon_fov_x1y0z0[3][1])]
+    # ])
+    # print(polygon_fov_x1y0z0_degrees)
     polygon_fov_x1y0z0 = np.array([
         eulerian_to_cartesian(*polygon_fov_x1y0z0[0]),
         eulerian_to_cartesian(*polygon_fov_x1y0z0[1]),
         eulerian_to_cartesian(*polygon_fov_x1y0z0[2]),
         eulerian_to_cartesian(*polygon_fov_x1y0z0[3])
     ])
-    x1y0z0 = np.array([1, 0, 0])
-    trace = np.array(trace)
-    rotation = rotationBetweenVectors(x1y0z0, trace)
+    # print(polygon_fov_x1y0z0)
+    rotation = rotationBetweenVectors(np.array([1, 0, 0]), np.array(trace))
     polygon_fov = np.array([
         rotation.rotate(polygon_fov_x1y0z0[0]),
         rotation.rotate(polygon_fov_x1y0z0[1]),
         rotation.rotate(polygon_fov_x1y0z0[2]),
         rotation.rotate(polygon_fov_x1y0z0[3]),
     ])
-    # print(polygon_fov_x1y0z0)
-    # print(theta_vp, phi_vp)
-    # print(polygon_fov)
-
     return polygon_fov
 
 

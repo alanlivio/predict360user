@@ -15,7 +15,6 @@ import scipy.stats
 ONE_USER = '0'
 ONE_VIDEO = '10_Cows'
 
-
 class Dataset:
     dataset = None
     dataset_pickle = pathlib.Path(__file__).parent.parent/'output/david.pickle'
@@ -179,6 +178,7 @@ class Dataset:
         fig_bar.show()
 
     def metrics_vpextract_video_old(self, vpextract_l: Iterable[VPExtract], users=[], video=ONE_VIDEO, perc_traces=1.0):
+        # LAYOUT = go.Layout(width=600)
         if not users:
             users = self.dataset.keys()
         # fig_reqs = go.Figure(layout=LAYOUT)
