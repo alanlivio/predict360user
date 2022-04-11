@@ -56,16 +56,25 @@ X1Y0Z0_POLYG_FOV = np.array([
 X1Y0Z0 = np.array([1, 0, 0])
 X1Y0Z0_POLYG_FOV_AREA = polygon.SphericalPolygon(X1Y0Z0_POLYG_FOV).area()
 
+saved_points_fov_cartesian = {}
 def points_fov_cartesian(trace) -> NDArray:
-    rotation = rotationBetweenVectors(X1Y0Z0, np.array(trace))
-    poly_fov = np.array([
-        rotation.rotate(X1Y0Z0_POLYG_FOV[0]),
-        rotation.rotate(X1Y0Z0_POLYG_FOV[1]),
-        rotation.rotate(X1Y0Z0_POLYG_FOV[2]),
-        rotation.rotate(X1Y0Z0_POLYG_FOV[3]),
-    ])
-    return poly_fov
-    
+    if (trace[0], trace[1], trace[2]) not in saved_points_fov_cartesian:
+        rotation = rotationBetweenVectors(X1Y0Z0, np.array(trace))
+        poly_fov = np.array([
+            rotation.rotate(X1Y0Z0_POLYG_FOV[0]),
+            rotation.rotate(X1Y0Z0_POLYG_FOV[1]),
+            rotation.rotate(X1Y0Z0_POLYG_FOV[2]),
+            rotation.rotate(X1Y0Z0_POLYG_FOV[3]),
+        ])
+        saved_points_fov_cartesian[(trace[0], trace[1], trace[2])] =  poly_fov
+    return saved_points_fov_cartesian[(trace[0], trace[1], trace[2])]
+
+saved_poly_fov = {}
+def poly_fov(trace) -> polygon.SphericalPolygon:
+    if (trace[0], trace[1], trace[2]) not in saved_poly_fov:
+        saved_poly_fov[(trace[0], trace[1], trace[2])] = polygon.SphericalPolygon(points_fov_cartesian(trace))
+    return saved_poly_fov[(trace[0], trace[1], trace[2])]
+
 class VPExtract(ABC):
     class Cover(Enum):
         ANY = auto()
@@ -144,12 +153,12 @@ class VPExtractTilesRect(VPExtract):
         heatmap = np.zeros((self.t_vert, self.t_hor), dtype=np.int32)
         areas_in = []
         vp_quality = 0.0
+        fov_poly = poly_fov(trace)
         for i in range(self.t_vert):
             for j in range(self.t_hor):
                 dist = compute_orthodromic_distance(trace, self.rect_tile_centers[i][j])
                 if dist <= self.vp_110_rad_half:
                     rect_tile_poly = self.rect_tile_polys[i][j]
-                    fov_poly = polygon.SphericalPolygon(points_fov_cartesian(trace))
                     view_area = rect_tile_poly.overlap(fov_poly)
                     if view_area > required_cover:
                         heatmap[i][j] = 1
@@ -162,6 +171,7 @@ class VPExtractTilesRect(VPExtract):
         heatmap = np.zeros((self.t_vert, self.t_hor), dtype=np.int32)
         areas_in = []
         vp_quality = 0.0
+        fov_poly = poly_fov(trace)
         for i in range(self.t_vert):
             for j in range(self.t_hor):
                 dist = compute_orthodromic_distance(trace, self.rect_tile_centers[i][j])
@@ -169,7 +179,6 @@ class VPExtractTilesRect(VPExtract):
                     heatmap[i][j] = 1
                     if (return_metrics):
                         rect_tile_poly = self.rect_tile_polys[i][j]
-                        fov_poly = polygon.SphericalPolygon(points_fov_cartesian(trace))
                         view_area = rect_tile_poly.overlap(fov_poly)
                         areas_in.append(view_area)
                         vp_quality += fov_poly.overlap(rect_tile_poly)
@@ -218,6 +227,7 @@ class VPExtractTilesVoro(VPExtract):
         vp_110_rad_half = degrees_to_radian(110/2)
         areas_in = []
         vp_quality = 0.0
+        fov_poly = poly_fov(trace)
         heatmap = np.zeros(len(self.sphere_voro.regions))
         for index, _ in enumerate(self.sphere_voro.regions):
             dist = compute_orthodromic_distance(trace, self.sphere_voro.points[index])
@@ -225,7 +235,6 @@ class VPExtractTilesVoro(VPExtract):
                 heatmap[index] += 1
                 if(return_metrics):
                     voro_tile_poly = self.voro_tile_polys[index]
-                    fov_poly = polygon.SphericalPolygon(points_fov_cartesian(trace))
                     view_area = voro_tile_poly.overlap(fov_poly)
                     areas_in.append(view_area)
                     vp_quality += fov_poly.overlap(voro_tile_poly)
@@ -234,10 +243,10 @@ class VPExtractTilesVoro(VPExtract):
     def _request_min_cover(self, trace, required_cover: float, return_metrics):
         areas_in = []
         vp_quality = 0.0
+        fov_poly = poly_fov(trace)
         heatmap = np.zeros(len(self.sphere_voro.regions))
         for index, _ in enumerate(self.sphere_voro.regions):
             voro_tile_poly = self.voro_tile_polys[index]
-            fov_poly = polygon.SphericalPolygon(points_fov_cartesian(trace))
             view_area = voro_tile_poly.overlap(fov_poly)
             if view_area > required_cover:
                 heatmap[index] += 1
