@@ -151,7 +151,7 @@ class VPExtractTilesRect(VPExtract):
 
     def _request_min_cover(self, trace: NDArray, required_cover: float, return_metrics):
         heatmap = np.zeros((self.t_vert, self.t_hor), dtype=np.int32)
-        areas_in = []
+        areas_out = []
         vp_quality = 0.0
         fov_poly = poly_fov(trace)
         for i in range(self.t_vert):
@@ -159,17 +159,17 @@ class VPExtractTilesRect(VPExtract):
                 dist = compute_orthodromic_distance(trace, self.rect_tile_centers[i][j])
                 if dist <= self.vp_110_rad_half:
                     rect_tile_poly = self.rect_tile_polys[i][j]
-                    view_area = rect_tile_poly.overlap(fov_poly)
-                    if view_area > required_cover:
+                    view_ratio = rect_tile_poly.overlap(fov_poly)
+                    if view_ratio > required_cover:
                         heatmap[i][j] = 1
                         if (return_metrics):
-                            areas_in.append(view_area)
+                            areas_out.append(1-view_ratio)
                             vp_quality += fov_poly.overlap(rect_tile_poly)
-        return heatmap, vp_quality, np.sum(areas_in)
+        return heatmap, vp_quality, np.sum(areas_out)
 
     def _request_110radius_center(self, trace, return_metrics):
         heatmap = np.zeros((self.t_vert, self.t_hor), dtype=np.int32)
-        areas_in = []
+        areas_out = []
         vp_quality = 0.0
         fov_poly = poly_fov(trace)
         for i in range(self.t_vert):
@@ -179,10 +179,10 @@ class VPExtractTilesRect(VPExtract):
                     heatmap[i][j] = 1
                     if (return_metrics):
                         rect_tile_poly = self.rect_tile_polys[i][j]
-                        view_area = rect_tile_poly.overlap(fov_poly)
-                        areas_in.append(view_area)
+                        view_ratio = rect_tile_poly.overlap(fov_poly)
+                        areas_out.append(1-view_ratio)
                         vp_quality += fov_poly.overlap(rect_tile_poly)
-        return heatmap, vp_quality, np.sum(areas_in)
+        return heatmap, vp_quality, np.sum(areas_out)
 
 saved_voro_tiles_polys = {}
 
@@ -225,7 +225,7 @@ class VPExtractTilesVoro(VPExtract):
 
     def _request_110radius_center(self, trace, return_metrics):
         vp_110_rad_half = degrees_to_radian(110/2)
-        areas_in = []
+        areas_out = []
         vp_quality = 0.0
         fov_poly = poly_fov(trace)
         heatmap = np.zeros(len(self.sphere_voro.regions))
@@ -235,26 +235,26 @@ class VPExtractTilesVoro(VPExtract):
                 heatmap[index] += 1
                 if(return_metrics):
                     voro_tile_poly = self.voro_tile_polys[index]
-                    view_area = voro_tile_poly.overlap(fov_poly)
-                    areas_in.append(view_area)
+                    view_ratio = voro_tile_poly.overlap(fov_poly)
+                    areas_out.append(1-view_ratio)
                     vp_quality += fov_poly.overlap(voro_tile_poly)
-        return heatmap, vp_quality, np.sum(areas_in)
+        return heatmap, vp_quality, np.sum(areas_out)
 
     def _request_min_cover(self, trace, required_cover: float, return_metrics):
-        areas_in = []
+        areas_out = []
         vp_quality = 0.0
         fov_poly = poly_fov(trace)
         heatmap = np.zeros(len(self.sphere_voro.regions))
         for index, _ in enumerate(self.sphere_voro.regions):
             voro_tile_poly = self.voro_tile_polys[index]
-            view_area = voro_tile_poly.overlap(fov_poly)
-            if view_area > required_cover:
+            view_ratio = voro_tile_poly.overlap(fov_poly)
+            if view_ratio > required_cover:
                 heatmap[index] += 1
-                # view_area = 1 if view_area > 1 else view_area  # fixed with compute_orthodromic_distance
+                # view_ratio = 1 if view_ratio > 1 else view_ratio  # fixed with compute_orthodromic_distance
                 if(return_metrics):
-                    areas_in.append(view_area)
+                    areas_out.append(1-view_ratio)
                     vp_quality += fov_poly.overlap(voro_tile_poly)
-        return heatmap, vp_quality, np.sum(areas_in)
+        return heatmap, vp_quality, np.sum(areas_out)
 
 
 VPEXTRACT_RECT_6_4_CENTER = VPExtractTilesRect(6, 4, VPExtract.Cover.CENTER)
