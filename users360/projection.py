@@ -31,9 +31,9 @@ def _sphere_data_voro(sphere_voro: SphericalVoronoi, with_generators=False):
     for region in sphere_voro.regions:
         n = len(region)
         t = np.linspace(0, 1, 100)
-        for i in range(n):
-            start = sphere_voro.vertices[region][i]
-            end = sphere_voro.vertices[region][(i + 1) % n]
+        for index in range(n):
+            start = sphere_voro.vertices[region][index]
+            end = sphere_voro.vertices[region][(index + 1) % n]
             result = np.array(geometric_slerp(start, end, t))
             edge = go.Scatter3d(x=result[..., 0], y=result[..., 1], z=result[..., 2], mode='lines', line={
                 'width': 5, 'color': 'black'}, name='region edge', showlegend=False)

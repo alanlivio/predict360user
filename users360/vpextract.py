@@ -12,10 +12,10 @@ import plotly.graph_objs as go
 
 def create_trinity_voro(npatchs) -> SphericalVoronoi:
     points = np.empty((0, 3))
-    for i in range(0, npatchs):
-        zi = (1 - 1.0/npatchs) * (1 - 2.0*i / (npatchs - 1))
+    for index in range(0, npatchs):
+        zi = (1 - 1.0/npatchs) * (1 - 2.0*index / (npatchs - 1))
         di = math.sqrt(1 - math.pow(zi, 2))
-        alphai = i * math.pi * (3 - math.sqrt(5))
+        alphai = index * math.pi * (3 - math.sqrt(5))
         xi = di * math.cos(alphai)
         yi = di * math.sin(alphai)
         new_point = np.array([[xi, yi, zi]])
@@ -203,8 +203,7 @@ class VPExtractTilesVoro(VPExtract):
         self.cover = cover
         self.shape = (2, -1)
         if sphere_voro.points.size not in saved_voro_tiles_polys:
-            self.voro_tile_polys = {i: polygon.SphericalPolygon(self.sphere_voro.vertices[self.sphere_voro.regions[i]]) 
-                    for i, _ in enumerate(self.sphere_voro.regions)}
+            self.voro_tile_polys = {index: polygon.SphericalPolygon(self.sphere_voro.vertices[self.sphere_voro.regions[index]]) for index, _ in enumerate(self.sphere_voro.regions)}
             saved_voro_tiles_polys[sphere_voro.points.size] = self.voro_tile_polys
         else:
             self.voro_tile_polys = saved_voro_tiles_polys[sphere_voro.points.size]
