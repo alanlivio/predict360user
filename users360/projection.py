@@ -108,6 +108,8 @@ class PlotVP():
             fig.append_trace(trace, row=1, col=2)
         
         title = f"{self.title} {vpextract.title_with_sum_heatmaps([heatmap])}"
+        if isinstance(vpextract, VPExtractTilesRect):
+            fig.update_yaxes(autorange="reversed") # fix given phi 0 being the north pole at Utils.cartesian_to_eulerian
         fig.update_layout(width=800, showlegend=False, title_text=title)
         if to_html:
             plotly.offline.plot(fig, filename=f'{self.output_folder}/{title}.html', auto_open=False)
@@ -166,6 +168,8 @@ class PlotTraces():
         for trace in erp_heatmap["data"]:
             fig.append_trace(trace, row=1, col=2)
         title = f"{self.title} {vpextract.title_with_sum_heatmaps(heatmaps)}"
+        if isinstance(vpextract, VPExtractTilesRect):
+            fig.update_yaxes(autorange="reversed") # fix given phi 0 being the north pole at Utils.cartesian_to_eulerian
         fig.update_layout(width=800, showlegend=False, title_text=title)
         if to_html:
             plotly.offline.plot(fig, filename=f'{self.output_folder}/{title}.html', auto_open=False)
