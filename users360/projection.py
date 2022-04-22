@@ -58,6 +58,36 @@ def _sphere_data_rect_tiles(t_hor, t_vert):
                 data.append(edge)
     return data
 
+class PlotPolygon():
+    def __init__(self, points, title_sufix=""):
+        assert points.shape[1] == 3  # check if cartesian
+        self.title = f"polygon_{len(points)}_points"
+        self.points = points
+    
+    def show(self, vpextract=None):
+        if isinstance(vpextract, VPExtractTilesRect):
+            data = _sphere_data_rect_tiles(vpextract.t_hor, vpextract.t_vert)
+        elif isinstance(vpextract, VPExtractTilesVoro):
+            data = _sphere_data_voro(vpextract.sphere_voro)
+        else:
+            data = _sphere_data_surface()
+            
+        # points
+        n = len(self.points)
+        t = np.linspace(0, 1, 100)
+        gens = go.Scatter3d(x=self.points[:, 0], y=self.points[:, 1], z=self.points[:, 2], mode='markers', 
+            marker={'size': 5, 'opacity': 1.0,'color': [f'rgb({np.random.randint(0,256)}, {np.random.randint(0,256)}, {np.random.randint(0,256)})' for _ in range(len(self.points))]}, showlegend=False)
+        data.append(gens)
+        for index in range(n):
+            start = self.points[index]
+            end = self.points[(index + 1) % n]
+            print(f"start={start},end={end}")
+            result = np.array(geometric_slerp(start, end, t))
+            edge = go.Scatter3d(x=result[..., 0], y=result[..., 1], z=result[..., 2], mode='lines', line={'width': 5, 'color': 'blue'}, name='vp edge', showlegend=False)
+            data.append(edge)
+        fig = go.Figure(data=data)
+        fig.update_layout(width=800, showlegend=False, title_text=self.title)
+        fig.show()
 
 class PlotVP():
 
@@ -68,16 +98,17 @@ class PlotVP():
         self.output_folder = pathlib.Path(__file__).parent.parent/'output'
 
     def show(self, vpextract: VPExtract, to_html=False):
-        # trace
         data, title = [], ""
         if isinstance(vpextract, VPExtractTilesRect):
             data = _sphere_data_rect_tiles(vpextract.t_hor, vpextract.t_vert)
         elif isinstance(vpextract, VPExtractTilesVoro):
             data = _sphere_data_voro(vpextract.sphere_voro)
+            
+        # trace
         data.append(go.Scatter3d(x=[self.trace[0]], y=[self.trace[1]], z=[self.trace[2]],
                                  mode='markers', marker={'size': 5, 'opacity': 1.0, 'color': 'red'}))
         
-        # vp trace
+        # vp 
         fov_polygon = points_fov_cartesian(self.trace)
         n = len(fov_polygon)
         gens = go.Scatter3d(x=fov_polygon[:, 0], y=fov_polygon[:, 1], z=fov_polygon[:, 2], mode='markers', 
