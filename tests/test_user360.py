@@ -21,14 +21,6 @@ class DatasetTest(unittest.TestCase):
         self.assertIsNotNone(poles)
         self.assertIsNotNone(equator)
 
-    def test_vp(self):
-        onevp = PlotVP(Dataset.singleton().one_trace())
-        self.assertIsNotNone(onevp)
-        onevp.show(VPEXTRACT_RECT_4_6_CENTER, to_html=True)
-        onevp.show(VPEXTRACT_VORO_14_CENTER, to_html=True)
-        onevp.show(VPEXTRACT_RECT_4_6_CENTER, to_html=True)
-        onevp.show(VPEXTRACT_VORO_14_CENTER, to_html=True)
-
     def test_traces(self):
         one_user = PlotTraces(self.dataset.traces_video_user(), title_sufix="one_video_one_user")
         self.assertIsNotNone(one_user)
@@ -42,7 +34,3 @@ class DatasetTest(unittest.TestCase):
         self.assertIsNotNone(some_traces)
         self.assertIsInstance(some_traces.traces, ndarray)
         some_traces.show(VPEXTRACT_RECT_4_6_CENTER, to_html=True)
-
-
-if __name__ == '__main__':
-    unittest.main()

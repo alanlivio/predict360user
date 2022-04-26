@@ -3,6 +3,7 @@ import unittest
 from numpy import array as array
 
 class DatasetTest(unittest.TestCase):
+    
     def test_poly(self):
         # t_ver, t_hor = 6 , 4
         # traces = [ [1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1] ]
