@@ -81,7 +81,6 @@ class PlotPolygon():
         for index in range(n):
             start = self.points[index]
             end = self.points[(index + 1) % n]
-            print(f"start={start},end={end}")
             result = np.array(geometric_slerp(start, end, t))
             edge = go.Scatter3d(x=result[..., 0], y=result[..., 1], z=result[..., 2], mode='lines', line={'width': 5, 'color': 'blue'}, name='vp edge', showlegend=False)
             data.append(edge)

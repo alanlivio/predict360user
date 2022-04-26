@@ -51,7 +51,7 @@ X1Y0Z0_POLYG_FOV = np.array([
     eulerian_to_cartesian(*X1Y0Z0_POLYG_FOV[3])
 ])
 X1Y0Z0 = np.array([1, 0, 0])
-X1Y0Z0_POLYG_FOV_AREA = polygon.SphericalPolygon(X1Y0Z0_POLYG_FOV).area()
+X1Y0Z0_POLYG_FOV_AREA = polygon.SphericalPolygon(X1Y0Z0_POLYG_FOV, inside=X1Y0Z0).area()
 
 saved_points_fov_cartesian = {}
 def points_fov_cartesian(trace) -> NDArray:
@@ -69,7 +69,8 @@ def points_fov_cartesian(trace) -> NDArray:
 saved_poly_fov = {}
 def poly_fov(trace) -> polygon.SphericalPolygon:
     if (trace[0], trace[1], trace[2]) not in saved_poly_fov:
-        saved_poly_fov[(trace[0], trace[1], trace[2])] = polygon.SphericalPolygon(points_fov_cartesian(trace))
+        fov_car = points_fov_cartesian(trace)
+        saved_poly_fov[(trace[0], trace[1], trace[2])] = polygon.SphericalPolygon(np.unique(fov_car,axis=0),inside=trace)
     return saved_poly_fov[(trace[0], trace[1], trace[2])]
 
 class VPExtract(ABC):
@@ -109,8 +110,8 @@ def rect_tiles_polys_init(t_vert, t_hor):
                 theta_c = d_hor * (j + 0.5)
                 phi_c = d_vert * (i + 0.5)
                 rect_tile_points = points_rect_tile_cartesian(i, j, t_hor, t_vert)
-                rect_tile_polys[i][j] = polygon.SphericalPolygon(rect_tile_points)
                 rect_tile_centers[i][j] = eulerian_to_cartesian(theta_c, phi_c)
+                rect_tile_polys[i][j] = polygon.SphericalPolygon(np.unique(rect_tile_points,axis=0), inside=rect_tile_centers[i][j])
         _saved_rect_tiles_polys[(t_vert, t_hor)] = rect_tile_polys
         _saved_rect_tiles_centers[(t_vert, t_hor)] = rect_tile_centers
 

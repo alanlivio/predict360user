@@ -149,14 +149,11 @@ class Dataset:
         met_vpext = np.empty((len(vpextract_l), len(users), 3))
         for indexvp, vpextract in enumerate(vpextract_l):
             for indexuser, user in enumerate(users):
-                try:
-                    traces = self.traces_video_user(user=user, video=video, perc_traces=perc_traces)
-                    def fn(trace):
-                        heatmap, vp_quality, area_out = vpextract.request(trace, return_metrics=True)
-                        return np.hstack([np.sum(heatmap), vp_quality, area_out])
-                    traces_res = np.apply_along_axis(fn, 1, traces)
-                except:
-                    continue
+                traces = self.traces_video_user(user=user, video=video, perc_traces=perc_traces)
+                def fn(trace):
+                    heatmap, vp_quality, area_out = vpextract.request(trace, return_metrics=True)
+                    return np.hstack([np.sum(heatmap), vp_quality, area_out])
+                traces_res = np.apply_along_axis(fn, 1, traces)
                 met_vpext[indexvp][indexuser][0] = np.average(traces_res[:, 0])
                 met_vpext[indexvp][indexuser][1] = np.average(traces_res[:, 1])
                 met_vpext[indexvp][indexuser][2] = np.sum(traces_res[:, 2])
@@ -201,10 +198,7 @@ class Dataset:
                 # user_reqs_use = []
                 # user_heatmaps = []
                 for trace in self.traces_video_user(user=user, video=video, perc_traces=perc_traces):
-                    try:
-                        heatmap, vp_quality, areas_in = vpextract.request(trace, return_metrics=True)
-                    except:
-                        continue
+                    heatmap, vp_quality, areas_in = vpextract.request(trace, return_metrics=True)
                     user_reqs.append(np.sum(heatmap))
                     user_reqs_use.append(areas_in/np.sum(heatmap))
                     user_quality.append(vp_quality)
