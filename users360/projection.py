@@ -59,32 +59,43 @@ def _sphere_data_rect_tiles(t_hor, t_vert):
     return data
 
 class PlotPolygon():
-    def __init__(self, points, title_sufix=""):
-        assert points.shape[1] == 3  # check if cartesian
-        self.title = f"polygon_{len(points)}_points"
-        self.points = points
-    
-    def show(self, vpextract=None):
+    def __init__(self, vpextract=None):
         if isinstance(vpextract, VPExtractTilesRect):
-            data = _sphere_data_rect_tiles(vpextract.t_hor, vpextract.t_vert)
+            self.data = _sphere_data_rect_tiles(vpextract.t_ver, vpextract.t_hor)
         elif isinstance(vpextract, VPExtractTilesVoro):
-            data = _sphere_data_voro(vpextract.sphere_voro)
+            self.data = _sphere_data_voro(vpextract.sphere_voro)
         else:
-            data = _sphere_data_surface()
-            
+            self.data = _sphere_data_surface()
+        self.title = f"polygon"
+    
+    def add_polygon_as_points(self, points):
+        assert points.shape[1] == 3  # check if cartesian
+        self._add_points(points)
+    
+    def add_polygon_as_row_col_tile(self, t_ver, t_hor, row, col):
+        points = points_rect_tile_cartesian(row, col, t_ver, t_hor)
+        self._add_points(points)
+        
+    def add_polygon_from_trace(self, trace):
+        points = points_fov_cartesian(trace)
+        self._add_points(points)
+        
+    def _add_points(self, points):
         # points
-        n = len(self.points)
+        n = len(points)
         t = np.linspace(0, 1, 100)
-        gens = go.Scatter3d(x=self.points[:, 0], y=self.points[:, 1], z=self.points[:, 2], mode='markers', 
-            marker={'size': 5, 'opacity': 1.0,'color': [f'rgb({np.random.randint(0,256)}, {np.random.randint(0,256)}, {np.random.randint(0,256)})' for _ in range(len(self.points))]}, showlegend=False)
-        data.append(gens)
+        gens = go.Scatter3d(x=points[:, 0], y=points[:, 1], z=points[:, 2], mode='markers', 
+            marker={'size': 5, 'opacity': 1.0,'color': [f'rgb({np.random.randint(0,256)}, {np.random.randint(0,256)}, {np.random.randint(0,256)})' for _ in range(len(points))]}, showlegend=False)
+        self.data.append(gens)
         for index in range(n):
-            start = self.points[index]
-            end = self.points[(index + 1) % n]
+            start = points[index]
+            end = points[(index + 1) % n]
             result = np.array(geometric_slerp(start, end, t))
             edge = go.Scatter3d(x=result[..., 0], y=result[..., 1], z=result[..., 2], mode='lines', line={'width': 5, 'color': 'blue'}, name='vp edge', showlegend=False)
-            data.append(edge)
-        fig = go.Figure(data=data)
+            self.data.append(edge)
+    
+    def show(self):
+        fig = go.Figure(data=self.data)
         fig.update_layout(width=800, showlegend=False, title_text=self.title)
         fig.show()
 
