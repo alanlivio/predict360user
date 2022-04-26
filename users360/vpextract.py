@@ -26,14 +26,15 @@ def create_trinity_voro(npatchs) -> SphericalVoronoi:
 VORONOI_14P = create_trinity_voro(14)
 VORONOI_24P = create_trinity_voro(24)
 
-def points_rect_tile_cartesian(i, j, t_hor, t_vert) -> NDArray:
+def points_rect_tile_cartesian(row, col, t_ver, t_hor) -> NDArray:
     d_hor = degrees_to_radian(360/t_hor)
-    d_vert = degrees_to_radian(180/t_vert)
+    d_vert = degrees_to_radian(180/t_ver)
+    assert (row < t_ver and col < t_hor)
     polygon_rect_tile = np.array([
-        eulerian_to_cartesian(d_hor * j, d_vert * (i+1)),
-        eulerian_to_cartesian(d_hor * (j+1), d_vert * (i+1)),
-        eulerian_to_cartesian(d_hor * (j+1), d_vert * i),
-        eulerian_to_cartesian(d_hor * j, d_vert * i)])
+        eulerian_to_cartesian(d_hor * col, d_vert * (row+1)),
+        eulerian_to_cartesian(d_hor * (col+1), d_vert * (row+1)),
+        eulerian_to_cartesian(d_hor * (col+1), d_vert * row),
+        eulerian_to_cartesian(d_hor * col, d_vert * row)])
     return polygon_rect_tile
 
 VP_MARGIN_THETA = degrees_to_radian(110/2)
@@ -99,46 +100,48 @@ class VPExtract(ABC):
 _saved_rect_tiles_polys = {}
 _saved_rect_tiles_centers = {}
 
-def rect_tiles_polys_init(t_vert, t_hor):
-    if (t_vert, t_hor) not in _saved_rect_tiles_polys:
+def rect_tiles_polys_init(t_ver, t_hor):
+    if (t_ver, t_hor) not in _saved_rect_tiles_polys:
         d_hor = degrees_to_radian(360/t_hor)
-        d_vert = degrees_to_radian(180/t_vert)
+        d_vert = degrees_to_radian(180/t_ver)
         rect_tile_polys, rect_tile_centers = {}, {}
-        for i in range(t_vert):
-            rect_tile_polys[i], rect_tile_centers[i] = {}, {}
-            for j in range(t_hor):
-                theta_c = d_hor * (j + 0.5)
-                phi_c = d_vert * (i + 0.5)
-                rect_tile_points = points_rect_tile_cartesian(i, j, t_hor, t_vert)
-                rect_tile_centers[i][j] = eulerian_to_cartesian(theta_c, phi_c)
-                rect_tile_polys[i][j] = polygon.SphericalPolygon(np.unique(rect_tile_points,axis=0), inside=rect_tile_centers[i][j])
-        _saved_rect_tiles_polys[(t_vert, t_hor)] = rect_tile_polys
-        _saved_rect_tiles_centers[(t_vert, t_hor)] = rect_tile_centers
+        for row in range(t_ver):
+            rect_tile_polys[row], rect_tile_centers[row] = {}, {}
+            for col in range(t_hor):
+                theta_c = d_hor * (col + 0.5)
+                phi_c = d_vert * (row + 0.5)
+                # at eulerian_to_cartesian: theta is hor and phi is ver 
+                rect_tile_centers[row][col] = eulerian_to_cartesian(theta_c, phi_c)
+                rect_tile_points = points_rect_tile_cartesian(row, col, t_ver, t_hor)
+                rect_tile_polys[row][col] = polygon.SphericalPolygon(np.unique(rect_tile_points,axis=0), inside=rect_tile_centers[row][col])
+        _saved_rect_tiles_polys[(t_ver, t_hor)] = rect_tile_polys
+        _saved_rect_tiles_centers[(t_ver, t_hor)] = rect_tile_centers
 
-def rect_tiles_polys(t_vert, t_hor):
-    if (t_vert, t_hor) not in _saved_rect_tiles_polys:
-        rect_tiles_polys_init(t_vert, t_hor)
-    return _saved_rect_tiles_polys[(t_vert, t_hor)]
+def rect_tiles_polys(t_ver, t_hor):
+    if (t_ver, t_hor) not in _saved_rect_tiles_polys:
+        rect_tiles_polys_init(t_ver, t_hor)
+    return _saved_rect_tiles_polys[(t_ver, t_hor)]
 
-def rect_tile_centers(t_vert, t_hor):
-    if (t_vert, t_hor) not in _saved_rect_tiles_polys:
-        rect_tiles_polys_init(t_vert, t_hor)
-    return _saved_rect_tiles_centers[(t_vert, t_hor)]
+def rect_tile_centers(t_ver, t_hor):
+    if (t_ver, t_hor) not in _saved_rect_tiles_polys:
+        rect_tiles_polys_init(t_ver, t_hor)
+    return _saved_rect_tiles_centers[(t_ver, t_hor)]
 
 _vp_55d_rad = degrees_to_radian(110/2)
+_vp_110d_rad = degrees_to_radian(110)
 
 class VPExtractTilesRect(VPExtract):
     
-    def __init__(self, t_hor, t_vert, cover: VPExtract.Cover):
-        self.t_hor, self.t_vert = t_hor, t_vert
-        self.shape = (self.t_vert, self.t_hor)
+    def __init__(self, t_ver, t_hor, cover: VPExtract.Cover):
+        self.t_ver, self.t_hor = t_ver, t_hor
+        self.shape = (self.t_ver, self.t_hor)
         self.cover = cover
-        self.rect_tile_polys = rect_tiles_polys(t_vert, t_hor)
-        self.rect_tile_centers = rect_tile_centers(t_vert, t_hor)
+        self.rect_tile_polys = rect_tiles_polys(t_ver, t_hor)
+        self.rect_tile_centers = rect_tile_centers(t_ver, t_hor)
 
     @property
     def title(self):
-        prefix = f'vpextract_rect{self.t_hor}x{self.t_vert}'
+        prefix = f'vpextract_rect{self.t_ver}x{self.t_hor}'
         match self.cover:
             case VPExtract.Cover.ANY:
                 return f'{prefix}_any'
@@ -160,37 +163,40 @@ class VPExtractTilesRect(VPExtract):
             case VPExtract.Cover.ONLY33PERC:
                 return self._request_min_cover(trace, 0.33, return_metrics)
 
-    def _request_min_cover(self, trace: NDArray, required_cover: float, return_metrics):
-        heatmap = np.zeros((self.t_vert, self.t_hor), dtype=np.int32)
+    def _request_110radius_center(self, trace, return_metrics):
+        heatmap = np.zeros((self.t_ver, self.t_hor), dtype=np.int32)
         areas_out = []
         vp_quality = 0.0
         fov_poly = poly_fov(trace)
-        for i in range(self.t_vert):
-            for j in range(self.t_hor):
-                dist = compute_orthodromic_distance(trace, self.rect_tile_centers[i][j])
+        for row in range(self.t_ver):
+            for col in range(self.t_hor):
+                dist = compute_orthodromic_distance(trace, self.rect_tile_centers[row][col])
                 if dist <= _vp_55d_rad:
-                    rect_tile_poly = self.rect_tile_polys[i][j]
-                    view_ratio = rect_tile_poly.overlap(fov_poly)
-                    if view_ratio > required_cover:
-                        heatmap[i][j] = 1
-                        if (return_metrics):
-                            areas_out.append(1-view_ratio)
-                            vp_quality += fov_poly.overlap(rect_tile_poly)
+                    heatmap[row][col] = 1
+                    if (return_metrics):
+                        rect_tile_poly = self.rect_tile_polys[row][col]
+                        view_ratio = rect_tile_poly.overlap(fov_poly)
+                        areas_out.append(1-view_ratio)
+                        vp_quality += fov_poly.overlap(rect_tile_poly)
         return heatmap, vp_quality, np.sum(areas_out)
 
-    def _request_110radius_center(self, trace, return_metrics):
-        heatmap = np.zeros((self.t_vert, self.t_hor), dtype=np.int32)
+    def _request_min_cover(self, trace: NDArray, required_cover: float, return_metrics):
+        heatmap = np.zeros((self.t_ver, self.t_hor), dtype=np.int32)
         areas_out = []
         vp_quality = 0.0
         fov_poly = poly_fov(trace)
-        for i in range(self.t_vert):
-            for j in range(self.t_hor):
-                dist = compute_orthodromic_distance(trace, self.rect_tile_centers[i][j])
-                if dist <= _vp_55d_rad:
-                    heatmap[i][j] = 1
+        for row in range(self.t_ver):
+            for col in range(self.t_hor):
+                dist = compute_orthodromic_distance(trace, self.rect_tile_centers[row][col])
+                if dist >= _vp_110d_rad:
+                    continue
+                rect_tile_poly = self.rect_tile_polys[row][col]
+                view_ratio = rect_tile_poly.overlap(fov_poly)
+                # if view_ratio > 1:
+                #     print(f"row={row},col={col},trace={trace}")
+                if view_ratio > required_cover:
+                    heatmap[row][col] = 1
                     if (return_metrics):
-                        rect_tile_poly = self.rect_tile_polys[i][j]
-                        view_ratio = rect_tile_poly.overlap(fov_poly)
                         areas_out.append(1-view_ratio)
                         vp_quality += fov_poly.overlap(rect_tile_poly)
         return heatmap, vp_quality, np.sum(areas_out)
@@ -266,9 +272,9 @@ class VPExtractTilesVoro(VPExtract):
         return heatmap, vp_quality, np.sum(areas_out)
 
 
-VPEXTRACT_RECT_6_4_CENTER = VPExtractTilesRect(6, 4, VPExtract.Cover.CENTER)
-VPEXTRACT_RECT_6_4_ANY = VPExtractTilesRect(6, 4, VPExtract.Cover.ANY)
-VPEXTRACT_RECT_6_4_20PERC = VPExtractTilesRect(6, 4, VPExtract.Cover.ONLY20PERC)
+VPEXTRACT_RECT_4_6_CENTER = VPExtractTilesRect(4, 6,VPExtract.Cover.CENTER)
+VPEXTRACT_RECT_4_6_ANY = VPExtractTilesRect(4, 6,VPExtract.Cover.ANY)
+VPEXTRACT_RECT_4_6_20PERC = VPExtractTilesRect(4, 6,VPExtract.Cover.ONLY20PERC)
 VPEXTRACT_VORO_14_CENTER = VPExtractTilesVoro(VORONOI_14P, VPExtract.Cover.CENTER)
 VPEXTRACT_VORO_14_ANY = VPExtractTilesVoro(VORONOI_14P, VPExtract.Cover.ANY)
 VPEXTRACT_VORO_14_20PERC = VPExtractTilesVoro(VORONOI_14P, VPExtract.Cover.ONLY20PERC)
@@ -282,8 +288,8 @@ VPEXTRACTS_VORO = [
     VPEXTRACT_VORO_14_20PERC,
 ]
 VPEXTRACTS_RECT = [
-    VPEXTRACT_RECT_6_4_CENTER,
-    VPEXTRACT_RECT_6_4_ANY,
-    VPEXTRACT_RECT_6_4_20PERC,
+    VPEXTRACT_RECT_4_6_CENTER,
+    VPEXTRACT_RECT_4_6_ANY,
+    VPEXTRACT_RECT_4_6_20PERC,
 ]
 VPEXTRACT_METHODS = [*VPEXTRACTS_VORO, *VPEXTRACTS_RECT]

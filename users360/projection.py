@@ -41,12 +41,12 @@ def _sphere_data_voro(sphere_voro: SphericalVoronoi, with_generators=False):
     return data
 
 
-def _sphere_data_rect_tiles(t_hor, t_vert):
+def _sphere_data_rect_tiles(t_ver, t_hor):
     data = _sphere_data_surface()
-    for i in range(t_hor+1):
-        for j in range(t_vert+1):
+    for row in range(t_ver):
+        for col in range(t_hor):
             # -- add rect tiles edges
-            rect_tile_points = points_rect_tile_cartesian(i, j, t_hor, t_vert)
+            rect_tile_points = points_rect_tile_cartesian(row, col, t_ver, t_hor)
             n = len(rect_tile_points)
             t = np.linspace(0, 1, 100)
             for index in range(n):
@@ -110,7 +110,7 @@ class PlotVP():
     def show(self, vpextract: VPExtract, to_html=False):
         data, title = [], ""
         if isinstance(vpextract, VPExtractTilesRect):
-            data = _sphere_data_rect_tiles(vpextract.t_hor, vpextract.t_vert)
+            data = _sphere_data_rect_tiles(vpextract.t_ver, vpextract.t_hor)
         elif isinstance(vpextract, VPExtractTilesVoro):
             data = _sphere_data_voro(vpextract.sphere_voro)
             
@@ -180,7 +180,7 @@ class PlotTraces():
         # traces
         data=[]
         if isinstance(vpextract, VPExtractTilesRect):
-            data = _sphere_data_rect_tiles(vpextract.t_hor, vpextract.t_vert)
+            data = _sphere_data_rect_tiles(vpextract.t_ver, vpextract.t_hor)
         elif isinstance(vpextract, VPExtractTilesVoro):
             data = _sphere_data_voro(vpextract.sphere_voro)
         
