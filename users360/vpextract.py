@@ -25,7 +25,7 @@ X1Y0Z0_POLYG_FOV = np.array([
     eulerian_to_cartesian(*X1Y0Z0_POLYG_FOV[3])
 ])
 X1Y0Z0 = np.array([1, 0, 0])
-X1Y0Z0_POLYG_FOV_AREA = polygon.SphericalPolygon(X1Y0Z0_POLYG_FOV, inside=X1Y0Z0).area()
+X1Y0Z0_POLYG_FOV_AREA = polygon.SphericalPolygon(X1Y0Z0_POLYG_FOV).area()
 
 _saved_fov_points = {}
 def fov_points(trace) -> NDArray:
@@ -44,7 +44,7 @@ _saved_fov_polys = {}
 def fov_poly(trace) -> polygon.SphericalPolygon:
     if (trace[0], trace[1], trace[2]) not in _saved_fov_polys:
         fov_points_trace = fov_points(trace)
-        _saved_fov_polys[(trace[0], trace[1], trace[2])] = polygon.SphericalPolygon(np.unique(fov_points_trace,axis=0), inside=trace)
+        _saved_fov_polys[(trace[0], trace[1], trace[2])] = polygon.SphericalPolygon(fov_points_trace)
     return _saved_fov_polys[(trace[0], trace[1], trace[2])]
 
 class VPExtract(ABC):
@@ -92,7 +92,11 @@ def _saved_tile_init(t_ver, t_hor):
     for row in range(t_ver):
         polys[row], centers[row] = {}, {}
         for col in range(t_hor):
-            polys[row][col] = polygon.SphericalPolygon(tile_points(t_ver, t_hor, row, col))
+            points = tile_points(t_ver, t_hor, row, col)
+            # sometimes tile points are same on poles
+            # they need be unique otherwise it broke the SphericalPolygon.area
+            _, idx = np.unique(points,axis=0, return_index=True)
+            polys[row][col] = polygon.SphericalPolygon(points[np.sort(idx)])
             theta_c = d_hor * (col + 0.5)
             phi_c = d_ver * (row + 0.5)
             # at eulerian_to_cartesian: theta is hor and phi is ver 
