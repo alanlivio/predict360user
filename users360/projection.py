@@ -46,7 +46,7 @@ def _sphere_data_rect_tiles(t_ver, t_hor):
     for row in range(t_ver):
         for col in range(t_hor):
             # -- add rect tiles edges
-            rect_tile_points = points_rect_tile_cartesian(row, col, t_ver, t_hor)
+            rect_tile_points = tile_points(t_ver, t_hor, row, col)
             n = len(rect_tile_points)
             t = np.linspace(0, 1, 100)
             for index in range(n):
@@ -68,16 +68,19 @@ class PlotPolygon():
             self.data = _sphere_data_surface()
         self.title = f"polygon"
     
+    def add_polygon(self, polygon: polygon.SphericalPolygon):
+        self._add_points([point for point in polygon.points]) # polygon.points is a generator
+        
     def add_polygon_as_points(self, points):
         assert points.shape[1] == 3  # check if cartesian
         self._add_points(points)
     
     def add_polygon_as_row_col_tile(self, t_ver, t_hor, row, col):
-        points = points_rect_tile_cartesian(row, col, t_ver, t_hor)
+        points = tile_points(t_ver, t_hor, row, col)
         self._add_points(points)
         
     def add_polygon_from_trace(self, trace):
-        points = points_fov_cartesian(trace)
+        points = fov_points(trace)
         self._add_points(points)
         
     def _add_points(self, points):
@@ -119,15 +122,15 @@ class PlotVP():
                                  mode='markers', marker={'size': 5, 'opacity': 1.0, 'color': 'red'}))
         
         # vp 
-        fov_polygon = points_fov_cartesian(self.trace)
-        n = len(fov_polygon)
-        gens = go.Scatter3d(x=fov_polygon[:, 0], y=fov_polygon[:, 1], z=fov_polygon[:, 2], mode='markers', 
-            marker={'size': 5, 'opacity': 1.0,'color': [f'rgb({np.random.randint(0,256)}, {np.random.randint(0,256)}, {np.random.randint(0,256)})' for _ in range(len(fov_polygon))]}, name='fov corner', showlegend=False)
+        points_fov = fov_points(self.trace)
+        n = len(points_fov)
+        gens = go.Scatter3d(x=points_fov[:, 0], y=points_fov[:, 1], z=points_fov[:, 2], mode='markers', 
+            marker={'size': 5, 'opacity': 1.0,'color': [f'rgb({np.random.randint(0,256)}, {np.random.randint(0,256)}, {np.random.randint(0,256)})' for _ in range(len(points_fov))]}, name='fov corner', showlegend=False)
         data.append(gens)
         t = np.linspace(0, 1, 100)
         for index in range(n):
-            start = fov_polygon[index]
-            end = fov_polygon[(index + 1) % n]
+            start = points_fov[index]
+            end = points_fov[(index + 1) % n]
             result = np.array(geometric_slerp(start, end, t))
             edge = go.Scatter3d(x=result[..., 0], y=result[..., 1], z=result[..., 2], mode='lines', line={
                                 'width': 5, 'color': 'blue'}, name='vp edge', showlegend=False)

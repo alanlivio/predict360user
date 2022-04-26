@@ -14,6 +14,7 @@ import scipy.stats
 
 ONE_USER = '0'
 ONE_VIDEO = '10_Cows'
+np.set_printoptions(suppress=True)
 
 class Dataset:
     dataset = None
