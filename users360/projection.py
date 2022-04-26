@@ -1,5 +1,6 @@
 import pathlib
-from .vpextract import *
+from .tiles import *
+from .tiles_voro import *
 from head_motion_prediction.Utils import *
 from scipy.spatial import SphericalVoronoi, geometric_slerp
 import numpy as np

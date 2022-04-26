@@ -1,4 +1,3 @@
-from .vpextract import *
 from head_motion_prediction.Utils import *
 from numpy.typing import NDArray
 from os.path import exists
@@ -11,6 +10,7 @@ import pickle
 import plotly.express as px
 import plotly.graph_objs as go
 import scipy.stats
+from .tiles import *
 
 ONE_USER = '0'
 ONE_VIDEO = '10_Cows'

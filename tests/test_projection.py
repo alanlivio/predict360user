@@ -1,6 +1,5 @@
 from users360 import *
 import unittest
-from numpy import ndarray
 
 class DatasetTest(unittest.TestCase):
 
