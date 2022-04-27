@@ -59,7 +59,7 @@ def _sphere_data_tiles(t_ver, t_hor):
                 data.append(edge)
     return data
 
-class PlotPolygon():
+class ProjectPolys():
     def __init__(self, tiles=None):
         if isinstance(tiles, Tiles):
             self.data = _sphere_data_tiles(tiles.t_ver, tiles.t_hor)
@@ -103,7 +103,7 @@ class PlotPolygon():
         fig.update_layout(width=800, showlegend=False, title_text=self.title)
         fig.show()
 
-class PlotVP():
+class ProjectFOV():
 
     def __init__(self, trace, tiles=Tiles.default(), title_sufix=""):
         assert len(trace) == 3  # cartesian
@@ -162,12 +162,12 @@ class PlotVP():
             fig.show()
     
 
-class PlotTraces():
+class ProjectTraces():
 
     def __init__(self, traces: NDArray, tiles=Tiles.default(), title_sufix=""):
         assert traces.shape[1] == 3  # check if cartesian
         self.traces = traces
-        print("PlotTraces.shape is " + str(traces.shape))
+        print("ProjectTraces.shape is " + str(traces.shape))
         self.title = f"{str(len(traces))}_traces_{title_sufix}"
         self.output_folder = pathlib.Path(__file__).parent.parent/'output'
         self.tiles = tiles
