@@ -10,7 +10,7 @@ class TestDataset(unittest.TestCase):
         cls.dataset = Dataset.singleton()
 
     def test_entropy(self):
-        self.dataset.users_entropy(TILES_4_6_CENTER)
+        self.dataset.users_entropy(Tiles.default())
         self.assertIsNotNone(self.dataset.users_low)
         self.assertIsNotNone(self.dataset.users_medium)
         self.assertIsNotNone(self.dataset.users_hight)

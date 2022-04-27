@@ -122,9 +122,23 @@ class Tiles(TilesIF):
         self.shape = (self.t_ver, self.t_hor)
         self.cover = cover
 
+    _default = None
     @classmethod
     def default(cls):
-        return Tiles(4, 6,TileCover.CENTER)
+        if cls._default is None:
+            cls._default = Tiles(4, 6,TileCover.CENTER)
+        return cls._default
+    
+    _variations = None
+    @classmethod
+    def variations(cls):
+        if cls._variations is None:
+            cls._variations = [
+            Tiles(4, 6,TileCover.CENTER),
+            Tiles(4, 6,TileCover.ANY),
+            Tiles(4, 6,TileCover.ONLY20PERC),
+        ]
+        return cls._variations
 
     @property
     def title(self):
@@ -193,13 +207,3 @@ class Tiles(TilesIF):
                         areas_out.append(1-view_ratio)
                         vp_quality += fov_poly_trace.overlap(tile_poly_rc)
         return heatmap, vp_quality, np.sum(areas_out)
-
-
-TILES_4_6_CENTER = Tiles(4, 6,TileCover.CENTER)
-TILES_4_6_ANY = Tiles(4, 6,TileCover.ANY)
-TILES_4_6_20PERC = Tiles(4, 6,TileCover.ONLY20PERC)
-TILES_L = [
-    TILES_4_6_CENTER,
-    TILES_4_6_ANY,
-    TILES_4_6_20PERC,
-]

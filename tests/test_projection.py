@@ -9,6 +9,6 @@ class TestProjection(unittest.TestCase):
             onevp = PlotVP(trace)
             self.assertIsNotNone(onevp)
             onevp.show(to_html=True)
-            onevp = PlotVP(trace,TILES_VORO_14_CENTER)
+            onevp = PlotVP(trace, TilesVoro.default())
             self.assertIsNotNone(onevp)
             onevp.show(to_html=True)

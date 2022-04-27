@@ -36,7 +36,28 @@ class TilesVoro(TilesIF):
             _saved_tilevoro_polys[sphere_voro.points.size] = self.voro_tile_polys
         else:
             self.voro_tile_polys = _saved_tilevoro_polys[sphere_voro.points.size]
-        
+    
+    _default = None
+    @classmethod
+    def default(cls):
+        if cls._default is None:
+            cls._default = TilesVoro(VORONOI_14P, TileCover.CENTER)
+        return cls._default
+    
+    _variations = None
+    @classmethod
+    def variations(cls):
+        if cls._variations is None:
+            cls._variations = [
+            TilesVoro(VORONOI_14P, TileCover.CENTER),
+            TilesVoro(VORONOI_14P, TileCover.ANY),
+            TilesVoro(VORONOI_14P, TileCover.ONLY20PERC),
+            # TilesVoro(VORONOI_24P, TileCover.CEMTER),
+            # TilesVoro(VORONOI_24P, TileCover.ANY),
+            # TilesVoro(VORONOI_24P, TileCover.ONLY20PERC),
+        ]
+        return cls._variations
+    
     @property
     def title(self):
         prefix = f'tiles_voro{len(self.sphere_voro.points)}'
@@ -94,17 +115,3 @@ class TilesVoro(TilesIF):
                     areas_out.append(1-view_ratio)
                     vp_quality += fov_poly_trace.overlap(voro_tile_poly)
         return heatmap, vp_quality, np.sum(areas_out)
-
-
-TILES_VORO_14_CENTER = TilesVoro(VORONOI_14P, TileCover.CENTER)
-TILES_VORO_14_ANY = TilesVoro(VORONOI_14P, TileCover.ANY)
-TILES_VORO_14_20PERC = TilesVoro(VORONOI_14P, TileCover.ONLY20PERC)
-# TILES_VORO_24_CENTER = TilesVoro(VORONOI_24P, TileCover.CEMTER)
-# TILES_VORO_24_ANY = TilesVoro(VORONOI_24P, TileCover.ANY)
-# TILES_VORO_24_20PERC = TilesVoro(VORONOI_24P, TileCover.ONLY20PERC)
-
-TILES_VORO_L = [
-    TILES_VORO_14_CENTER,
-    TILES_VORO_14_ANY,
-    TILES_VORO_14_20PERC,
-]

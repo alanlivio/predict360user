@@ -21,7 +21,7 @@ class Dataset:
     dataset_pickle = pathlib.Path(__file__).parent.parent/'output/david.pickle'
     instance = None
     instance_pickle = pathlib.Path(__file__).parent.parent/'output/singleton.pickle'
-    met_vpext = None
+    metrics_request = None
     
     def __init__(self, dataset={}):
         if not dataset:
@@ -146,8 +146,8 @@ class Dataset:
     def metrics_tiles_video(self, tiles_l, users=[], video=ONE_VIDEO, perc_traces=1.0):
         if not users:
             users = self.dataset.keys()
-        # 3 metrics for each user/vpextrac = reqs, avg area, avg quality
-        met_vpext = np.empty((len(tiles_l), len(users), 3))
+        # 3 metrics for each user/tiles = reqs, avg area, avg quality
+        metrics_request = np.empty((len(tiles_l), len(users), 3))
         for indexvp, tiles in enumerate(tiles_l):
             for indexuser, user in enumerate(users):
                 traces = self.traces_video_user(user=user, video=video, perc_traces=perc_traces)
@@ -155,14 +155,14 @@ class Dataset:
                     heatmap, vp_quality, area_out = tiles.request(trace, return_metrics=True)
                     return np.hstack([np.sum(heatmap), vp_quality, area_out])
                 traces_res = np.apply_along_axis(fn, 1, traces)
-                met_vpext[indexvp][indexuser][0] = np.average(traces_res[:, 0])
-                met_vpext[indexvp][indexuser][1] = np.average(traces_res[:, 1])
-                met_vpext[indexvp][indexuser][2] = np.sum(traces_res[:, 2])
+                metrics_request[indexvp][indexuser][0] = np.average(traces_res[:, 0])
+                metrics_request[indexvp][indexuser][1] = np.average(traces_res[:, 1])
+                metrics_request[indexvp][indexuser][2] = np.sum(traces_res[:, 2])
         trace_len = len(self.traces_video_user(user=ONE_USER, video=ONE_VIDEO, perc_traces=perc_traces))
-        print(f"Dataset.met_vpext.shape={met_vpext.shape} traces {trace_len}")
-        tiles_reqs = np.average(met_vpext[:, :, 0], axis=1)
-        tiles_vp_quality = np.average(met_vpext[:, :, 1], axis=1)
-        tiles_area_out = np.average(met_vpext[:, :, 2], axis=1)
+        print(f"Dataset.metrics_request.shape={metrics_request.shape} traces {trace_len}")
+        tiles_reqs = np.average(metrics_request[:, :, 0], axis=1)
+        tiles_vp_quality = np.average(metrics_request[:, :, 1], axis=1)
+        tiles_area_out = np.average(metrics_request[:, :, 2], axis=1)
 
         # figs from metrics
         tiles_names = [str(tiles.title) for tiles in tiles_l]
@@ -172,7 +172,7 @@ class Dataset:
         fig_bar.add_trace(go.Bar(y=tiles_names, x=tiles_vp_quality, orientation='h'), row=1, col=3)
         tiles_score = [tiles_vp_quality[i] / tiles_area_out[i] for i, _ in enumerate(tiles_reqs)]
         fig_bar.add_trace(go.Bar(y=tiles_names, x=tiles_score, orientation='h'), row=1, col=4)
-        fig_bar.update_layout(width=1500, showlegend=False, barmode="stack", title_text="met_vpext")
+        fig_bar.update_layout(width=1500, showlegend=False, barmode="stack", title_text="metrics_request")
         fig_bar.show()
 
     def metrics_tiles_video_old(self, tiles_l: Iterable[TilesIF], users=[], video=ONE_VIDEO, perc_traces=1.0):
