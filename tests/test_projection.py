@@ -21,4 +21,4 @@ class TestProjection(unittest.TestCase):
 
         plot = PlotPolygon()
         plot.add_polygon_from_trace([1, 0, 0])
-        plot.add_polygon_as_points(tile_points(4,6,0,0))
+        plot.add_polygon_as_points(Tiles.tile_points(4,6,0,0))

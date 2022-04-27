@@ -6,20 +6,23 @@ from numpy.typing import NDArray
 class FOV:
 
     X1Y0Z0 = np.array([1, 0, 0])
+    HOR_DIST = degrees_to_radian(110)
+    HOR_MARGIN = degrees_to_radian(110/2)
+    VER_MARGIN = degrees_to_radian(90/2)
     _x1y0z0_poly = None
     _x1y0z0_area = None
-    
+    _saved_points = None
+    _saved_polys = None
+
     @classmethod
     @property
     def x1y0z0_poly(cls) -> NDArray:
         if cls._x1y0z0_poly is None:
-            vp_margin_theta = degrees_to_radian(110/2)
-            vp_margin_thi = degrees_to_radian(90/2)
             x1y0z0_fov_points_euler = np.array([
-                eulerian_in_range(-vp_margin_theta, vp_margin_thi),
-                eulerian_in_range(vp_margin_theta, vp_margin_thi),
-                eulerian_in_range(vp_margin_theta, -vp_margin_thi),
-                eulerian_in_range(-vp_margin_theta, -vp_margin_thi)
+                eulerian_in_range(-FOV.HOR_MARGIN, FOV.VER_MARGIN),
+                eulerian_in_range(FOV.HOR_MARGIN, FOV.VER_MARGIN),
+                eulerian_in_range(FOV.HOR_MARGIN, -FOV.VER_MARGIN),
+                eulerian_in_range(-FOV.HOR_MARGIN, -FOV.VER_MARGIN)
             ])
             cls._x1y0z0_poly = np.array([
                 eulerian_to_cartesian(*x1y0z0_fov_points_euler[0]),
@@ -35,8 +38,6 @@ class FOV:
         if cls._x1y0z0_area is None:
             cls._x1y0z0_area = polygon.SphericalPolygon(cls.x1y0z0_poly).area()
         
-    _saved_points = None
-    
     @classmethod
     def points(cls, trace) -> NDArray:
         if cls._saved_points is None:
@@ -52,8 +53,6 @@ class FOV:
             cls._saved_points[(trace[0], trace[1], trace[2])] =  points
         return cls._saved_points[(trace[0], trace[1], trace[2])]
 
-    _saved_polys = None
-    
     @classmethod
     def poly(cls, trace) -> polygon.SphericalPolygon:
         if cls._saved_polys is None:

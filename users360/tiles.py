@@ -16,6 +16,9 @@ class TileCover(Enum):
 class TilesIF(ABC):
     # https://realpython.com/python-interface/
     
+    cover: TileCover
+    shape: tuple[int, int]
+    
     @abstractmethod
     def request(self, trace, return_metrics=False) -> tuple[NDArray, float, list]:
         pass
@@ -28,56 +31,6 @@ class TilesIF(ABC):
         reqs_sum = np.sum(np.sum(heatmaps, axis=0))
         return f"{self.title} (reqs={reqs_sum})"
 
-    cover: TileCover
-    shape: tuple[int, int]
-
-
-_saved_tile_polys = {}
-_saved_tile_centers = {}
-
-def tile_points(t_ver, t_hor, row, col) -> NDArray:
-    d_ver = degrees_to_radian(180/t_ver)
-    d_hor = degrees_to_radian(360/t_hor)
-    assert (row < t_ver and col < t_hor)
-    points = np.array([
-        eulerian_to_cartesian(d_hor * col,      d_ver * (row+1)),
-        eulerian_to_cartesian(d_hor * (col+1),  d_ver * (row+1)),
-        eulerian_to_cartesian(d_hor * (col+1),  d_ver * row),
-        eulerian_to_cartesian(d_hor * col,      d_ver * row),
-    ])
-    return points
-
-def _saved_tile_init(t_ver, t_hor):
-    d_hor = degrees_to_radian(360/t_hor)
-    d_ver = degrees_to_radian(180/t_ver)
-    polys, centers = {}, {}
-    for row in range(t_ver):
-        polys[row], centers[row] = {}, {}
-        for col in range(t_hor):
-            points = tile_points(t_ver, t_hor, row, col)
-            # sometimes tile points are same on poles
-            # they need be unique otherwise it broke the SphericalPolygon.area
-            _, idx = np.unique(points,axis=0, return_index=True)
-            polys[row][col] = polygon.SphericalPolygon(points[np.sort(idx)])
-            theta_c = d_hor * (col + 0.5)
-            phi_c = d_ver * (row + 0.5)
-            # at eulerian_to_cartesian: theta is hor and phi is ver 
-            centers[row][col] = eulerian_to_cartesian(theta_c, phi_c)
-    _saved_tile_polys[(t_ver, t_hor)] = polys
-    _saved_tile_centers[(t_ver, t_hor)] = centers
-
-def tile_poly(t_ver, t_hor, row, col):
-    if (t_ver, t_hor) not in _saved_tile_polys:
-        _saved_tile_init(t_ver, t_hor)
-    return _saved_tile_polys[(t_ver, t_hor)][row][col]
-
-def tile_center(t_ver, t_hor, row, col):
-    if (t_ver, t_hor) not in _saved_tile_polys:
-        _saved_tile_init(t_ver, t_hor)
-    return _saved_tile_centers[(t_ver, t_hor)][row][col]
-
-_vp_55d_rad = degrees_to_radian(110/2)
-_vp_110d_rad = degrees_to_radian(110)
 
 class Tiles(TilesIF):
     
@@ -128,6 +81,58 @@ class Tiles(TilesIF):
             case TileCover.ONLY33PERC:
                 return self._request_min_cover(trace, 0.33, return_metrics)
 
+
+    @classmethod
+    def tile_points(cls,t_ver, t_hor, row, col) -> NDArray:
+        d_ver = degrees_to_radian(180/t_ver)
+        d_hor = degrees_to_radian(360/t_hor)
+        assert (row < t_ver and col < t_hor)
+        points = np.array([
+            eulerian_to_cartesian(d_hor * col,      d_ver * (row+1)),
+            eulerian_to_cartesian(d_hor * (col+1),  d_ver * (row+1)),
+            eulerian_to_cartesian(d_hor * (col+1),  d_ver * row),
+            eulerian_to_cartesian(d_hor * col,      d_ver * row),
+        ])
+        return points
+
+
+    _saved_polys = None
+    _saved_centers = None
+
+    @classmethod
+    def _saved_tiles_init(cls, t_ver, t_hor):
+        cls._saved_polys = {}
+        cls._saved_centers = {}
+        d_hor = degrees_to_radian(360/t_hor)
+        d_ver = degrees_to_radian(180/t_ver)
+        polys, centers = {}, {}
+        for row in range(t_ver):
+            polys[row], centers[row] = {}, {}
+            for col in range(t_hor):
+                points = cls.tile_points(t_ver, t_hor, row, col)
+                # sometimes tile points are same on poles
+                # they need be unique otherwise it broke the SphericalPolygon.area
+                _, idx = np.unique(points,axis=0, return_index=True)
+                polys[row][col] = polygon.SphericalPolygon(points[np.sort(idx)])
+                theta_c = d_hor * (col + 0.5)
+                phi_c = d_ver * (row + 0.5)
+                # at eulerian_to_cartesian: theta is hor and phi is ver 
+                centers[row][col] = eulerian_to_cartesian(theta_c, phi_c)
+        cls._saved_polys[(t_ver, t_hor)] = polys
+        cls._saved_centers[(t_ver, t_hor)] = centers
+
+    @classmethod
+    def tile_poly(cls, t_ver, t_hor, row, col):
+        if cls._saved_polys is None or (t_ver, t_hor) not in cls._saved_polys:
+            cls._saved_tiles_init(t_ver, t_hor)
+        return cls._saved_polys[(t_ver, t_hor)][row][col]
+
+    @classmethod
+    def tile_center(cls, t_ver, t_hor, row, col):
+        if cls._saved_polys is None or (t_ver, t_hor) not in cls._saved_polys:
+            cls._saved_tiles_init(t_ver, t_hor)
+        return cls._saved_centers[(t_ver, t_hor)][row][col]
+
     def _request_110radius_center(self, trace, return_metrics):
         heatmap = np.zeros((self.t_ver, self.t_hor), dtype=np.int32)
         areas_out = []
@@ -135,18 +140,18 @@ class Tiles(TilesIF):
         fov_poly_trace = FOV.poly(trace)
         for row in range(self.t_ver):
             for col in range(self.t_hor):
-                dist = compute_orthodromic_distance(trace, tile_center(self.t_ver, self.t_hor, row, col))
-                if dist <= _vp_55d_rad:
+                dist = compute_orthodromic_distance(trace, Tiles.tile_center(self.t_ver, self.t_hor, row, col))
+                if dist <= FOV.HOR_MARGIN:
                     heatmap[row][col] = 1
                     if (return_metrics):
                         try:
-                            tile_poly_rc = tile_poly(self.t_ver, self.t_hor, row, col)
-                            view_ratio = tile_poly_rc.overlap(fov_poly_trace)
+                            poly_rc = Tiles.tile_poly(self.t_ver, self.t_hor, row, col)
+                            view_ratio = poly_rc.overlap(fov_poly_trace)
                         except:
                             print(f"request error for row,col,trace={row},{col},{repr(trace)}")
                             continue
                         areas_out.append(1-view_ratio)
-                        vp_quality += fov_poly_trace.overlap(tile_poly_rc)
+                        vp_quality += fov_poly_trace.overlap(poly_rc)
         return heatmap, vp_quality, np.sum(areas_out)
 
     def _request_min_cover(self, trace: NDArray, required_cover: float, return_metrics):
@@ -156,12 +161,12 @@ class Tiles(TilesIF):
         fov_poly_trace = FOV.poly(trace)
         for row in range(self.t_ver):
             for col in range(self.t_hor):
-                dist = compute_orthodromic_distance(trace, tile_center(self.t_ver, self.t_hor, row, col))
-                if dist >= _vp_110d_rad:
+                dist = compute_orthodromic_distance(trace, Tiles.tile_center(self.t_ver, self.t_hor, row, col))
+                if dist >= FOV.HOR_DIST:
                     continue
                 try:
-                    tile_poly_rc = tile_poly(self.t_ver, self.t_hor, row, col)
-                    view_ratio = tile_poly_rc.overlap(fov_poly_trace)
+                    poly_rc = Tiles.tile_poly(self.t_ver, self.t_hor, row, col)
+                    view_ratio = poly_rc.overlap(fov_poly_trace)
                 except:
                     print(f"request error for row,col,trace={row},{col},{repr(trace)}")
                     continue
@@ -169,5 +174,5 @@ class Tiles(TilesIF):
                     heatmap[row][col] = 1
                     if (return_metrics):
                         areas_out.append(1-view_ratio)
-                        vp_quality += fov_poly_trace.overlap(tile_poly_rc)
+                        vp_quality += fov_poly_trace.overlap(poly_rc)
         return heatmap, vp_quality, np.sum(areas_out)

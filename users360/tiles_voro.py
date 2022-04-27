@@ -22,8 +22,6 @@ VORONOI_14P = create_trinity_voro(14)
 VORONOI_24P = create_trinity_voro(24)
 
 _saved_tilevoro_polys = {}
-_vp_55d_rad = degrees_to_radian(110/2)
-_vp_110d_rad = degrees_to_radian(110)
 
 class TilesVoro(TilesIF):
     def __init__(self, sphere_voro: SphericalVoronoi, cover: TileCover):
@@ -32,10 +30,10 @@ class TilesVoro(TilesIF):
         self.cover = cover
         self.shape = (2, -1)
         if sphere_voro.points.size not in _saved_tilevoro_polys:
-            self.voro_tile_polys = {index: polygon.SphericalPolygon(self.sphere_voro.vertices[self.sphere_voro.regions[index]]) for index, _ in enumerate(self.sphere_voro.regions)}
-            _saved_tilevoro_polys[sphere_voro.points.size] = self.voro_tile_polys
+            self.voro_polys = {index: polygon.SphericalPolygon(self.sphere_voro.vertices[self.sphere_voro.regions[index]]) for index, _ in enumerate(self.sphere_voro.regions)}
+            _saved_tilevoro_polys[sphere_voro.points.size] = self.voro_polys
         else:
-            self.voro_tile_polys = _saved_tilevoro_polys[sphere_voro.points.size]
+            self.voro_polys = _saved_tilevoro_polys[sphere_voro.points.size]
     
     _default = None
     @classmethod
@@ -89,13 +87,13 @@ class TilesVoro(TilesIF):
         heatmap = np.zeros(len(self.sphere_voro.regions))
         for index, _ in enumerate(self.sphere_voro.regions):
             dist = compute_orthodromic_distance(trace, self.sphere_voro.points[index])
-            if dist <= _vp_55d_rad:
+            if dist <= FOV.HOR_MARGIN:
                 heatmap[index] += 1
                 if(return_metrics):
-                    voro_tile_poly = self.voro_tile_polys[index]
-                    view_ratio = voro_tile_poly.overlap(fov_poly_trace)
+                    voro_poly = self.voro_polys[index]
+                    view_ratio = voro_poly.overlap(fov_poly_trace)
                     areas_out.append(1-view_ratio)
-                    vp_quality += fov_poly_trace.overlap(voro_tile_poly)
+                    vp_quality += fov_poly_trace.overlap(voro_poly)
         return heatmap, vp_quality, np.sum(areas_out)
 
     def _request_min_cover(self, trace, required_cover: float, return_metrics):
@@ -105,13 +103,13 @@ class TilesVoro(TilesIF):
         heatmap = np.zeros(len(self.sphere_voro.regions))
         for index, _ in enumerate(self.sphere_voro.regions):
             dist = compute_orthodromic_distance(trace, self.sphere_voro.points[index])
-            if dist >= _vp_110d_rad:
+            if dist >= FOV.HOR_DIST:
                 continue    
-            voro_tile_poly = self.voro_tile_polys[index]
-            view_ratio = voro_tile_poly.overlap(fov_poly_trace)
+            voro_poly = self.voro_polys[index]
+            view_ratio = voro_poly.overlap(fov_poly_trace)
             if view_ratio > required_cover:
                 heatmap[index] += 1
                 if(return_metrics):
                     areas_out.append(1-view_ratio)
-                    vp_quality += fov_poly_trace.overlap(voro_tile_poly)
+                    vp_quality += fov_poly_trace.overlap(voro_poly)
         return heatmap, vp_quality, np.sum(areas_out)

@@ -47,12 +47,12 @@ def _sphere_data_tiles(t_ver, t_hor):
     for row in range(t_ver):
         for col in range(t_hor):
             # -- add tiles edges
-            ile_points = tile_points(t_ver, t_hor, row, col)
-            n = len(ile_points)
+            tile_points = Tiles.tile_points(t_ver, t_hor, row, col)
+            n = len(tile_points)
             t = np.linspace(0, 1, 100)
             for index in range(n):
-                start = ile_points[index]
-                end = ile_points[(index + 1) % n]
+                start = tile_points[index]
+                end = tile_points[(index + 1) % n]
                 result = np.array(geometric_slerp(start, end, t))
                 edge = go.Scatter3d(x=result[..., 0], y=result[..., 1], z=result[..., 2], mode='lines', line={
                     'width': 5, 'color': 'black'}, name='region edge', showlegend=False)
@@ -77,7 +77,7 @@ class PlotPolygon():
         self._add_points(points)
     
     def add_polygon_as_row_col_tile(self, t_ver, t_hor, row, col):
-        points = tile_points(t_ver, t_hor, row, col)
+        points = Tiles.tile_points(t_ver, t_hor, row, col)
         self._add_points(points)
         
     def add_polygon_from_trace(self, trace):
