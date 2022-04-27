@@ -62,16 +62,16 @@ class TilesVoro(TilesIF):
     
     @property
     def title(self):
-        prefix = f'tiles_voro{len(self.voro.points)}'
+        prefix = f'voro{len(self.voro.points)}'
         match self.cover:
             case TileCover.ANY:
                 return f'{prefix}_any'
             case TileCover.CENTER:
                 return f'{prefix}_center'
             case TileCover.ONLY20PERC:
-                return f'{prefix}_20perc'
+                return f'{prefix}_20prt'
             case TileCover.ONLY33PERC:
-                return f'{prefix}_33perc'
+                return f'{prefix}_33prt'
 
     def request(self, trace, return_metrics=False):
         match self.cover:

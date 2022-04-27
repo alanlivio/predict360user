@@ -59,16 +59,16 @@ class Tiles(TilesIF):
 
     @property
     def title(self):
-        prefix = f'tiles_{self.t_ver}x{self.t_hor}'
+        prefix = f'tiles{self.t_ver}x{self.t_hor}'
         match self.cover:
             case TileCover.ANY:
                 return f'{prefix}_any'
             case TileCover.CENTER:
                 return f'{prefix}_center'
             case TileCover.ONLY20PERC:
-                return f'{prefix}_20perc'
+                return f'{prefix}_20prt'
             case TileCover.ONLY33PERC:
-                return f'{prefix}_33perc'
+                return f'{prefix}_33prt'
 
     def request(self, trace: NDArray, return_metrics=False):
         match self.cover:
