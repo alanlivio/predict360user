@@ -65,13 +65,13 @@ class Dataset:
                     Dataset.dataset = pickle.load(f)
         return Dataset.dataset
 
-    def users_entropy(self, vpextract, plot_scatter=False):
+    def users_entropy(self, tiles, plot_scatter=False):
         # fill users_entropy
         users_entropy = np.zeros(self.users_len,dtype=float)
         for user in self.users_id:
             heatmaps = []
             for trace in self.dataset[user][ONE_VIDEO][:, 1:]:
-                heatmap, _, _ = vpextract.request(trace)
+                heatmap, _, _ = tiles.request(trace)
                 heatmaps.append(heatmap)
             sum = np.sum(heatmaps, axis=0).reshape((-1))
             # https://stackoverflow.com/questions/15450192/fastest-way-to-compute-entropy-in-python
@@ -143,16 +143,16 @@ class Dataset:
                     count += 1
         return traces[:count]
 
-    def metrics_vpextract_video(self, vpextract_l, users=[], video=ONE_VIDEO, perc_traces=1.0):
+    def metrics_tiles_video(self, tiles_l, users=[], video=ONE_VIDEO, perc_traces=1.0):
         if not users:
             users = self.dataset.keys()
         # 3 metrics for each user/vpextrac = reqs, avg area, avg quality
-        met_vpext = np.empty((len(vpextract_l), len(users), 3))
-        for indexvp, vpextract in enumerate(vpextract_l):
+        met_vpext = np.empty((len(tiles_l), len(users), 3))
+        for indexvp, tiles in enumerate(tiles_l):
             for indexuser, user in enumerate(users):
                 traces = self.traces_video_user(user=user, video=video, perc_traces=perc_traces)
                 def fn(trace):
-                    heatmap, vp_quality, area_out = vpextract.request(trace, return_metrics=True)
+                    heatmap, vp_quality, area_out = tiles.request(trace, return_metrics=True)
                     return np.hstack([np.sum(heatmap), vp_quality, area_out])
                 traces_res = np.apply_along_axis(fn, 1, traces)
                 met_vpext[indexvp][indexuser][0] = np.average(traces_res[:, 0])
@@ -160,32 +160,32 @@ class Dataset:
                 met_vpext[indexvp][indexuser][2] = np.sum(traces_res[:, 2])
         trace_len = len(self.traces_video_user(user=ONE_USER, video=ONE_VIDEO, perc_traces=perc_traces))
         print(f"Dataset.met_vpext.shape={met_vpext.shape} traces {trace_len}")
-        vpextract_reqs = np.average(met_vpext[:, :, 0], axis=1)
-        vpextract_vp_quality = np.average(met_vpext[:, :, 1], axis=1)
-        vpextract_area_out = np.average(met_vpext[:, :, 2], axis=1)
+        tiles_reqs = np.average(met_vpext[:, :, 0], axis=1)
+        tiles_vp_quality = np.average(met_vpext[:, :, 1], axis=1)
+        tiles_area_out = np.average(met_vpext[:, :, 2], axis=1)
 
         # figs from metrics
-        vpextract_names = [str(vpextract.title) for vpextract in vpextract_l]
+        tiles_names = [str(tiles.title) for tiles in tiles_l]
         fig_bar = make_subplots(rows=1, cols=4,  subplot_titles=( "n_reqs_avg_user", "area_out_avg_user", "vp_quality_avg_user", "score=vp_quality_avg_user/area_out_avg_user"), shared_yaxes=True)
-        fig_bar.add_trace(go.Bar(y=vpextract_names, x=vpextract_reqs, orientation='h'), row=1, col=1)
-        fig_bar.add_trace(go.Bar(y=vpextract_names, x=vpextract_area_out, orientation='h'), row=1, col=2)
-        fig_bar.add_trace(go.Bar(y=vpextract_names, x=vpextract_vp_quality, orientation='h'), row=1, col=3)
-        vpextract_score = [vpextract_vp_quality[i] / vpextract_area_out[i] for i, _ in enumerate(vpextract_reqs)]
-        fig_bar.add_trace(go.Bar(y=vpextract_names, x=vpextract_score, orientation='h'), row=1, col=4)
+        fig_bar.add_trace(go.Bar(y=tiles_names, x=tiles_reqs, orientation='h'), row=1, col=1)
+        fig_bar.add_trace(go.Bar(y=tiles_names, x=tiles_area_out, orientation='h'), row=1, col=2)
+        fig_bar.add_trace(go.Bar(y=tiles_names, x=tiles_vp_quality, orientation='h'), row=1, col=3)
+        tiles_score = [tiles_vp_quality[i] / tiles_area_out[i] for i, _ in enumerate(tiles_reqs)]
+        fig_bar.add_trace(go.Bar(y=tiles_names, x=tiles_score, orientation='h'), row=1, col=4)
         fig_bar.update_layout(width=1500, showlegend=False, barmode="stack", title_text="met_vpext")
         fig_bar.show()
 
-    def metrics_vpextract_video_old(self, vpextract_l: Iterable[VPExtract], users=[], video=ONE_VIDEO, perc_traces=1.0):
+    def metrics_tiles_video_old(self, tiles_l: Iterable[TilesIF], users=[], video=ONE_VIDEO, perc_traces=1.0):
         # LAYOUT = go.Layout(width=600)
         if not users:
             users = self.dataset.keys()
         # fig_reqs = go.Figure(layout=LAYOUT)
         # fig_areas = go.Figure(layout=LAYOUT)
         # fig_quality = go.Figure(layout=LAYOUT)
-        vpextract_reqs = []
-        vpextract_area_out = []
-        vpextract_vp_quality = []
-        for vpextract in vpextract_l:
+        tiles_reqs = []
+        tiles_area_out = []
+        tiles_vp_quality = []
+        for tiles in tiles_l:
             # call func per trace
             users_reqs = []
             # users_reqs_use = []
@@ -199,7 +199,7 @@ class Dataset:
                 # user_reqs_use = []
                 # user_heatmaps = []
                 for trace in self.traces_video_user(user=user, video=video, perc_traces=perc_traces):
-                    heatmap, vp_quality, areas_in = vpextract.request(trace, return_metrics=True)
+                    heatmap, vp_quality, areas_in = tiles.request(trace, return_metrics=True)
                     user_reqs.append(np.sum(heatmap))
                     user_reqs_use.append(areas_in/np.sum(heatmap))
                     user_quality.append(vp_quality)
@@ -211,26 +211,26 @@ class Dataset:
             if not len(users_reqs):
                 continue
             # # line reqs
-            # fig_reqs.add_trace(go.Scatter(y=traces_reqs, mode='lines', name=f"{vpextract.title}"))
+            # fig_reqs.add_trace(go.Scatter(y=traces_reqs, mode='lines', name=f"{tiles.title}"))
             # # line areas
-            # fig_areas.add_trace(go.Scatter(y=traces_areas_avg, mode='lines', name=f"{vpextract.title}"))
+            # fig_areas.add_trace(go.Scatter(y=traces_areas_avg, mode='lines', name=f"{tiles.title}"))
             # # line quality
-            # fig_quality.add_trace(go.Scatter(y=traces_vp_quality, mode='lines', name=f"{vpextract.title}"))
+            # fig_quality.add_trace(go.Scatter(y=traces_vp_quality, mode='lines', name=f"{tiles.title}"))
             # # heatmap
             # if(plot_heatmaps and len(traces_heatmaps)):
             #     fig_heatmap = px.imshow(
-            #         np.sum(traces_heatmaps, axis=0).reshape(vpextract.shape),
-            #         title=f"{vpextract.title_with_sum_heatmaps(traces_heatmaps)}",
+            #         np.sum(traces_heatmaps, axis=0).reshape(tiles.shape),
+            #         title=f"{tiles.title_with_sum_heatmaps(traces_heatmaps)}",
             #         labels=dict(x="longitude", y="latitude", color="VP_Extracts"))
             #     fig_heatmap.update_layout(LAYOUT)
             #     fig_heatmap.show()
             # sum
-            vpextract_reqs.append(np.average(users_reqs))
-            vpextract_area_out.append(np.average(users_reqs_use))
-            vpextract_vp_quality.append(np.average(users_quality))
-        # print(vpextract_reqs)
-        # print(vpextract_area_out)
-        # print(vpextract_vp_quality)
+            tiles_reqs.append(np.average(users_reqs))
+            tiles_area_out.append(np.average(users_reqs_use))
+            tiles_vp_quality.append(np.average(users_quality))
+        # print(tiles_reqs)
+        # print(tiles_area_out)
+        # print(tiles_vp_quality)
         # line fig reqs areas
         # if(plot_traces):
         #     fig_reqs.update_layout(xaxis_title="user trace", title="req_tiles").show()
@@ -238,15 +238,15 @@ class Dataset:
         #                             title="avg req_tiles view_ratio").show()
         #     fig_quality.update_layout(xaxis_title="user trace", title="avg quality ratio").show()
 
-        # bar fig vpextract_reqs vpextract_area_out
-        vpextract_names = [str(vpextract.title) for vpextract in vpextract_l]
+        # bar fig tiles_reqs tiles_area_out
+        tiles_names = [str(tiles.title) for tiles in tiles_l]
         fig_bar = make_subplots(rows=1, cols=4,  subplot_titles=(
             "avg tiles_reqs", "avg reqs_use", "avg vp_quality", "score=vp_quality/(tiles_reqs*(1-reqs_use))"), shared_yaxes=True)
-        fig_bar.add_trace(go.Bar(y=vpextract_names, x=vpextract_reqs, orientation='h'), row=1, col=1)
-        fig_bar.add_trace(go.Bar(y=vpextract_names, x=vpextract_area_out, orientation='h'), row=1, col=2)
-        fig_bar.add_trace(go.Bar(y=vpextract_names, x=vpextract_vp_quality, orientation='h'), row=1, col=3)
-        vpextract_score = [vpextract_vp_quality[i] / vpextract_area_out[i] for i, _ in enumerate(vpextract_reqs)]
-        fig_bar.add_trace(go.Bar(y=vpextract_names, x=vpextract_score, orientation='h'), row=1, col=4)
-        fig_bar.update_layout(width=1500, showlegend=False, title_text="metrics_vpextract_video")
+        fig_bar.add_trace(go.Bar(y=tiles_names, x=tiles_reqs, orientation='h'), row=1, col=1)
+        fig_bar.add_trace(go.Bar(y=tiles_names, x=tiles_area_out, orientation='h'), row=1, col=2)
+        fig_bar.add_trace(go.Bar(y=tiles_names, x=tiles_vp_quality, orientation='h'), row=1, col=3)
+        tiles_score = [tiles_vp_quality[i] / tiles_area_out[i] for i, _ in enumerate(tiles_reqs)]
+        fig_bar.add_trace(go.Bar(y=tiles_names, x=tiles_score, orientation='h'), row=1, col=4)
+        fig_bar.update_layout(width=1500, showlegend=False, title_text="metrics_tiles_video")
         fig_bar.update_layout(barmode="stack")
         fig_bar.show()

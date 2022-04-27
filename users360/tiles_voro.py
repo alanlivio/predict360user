@@ -25,8 +25,8 @@ _saved_tilevoro_polys = {}
 _vp_55d_rad = degrees_to_radian(110/2)
 _vp_110d_rad = degrees_to_radian(110)
 
-class VPExtractTilesVoro(VPExtract):
-    def __init__(self, sphere_voro: SphericalVoronoi, cover: VPExtract.Cover):
+class TilesVoro(TilesIF):
+    def __init__(self, sphere_voro: SphericalVoronoi, cover: TileCover):
         super().__init__()
         self.sphere_voro = sphere_voro
         self.cover = cover
@@ -39,26 +39,26 @@ class VPExtractTilesVoro(VPExtract):
         
     @property
     def title(self):
-        prefix = f'vpextract_voro{len(self.sphere_voro.points)}'
+        prefix = f'tiles_voro{len(self.sphere_voro.points)}'
         match self.cover:
-            case VPExtract.Cover.ANY:
+            case TileCover.ANY:
                 return f'{prefix}_any'
-            case VPExtract.Cover.CENTER:
+            case TileCover.CENTER:
                 return f'{prefix}_center'
-            case VPExtract.Cover.ONLY20PERC:
+            case TileCover.ONLY20PERC:
                 return f'{prefix}_20perc'
-            case VPExtract.Cover.ONLY33PERC:
+            case TileCover.ONLY33PERC:
                 return f'{prefix}_33perc'
 
     def request(self, trace, return_metrics=False):
         match self.cover:
-            case VPExtract.Cover.CENTER:
+            case TileCover.CENTER:
                 return self._request_110radius_center(trace, return_metrics)
-            case VPExtract.Cover.ANY:
+            case TileCover.ANY:
                 return self._request_min_cover(trace, 0, return_metrics)
-            case VPExtract.Cover.ONLY20PERC:
+            case TileCover.ONLY20PERC:
                 return self._request_min_cover(trace, 0.2, return_metrics)
-            case VPExtract.Cover.ONLY33PERC:
+            case TileCover.ONLY33PERC:
                 return self._request_min_cover(trace, 0.33, return_metrics)
 
     def _request_110radius_center(self, trace, return_metrics):
@@ -96,15 +96,15 @@ class VPExtractTilesVoro(VPExtract):
         return heatmap, vp_quality, np.sum(areas_out)
 
 
-VPEXTRACT_VORO_14_CENTER = VPExtractTilesVoro(VORONOI_14P, VPExtract.Cover.CENTER)
-VPEXTRACT_VORO_14_ANY = VPExtractTilesVoro(VORONOI_14P, VPExtract.Cover.ANY)
-VPEXTRACT_VORO_14_20PERC = VPExtractTilesVoro(VORONOI_14P, VPExtract.Cover.ONLY20PERC)
-# VPEXTRACT_VORO_24_CENTER = VPExtractTilesVoro(VORONOI_24P, VPExtract.Cover.CEMTER)
-# VPEXTRACT_VORO_24_ANY = VPExtractTilesVoro(VORONOI_24P, VPExtract.Cover.ANY)
-# VPEXTRACT_VORO_24_20PERC = VPExtractTilesVoro(VORONOI_24P, VPExtract.Cover.ONLY20PERC)
+TILES_VORO_14_CENTER = TilesVoro(VORONOI_14P, TileCover.CENTER)
+TILES_VORO_14_ANY = TilesVoro(VORONOI_14P, TileCover.ANY)
+TILES_VORO_14_20PERC = TilesVoro(VORONOI_14P, TileCover.ONLY20PERC)
+# TILES_VORO_24_CENTER = TilesVoro(VORONOI_24P, TileCover.CEMTER)
+# TILES_VORO_24_ANY = TilesVoro(VORONOI_24P, TileCover.ANY)
+# TILES_VORO_24_20PERC = TilesVoro(VORONOI_24P, TileCover.ONLY20PERC)
 
-VPEXTRACTS_VORO = [
-    VPEXTRACT_VORO_14_CENTER,
-    VPEXTRACT_VORO_14_ANY,
-    VPEXTRACT_VORO_14_20PERC,
+TILES_VORO_L = [
+    TILES_VORO_14_CENTER,
+    TILES_VORO_14_ANY,
+    TILES_VORO_14_20PERC,
 ]

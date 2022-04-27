@@ -43,13 +43,15 @@ def fov_poly(trace) -> polygon.SphericalPolygon:
         _saved_fov_polys[(trace[0], trace[1], trace[2])] = polygon.SphericalPolygon(fov_points_trace)
     return _saved_fov_polys[(trace[0], trace[1], trace[2])]
 
-class VPExtract(ABC):
-    class Cover(Enum):
-        ANY = auto()
-        CENTER = auto()
-        ONLY20PERC = auto()
-        ONLY33PERC = auto()
-
+class TileCover(Enum):
+    ANY = auto()
+    CENTER = auto()
+    ONLY20PERC = auto()
+    ONLY33PERC = auto()
+    
+class TilesIF(ABC):
+    # https://realpython.com/python-interface/
+    
     @abstractmethod
     def request(self, trace, return_metrics=False) -> tuple[NDArray, float, list]:
         pass
@@ -62,7 +64,7 @@ class VPExtract(ABC):
         reqs_sum = np.sum(np.sum(heatmaps, axis=0))
         return f"{self.title} (reqs={reqs_sum})"
 
-    cover: Cover
+    cover: TileCover
     shape: tuple[int, int]
 
 
@@ -113,35 +115,39 @@ def tile_center(t_ver, t_hor, row, col):
 _vp_55d_rad = degrees_to_radian(110/2)
 _vp_110d_rad = degrees_to_radian(110)
 
-class VPExtractTilesRect(VPExtract):
+class Tiles(TilesIF):
     
-    def __init__(self, t_ver, t_hor, cover: VPExtract.Cover):
+    def __init__(self, t_ver, t_hor, cover: TileCover):
         self.t_ver, self.t_hor = t_ver, t_hor
         self.shape = (self.t_ver, self.t_hor)
         self.cover = cover
 
+    @classmethod
+    def default(cls):
+        return Tiles(4, 6,TileCover.CENTER)
+
     @property
     def title(self):
-        prefix = f'vpextract_rect{self.t_ver}x{self.t_hor}'
+        prefix = f'tiles_{self.t_ver}x{self.t_hor}'
         match self.cover:
-            case VPExtract.Cover.ANY:
+            case TileCover.ANY:
                 return f'{prefix}_any'
-            case VPExtract.Cover.CENTER:
+            case TileCover.CENTER:
                 return f'{prefix}_center'
-            case VPExtract.Cover.ONLY20PERC:
+            case TileCover.ONLY20PERC:
                 return f'{prefix}_20perc'
-            case VPExtract.Cover.ONLY33PERC:
+            case TileCover.ONLY33PERC:
                 return f'{prefix}_33perc'
 
     def request(self, trace: NDArray, return_metrics=False):
         match self.cover:
-            case VPExtract.Cover.CENTER:
+            case TileCover.CENTER:
                 return self._request_110radius_center(trace, return_metrics)
-            case VPExtract.Cover.ANY:
+            case TileCover.ANY:
                 return self._request_min_cover(trace, 0.0, return_metrics)
-            case VPExtract.Cover.ONLY20PERC:
+            case TileCover.ONLY20PERC:
                 return self._request_min_cover(trace, 0.2, return_metrics)
-            case VPExtract.Cover.ONLY33PERC:
+            case TileCover.ONLY33PERC:
                 return self._request_min_cover(trace, 0.33, return_metrics)
 
     def _request_110radius_center(self, trace, return_metrics):
@@ -188,11 +194,12 @@ class VPExtractTilesRect(VPExtract):
                         vp_quality += fov_poly_trace.overlap(tile_poly_rc)
         return heatmap, vp_quality, np.sum(areas_out)
 
-VPEXTRACT_RECT_4_6_CENTER = VPExtractTilesRect(4, 6,VPExtract.Cover.CENTER)
-VPEXTRACT_RECT_4_6_ANY = VPExtractTilesRect(4, 6,VPExtract.Cover.ANY)
-VPEXTRACT_RECT_4_6_20PERC = VPExtractTilesRect(4, 6,VPExtract.Cover.ONLY20PERC)
-VPEXTRACTS_RECT = [
-    VPEXTRACT_RECT_4_6_CENTER,
-    VPEXTRACT_RECT_4_6_ANY,
-    VPEXTRACT_RECT_4_6_20PERC,
+
+TILES_4_6_CENTER = Tiles(4, 6,TileCover.CENTER)
+TILES_4_6_ANY = Tiles(4, 6,TileCover.ANY)
+TILES_4_6_20PERC = Tiles(4, 6,TileCover.ONLY20PERC)
+TILES_L = [
+    TILES_4_6_CENTER,
+    TILES_4_6_ANY,
+    TILES_4_6_20PERC,
 ]

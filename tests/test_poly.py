@@ -2,7 +2,7 @@ from users360 import *
 import unittest
 from numpy import array as array
 
-class DatasetTest(unittest.TestCase):
+class TestPolygon(unittest.TestCase):
     
     def test_poly(self):
         # t_ver, t_hor = 6 , 4

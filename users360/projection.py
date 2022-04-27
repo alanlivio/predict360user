@@ -42,17 +42,17 @@ def _sphere_data_voro(sphere_voro: SphericalVoronoi, with_generators=False):
     return data
 
 
-def _sphere_data_rect_tiles(t_ver, t_hor):
+def _sphere_data_tiles(t_ver, t_hor):
     data = _sphere_data_surface()
     for row in range(t_ver):
         for col in range(t_hor):
-            # -- add rect tiles edges
-            rect_tile_points = tile_points(t_ver, t_hor, row, col)
-            n = len(rect_tile_points)
+            # -- add tiles edges
+            ile_points = tile_points(t_ver, t_hor, row, col)
+            n = len(ile_points)
             t = np.linspace(0, 1, 100)
             for index in range(n):
-                start = rect_tile_points[index]
-                end = rect_tile_points[(index + 1) % n]
+                start = ile_points[index]
+                end = ile_points[(index + 1) % n]
                 result = np.array(geometric_slerp(start, end, t))
                 edge = go.Scatter3d(x=result[..., 0], y=result[..., 1], z=result[..., 2], mode='lines', line={
                     'width': 5, 'color': 'black'}, name='region edge', showlegend=False)
@@ -60,11 +60,11 @@ def _sphere_data_rect_tiles(t_ver, t_hor):
     return data
 
 class PlotPolygon():
-    def __init__(self, vpextract=None):
-        if isinstance(vpextract, VPExtractTilesRect):
-            self.data = _sphere_data_rect_tiles(vpextract.t_ver, vpextract.t_hor)
-        elif isinstance(vpextract, VPExtractTilesVoro):
-            self.data = _sphere_data_voro(vpextract.sphere_voro)
+    def __init__(self, tiles=None):
+        if isinstance(tiles, Tiles):
+            self.data = _sphere_data_tiles(tiles.t_ver, tiles.t_hor)
+        elif isinstance(tiles, TilesVoro):
+            self.data = _sphere_data_voro(tiles.sphere_voro)
         else:
             self.data = _sphere_data_surface()
         self.title = f"polygon"
@@ -105,21 +105,21 @@ class PlotPolygon():
 
 class PlotVP():
 
-    def __init__(self, trace, title_sufix=""):
+    def __init__(self, trace, tiles=Tiles.default(), title_sufix=""):
         assert len(trace) == 3  # cartesian
         self.title = f"1_trace_{title_sufix}"
         self.trace = trace
         self.output_folder = pathlib.Path(__file__).parent.parent/'output'
+        self.data, title = [], ""
+        self.tiles = tiles
+        if isinstance(self.tiles, Tiles):
+            self.data = _sphere_data_tiles(self.tiles.t_ver, tiles.t_hor)
+        elif isinstance(self.tiles, TilesVoro):
+            self.data = _sphere_data_voro(self.tiles.sphere_voro)
 
-    def show(self, vpextract: VPExtract, to_html=False):
-        data, title = [], ""
-        if isinstance(vpextract, VPExtractTilesRect):
-            data = _sphere_data_rect_tiles(vpextract.t_ver, vpextract.t_hor)
-        elif isinstance(vpextract, VPExtractTilesVoro):
-            data = _sphere_data_voro(vpextract.sphere_voro)
-            
+    def show(self, to_html=False):
         # trace
-        data.append(go.Scatter3d(x=[self.trace[0]], y=[self.trace[1]], z=[self.trace[2]],
+        self.data.append(go.Scatter3d(x=[self.trace[0]], y=[self.trace[1]], z=[self.trace[2]],
                                  mode='markers', marker={'size': 5, 'opacity': 1.0, 'color': 'red'}))
         
         # vp 
@@ -127,7 +127,7 @@ class PlotVP():
         n = len(points_fov)
         gens = go.Scatter3d(x=points_fov[:, 0], y=points_fov[:, 1], z=points_fov[:, 2], mode='markers', 
             marker={'size': 5, 'opacity': 1.0,'color': [f'rgb({np.random.randint(0,256)}, {np.random.randint(0,256)}, {np.random.randint(0,256)})' for _ in range(len(points_fov))]}, name='fov corner', showlegend=False)
-        data.append(gens)
+        self.data.append(gens)
         t = np.linspace(0, 1, 100)
         for index in range(n):
             start = points_fov[index]
@@ -135,25 +135,25 @@ class PlotVP():
             result = np.array(geometric_slerp(start, end, t))
             edge = go.Scatter3d(x=result[..., 0], y=result[..., 1], z=result[..., 2], mode='lines', line={
                                 'width': 5, 'color': 'blue'}, name='vp edge', showlegend=False)
-            data.append(edge)
+            self.data.append(edge)
         
         # erp heatmap
-        heatmap, _, _ = vpextract.request(self.trace)
+        heatmap, _, _ = self.tiles.request(self.trace)
         
         # subplot two figures https://stackoverflow.com/questions/67291178/how-to-create-subplots-using-plotly-express
         fig = make_subplots(rows=1, cols=2,specs=[[{"type": "surface"}, {"type": "image"}]])
-        for trace in data:
+        for trace in self.data:
             fig.append_trace(trace, row=1, col=1)    
-        if isinstance(vpextract, VPExtractTilesVoro):
-            heatmap = np.reshape(heatmap, vpextract.shape)
+        if isinstance(self.tiles, TilesVoro):
+            heatmap = np.reshape(heatmap, self.tiles.shape)
         erp_heatmap = px.imshow(heatmap, text_auto=True, 
                                 x=[str(x) for x in range(1,heatmap.shape[1]+1)],
                                 y=[str(y) for y in range(1,heatmap.shape[0]+1)])
         for trace in erp_heatmap["data"]:
             fig.append_trace(trace, row=1, col=2)
         
-        title = f"{self.title} {vpextract.title_with_sum_heatmaps([heatmap])}"
-        if isinstance(vpextract, VPExtractTilesRect):
+        title = f"{self.title} {self.tiles.title_with_sum_heatmaps([heatmap])}"
+        if isinstance(self.tiles, Tiles):
             fig.update_yaxes(autorange="reversed") # fix given phi 0 being the north pole at Utils.cartesian_to_eulerian
         fig.update_layout(width=800, showlegend=False, title_text=title)
         if to_html:
@@ -164,56 +164,55 @@ class PlotVP():
 
 class PlotTraces():
 
-    def __init__(self, traces: NDArray, title_sufix=""):
+    def __init__(self, traces: NDArray, tiles=Tiles.default(), title_sufix=""):
         assert traces.shape[1] == 3  # check if cartesian
         self.traces = traces
         print("PlotTraces.shape is " + str(traces.shape))
         self.title = f"{str(len(traces))}_traces_{title_sufix}"
         self.output_folder = pathlib.Path(__file__).parent.parent/'output'
+        self.tiles = tiles
+        self.data=[]
+        if isinstance(self.tiles, Tiles):
+            self.data = _sphere_data_tiles(self.tiles.t_ver, self.tiles.t_hor)
+        elif isinstance(self.tiles, TilesVoro):
+            self.data = _sphere_data_voro(self.tiles.sphere_voro)
 
-    def _sphere_data_add_user(self, data, vpinfo):
+    def _sphere_data_add_user(self, vpinfo):
         trajc = go.Scatter3d(x=self.traces[:, 0],
                              y=self.traces[:, 1],
                              z=self.traces[:, 2],
                              hovertemplate="<b>requested tiles=%{text}</b>",
                              text=vpinfo,
                              mode='lines', line={'width': 3, 'color': 'blue'}, name='trajectory', showlegend=False)
-        data.append(trajc)
+        self.data.append(trajc)
 
-    def show(self, vpextract: VPExtract, to_html=False):
-        # traces
-        data=[]
-        if isinstance(vpextract, VPExtractTilesRect):
-            data = _sphere_data_rect_tiles(vpextract.t_ver, vpextract.t_hor)
-        elif isinstance(vpextract, VPExtractTilesVoro):
-            data = _sphere_data_voro(vpextract.sphere_voro)
-        
+    def show(self, to_html=False):
         # erp heatmap
         heatmaps = []
         for trace in self.traces:
-            heatmap, _, _, = vpextract.request(trace)
+            heatmap, _, _, = self.tiles.request(trace)
             heatmaps.append(heatmap)
             
         # traces vp info on mouseover
         vpinfo = [np.sum(heatmap) for heatmap in heatmaps]
-        self._sphere_data_add_user(data, vpinfo)
+        self._sphere_data_add_user(vpinfo)
         
         # erp heatmap image
         heatmap_sum = np.sum(heatmaps, axis=0)
-        if isinstance(vpextract, VPExtractTilesVoro):
-            heatmap_sum = np.reshape(heatmap_sum, vpextract.shape)
+        if isinstance(self.tiles, TilesVoro):
+            heatmap_sum = np.reshape(heatmap_sum, self.tiles.shape)
         erp_heatmap = px.imshow(heatmap_sum, text_auto=True, 
                                 x=[str(x) for x in range(1,heatmap_sum.shape[1]+1)],
                                 y=[str(y) for y in range(1,heatmap_sum.shape[0]+1)])
                                 
         # subplot two figures https://stackoverflow.com/questions/67291178/how-to-create-subplots-using-plotly-express
         fig = make_subplots(rows=1, cols=2,specs=[[{"type": "surface"}, {"type": "image"}]])
-        for trace in data:
+        for trace in self.data:
             fig.append_trace(trace, row=1, col=1)    
         for trace in erp_heatmap["data"]:
             fig.append_trace(trace, row=1, col=2)
-        title = f"{self.title} {vpextract.title_with_sum_heatmaps(heatmaps)}"
-        if isinstance(vpextract, VPExtractTilesRect):
+        title = f"{self.title} {self.tiles.title_with_sum_heatmaps(heatmaps)}"
+        if isinstance(self.tiles, Tiles):
             fig.update_yaxes(autorange="reversed") # fix given phi 0 being the north pole at Utils.cartesian_to_eulerian
         fig.update_layout(width=800, showlegend=False, title_text=title)
         if to_html:
