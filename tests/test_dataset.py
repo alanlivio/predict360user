@@ -10,14 +10,15 @@ class TestDataset(unittest.TestCase):
         cls.dataset = Dataset.singleton()
 
     def test_entropy(self):
-        self.dataset.users_entropy(Tiles.default())
+        self.dataset.calc_users_entropy(Tiles.default())
         self.assertIsNotNone(self.dataset.users_low)
         self.assertIsNotNone(self.dataset.users_medium)
         self.assertIsNotNone(self.dataset.users_hight)
 
     def test_metrics(self):
-        self.dataset.metrics_tiles_video( [*TilesVoro.variations(), *Tiles.variations()], users=['0', '1'], perc_traces=0.05, show_plot=False)
-        
+        self.dataset.metrics_tiles_video([*TilesVoro.variations(), *Tiles.variations()],
+                                         users=['0', '1'], perc_traces=0.05, show_plot=False)
+
     def test_poles(self):
         poles = self.dataset.traces_video_poles()
         equator = self.dataset.traces_video_equator()
