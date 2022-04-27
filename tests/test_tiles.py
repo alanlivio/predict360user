@@ -2,21 +2,21 @@ from users360 import *
 import unittest
 from numpy import array as array
 
-class TestPolygon(unittest.TestCase):
+class TestTiles(unittest.TestCase):
     
-    def test_poly(self):
+    def test_tiles_poly(self):
         # t_ver, t_hor = 6 , 4
         # traces = [ [1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1] ]
         # for trace in traces:
         #     print(f"        # trace = {repr(trace)}")
         #     for row in range(t_ver): # range(t_ver):
         #         for col in range(t_hor):
-        #             Tiles.tile_poly_rc = Tiles.tile_poly(t_ver, t_hor, row, col)
+        #             tile_poly_rc = Tiles.tile_poly(t_ver, t_hor, row, col)
         #             fov_poly_trace = poly(trace)
-        #             print(f"        self.assertAlmostEqual(Tiles.tile_poly({t_ver}, {t_hor}, {row}, {col}).area(),{format(Tiles.tile_poly_rc.area(),'f')},places=6)")
+        #             print(f"        self.assertAlmostEqual(Tiles.tile_poly({t_ver}, {t_hor}, {row}, {col}).area(),{format(tile_poly_rc.area(),'f')},places=6)")
         #             print(f"        self.assertAlmostEqual(FOV.poly({repr(trace)}).area(),{format(fov_poly_trace.area(),'f')},places=6)")
-        #             print(f"        self.assertAlmostEqual(Tiles.tile_poly({t_ver}, {t_hor}, {row}, {col}).overlap(FOV.poly({repr(trace)})),{format(Tiles.tile_poly_rc.overlap(fov_poly_trace),'f')},places=6)")
-        #             print(f"        self.assertAlmostEqual(1-Tiles.tile_poly({t_ver}, {t_hor}, {row}, {col}).overlap(FOV.poly({repr(trace)})),{format(1-Tiles.tile_poly_rc.overlap(fov_poly_trace),'f')},places=6)")
+        #             print(f"        self.assertAlmostEqual(Tiles.tile_poly({t_ver}, {t_hor}, {row}, {col}).overlap(FOV.poly({repr(trace)})),{format(tile_poly_rc.overlap(fov_poly_trace),'f')},places=6)")
+        #             print(f"        self.assertAlmostEqual(1-Tiles.tile_poly({t_ver}, {t_hor}, {row}, {col}).overlap(FOV.poly({repr(trace)})),{format(1-tile_poly_rc.overlap(fov_poly_trace),'f')},places=6)")
         
         # trace = [1, 0, 0]
         self.assertAlmostEqual(Tiles.tile_poly(6, 4, 0, 0).area(),0.143348,places=6)

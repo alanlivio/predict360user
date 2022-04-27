@@ -21,7 +21,6 @@ class Dataset:
     dataset_pickle = pathlib.Path(__file__).parent.parent/'output/david.pickle'
     instance = None
     instance_pickle = pathlib.Path(__file__).parent.parent/'output/singleton.pickle'
-    metrics_request = None
     
     def __init__(self, dataset={}):
         if not dataset:
@@ -143,7 +142,7 @@ class Dataset:
                     count += 1
         return traces[:count]
 
-    def metrics_tiles_video(self, tiles_l, users=[], video=ONE_VIDEO, perc_traces=1.0):
+    def metrics_tiles_video(self, tiles_l, users=[], video=ONE_VIDEO, perc_traces=1.0, show_plot=True):
         if not users:
             users = self.dataset.keys()
         # 3 metrics for each user/tiles = reqs, avg area, avg quality
@@ -165,15 +164,16 @@ class Dataset:
         tiles_area_out = np.average(metrics_request[:, :, 2], axis=1)
 
         # figs from metrics
-        tiles_names = [str(tiles.title) for tiles in tiles_l]
-        fig_bar = make_subplots(rows=1, cols=4,  subplot_titles=( "n_reqs_avg_user", "area_out_avg_user", "vp_quality_avg_user", "score=vp_quality_avg_user/area_out_avg_user"), shared_yaxes=True)
-        fig_bar.add_trace(go.Bar(y=tiles_names, x=tiles_reqs, orientation='h'), row=1, col=1)
-        fig_bar.add_trace(go.Bar(y=tiles_names, x=tiles_area_out, orientation='h'), row=1, col=2)
-        fig_bar.add_trace(go.Bar(y=tiles_names, x=tiles_vp_quality, orientation='h'), row=1, col=3)
-        tiles_score = [tiles_vp_quality[i] / tiles_area_out[i] for i, _ in enumerate(tiles_reqs)]
-        fig_bar.add_trace(go.Bar(y=tiles_names, x=tiles_score, orientation='h'), row=1, col=4)
-        fig_bar.update_layout(width=1500, showlegend=False, barmode="stack", title_text="metrics_request")
-        fig_bar.show()
+        if (show_plot):
+            tiles_names = [str(tiles.title) for tiles in tiles_l]
+            fig_bar = make_subplots(rows=1, cols=4,  subplot_titles=( "n_reqs_avg_user", "area_out_avg_user", "vp_quality_avg_user", "score=vp_quality_avg_user/area_out_avg_user"), shared_yaxes=True)
+            fig_bar.add_trace(go.Bar(y=tiles_names, x=tiles_reqs, orientation='h'), row=1, col=1)
+            fig_bar.add_trace(go.Bar(y=tiles_names, x=tiles_area_out, orientation='h'), row=1, col=2)
+            fig_bar.add_trace(go.Bar(y=tiles_names, x=tiles_vp_quality, orientation='h'), row=1, col=3)
+            tiles_score = [tiles_vp_quality[i] / tiles_area_out[i] for i, _ in enumerate(tiles_reqs)]
+            fig_bar.add_trace(go.Bar(y=tiles_names, x=tiles_score, orientation='h'), row=1, col=4)
+            fig_bar.update_layout(width=1500, showlegend=False, barmode="stack", title_text="metrics_request")
+            fig_bar.show()
 
     def metrics_tiles_video_old(self, tiles_l: Iterable[TilesIF], users=[], video=ONE_VIDEO, perc_traces=1.0):
         # LAYOUT = go.Layout(width=600)
