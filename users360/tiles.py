@@ -123,13 +123,17 @@ class Tiles(TilesIF):
 
     @classmethod
     def tile_poly(cls, t_ver, t_hor, row, col):
-        if cls._saved_polys is None or (t_ver, t_hor) not in cls._saved_polys:
+        if cls._saved_polys is None:
+            cls._saved_polys = {}
+        if (t_ver, t_hor) not in cls._saved_polys:
             cls._saved_tiles_init(t_ver, t_hor)
         return cls._saved_polys[(t_ver, t_hor)][row][col]
 
     @classmethod
     def tile_center(cls, t_ver, t_hor, row, col):
-        if cls._saved_polys is None or (t_ver, t_hor) not in cls._saved_polys:
+        if cls._saved_polys is None:
+            cls._saved_polys = {}
+        if (t_ver, t_hor) not in cls._saved_polys:
             cls._saved_tiles_init(t_ver, t_hor)
         return cls._saved_centers[(t_ver, t_hor)][row][col]
 
