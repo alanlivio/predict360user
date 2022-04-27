@@ -5,43 +5,7 @@ from spherical_geometry import polygon
 from abc import ABC
 import numpy as np
 from numpy.typing import NDArray
-
-VP_MARGIN_THETA = degrees_to_radian(110/2)
-VP_MARGIN_THI = degrees_to_radian(90/2)
-X1Y0Z0_POLYG_FOV = np.array([
-    eulerian_in_range(-VP_MARGIN_THETA, VP_MARGIN_THI),
-    eulerian_in_range(VP_MARGIN_THETA, VP_MARGIN_THI),
-    eulerian_in_range(VP_MARGIN_THETA, -VP_MARGIN_THI),
-    eulerian_in_range(-VP_MARGIN_THETA, -VP_MARGIN_THI)
-])
-X1Y0Z0_POLYG_FOV = np.array([
-    eulerian_to_cartesian(*X1Y0Z0_POLYG_FOV[0]),
-    eulerian_to_cartesian(*X1Y0Z0_POLYG_FOV[1]),
-    eulerian_to_cartesian(*X1Y0Z0_POLYG_FOV[2]),
-    eulerian_to_cartesian(*X1Y0Z0_POLYG_FOV[3])
-])
-X1Y0Z0 = np.array([1, 0, 0])
-X1Y0Z0_POLYG_FOV_AREA = polygon.SphericalPolygon(X1Y0Z0_POLYG_FOV).area()
-
-_saved_fov_points = {}
-def fov_points(trace) -> NDArray:
-    if (trace[0], trace[1], trace[2]) not in _saved_fov_points:
-        rotation = rotationBetweenVectors(X1Y0Z0, np.array(trace))
-        points = np.array([
-            rotation.rotate(X1Y0Z0_POLYG_FOV[0]),
-            rotation.rotate(X1Y0Z0_POLYG_FOV[1]),
-            rotation.rotate(X1Y0Z0_POLYG_FOV[2]),
-            rotation.rotate(X1Y0Z0_POLYG_FOV[3]),
-        ])
-        _saved_fov_points[(trace[0], trace[1], trace[2])] =  points
-    return _saved_fov_points[(trace[0], trace[1], trace[2])]
-
-_saved_fov_polys = {}
-def fov_poly(trace) -> polygon.SphericalPolygon:
-    if (trace[0], trace[1], trace[2]) not in _saved_fov_polys:
-        fov_points_trace = fov_points(trace)
-        _saved_fov_polys[(trace[0], trace[1], trace[2])] = polygon.SphericalPolygon(fov_points_trace)
-    return _saved_fov_polys[(trace[0], trace[1], trace[2])]
+from .fov import *
 
 class TileCover(Enum):
     ANY = auto()
@@ -168,7 +132,7 @@ class Tiles(TilesIF):
         heatmap = np.zeros((self.t_ver, self.t_hor), dtype=np.int32)
         areas_out = []
         vp_quality = 0.0
-        fov_poly_trace = fov_poly(trace)
+        fov_poly_trace = FOV.poly(trace)
         for row in range(self.t_ver):
             for col in range(self.t_hor):
                 dist = compute_orthodromic_distance(trace, tile_center(self.t_ver, self.t_hor, row, col))
@@ -189,7 +153,7 @@ class Tiles(TilesIF):
         heatmap = np.zeros((self.t_ver, self.t_hor), dtype=np.int32)
         areas_out = []
         vp_quality = 0.0
-        fov_poly_trace = fov_poly(trace)
+        fov_poly_trace = FOV.poly(trace)
         for row in range(self.t_ver):
             for col in range(self.t_hor):
                 dist = compute_orthodromic_distance(trace, tile_center(self.t_ver, self.t_hor, row, col))

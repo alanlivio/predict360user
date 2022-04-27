@@ -81,7 +81,7 @@ class PlotPolygon():
         self._add_points(points)
         
     def add_polygon_from_trace(self, trace):
-        points = fov_points(trace)
+        points = FOV.points(trace)
         self._add_points(points)
         
     def _add_points(self, points):
@@ -110,7 +110,7 @@ class PlotVP():
         self.title = f"1_trace_{title_sufix}"
         self.trace = trace
         self.output_folder = pathlib.Path(__file__).parent.parent/'output'
-        self.data, title = [], ""
+        self.data = []
         self.tiles = tiles
         if isinstance(self.tiles, Tiles):
             self.data = _sphere_data_tiles(self.tiles.t_ver, tiles.t_hor)
@@ -123,7 +123,7 @@ class PlotVP():
                                  mode='markers', marker={'size': 5, 'opacity': 1.0, 'color': 'red'}))
         
         # vp 
-        points_fov = fov_points(self.trace)
+        points_fov = FOV.points(self.trace)
         n = len(points_fov)
         gens = go.Scatter3d(x=points_fov[:, 0], y=points_fov[:, 1], z=points_fov[:, 2], mode='markers', 
             marker={'size': 5, 'opacity': 1.0,'color': [f'rgb({np.random.randint(0,256)}, {np.random.randint(0,256)}, {np.random.randint(0,256)})' for _ in range(len(points_fov))]}, name='fov corner', showlegend=False)

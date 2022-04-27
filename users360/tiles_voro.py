@@ -85,7 +85,7 @@ class TilesVoro(TilesIF):
     def _request_110radius_center(self, trace, return_metrics):
         areas_out = []
         vp_quality = 0.0
-        fov_poly_trace = fov_poly(trace)
+        fov_poly_trace = FOV.poly(trace)
         heatmap = np.zeros(len(self.sphere_voro.regions))
         for index, _ in enumerate(self.sphere_voro.regions):
             dist = compute_orthodromic_distance(trace, self.sphere_voro.points[index])
@@ -101,7 +101,7 @@ class TilesVoro(TilesIF):
     def _request_min_cover(self, trace, required_cover: float, return_metrics):
         areas_out = []
         vp_quality = 0.0
-        fov_poly_trace = fov_poly(trace)
+        fov_poly_trace = FOV.poly(trace)
         heatmap = np.zeros(len(self.sphere_voro.regions))
         for index, _ in enumerate(self.sphere_voro.regions):
             dist = compute_orthodromic_distance(trace, self.sphere_voro.points[index])
