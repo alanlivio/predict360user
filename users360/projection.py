@@ -64,7 +64,7 @@ class PlotPolygon():
         if isinstance(tiles, Tiles):
             self.data = _sphere_data_tiles(tiles.t_ver, tiles.t_hor)
         elif isinstance(tiles, TilesVoro):
-            self.data = _sphere_data_voro(tiles.sphere_voro)
+            self.data = _sphere_data_voro(tiles.voro)
         else:
             self.data = _sphere_data_surface()
         self.title = f"polygon"
@@ -115,7 +115,7 @@ class PlotVP():
         if isinstance(self.tiles, Tiles):
             self.data = _sphere_data_tiles(self.tiles.t_ver, tiles.t_hor)
         elif isinstance(self.tiles, TilesVoro):
-            self.data = _sphere_data_voro(self.tiles.sphere_voro)
+            self.data = _sphere_data_voro(self.tiles.voro)
 
     def show(self, to_html=False):
         # trace
@@ -175,7 +175,7 @@ class PlotTraces():
         if isinstance(self.tiles, Tiles):
             self.data = _sphere_data_tiles(self.tiles.t_ver, self.tiles.t_hor)
         elif isinstance(self.tiles, TilesVoro):
-            self.data = _sphere_data_voro(self.tiles.sphere_voro)
+            self.data = _sphere_data_voro(self.tiles.voro)
 
     def _sphere_data_add_user(self, vpinfo):
         trajc = go.Scatter3d(x=self.traces[:, 0],
