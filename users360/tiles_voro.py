@@ -23,13 +23,16 @@ VORONOI_24P = voro_trinity(24)
 
 
 class TilesVoro(TilesIF):
+    _saved_polys = None
+    _default = None
+    _variations = None
+    
     def __init__(self, voro: SphericalVoronoi, cover: TileCover):
         super().__init__()
         self.voro = voro
         self.cover = cover
         self.shape = (2, -1)
     
-    _saved_polys = None
     @classmethod
     def tile_poly(cls, voro: SphericalVoronoi, index):
         if cls._saved_polys is None:
@@ -39,14 +42,12 @@ class TilesVoro(TilesIF):
             cls._saved_polys[voro.points.size] = polys
         return cls._saved_polys[voro.points.size][index]
 
-    _default = None
     @classmethod
     def default(cls):
         if cls._default is None:
             cls._default = TilesVoro(VORONOI_14P, TileCover.CENTER)
         return cls._default
     
-    _variations = None
     @classmethod
     def variations(cls):
         if cls._variations is None:

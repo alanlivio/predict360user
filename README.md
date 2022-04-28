@@ -56,6 +56,7 @@ https://github.com/NitishMutha/equirectangular-toolbox
 https://github.com/jonkhler/s2cnn
 
 * others  
+https://github.com/xiangjieSui/Awesome-360-processing
 https://github.com/hsientzucheng/awesome-360-vision
 https://github.com/xiangjieSui/Awesome-360-processing
 https://github.com/MyllenaAPrado/360RAT
