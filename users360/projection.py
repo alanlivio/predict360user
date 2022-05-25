@@ -11,7 +11,7 @@ import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 
 
-def _sphere_data_surface():
+def _sphere_data_init() -> list:
     theta = np.linspace(0, 2 * np.pi, 100)
     phi = np.linspace(0, np.pi, 100)
     x = np.outer(np.cos(theta), np.sin(phi)) * 0.98
@@ -22,8 +22,8 @@ def _sphere_data_surface():
     return [go.Surface(x=x, y=y, z=z, colorscale=colorscale, showlegend=False, showscale=False)]
 
 
-def _sphere_data_voro(sphere_voro: SphericalVoronoi, with_generators=False):
-    data = _sphere_data_surface()
+def _sphere_data_voro(sphere_voro: SphericalVoronoi, with_generators=False) -> list:
+    data = _sphere_data_init()
     # generator points
     if with_generators:
         gens = go.Scatter3d(x=sphere_voro.points[:, 0], y=sphere_voro.points[:, 1], z=sphere_voro.points[:, 2],
@@ -43,8 +43,8 @@ def _sphere_data_voro(sphere_voro: SphericalVoronoi, with_generators=False):
     return data
 
 
-def _sphere_data_tiles(t_ver, t_hor):
-    data = _sphere_data_surface()
+def _sphere_data_tiles(t_ver, t_hor) -> list:
+    data = _sphere_data_init()
     for row in range(t_ver):
         for col in range(t_hor):
             # -- add tiles edges
@@ -62,14 +62,14 @@ def _sphere_data_tiles(t_ver, t_hor):
 
 
 class ProjectPolys():
-    
+
     def __init__(self, tiles=None):
         if isinstance(tiles, Tiles):
             self.data = _sphere_data_tiles(tiles.t_ver, tiles.t_hor)
         elif isinstance(tiles, TilesVoro):
             self.data = _sphere_data_voro(tiles.voro)
         else:
-            self.data = _sphere_data_surface()
+            self.data = _sphere_data_init()
         self.title = f"polygon"
 
     def add_polygon(self, polygon: polygon.SphericalPolygon):
