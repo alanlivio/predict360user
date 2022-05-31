@@ -1,3 +1,4 @@
+import head_motion_prediction
 from head_motion_prediction.Utils import *
 from numpy.typing import NDArray
 from os.path import exists
@@ -14,7 +15,9 @@ import pandas as pd
 from .tiles import *
 from .tiles_voro import *
 
+ONE_DATASET = 'david'
 ONE_USER = '0'
+ONE_ID = 'david_0'
 ONE_VIDEO = '10_Cows'
 np.set_printoptions(suppress=True)
 
@@ -27,8 +30,19 @@ class Dataset:
 
     def __init__(self, dataset={}):
         if not dataset:
+            # df
             self.dataset = self.load_dataset()
-            # self.users_id = np.array([key for key in self.dataset.keys()])
+            # -- https://stackoverflow.com/questions/13575090/construct-pandas-dataframe-from-items-in-nested-dictionary
+            data = {(f'david_{user}', video): pd.Series({
+                f"t_{time_trace[0]:.2f}": time_trace[1:]  # time : trace_xyz
+                for time_trace in self.dataset[user][video]})
+                for user in self.dataset.keys()
+                for video in self.dataset[user].keys()}
+            self.df = pd.DataFrame.from_dict(data, dtype=object, orient='index')
+            self.df.index.names = ['user', 'video']
+            self.df.reset_index(inplace=True)
+
+            # users_df
             self.users_id = [key for key in self.dataset.keys()]
             self.users_id.sort(key=int)
             self.users_len = len(self.users_id)
@@ -61,7 +75,7 @@ class Dataset:
                     print(f"Dataset.dataset from {Dataset.dataset_pickle}")
                     os.chdir(pathlib.Path(__file__).parent.parent /
                              'head_motion_prediction')
-                    from .head_motion_prediction.David_MMSys_18 import Read_Dataset as david
+                    from head_motion_prediction.David_MMSys_18 import Read_Dataset as david
                     Dataset.dataset = david.load_sampled_dataset()
                     os.chdir(cwd)
                     with open(Dataset.dataset_pickle, 'wb') as f:
@@ -102,71 +116,81 @@ class Dataset:
         px.scatter(self.users_df, x='user_id', y='entropy', color='entropy_class',
                    symbol='entropy_class', width=600, category_orders={"user_id": self.users_id}).show()
 
-    def one_trace(self, user=ONE_USER, video=ONE_VIDEO) -> NDArray:
-        return self.dataset[user][video][:, 1:][0]
-
-    def traces_video_user(self, perc_traces=1.0, user=ONE_USER, video=ONE_VIDEO) -> NDArray:
-        assert (perc_traces <= 1.0 and perc_traces >= 0.0)
-        if perc_traces == 1.0:
-            return self.dataset[user][video][:, 1:]
+    def trajectories(self, users=list[str], videos=list[str], perc=1.0):
+        assert (perc <= 1.0 and perc >= 0.0)
+        df = self.df
+        if not users:
+            df = df.loc[df.user.isin(users)]
+        if not videos:
+            df = df.loc[df.video.isin(videos)]
+        if perc == 1.0:
+            return df
         else:
-            on_user = self.dataset[user][video][:, 1:]
-            one_user_len = len(on_user)
-            step = int(one_user_len / (one_user_len * perc_traces))
-            return on_user[::step]
+            size = df.size
+            step = int(size / (size * perc))
+            return df[::step]
 
-    def traces_video(self, users=[], video=ONE_VIDEO) -> NDArray:
-        count = 0
-        if not users:
-            users = self.dataset.keys()
-        n_traces = len(self.dataset[ONE_USER][video][:, 1:])
-        traces = np.zeros((len(users) * n_traces, 3), dtype=float)
-        for user in users:
-            for trace in self.dataset[user][video][:, 1:]:
-                traces.itemset((count, 0), trace[0])
-                traces.itemset((count, 1), trace[1])
-                traces.itemset((count, 2), trace[2])
-                count += 1
-        return traces
+    def example_one_trace(self):
+        return self.df.iloc[0]['t_0.00']
 
-    def traces_video_poles(self, users=[], video=ONE_VIDEO) -> NDArray:
-        count = 0
-        if not users:
-            users = self.dataset.keys()
-        n_traces = len(self.dataset[ONE_USER][video][:, 1:])
-        traces = np.zeros((len(users) * n_traces, 3), dtype=float)
-        for user in users:
-            for trace in self.dataset[user][video][:, 1:]:
-                if abs(trace[2]) > 0.7:  # z-axis
-                    traces.itemset((count, 0), trace[0])
-                    traces.itemset((count, 1), trace[1])
-                    traces.itemset((count, 2), trace[2])
-                    count += 1
-        return traces[:count]
+    def example_one_trajectory(self):
+        return self.df.head(1)
 
-    def traces_video_equator(self, users=[], video=ONE_VIDEO) -> NDArray:
-        count = 0
-        if not users:
-            users = self.dataset.keys()
-        n_traces = len(self.dataset[ONE_USER][video][:, 1:])
-        traces = np.zeros((len(users) * n_traces, 3), dtype=float)
-        for user in users:
-            for trace in self.dataset[user][video][:, 1:]:
-                if abs(trace[2]) < 0.7:  # z-axis
-                    traces.itemset((count, 0), trace[0])
-                    traces.itemset((count, 1), trace[1])
-                    traces.itemset((count, 2), trace[2])
-                    count += 1
-        return traces[:count]
+    def example_one_video_trajectories(self):
+        return self.df.loc[self.df.video == ONE_VIDEO]
 
-    def calc_metrics_tiles(self, tiles_l: list[TilesIF], users=[], video=ONE_VIDEO, perc_traces=1.0):
+    # def traces_video(self, users=[], video=ONE_VIDEO):
+    #     count = 0
+    #     if not users:
+    #         users = self.dataset.keys()
+    #     n_traces = len(self.dataset[ONE_USER][video][:, 1:])
+    #     traces = np.zeros((len(users) * n_traces, 3), dtype=float)
+    #     for user in users:
+    #         for trace in self.dataset[user][video][:, 1:]:
+    #             traces.itemset((count, 0), trace[0])
+    #             traces.itemset((count, 1), trace[1])
+    #             traces.itemset((count, 2), trace[2])
+    #             count += 1
+    #     return traces
+
+    # def traces_video_poles(self, users=[], video=ONE_VIDEO):
+    #     count = 0
+    #     if not users:
+    #         users = self.dataset.keys()
+    #     n_traces = len(self.dataset[ONE_USER][video][:, 1:])
+    #     traces = np.zeros((len(users) * n_traces, 3), dtype=float)
+    #     for user in users:
+    #         for trace in self.dataset[user][video][:, 1:]:
+    #             if abs(trace[2]) > 0.7:  # z-axis
+    #                 traces.itemset((count, 0), trace[0])
+    #                 traces.itemset((count, 1), trace[1])
+    #                 traces.itemset((count, 2), trace[2])
+    #                 count += 1
+    #     return traces[:count]
+
+    # def traces_video_equator(self, users=[], video=ONE_VIDEO):
+    #     count = 0
+    #     if not users:
+    #         users = self.dataset.keys()
+    #     n_traces = len(self.dataset[ONE_USER][video][:, 1:])
+    #     traces = np.zeros((len(users) * n_traces, 3), dtype=float)
+    #     for user in users:
+    #         for trace in self.dataset[user][video][:, 1:]:
+    #             if abs(trace[2]) < 0.7:  # z-axis
+    #                 traces.itemset((count, 0), trace[0])
+    #                 traces.itemset((count, 1), trace[1])
+    #                 traces.itemset((count, 2), trace[2])
+    #                 count += 1
+    #     return traces[:count]
+
+    def calc_metrics_tiles(self, tiles_l: list[TilesIF], users=[], video=ONE_VIDEO, perc=1.0):
         if not users:
             users = self.dataset.keys()
         # 3 metrics for each user/tiles: avg_reqs, avg avg_lost, avg_qlt
         metrics_request = np.empty((len(tiles_l), len(users), 3))
         for indexvp, tiles in enumerate(tiles_l):
             for indexuser, user in enumerate(users):
-                traces = self.traces_video_user(user=user, video=video, perc_traces=perc_traces)
+                traces = self.trajectories(user=user, video=video, perc=perc)
                 def fn(trace):
                     heatmap, vp_quality, area_out = tiles.request(
                         trace, return_metrics=True)

@@ -26,7 +26,9 @@ def _sphere_data_voro(sphere_voro: SphericalVoronoi, with_generators=False) -> l
     data = _sphere_data_init()
     # generator points
     if with_generators:
-        gens = go.Scatter3d(x=sphere_voro.points[:, 0], y=sphere_voro.points[:, 1], z=sphere_voro.points[:, 2],
+        gens = go.Scatter3d(x=sphere_voro.points[:, 0],
+                            y=sphere_voro.points[:, 1],
+                            z=sphere_voro.points[:, 2],
                             mode='markers', marker={'size': 1, 'opacity': 1.0, 'color': 'blue'}, name='voron center')
         data.append(gens)
     # edges
@@ -37,8 +39,7 @@ def _sphere_data_voro(sphere_voro: SphericalVoronoi, with_generators=False) -> l
             start = sphere_voro.vertices[region][index]
             end = sphere_voro.vertices[region][(index + 1) % n]
             result = np.array(geometric_slerp(start, end, t))
-            edge = go.Scatter3d(x=result[..., 0], y=result[..., 1], z=result[..., 2], mode='lines', line={
-                'width': 5, 'color': 'black'}, name='region edge', showlegend=False)
+            edge = go.Scatter3d(x=result[..., 0], y=result[..., 1], z=result[..., 2], mode='lines', line={'width': 5, 'color': 'black'}, showlegend=False)
             data.append(edge)
     return data
 
@@ -91,8 +92,10 @@ class ProjectPolys():
         # points
         n = len(points)
         t = np.linspace(0, 1, 100)
-        gens = go.Scatter3d(x=points[:, 0], y=points[:, 1], z=points[:, 2], mode='markers', showlegend=False,
-                            marker={'size': 5, 'opacity': 1.0, 'color': [f'rgb({np.random.randint(0,256)}, {np.random.randint(0,256)}, {np.random.randint(0,256)})' for _ in range(len(points))]})
+        gens = go.Scatter3d(x=points[:, 0],
+                            y=points[:, 1],
+                            z=points[:, 2],
+                            mode='markers', showlegend=False, marker={'size': 5, 'opacity': 1.0, 'color': [f'rgb({np.random.randint(0,256)}, {np.random.randint(0,256)}, {np.random.randint(0,256)})' for _ in range(len(points))]})
         self.data.append(gens)
         for index in range(n):
             start = points[index]
@@ -130,8 +133,10 @@ class ProjectFOV():
         # vp
         points_fov = FOV.points(self.trace)
         n = len(points_fov)
-        gens = go.Scatter3d(x=points_fov[:, 0], y=points_fov[:, 1], z=points_fov[:, 2], mode='markers',
-                            marker={'size': 5, 'opacity': 1.0, 'color': [f'rgb({np.random.randint(0,256)}, {np.random.randint(0,256)}, {np.random.randint(0,256)})' for _ in range(len(points_fov))]}, name='fov corner', showlegend=False)
+        gens = go.Scatter3d(x=points_fov[:, 0], 
+                            y=points_fov[:, 1], 
+                            z=points_fov[:, 2], 
+                            mode='markers', marker={'size': 5, 'opacity': 1.0, 'color': [f'rgb({np.random.randint(0,256)}, {np.random.randint(0,256)}, {np.random.randint(0,256)})' for _ in range(len(points_fov))]}, name='fov corner', showlegend=False)
         self.data.append(gens)
         t = np.linspace(0, 1, 100)
         for index in range(n):
@@ -168,13 +173,12 @@ class ProjectFOV():
             fig.show()
 
 
-class ProjectTraces():
+class ProjectTrajectories():
 
-    def __init__(self, traces: NDArray, tiles=Tiles.default(), title_sufix=""):
-        assert traces.shape[1] == 3  # check if cartesian
-        self.traces = traces
-        print("ProjectTraces.shape is " + str(traces.shape))
-        self.title = f"{str(len(traces))}_traces_{title_sufix}"
+    def __init__(self, df, tiles=Tiles.default(), title_sufix=""):
+        self.trajectories = df.loc[:, df.columns.str.startswith('t_')].to_numpy()
+        print("ProjectTrajectories.shape is " + str(df.shape))
+        self.title = f"{str(df.shape[0])}_trajcectories_{title_sufix}"
         self.output_folder = pathlib.Path(__file__).parent.parent / 'output'
         self.tiles = tiles
         self.data = []
@@ -183,25 +187,21 @@ class ProjectTraces():
         elif isinstance(self.tiles, TilesVoro):
             self.data = _sphere_data_voro(self.tiles.voro)
 
-    def _sphere_data_add_user(self, vpinfo):
-        trajc = go.Scatter3d(x=self.traces[:, 0],
-                             y=self.traces[:, 1],
-                             z=self.traces[:, 2],
-                             hovertemplate="<b>requested tiles=%{text}</b>",
-                             text=vpinfo,
-                             mode='lines', line={'width': 3, 'color': 'blue'}, name='trajectory', showlegend=False)
-        self.data.append(trajc)
-
     def show(self, to_html=False):
         # erp heatmap
         heatmaps = []
-        for trace in self.traces:
-            heatmap, _, _, = self.tiles.request(trace)
-            heatmaps.append(heatmap)
-
-        # traces vp info on mouseover
-        vpinfo = [np.sum(heatmap) for heatmap in heatmaps]
-        self._sphere_data_add_user(vpinfo)
+        for trajectory in self.trajectories:
+            for trace in trajectory:
+                heatmap, _, _, = self.tiles.request(trace)
+                heatmaps.append(heatmap)
+            scatter = go.Scatter3d(
+                x=[trace[0] for trace in trajectory],
+                y=[trace[1] for trace in trajectory],
+                z=[trace[2] for trace in trajectory],
+                text=[np.sum(heatmap) for heatmap in heatmaps[-len(trajectory):]],
+                hovertemplate="<b>requested tiles=%{text}</b>",
+                mode='lines', line={'width': 3, 'color': 'blue'}, showlegend=False)
+            self.data.append(scatter)
 
         # erp heatmap image
         heatmap_sum = np.sum(heatmaps, axis=0)
