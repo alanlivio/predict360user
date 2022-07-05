@@ -3,12 +3,10 @@ from head_motion_prediction.Utils import *
 from numpy.typing import NDArray
 from os.path import exists
 from plotly.subplots import make_subplots
-from typing import Iterable
 import numpy as np
 import os
 import pathlib
 import pickle
-import plotly.express as px
 import plotly.graph_objs as go
 import scipy.stats
 import pandas as pd
@@ -22,7 +20,7 @@ ONE_VIDEO = '10_Cows'
 np.set_printoptions(suppress=True)
 
 
-class Dataset:
+class Users360:
     dataset = None
     dataset_pickle = pathlib.Path(__file__).parent.parent / 'output/david.pickle'
     instance = None
@@ -59,36 +57,36 @@ class Dataset:
         if cls.instance is None:
             if exists(cls.instance_pickle):
                 with open(cls.instance_pickle, 'rb') as f:
-                    print(f"Dataset.instance from {cls.instance_pickle}")
+                    print(f"Users360.instance from {cls.instance_pickle}")
                     cls.instance = pickle.load(f)
             else:
-                cls.instance = Dataset()
+                cls.instance = Users360()
         return cls.instance
 
     def load_dataset(self):
         print("loading dataset")
-        if Dataset.dataset is None:
-            if not exists(Dataset.dataset_pickle):
+        if Users360.dataset is None:
+            if not exists(Users360.dataset_pickle):
                 project_path = "head_motion_prediction"
                 cwd = os.getcwd()
                 if os.path.basename(cwd) != project_path:
-                    print(f"Dataset.dataset from {Dataset.dataset_pickle}")
+                    print(f"Users360.dataset from {Users360.dataset_pickle}")
                     os.chdir(pathlib.Path(__file__).parent.parent /
                              'head_motion_prediction')
                     from head_motion_prediction.David_MMSys_18 import Read_Dataset as david
-                    Dataset.dataset = david.load_sampled_dataset()
+                    Users360.dataset = david.load_sampled_dataset()
                     os.chdir(cwd)
-                    with open(Dataset.dataset_pickle, 'wb') as f:
-                        pickle.dump(Dataset.dataset, f)
+                    with open(Users360.dataset_pickle, 'wb') as f:
+                        pickle.dump(Users360.dataset, f)
             else:
-                print(f"Dataset.dataset from {Dataset.dataset_pickle}")
-                with open(Dataset.dataset_pickle, 'rb') as f:
-                    Dataset.dataset = pickle.load(f)
-        return Dataset.dataset
+                print(f"Users360.dataset from {Users360.dataset_pickle}")
+                with open(Users360.dataset_pickle, 'rb') as f:
+                    Users360.dataset = pickle.load(f)
+        return Users360.dataset
 
     def calc_users_entropy(self, tiles: TilesIF = Tiles.default(), recalculate_requests=False):
-        df = Dataset.singleton().df
-        if recalculate_requests:
+        df = Users360.singleton().df
+        if not 'entropy' in df or recalculate_requests:
             df.drop([c for c in df.columns if c.startswith('h_')], axis=1, inplace=True)
             for t in [c for c in df.columns if c.startswith('t_')]:
                 df[t.replace('t', 'h')] = df[t].apply(lambda trace: tiles.request(trace)[0])
