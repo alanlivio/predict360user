@@ -86,31 +86,27 @@ class Dataset:
                     Dataset.dataset = pickle.load(f)
         return Dataset.dataset
 
-    def calc_users_entropy(self, tiles: TilesIF):
-        # fill entropy
-        entropy = np.zeros(self.users_len, dtype=float)
-        for user in self.users_id:
-            heatmaps = []
-            for trace in self.dataset[user][ONE_VIDEO][:, 1:]:
-                heatmap, _, _ = tiles.request(trace)
-                heatmaps.append(heatmap)
-            sum = np.sum(heatmaps, axis=0).reshape((-1))
-            # https://stackoverflow.com/questions/15450192/fastest-way-to-compute-entropy-in-python
-            entropy[int(user)] = scipy.stats.entropy(sum)
-        # define class threshold
-        p_sort = entropy.argsort()
-        threshold_medium = int(self.users_len * .60)
-        threshold_hight = int(self.users_len * .80)
-        self.users_low = [str(x) for x in p_sort[:threshold_medium]]
-        self.users_medium = [str(x) for x in p_sort[threshold_medium:threshold_hight]]
-        self.users_hight = [str(x) for x in p_sort[threshold_hight:]]
+    def calc_users_entropy(self, tiles: TilesIF = Tiles.default(), recalculate_requests=False):
+        df = Dataset.singleton().df
+        if recalculate_requests:
+            df.drop([c for c in df.columns if c.startswith('h_')], axis=1, inplace=True)
+            for t in [c for c in df.columns if c.startswith('t_')]:
+                df[t.replace('t', 'h')] = df[t].apply(lambda trace: tiles.request(trace)[0])
+        cols = [c for c in df.columns if c.startswith('h_')]
+        def f(x):
+            sum = np.sum(x, axis=0).reshape((-1))
+            return scipy.stats.entropy(sum)
+        df['entropy'] = df[cols].apply(f, axis=1)
 
-        # save on df
-        df = self.users_df
-        df['entropy'] = entropy  # this consider an ordered index
-        df.loc[df['user_id'].isin(self.users_low), 'entropy_class'] = 'low'
-        df.loc[df['user_id'].isin(self.users_medium), 'entropy_class'] = 'medium'
-        df.loc[df['user_id'].isin(self.users_hight), 'entropy_class'] = 'hight'
+        # TODO
+        p_sort = df['entropy'].argsort()
+        users_len = len(df['entropy'])
+        idx_threshold_medium = p_sort[int(users_len * .60)]
+        idx_threshold_hight = p_sort[int(users_len * .80)]
+        threshold_medium = df['entropy'][idx_threshold_medium]
+        threshold_hight = df['entropy'][idx_threshold_hight]
+        df['entropy_class'] = df['entropy'].apply(
+            lambda x: 'low' if x < threshold_medium else ('medium' if x < threshold_hight else 'hight'))
 
     def show_users_entropy(self):
         px.scatter(self.users_df, x='user_id', y='entropy', color='entropy_class',
