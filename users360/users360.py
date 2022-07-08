@@ -13,9 +13,6 @@ import pandas as pd
 from .tiles import *
 from .tiles_voro import *
 
-ONE_DATASET = 'david'
-ONE_USER = '0'
-ONE_ID = 'david_0'
 ONE_VIDEO = '10_Cows'
 np.set_printoptions(suppress=True)
 
@@ -85,18 +82,20 @@ class Users360:
         return Users360.dataset
 
     def calc_users_entropy(self, tiles: TilesIF = Tiles.default(), recalculate_requests=False):
-        df = Users360.singleton().df
+        df = self.df
+        cols = [c for c in df.columns if c.startswith('h_')]
+
+        # calculate entropy
         if not 'entropy' in df or recalculate_requests:
             df.drop([c for c in df.columns if c.startswith('h_')], axis=1, inplace=True)
             for t in [c for c in df.columns if c.startswith('t_')]:
                 df[t.replace('t', 'h')] = df[t].apply(lambda trace: tiles.request(trace)[0])
-        cols = [c for c in df.columns if c.startswith('h_')]
         def f(x):
             sum = np.sum(x, axis=0).reshape((-1))
             return scipy.stats.entropy(sum)
         df['entropy'] = df[cols].apply(f, axis=1)
 
-        # TODO
+        # calculate class
         p_sort = df['entropy'].argsort()
         users_len = len(df['entropy'])
         idx_threshold_medium = p_sort[int(users_len * .60)]
@@ -107,8 +106,8 @@ class Users360:
             lambda x: 'low' if x < threshold_medium else ('medium' if x < threshold_hight else 'hight'))
 
     def show_users_entropy(self):
-        px.scatter(self.users_df, x='user_id', y='entropy', color='entropy_class',
-                   symbol='entropy_class', width=600, category_orders={"user_id": self.users_id}).show()
+        px.scatter(self.df, x='user', y='entropy', color='entropy_class',
+                   symbol='entropy_class', width=600).show()
 
     def trajectories(self, users=list[str], videos=list[str], perc=1.0):
         assert (perc <= 1.0 and perc >= 0.0)
@@ -132,20 +131,6 @@ class Users360:
 
     def example_one_video_trajectories(self):
         return self.df.loc[self.df.video == ONE_VIDEO]
-
-    # def traces_video(self, users=[], video=ONE_VIDEO):
-    #     count = 0
-    #     if not users:
-    #         users = self.dataset.keys()
-    #     n_traces = len(self.dataset[ONE_USER][video][:, 1:])
-    #     traces = np.zeros((len(users) * n_traces, 3), dtype=float)
-    #     for user in users:
-    #         for trace in self.dataset[user][video][:, 1:]:
-    #             traces.itemset((count, 0), trace[0])
-    #             traces.itemset((count, 1), trace[1])
-    #             traces.itemset((count, 2), trace[2])
-    #             count += 1
-    #     return traces
 
     # def traces_video_poles(self, users=[], video=ONE_VIDEO):
     #     count = 0
@@ -177,35 +162,44 @@ class Users360:
     #                 count += 1
     #     return traces[:count]
 
-    def calc_metrics_tiles(self, tiles_l: list[TilesIF], users=[], video=ONE_VIDEO, perc=1.0):
-        if not users:
-            users = self.dataset.keys()
-        # 3 metrics for each user/tiles: avg_reqs, avg avg_lost, avg_qlt
-        metrics_request = np.empty((len(tiles_l), len(users), 3))
-        for indexvp, tiles in enumerate(tiles_l):
-            for indexuser, user in enumerate(users):
-                traces = self.trajectories(user=user, video=video, perc=perc)
-                def fn(trace):
-                    heatmap, vp_quality, area_out = tiles.request(
-                        trace, return_metrics=True)
-                    return np.hstack([np.sum(heatmap), vp_quality, area_out])
-                traces_res = np.apply_along_axis(fn, 1, traces)
-                metrics_request[indexvp][indexuser][0] = np.average(traces_res[:, 0])
-                metrics_request[indexvp][indexuser][1] = np.average(traces_res[:, 1])
-                metrics_request[indexvp][indexuser][2] = np.sum(traces_res[:, 2])
-        self.tiles_df = pd.DataFrame()
-        self.tiles_df['tiles'] = [ttype.title for ttype in tiles_l]
-        self.tiles_df['avg_reqs'] = np.average(metrics_request[:, :, 0], axis=1)
-        self.tiles_df['avg_qlt'] = np.average(metrics_request[:, :, 1], axis=1)
-        self.tiles_df['avg_lost'] = np.average(metrics_request[:, :, 2], axis=1)
-        self.tiles_df['score'] = self.tiles_df['avg_qlt'] / self.tiles_df['avg_lost']
+    def _df_tilescheme(self, tscheme: TilesIF, df: pd.DataFrame):
+        cols = [c for c in df.columns if c.startswith('t_')]
+        def f_request(trace):
+            heatmap, vp_quality, area_out = tscheme.request(trace, return_metrics=True)
+            ret = [heatmap, int(np.sum(heatmap)), vp_quality, area_out]
+            return ret
+        tmpdf = df[cols].applymap(f_request)
+        def f_col(col):
+            idxs = [f"{col.replace('t_','')}_{metric}" for metric in ['hmp', 'reqs', 'lost', 'qlt']]
+            f = lambda x: pd.Series(x, index=idxs)
+            return tmpdf[col].apply(f)
+        return pd.concat([f_col(col) for col in cols], axis=1)
 
-    def show_metrics_tiles(self):
+    def calc_tileschemes_metrics(self, tilescheme_l: list[TilesIF], df):
+        # req for each tscheme
+        self.tilescheme_dict = {ts.title: self._df_tilescheme(ts, df) for ts in tilescheme_l}
+        # metrics for plot
+        data = {'scheme': [], 'avg_reqs': [], 'avg_qlt': [], 'avg_lost': []}
+        for tscheme in tilescheme_l:
+            _df = self.tilescheme_dict[tscheme.title]
+            data['scheme'].append(tscheme.title)
+            data['avg_reqs'].append(np.nanmean(_df.loc[:, _df.columns.str.endswith('reqs')]))
+            data['avg_qlt'].append(np.nanmean(_df.loc[:, _df.columns.str.endswith('qlt')]))
+            data['avg_lost'].append(np.nanmean(_df.loc[:, _df.columns.str.endswith('lost')]))
+            data['score'] = data['avg_qlt'][-1] / data['avg_lost'][-1]
+        self.tilescheme_metrics_df = pd.DataFrame(data)
+
+    def show_tileschemes_metrics(self):
         fig = make_subplots(rows=1, cols=4, subplot_titles=("avg_reqs", "avg_lost",
                             "avg_qlt", "score=avg_qlt/avg_lost"), shared_yaxes=True)
-        fig.add_trace(go.Bar(y=self.tiles_df['tiles'], x=self.tiles_df['avg_reqs'], orientation='h'), row=1, col=1)
-        fig.add_trace(go.Bar(y=self.tiles_df['tiles'], x=self.tiles_df['avg_lost'], orientation='h'), row=1, col=2)
-        fig.add_trace(go.Bar(y=self.tiles_df['tiles'], x=self.tiles_df['avg_qlt'], orientation='h'), row=1, col=3)
-        fig.add_trace(go.Bar(y=self.tiles_df['tiles'], x=self.tiles_df['score'], orientation='h'), row=1, col=4)
+        y = self.tilescheme_metrics_df['scheme']
+        trace = go.Bar(y=y, x=self.tilescheme_metrics_df['avg_reqs'], orientation='h')
+        fig.add_trace(trace, row=1, col=1)
+        trace = go.Bar(y=y, x=self.tilescheme_metrics_df['avg_lost'], orientation='h')
+        fig.add_trace(trace, row=1, col=2)
+        trace = go.Bar(y=y, x=self.tilescheme_metrics_df['avg_qlt'], orientation='h')
+        fig.add_trace(trace, row=1, col=3)
+        trace = go.Bar(y=y, x=self.tilescheme_metrics_df['score'], orientation='h')
+        fig.add_trace(trace, row=1, col=4)
         fig.update_layout(width=1500, showlegend=False, barmode="stack")
         fig.show()
