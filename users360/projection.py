@@ -1,6 +1,6 @@
 import pathlib
-from .tiles import *
-from .tiles_voro import *
+from .tileset import *
+from .tileset_voro import *
 from head_motion_prediction.Utils import *
 from scipy.spatial import SphericalVoronoi, geometric_slerp
 import numpy as np
@@ -48,7 +48,7 @@ def _sphere_data_tiles(t_ver, t_hor) -> list:
     for row in range(t_ver):
         for col in range(t_hor):
             # -- add tiles edges
-            tile_points = Tiles.tile_points(t_ver, t_hor, row, col)
+            tile_points = TileSet.tile_points(t_ver, t_hor, row, col)
             n = len(tile_points)
             t = np.linspace(0, 1, 100)
             for index in range(n):
@@ -64,9 +64,9 @@ def _sphere_data_tiles(t_ver, t_hor) -> list:
 class ProjectPolys():
 
     def __init__(self, tiles=None):
-        if isinstance(tiles, Tiles):
+        if isinstance(tiles, TileSet):
             self.data = _sphere_data_tiles(tiles.t_ver, tiles.t_hor)
-        elif isinstance(tiles, TilesVoro):
+        elif isinstance(tiles, TileSetVoro):
             self.data = _sphere_data_voro(tiles.voro)
         else:
             self.data = _sphere_data_init()
@@ -80,7 +80,7 @@ class ProjectPolys():
         self._add_points(points)
 
     def add_polygon_as_row_col_tile(self, t_ver, t_hor, row, col):
-        points = Tiles.tile_points(t_ver, t_hor, row, col)
+        points = TileSet.tile_points(t_ver, t_hor, row, col)
         self._add_points(points)
 
     def add_polygon_from_trace(self, trace):
@@ -112,16 +112,16 @@ class ProjectPolys():
 
 class ProjectFOV():
 
-    def __init__(self, trace, tiles=Tiles.default(), title_sufix=""):
+    def __init__(self, trace, tiles=TileSet.default(), title_sufix=""):
         assert len(trace) == 3  # cartesian
         self.title = f"1_trace_{title_sufix}"
         self.trace = trace
         self.output_folder = pathlib.Path(__file__).parent.parent / 'output'
         self.data = []
         self.tiles = tiles
-        if isinstance(self.tiles, Tiles):
+        if isinstance(self.tiles, TileSet):
             self.data = _sphere_data_tiles(self.tiles.t_ver, tiles.t_hor)
-        elif isinstance(self.tiles, TilesVoro):
+        elif isinstance(self.tiles, TileSetVoro):
             self.data = _sphere_data_voro(self.tiles.voro)
 
     def show(self, to_html=False):
@@ -153,7 +153,7 @@ class ProjectFOV():
         fig = make_subplots(rows=1, cols=2, specs=[[{"type": "surface"}, {"type": "image"}]])
         for trace in self.data:
             fig.append_trace(trace, row=1, col=1)
-        if isinstance(self.tiles, TilesVoro):
+        if isinstance(self.tiles, TileSetVoro):
             heatmap = np.reshape(heatmap, self.tiles.shape)
         erp_heatmap = px.imshow(heatmap, text_auto=True,
                                 x=[str(x) for x in range(1, heatmap.shape[1] + 1)],
@@ -162,7 +162,7 @@ class ProjectFOV():
             fig.append_trace(trace, row=1, col=2)
 
         title = f"{self.title} {self.tiles.title_with_sum_heatmaps([heatmap])}"
-        if isinstance(self.tiles, Tiles):
+        if isinstance(self.tiles, TileSet):
             # fix given phi 0 being the north pole at Utils.cartesian_to_eulerian
             fig.update_yaxes(autorange="reversed")
         fig.update_layout(width=800, showlegend=False, title_text=title)
@@ -174,16 +174,16 @@ class ProjectFOV():
 
 class ProjectTrajectories():
 
-    def __init__(self, df, tiles=Tiles.default(), title_sufix=""):
+    def __init__(self, df, tiles=TileSet.default(), title_sufix=""):
         self.trajectories = df.loc[:, df.columns.str.startswith('t_')].to_numpy()
         print("ProjectTrajectories.shape is " + str(df.shape))
         self.title = f"{str(df.shape[0])}_trajcectories_{title_sufix}"
         self.output_folder = pathlib.Path(__file__).parent.parent / 'output'
         self.tiles = tiles
         self.data = []
-        if isinstance(self.tiles, Tiles):
+        if isinstance(self.tiles, TileSet):
             self.data = _sphere_data_tiles(self.tiles.t_ver, self.tiles.t_hor)
-        elif isinstance(self.tiles, TilesVoro):
+        elif isinstance(self.tiles, TileSetVoro):
             self.data = _sphere_data_voro(self.tiles.voro)
 
     def show(self, to_html=False):
@@ -191,8 +191,7 @@ class ProjectTrajectories():
         heatmaps = []
         for trajectory in self.trajectories:
             for trace in trajectory:
-                heatmap, _, _, = self.tiles.request(trace)
-                heatmaps.append(heatmap)
+                heatmaps.append(self.tiles.request(trace)[0])
             scatter = go.Scatter3d(
                 x=[trace[0] for trace in trajectory],
                 y=[trace[1] for trace in trajectory],
@@ -204,7 +203,7 @@ class ProjectTrajectories():
 
         # erp heatmap image
         heatmap_sum = np.sum(heatmaps, axis=0)
-        if isinstance(self.tiles, TilesVoro):
+        if isinstance(self.tiles, TileSetVoro):
             heatmap_sum = np.reshape(heatmap_sum, self.tiles.shape)
         erp_heatmap = px.imshow(heatmap_sum, text_auto=True,
                                 x=[str(x) for x in range(1, heatmap_sum.shape[1] + 1)],
@@ -217,7 +216,7 @@ class ProjectTrajectories():
         for trace in erp_heatmap["data"]:
             fig.append_trace(trace, row=1, col=2)
         title = f"{self.title} {self.tiles.title_with_sum_heatmaps(heatmaps)}"
-        if isinstance(self.tiles, Tiles):
+        if isinstance(self.tiles, TileSet):
             # fix given phi 0 being the north pole at Utils.cartesian_to_eulerian
             fig.update_yaxes(autorange="reversed")
         fig.update_layout(width=800, showlegend=False, title_text=title)

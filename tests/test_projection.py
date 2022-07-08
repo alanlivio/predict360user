@@ -9,7 +9,7 @@ class TestProjection(unittest.TestCase):
             onevp = ProjectFOV(trace)
             self.assertIsNotNone(onevp)
             onevp.show(to_html=True)
-            onevp = ProjectFOV(trace, TilesVoro.default())
+            onevp = ProjectFOV(trace, TileSetVoro.default())
             self.assertIsNotNone(onevp)
             onevp.show(to_html=True)
 
@@ -20,4 +20,4 @@ class TestProjection(unittest.TestCase):
 
         plot = ProjectPolys()
         plot.add_polygon_from_trace([1, 0, 0])
-        plot.add_polygon_as_points(Tiles.tile_points(4, 6, 0, 0))
+        plot.add_polygon_as_points(TileSet.tile_points(4, 6, 0, 0))

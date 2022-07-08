@@ -33,7 +33,6 @@ class FOV:
         return cls._x1y0z0_poly
         
     @classmethod
-    @property
     def x1y0z0_area(cls):
         if cls._x1y0z0_area is None:
             cls._x1y0z0_area = polygon.SphericalPolygon(cls.x1y0z0_poly).area()

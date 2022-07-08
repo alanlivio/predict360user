@@ -15,7 +15,7 @@ class TileCover(Enum):
     ONLY33PERC = auto()
 
 
-class TilesIF(ABC):
+class TileSetIF(ABC):
     # https://realpython.com/python-interface/
 
     cover: TileCover
@@ -34,7 +34,7 @@ class TilesIF(ABC):
         return f"{self.title} (reqs={reqs_sum})"
 
 
-class Tiles(TilesIF):
+class TileSet(TileSetIF):
 
     _saved_polys = None
     _saved_centers = None
@@ -47,18 +47,18 @@ class Tiles(TilesIF):
         self.cover = cover
 
     @classmethod
-    def default(cls):
+    def default(cls) -> TileSetIF:
         if cls._default is None:
-            cls._default = Tiles(4, 6, TileCover.CENTER)
+            cls._default = TileSet(4, 6, TileCover.CENTER)
         return cls._default
 
     @classmethod
     def variations(cls):
         if cls._variations is None:
             cls._variations = [
-                Tiles(4, 6, TileCover.CENTER),
-                Tiles(4, 6, TileCover.ANY),
-                Tiles(4, 6, TileCover.ONLY20PERC),
+                TileSet(4, 6, TileCover.CENTER),
+                TileSet(4, 6, TileCover.ANY),
+                TileSet(4, 6, TileCover.ONLY20PERC),
             ]
         return cls._variations
 
@@ -144,12 +144,12 @@ class Tiles(TilesIF):
         fov_poly_trace = FOV.poly(trace)
         for row in range(self.t_ver):
             for col in range(self.t_hor):
-                dist = compute_orthodromic_distance(trace, Tiles.tile_center(self.t_ver, self.t_hor, row, col))
+                dist = compute_orthodromic_distance(trace, TileSet.tile_center(self.t_ver, self.t_hor, row, col))
                 if dist <= FOV.HOR_MARGIN:
                     heatmap[row][col] = 1
                     if (return_metrics):
                         try:
-                            poly_rc = Tiles.tile_poly(self.t_ver, self.t_hor, row, col)
+                            poly_rc = TileSet.tile_poly(self.t_ver, self.t_hor, row, col)
                             view_ratio = poly_rc.overlap(fov_poly_trace)
                         except:
                             print(f"request error for row,col,trace={row},{col},{repr(trace)}")
@@ -165,11 +165,11 @@ class Tiles(TilesIF):
         fov_poly_trace = FOV.poly(trace)
         for row in range(self.t_ver):
             for col in range(self.t_hor):
-                dist = compute_orthodromic_distance(trace, Tiles.tile_center(self.t_ver, self.t_hor, row, col))
+                dist = compute_orthodromic_distance(trace, TileSet.tile_center(self.t_ver, self.t_hor, row, col))
                 if dist >= FOV.HOR_DIST:
                     continue
                 try:
-                    poly_rc = Tiles.tile_poly(self.t_ver, self.t_hor, row, col)
+                    poly_rc = TileSet.tile_poly(self.t_ver, self.t_hor, row, col)
                     view_ratio = poly_rc.overlap(fov_poly_trace)
                 except:
                     print(f"request error for row,col,trace={row},{col},{repr(trace)}")
