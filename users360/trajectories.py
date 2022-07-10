@@ -73,10 +73,6 @@ class Trajectories:
                     Trajectories.dataset = pickle.load(f)
         return Trajectories.dataset
 
-    def show_entropy(self):
-        px.scatter(self.df, x='user', y='entropy', color='entropy_class',
-                   symbol='entropy_class', width=600).show()
-
     def get_trajects(self, users=list[str], videos=list[str], perc=1.0):
         assert (perc <= 1.0 and perc >= 0.0)
         df = self.df
@@ -153,6 +149,10 @@ class Trajectories:
         threshold_hight = self.df['entropy'][idx_threshold_hight]
         f_threshold = lambda x: 'low' if x < threshold_medium else ('medium' if x < threshold_hight else 'hight')
         self.df['entropy_class'] = self.df['entropy'].apply(f_threshold)
+
+    def show_entropy(self, to_html=False):
+        px.scatter(self.df, x='user', y='entropy', color='entropy_class',
+                   symbol='entropy_class', width=600).show(to_html)
 
     def _create_tileset_df(self, tileset: TileSetIF, df: pd.DataFrame):
         tcols = [c for c in df.columns if c.startswith('t_')]

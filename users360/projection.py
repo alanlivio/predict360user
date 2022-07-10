@@ -129,10 +129,8 @@ class Projection():
         fig.show()
 
 
-def show_fov(trace: list, tileset=TileSet.default(), title_sufix="", to_html=False):
+def show_fov(trace, tileset=TileSet.default(), title_sufix="", to_html=False):
     assert len(trace) == 3  # cartesian
-    title = f"1_trace_{title_sufix}"
-    output_folder = pathlib.Path(__file__).parent.parent / 'output'
 
     # default Projection
     project = Projection(tileset)
@@ -153,29 +151,27 @@ def show_fov(trace: list, tileset=TileSet.default(), title_sufix="", to_html=Fal
     for t in erp_heatmap["data"]:
         fig.append_trace(t, row=1, col=2)
 
+    title = f"1_trace_{title_sufix}"
     title = f"{title} {tileset.title_with_sum_heatmaps([heatmap])}"
     if isinstance(tileset, TileSet):
         # fix given phi 0 being the north pole at Utils.cartesian_to_eulerian
         fig.update_yaxes(autorange="reversed")
     fig.update_layout(width=800, showlegend=False, title_text=title)
     if to_html:
+        output_folder = pathlib.Path(__file__).parent.parent / 'output'
         plotly.offline.plot(fig, filename=f'{output_folder}/{title}.html', auto_open=False)
     else:
         fig.show()
 
 
 def show_trajects(df: pd.DataFrame, tileset=TileSet.default(), title_sufix="", to_html=False):
-    trajects = df.loc[:, df.columns.str.startswith('t_')].to_numpy()
-    print("ProjectTrajectories.shape is " + str(df.shape))
-    title = f"{str(df.shape[0])}_trajcectories_{title_sufix}"
-    output_folder = pathlib.Path(__file__).parent.parent / 'output'
-
     # default Projection
     project = Projection(tileset)
     data = project.data
 
     # erp heatmap
     heatmaps = []
+    trajects = df.loc[:, df.columns.str.startswith('t_')].to_numpy()
     for traject in trajects:
         for trace in traject:
             heatmaps.append(tileset.request(trace)[0])
@@ -202,12 +198,14 @@ def show_trajects(df: pd.DataFrame, tileset=TileSet.default(), title_sufix="", t
         fig.append_trace(trace, row=1, col=1)
     for trace in erp_heatmap["data"]:
         fig.append_trace(trace, row=1, col=2)
+    title = f"{str(df.shape[0])}_trajcectories_{title_sufix}"
     title = f"{title} {tileset.title_with_sum_heatmaps(heatmaps)}"
     if isinstance(tileset, TileSet):
         # fix given phi 0 being the north pole at Utils.cartesian_to_eulerian
         fig.update_yaxes(autorange="reversed")
     fig.update_layout(width=800, showlegend=False, title_text=title)
     if to_html:
+        output_folder = pathlib.Path(__file__).parent.parent / 'output'
         plotly.offline.plot(fig, filename=f'{output_folder}/{title}.html', auto_open=False)
     else:
         fig.show()
