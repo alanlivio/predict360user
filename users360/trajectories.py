@@ -77,7 +77,7 @@ class Trajectories:
         px.scatter(self.df, x='user', y='entropy', color='entropy_class',
                    symbol='entropy_class', width=600).show()
 
-    def trajectories(self, users=list[str], videos=list[str], perc=1.0):
+    def get_trajects(self, users=list[str], videos=list[str], perc=1.0):
         assert (perc <= 1.0 and perc >= 0.0)
         df = self.df
         if not users:
@@ -91,13 +91,13 @@ class Trajectories:
             step = int(size / (size * perc))
             return df[::step]
 
-    def example_one_trace(self):
+    def get_one_trace(self):
         return self.df.iloc[0]['t_0.00']
 
-    def example_one_trajectory(self):
+    def get_one_traject(self):
         return self.df.head(1)
 
-    def example_one_video_trajectories(self):
+    def get_one_video_trajects(self):
         return self.df.loc[self.df.video == ONE_VIDEO]
 
     # def traces_video_poles(self, users=[], video=ONE_VIDEO):

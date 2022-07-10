@@ -3,21 +3,16 @@ import unittest
 
 
 class TestProjection(unittest.TestCase):
+    def test_projection(self):
+        ploj = Projection()
+        ploj.add_polygon_from_trace([1, 0, 0])
+        ploj.add_polygon_as_row_col_tile(4, 6, 0, 0)
+
+        ploj = Projection()
+        ploj.add_polygon_from_trace([1, 0, 0])
+        ploj.add_polygon_as_points(TileSet.tile_points(4, 6, 0, 0))
+    
     def test_fov_at_axis(self):
         traces = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]]
         for trace in traces:
-            onevp = ProjectFOV(trace)
-            self.assertIsNotNone(onevp)
-            onevp.show(to_html=True)
-            onevp = ProjectFOV(trace, TileSetVoro.default())
-            self.assertIsNotNone(onevp)
-            onevp.show(to_html=True)
-
-    def test_polygon(self):
-        plot = ProjectPolys()
-        plot.add_polygon_from_trace([1, 0, 0])
-        plot.add_polygon_as_row_col_tile(4, 6, 0, 0)
-
-        plot = ProjectPolys()
-        plot.add_polygon_from_trace([1, 0, 0])
-        plot.add_polygon_as_points(TileSet.tile_points(4, 6, 0, 0))
+            show_fov(trace, to_html=True)
