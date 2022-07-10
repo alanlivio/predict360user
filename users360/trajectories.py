@@ -12,30 +12,21 @@ import scipy.stats
 import pandas as pd
 from .tileset import *
 from .tileset_voro import *
+import swifter
 
 ONE_VIDEO = '10_Cows'
 np.set_printoptions(suppress=True)
 
 
 class Trajectories:
-    dataset = None
-    dataset_pickle = pathlib.Path(__file__).parent.parent / 'output/david.pickle'
+    df = pd.DataFrame()
     instance = None
     instance_pickle = pathlib.Path(__file__).parent.parent / 'output/singleton.pickle'
 
-    def __init__(self, dataset={}):
-        if not dataset:
-            # df
-            self.dataset = self._load_dataset()
-            # -- https://stackoverflow.com/questions/13575090/construct-pandas-dataframe-from-items-in-nested-dictionary
-            data = {(f'david_{user}', video): pd.Series({
-                f"t_{time_trace[0]:.2f}": time_trace[1:]  # time : trace_xyz
-                for time_trace in self.dataset[user][video]})
-                for user in self.dataset.keys()
-                for video in self.dataset[user].keys()}
-            self.df = pd.DataFrame.from_dict(data, dtype=object, orient='index')
-            self.df.index.names = ['user', 'video']
-            self.df.reset_index(inplace=True)
+    def __init__(self):
+        if self.df.empty:
+            print('loading Trajectories from head_motion_prediction')
+            self._load_dataset()
 
     @classmethod
     def dump(cls):
@@ -47,31 +38,49 @@ class Trajectories:
         if cls.instance is None:
             if exists(cls.instance_pickle):
                 with open(cls.instance_pickle, 'rb') as f:
-                    print(f"Trajectories from {cls.instance_pickle}")
+                    print(f"loading Trajectories from {cls.instance_pickle}")
                     cls.instance = pickle.load(f)
             else:
                 cls.instance = Trajectories()
         return cls.instance
 
-    def _load_dataset(self):
-        if Trajectories.dataset is None:
-            if not exists(Trajectories.dataset_pickle):
-                project_path = "head_motion_prediction"
-                cwd = os.getcwd()
-                if os.path.basename(cwd) != project_path:
-                    print(f"Trajectories loads {Trajectories.dataset_pickle}")
-                    os.chdir(pathlib.Path(__file__).parent.parent /
-                             'head_motion_prediction')
-                    from head_motion_prediction.David_MMSys_18 import Read_Dataset as david
-                    Trajectories.dataset = david.load_sampled_dataset()
-                    os.chdir(cwd)
-                    with open(Trajectories.dataset_pickle, 'wb') as f:
-                        pickle.dump(Trajectories.dataset, f)
-            else:
-                print(f"Trajectories loads {Trajectories.dataset_pickle}")
-                with open(Trajectories.dataset_pickle, 'rb') as f:
-                    Trajectories.dataset = pickle.load(f)
-        return Trajectories.dataset
+    def _load_dataset(self) -> pd.DataFrame:
+        # save cwd and move to head_motion_prediction
+        project_path = "head_motion_prediction"
+        cwd = os.getcwd()
+        if os.path.basename(cwd) != project_path:
+            os.chdir(pathlib.Path(__file__).parent.parent / 'head_motion_prediction')
+
+        # create df for each dataset
+        from head_motion_prediction.David_MMSys_18 import Read_Dataset as david
+        from head_motion_prediction.Fan_NOSSDAV_17 import Read_Dataset as fan
+        from head_motion_prediction.Nguyen_MM_18 import Read_Dataset as nguyen
+        from head_motion_prediction.Xu_CVPR_18 import Read_Dataset as xucvpr
+        from head_motion_prediction.Xu_PAMI_18 import Read_Dataset as xupami
+        names = ['David_MMSys_18', 'Fan_NOSSDAV_17', 'Nguyen_MM_18', 'Xu_CVPR_18', 'Xu_PAMI_18']
+        sizes = [1083, 300, 432, 6654, 4408]
+        pkgs = [david, fan, nguyen, xucvpr, xupami][:1]
+        idxs = range(len(pkgs))
+        def _df_xyz(idx, n_traces=100) -> pd.DataFrame:
+            # create sampled
+            if len(os.listdir(pkgs[idx].OUTPUT_FOLDER)) < 2:
+                pkgs[idx].create_and_store_sampled_dataset()
+            dataset = pkgs[idx].load_sampled_dataset()
+            # df with (dataset, user, video, times, traces)
+            data = [(names[idx],
+                     user,
+                     video,
+                     np.around(dataset[user][video][:n_traces, 0], decimals=2),
+                     dataset[user][video][:n_traces, 1:]
+                     ) for user in dataset.keys() for video in dataset[user].keys()]
+            tmpdf = pd.DataFrame(data, columns=['dataset', 'user', 'video', 'times', 'traces'])
+            # size check
+            assert(tmpdf.dataset.value_counts()[names[idx]] == sizes[idx])
+            return tmpdf
+        self.df = pd.concat(map(_df_xyz, idxs), ignore_index=True)
+
+        # back to cwd
+        os.chdir(cwd)
 
     def get_trajects(self, users=list[str], videos=list[str], perc=1.0):
         assert (perc <= 1.0 and perc >= 0.0)
@@ -88,7 +97,7 @@ class Trajectories:
             return df[::step]
 
     def get_one_trace(self):
-        return self.df.iloc[0]['t_0.00']
+        return self.df.iloc[0]['traces'][0]
 
     def get_one_traject(self):
         return self.df.head(1)
@@ -126,19 +135,20 @@ class Trajectories:
     #                 count += 1
     #     return traces[:count]
 
-    def calc_entropy(self, tileset=TileSet.default()):
-        tcols = [col for col in self.df.columns if col.startswith('t_')]
-        hcols = [col.replace('t_', 'hm_') for col in tcols]
+    def calc_hmps(self, tileset=TileSet.default()):
+        if (len(self.df) > 2000):
+            print('calc_hmps can last >10m when >2000 trajectories')
+        f_request = lambda trace: tileset.request(trace)
+        f_traces = lambda traces: np.apply_along_axis(f_request, 1, traces)
+        self.df['hmps'] = pd.Series(self.df['traces'].swifter.apply(f_traces))
 
-        # calc heatmaps
-        f_request_hmp = lambda trace: tileset.request(trace)[0]
-        dftmp = self.df[tcols].applymap(f_request_hmp)
-        dftmp.columns = hcols
-        self.df = pd.concat([self.df, dftmp], axis=1)
+    def calc_entropy(self):
+        if 'hmps' not in self.df.columns:
+            self.calc_hmps()
 
         # calc entropy
         f_entropy = lambda x: scipy.stats.entropy(np.sum(x, axis=0).reshape((-1)))
-        self.df['entropy'] = self.df[hcols].apply(f_entropy, axis=1)
+        self.df['entropy'] = self.df['hmps'].swifter.apply(f_entropy, axis=1)
 
         # calc class
         p_sort = self.df['entropy'].argsort()
@@ -159,6 +169,7 @@ class Trajectories:
         def f_request(trace):
             heatmap, vp_quality, area_out = tileset.request(trace, return_metrics=True)
             return [heatmap, int(np.sum(heatmap)), vp_quality, area_out]
+
         tmpdf = df[tcols].applymap(f_request)
         def f_col(col):
             idxs = [f"{metric}_{col.replace('t_','')}" for metric in ['hm', 'reqs', 'lost', 'qlt']]

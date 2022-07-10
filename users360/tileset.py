@@ -22,7 +22,7 @@ class TileSetIF(ABC):
     shape: tuple[int, int]
 
     @abstractmethod
-    def request(self, trace, return_metrics=False) -> tuple[NDArray, float, list]:
+    def request(self, trace, return_metrics=False) -> NDArray | tuple[NDArray, float, list]:
         pass
 
     @property
@@ -156,7 +156,10 @@ class TileSet(TileSetIF):
                             continue
                         areas_out.append(1 - view_ratio)
                         vp_quality += fov_poly_trace.overlap(poly_rc)
-        return heatmap, vp_quality, np.sum(areas_out)
+        if (return_metrics):
+            return heatmap, vp_quality, np.sum(areas_out)
+        else:
+            return heatmap
 
     def _request_min_cover(self, trace: NDArray, required_cover: float, return_metrics):
         heatmap = np.zeros((self.t_ver, self.t_hor), dtype=np.int32)
@@ -179,4 +182,7 @@ class TileSet(TileSetIF):
                     if (return_metrics):
                         areas_out.append(1 - view_ratio)
                         vp_quality += fov_poly_trace.overlap(poly_rc)
-        return heatmap, vp_quality, np.sum(areas_out)
+        if (return_metrics):
+            return heatmap, vp_quality, np.sum(areas_out)
+        else:
+            return heatmap

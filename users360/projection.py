@@ -142,7 +142,7 @@ def show_fov(trace, tileset=TileSet.default(), title_sufix="", to_html=False):
     for t in project.data:
         fig.append_trace(t, row=1, col=1)
     
-    heatmap, _, _ = tileset.request(trace)
+    heatmap = tileset.request(trace)[0]
     if isinstance(tileset, TileSetVoro):
         heatmap = np.reshape(heatmap, tileset.shape)
     erp_heatmap = px.imshow(heatmap, text_auto=True,
@@ -171,7 +171,7 @@ def show_trajects(df: pd.DataFrame, tileset=TileSet.default(), title_sufix="", t
 
     # erp heatmap
     heatmaps = []
-    trajects = df.loc[:, df.columns.str.startswith('t_')].to_numpy()
+    trajects = df['traces'].to_numpy()
     for traject in trajects:
         for trace in traject:
             heatmaps.append(tileset.request(trace)[0])

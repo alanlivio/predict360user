@@ -1,15 +1,11 @@
 # healpy # exp_healpix.ipynb
-argparse
 jupyter
-matplotlib
-mpl-toolkits.clifford
-nbformat
 numpy
-opencv-python
 pandas
 pickle5
 plotly
 pyquaternion
 scipy
 sklearn
-spherical_geometry
+spherical_geometry # voronoi
+swifter # multiprocess

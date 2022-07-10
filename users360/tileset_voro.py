@@ -103,7 +103,10 @@ class TileSetVoro(TileSetIF):
                     view_ratio = tile_poly.overlap(fov_poly_trace)
                     areas_out.append(1 - view_ratio)
                     vp_quality += fov_poly_trace.overlap(tile_poly)
-        return heatmap, vp_quality, np.sum(areas_out)
+        if (return_metrics):
+            return heatmap, vp_quality, np.sum(areas_out)
+        else:
+            return heatmap
 
     def _request_min_cover(self, trace, required_cover: float, return_metrics):
         areas_out = []
@@ -121,4 +124,7 @@ class TileSetVoro(TileSetIF):
                 if(return_metrics):
                     areas_out.append(1 - view_ratio)
                     vp_quality += fov_poly_trace.overlap(tile_poly)
-        return heatmap, vp_quality, np.sum(areas_out)
+        if (return_metrics):
+            return heatmap, vp_quality, np.sum(areas_out)
+        else:
+            return heatmap
