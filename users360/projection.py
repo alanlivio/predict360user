@@ -165,41 +165,36 @@ def show_fov(trace, tileset=TileSet.default(), title_sufix="", to_html=False):
 
 
 def show_trajects(df: pd.DataFrame, tileset=TileSet.default(), title_sufix="", to_html=False):
+    
+    # subplot two figures https://stackoverflow.com/questions/67291178/how-to-create-subplots-using-plotly-express
+    fig = make_subplots(rows=1, cols=2, specs=[[{"type": "surface"}, {"type": "image"}]])
+    
     # default Projection
     project = Projection(tileset)
     data = project.data
-
-    # erp heatmap
-    heatmaps = []
-    trajects = df['traces'].to_numpy()
-    for traject in trajects:
-        for trace in traject:
-            heatmaps.append(tileset.request(trace)[0])
-        scatter = go.Scatter3d(
-            x=[trace[0] for trace in traject],
-            y=[trace[1] for trace in traject],
-            z=[trace[2] for trace in traject],
-            text=[np.sum(heatmap) for heatmap in heatmaps[-len(traject):]],
-            hovertemplate="<b>requested tileset=%{text}</b>",
+    
+    # add traces to row=1,col=1
+    def f_traces (traces):
+        scatter = go.Scatter3d(x=traces[:,0], y=traces[:,1],z=traces[:,2],
             mode='lines', line={'width': 3, 'color': 'blue'}, showlegend=False)
         data.append(scatter)
-
-    # erp heatmap image
-    heatmap_sum = np.sum(heatmaps, axis=0)
-    if isinstance(tileset, TileSetVoro):
-        heatmap_sum = np.reshape(heatmap_sum, tileset.shape)
-    erp_heatmap = px.imshow(heatmap_sum, text_auto=True,
-                            x=[str(x) for x in range(1, heatmap_sum.shape[1] + 1)],
-                            y=[str(y) for y in range(1, heatmap_sum.shape[0] + 1)])
-
-    # subplot two figures https://stackoverflow.com/questions/67291178/how-to-create-subplots-using-plotly-express
-    fig = make_subplots(rows=1, cols=2, specs=[[{"type": "surface"}, {"type": "image"}]])
+    df['traces'].apply(f_traces)
     for trace in data:
         fig.append_trace(trace, row=1, col=1)
-    for trace in erp_heatmap["data"]:
-        fig.append_trace(trace, row=1, col=2)
-    title = f"{str(df.shape[0])}_trajcectories_{title_sufix}"
-    title = f"{title} {tileset.title_with_sum_heatmaps(heatmaps)}"
+    
+    # add erp_heatmap row=1, col=2
+    hmp_sums = df['hmps'].apply(lambda traces: np.sum(traces, axis=0))
+    if isinstance(tileset, TileSetVoro):
+        hmp_sums = np.reshape(hmp_sums, tileset.shape)
+    hmp_final = np.sum(hmp_sums, axis=0)
+    erp_heatmap = px.imshow(hmp_final, text_auto=True,
+                        x=[str(x) for x in range(1, hmp_final.shape[1] + 1)],
+                        y=[str(y) for y in range(1, hmp_final.shape[0] + 1)])
+    for data in erp_heatmap["data"]:
+        fig.append_trace(data, row=1, col=2)
+    
+    hmp_total =  np.sum(np.sum(hmp_final, axis=0))
+    title = f"{str(df.shape[0])}_trajcectories_{hmp_total}_reqs"
     if isinstance(tileset, TileSet):
         # fix given phi 0 being the north pole at Utils.cartesian_to_eulerian
         fig.update_yaxes(autorange="reversed")
