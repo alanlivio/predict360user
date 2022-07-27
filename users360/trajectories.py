@@ -45,7 +45,7 @@ class Trajectories:
                 cls.instance = Trajectories()
         return cls.instance
 
-    def _load_dataset(self) -> pd.DataFrame:
+    def _load_dataset(self):
         # save cwd and move to head_motion_prediction
         project_path = "head_motion_prediction"
         cwd = os.getcwd()
@@ -80,6 +80,8 @@ class Trajectories:
             return tmpdf
         self.df = pd.concat(map(_df_xyz, idxs), ignore_index=True)
         self.df.insert(0, 'user', self.df.groupby(['ds','ds_user']).ngroup())
+        self.df_users = pd.DataFrame()
+        self.df_users['user'] = self.df.groupby(['user']).ngroup().unique()
 
         # back to cwd
         os.chdir(cwd)
@@ -103,9 +105,6 @@ class Trajectories:
 
     def get_one_traject(self):
         return self.df.head(1)
-
-    def get_one_video_trajects(self):
-        return self.df.loc[self.df.video == ONE_VIDEO]
 
     def calc_poles_prc(self):
         # calc entropy
@@ -157,6 +156,30 @@ class Trajectories:
         px.scatter(self.df, x='user', y='entropy', color='entropy_class',
                    color_discrete_map=class_color_map, hover_data=[self.df.index], title='trajects entropy', width=600).show()
 
+    def calc_entropy_users(self):
+        if 'hmps' not in self.df.columns:
+            self.calc_hmps()
+
+        # calc entropy
+        def f_entropy_user(trajects):
+            hmps_sum = np.sum(np.sum(trajects['hmps'].to_numpy(), axis=0), axis=0)
+            return scipy.stats.entropy(hmps_sum.reshape((-1)))
+        self.df_users['entropy'] = self.df.groupby(['user']).apply(f_entropy_user)
+
+        # calc class
+        idxs_sort = self.df_users['entropy'].argsort()
+        trajects_len = len(self.df_users['entropy'])
+        idx_threshold_medium = idxs_sort[int(trajects_len * .60)]
+        idx_threshold_hight = idxs_sort[int(trajects_len * .90)]
+        threshold_medium = self.df_users['entropy'][idx_threshold_medium]
+        threshold_hight = self.df_users['entropy'][idx_threshold_hight]
+        f_threshold = lambda x: 'low' if x < threshold_medium else ('medium' if x < threshold_hight else 'hight')
+        self.df_users['entropy_class'] = self.df_users['entropy'].apply(f_threshold)
+
+    def show_entropy_users(self):
+        assert('entropy' in self.df_users.columns and 'entropy_class' in self.df_users.columns)
+        px.scatter(self.df_users, x='user', y='entropy', color='entropy_class',
+                   color_discrete_map=class_color_map, title='users entropy', width=600).show()
 
     def _create_tileset_df(self, tileset: TileSetIF, df: pd.DataFrame):
         tcols = [c for c in df.columns if c.startswith('t_')]
