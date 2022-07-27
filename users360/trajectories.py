@@ -16,6 +16,7 @@ import swifter
 
 ONE_VIDEO = '10_Cows'
 np.set_printoptions(suppress=True)
+class_color_map = {"hight": "red", "medium": "green", "low": "blue"}
 
 
 class Trajectories:
@@ -105,42 +106,32 @@ class Trajectories:
     def get_one_video_trajects(self):
         return self.df.loc[self.df.video == ONE_VIDEO]
 
-    # def traces_video_poles(self, users=[], video=ONE_VIDEO):
-    #     count = 0
-    #     if not users:
-    #         users = self.dataset.keys()
-    #     n_traces = len(self.dataset[ONE_USER][video][:, 1:])
-    #     traces = np.zeros((len(users) * n_traces, 3), dtype=float)
-    #     for user in users:
-    #         for trace in self.dataset[user][video][:, 1:]:
-    #             if abs(trace[2]) > 0.7:  # z-axis
-    #                 traces.itemset((count, 0), trace[0])
-    #                 traces.itemset((count, 1), trace[1])
-    #                 traces.itemset((count, 2), trace[2])
-    #                 count += 1
-    #     return traces[:count]
+    def calc_poles_prc(self):
+        # calc entropy
+        f_traject = lambda traces: np.count_nonzero(abs(traces[:, 2]) > 0.7) / len(traces)
+        self.df['poles_prc'] = pd.Series(self.df['traces'].apply(f_traject))
 
-    # def traces_video_equator(self, users=[], video=ONE_VIDEO):
-    #     count = 0
-    #     if not users:
-    #         users = self.dataset.keys()
-    #     n_traces = len(self.dataset[ONE_USER][video][:, 1:])
-    #     traces = np.zeros((len(users) * n_traces, 3), dtype=float)
-    #     for user in users:
-    #         for trace in self.dataset[user][video][:, 1:]:
-    #             if abs(trace[2]) < 0.7:  # z-axis
-    #                 traces.itemset((count, 0), trace[0])
-    #                 traces.itemset((count, 1), trace[1])
-    #                 traces.itemset((count, 2), trace[2])
-    #                 count += 1
-    #     return traces[:count]
+        idxs_sort = self.df['poles_prc'].argsort()
+        trajects_len = len(self.df['poles_prc'])
+        idx_threshold_medium = idxs_sort[int(trajects_len * .60)]
+        idx_threshold_hight = idxs_sort[int(trajects_len * .90)]
+        threshold_medium = self.df['poles_prc'][idx_threshold_medium]
+        threshold_hight = self.df['poles_prc'][idx_threshold_hight]
+        f_threshold = lambda x: 'low' if x < threshold_medium else ('medium' if x < threshold_hight else 'hight')
+        self.df['poles_class'] = self.df['poles_prc'].apply(f_threshold)
+
+    def show_poles_prc(self):
+        assert('poles_prc' in self.df.columns)
+        px.scatter(self.df, x='user', y='poles_prc', color='poles_class',
+                   color_discrete_map=class_color_map,
+                   hover_data=[self.df.index], title='trajects poles_perc', width=600).show()
 
     def calc_hmps(self, tileset=TileSet.default()):
         if (len(self.df) > 2000):
             print('calc_hmps can last >10m when >2000 trajectories')
-        f_request = lambda trace: tileset.request(trace)
-        f_traces = lambda traces: np.apply_along_axis(f_request, 1, traces)
-        self.df['hmps'] = pd.Series(self.df['traces'].swifter.apply(f_traces))
+        f_trace = lambda trace: tileset.request(trace)
+        f_traject = lambda traces: np.apply_along_axis(f_trace, 1, traces)
+        self.df['hmps'] = pd.Series(self.df['traces'].swifter.apply(f_traject))
 
     def calc_entropy(self):
         if 'hmps' not in self.df.columns:
@@ -151,26 +142,27 @@ class Trajectories:
         self.df['entropy'] = self.df['hmps'].swifter.apply(f_entropy, axis=1)
 
         # calc class
-        p_sort = self.df['entropy'].argsort()
-        users_len = len(self.df['entropy'])
-        idx_threshold_medium = p_sort[int(users_len * .60)]
-        idx_threshold_hight = p_sort[int(users_len * .80)]
+        idxs_sort = self.df['entropy'].argsort()
+        trajects_len = len(self.df['entropy'])
+        idx_threshold_medium = idxs_sort[int(trajects_len * .60)]
+        idx_threshold_hight = idxs_sort[int(trajects_len * .90)]
         threshold_medium = self.df['entropy'][idx_threshold_medium]
         threshold_hight = self.df['entropy'][idx_threshold_hight]
         f_threshold = lambda x: 'low' if x < threshold_medium else ('medium' if x < threshold_hight else 'hight')
         self.df['entropy_class'] = self.df['entropy'].apply(f_threshold)
 
-    def show_entropy(self, to_html=False):
+    def show_entropy(self):
+        assert('entropy' in self.df.columns)
         px.scatter(self.df, x='user', y='entropy', color='entropy_class',
-                   symbol='entropy_class', width=600).show(to_html)
+                   color_discrete_map=class_color_map, hover_data=[self.df.index], title='trajects entropy', width=600).show()
 
     def _create_tileset_df(self, tileset: TileSetIF, df: pd.DataFrame):
         tcols = [c for c in df.columns if c.startswith('t_')]
-        def f_request(trace):
+        def f_trace(trace):
             heatmap, vp_quality, area_out = tileset.request(trace, return_metrics=True)
             return [heatmap, int(np.sum(heatmap)), vp_quality, area_out]
 
-        tmpdf = df[tcols].applymap(f_request)
+        tmpdf = df[tcols].applymap(f_trace)
         def f_col(col):
             idxs = [f"{metric}_{col.replace('t_','')}" for metric in ['hm', 'reqs', 'lost', 'qlt']]
             f_expand = lambda x: pd.Series(x, index=idxs)

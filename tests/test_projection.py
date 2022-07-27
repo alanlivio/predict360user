@@ -20,3 +20,9 @@ class TestProjection(unittest.TestCase):
     def test_trajects(self):
         show_trajects(Trajectories.singleton().get_one_traject(), to_html=True)
         show_trajects(Trajectories.singleton().get_one_video_trajects(), to_html=True)
+    
+    def test_entropy(self):
+        Trajectories.singleton().calc_entropy()
+        
+    def test_poles(self):
+        Trajectories.singleton().calc_poles_prc()
