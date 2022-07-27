@@ -58,27 +58,28 @@ class Trajectories:
         from head_motion_prediction.Nguyen_MM_18 import Read_Dataset as nguyen
         from head_motion_prediction.Xu_CVPR_18 import Read_Dataset as xucvpr
         from head_motion_prediction.Xu_PAMI_18 import Read_Dataset as xupami
-        names = ['David_MMSys_18', 'Fan_NOSSDAV_17', 'Nguyen_MM_18', 'Xu_CVPR_18', 'Xu_PAMI_18']
-        sizes = [1083, 300, 432, 6654, 4408]
-        pkgs = [david, fan, nguyen, xucvpr, xupami][:1]
-        idxs = range(len(pkgs))
+        ds_names = ['David_MMSys_18', 'Fan_NOSSDAV_17', 'Nguyen_MM_18', 'Xu_CVPR_18', 'Xu_PAMI_18']
+        ds_sizes = [1083, 300, 432, 6654, 4408]
+        ds_pkgs = [david, fan, nguyen, xucvpr, xupami][:1]
+        idxs = range(len(ds_pkgs))
         def _df_xyz(idx, n_traces=100) -> pd.DataFrame:
             # create sampled
-            if len(os.listdir(pkgs[idx].OUTPUT_FOLDER)) < 2:
-                pkgs[idx].create_and_store_sampled_dataset()
-            dataset = pkgs[idx].load_sampled_dataset()
+            if len(os.listdir(ds_pkgs[idx].OUTPUT_FOLDER)) < 2:
+                ds_pkgs[idx].create_and_store_sampled_dataset()
+            dataset = ds_pkgs[idx].load_sampled_dataset()
             # df with (dataset, user, video, times, traces)
-            data = [(names[idx],
+            data = [(ds_names[idx],
                      user,
                      video,
                      np.around(dataset[user][video][:n_traces, 0], decimals=2),
                      dataset[user][video][:n_traces, 1:]
                      ) for user in dataset.keys() for video in dataset[user].keys()]
-            tmpdf = pd.DataFrame(data, columns=['dataset', 'user', 'video', 'times', 'traces'])
+            tmpdf = pd.DataFrame(data, columns=['ds', 'ds_user', 'ds_video', 'times', 'traces'])
             # size check
-            assert(tmpdf.dataset.value_counts()[names[idx]] == sizes[idx])
+            assert(tmpdf.dataset.value_counts()[ds_names[idx]] == ds_sizes[idx])
             return tmpdf
         self.df = pd.concat(map(_df_xyz, idxs), ignore_index=True)
+        self.df.insert(0, 'user', self.df.groupby(['ds','ds_user']).ngroup())
 
         # back to cwd
         os.chdir(cwd)
@@ -155,6 +156,7 @@ class Trajectories:
         assert('entropy' in self.df.columns)
         px.scatter(self.df, x='user', y='entropy', color='entropy_class',
                    color_discrete_map=class_color_map, hover_data=[self.df.index], title='trajects entropy', width=600).show()
+
 
     def _create_tileset_df(self, tileset: TileSetIF, df: pd.DataFrame):
         tcols = [c for c in df.columns if c.startswith('t_')]
