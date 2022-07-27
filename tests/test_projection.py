@@ -16,3 +16,7 @@ class TestProjection(unittest.TestCase):
         traces = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]]
         for trace in traces:
             show_fov(trace, to_html=True)
+    
+    def test_trajects(self):
+        show_trajects(Trajectories.singleton().get_one_traject(), to_html=True)
+        show_trajects(Trajectories.singleton().get_one_video_trajects(), to_html=True)

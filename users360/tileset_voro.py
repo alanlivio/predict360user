@@ -70,13 +70,13 @@ class TileSetVoro(TileSetIF):
         prefix = f'voro{len(self.voro.points)}'
         match self.cover:
             case TileCover.ANY:
-                return f'{prefix}_any'
+                return f'{prefix}_cov_any'
             case TileCover.CENTER:
-                return f'{prefix}_center'
+                return f'{prefix}_cov_ctr'
             case TileCover.ONLY20PERC:
-                return f'{prefix}_20prt'
+                return f'{prefix}_cov_20p'
             case TileCover.ONLY33PERC:
-                return f'{prefix}_33prt'
+                return f'{prefix}_cov_33p'
 
     def request(self, trace, return_metrics=False):
         match self.cover:
