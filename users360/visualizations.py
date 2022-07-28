@@ -44,6 +44,7 @@ def show_fov(trace, tileset=TileSet.default(), to_html=False):
 
 
 def show_trajects(df: pd.DataFrame, tileset=TileSet.default(), to_html=False):
+    assert(not df.empty)
     assert('hmps' in df)
 
     # subplot two figures https://stackoverflow.com/questions/67291178/how-to-create-subplots-using-plotly-express
@@ -98,9 +99,9 @@ def show_poles_prc():
 
 def show_entropy():
     df = Data.singleton().df_trajects
+    assert(not df.empty)
     if not 'entropy' in df.columns:
         calc_entropy()
-
     px.scatter(df, x='user', y='entropy', color='entropy_class',
                color_discrete_map=class_color_map, hover_data=[df.index],
                title='trajects entropy', width=600).show()
@@ -108,6 +109,7 @@ def show_entropy():
 
 def show_entropy_users():
     df_users = Data.singleton().df_users
+    assert(not df_users.empty)
     if not 'entropy' in df_users.columns:
         calc_entropy_users()
     assert('entropy_class' in df_users.columns)
@@ -116,18 +118,33 @@ def show_entropy_users():
 
 
 def show_tileset_metrics():
-    assert(Data.singleton().df_tileset_metrics)
     df_tileset_metrics = Data.singleton().df_tileset_metrics
+    assert(not df_tileset_metrics.empty)
+    
+    # calc tileset metrics
+    f_traject_reqs = lambda traces: np.sum(traces[:, 0])
+    f_traject_qlt = lambda traces: np.mean(traces[:, 1])
+    f_traject_lost = lambda traces: np.mean(traces[:, 2])
+    data = {'tileset': [], 'avg_reqs': [], 'avg_qlt': [], 'avg_lost': []}
+    for name in df_tileset_metrics.columns:
+        dfts = df_tileset_metrics[name]
+        data['tileset'].append(name)
+        data['avg_reqs'].append(dfts.apply(f_traject_reqs).mean())
+        data['avg_qlt'].append(dfts.apply(f_traject_qlt).mean())
+        data['avg_lost'].append(dfts.apply(f_traject_lost).mean())
+        data['score'] = data['avg_qlt'][-1] / data['avg_lost'][-1]
+    df = pd.DataFrame(data)
+
     fig = make_subplots(rows=1, cols=4, subplot_titles=("avg_reqs", "avg_lost",
                         "avg_qlt", "score=avg_qlt/avg_lost"), shared_yaxes=True)
-    y = df_tileset_metrics['scheme']
-    trace = go.Bar(y=y, x=df_tileset_metrics['avg_reqs'], orientation='h', width=0.3)
+    y = df_tileset_metrics.columns
+    trace = go.Bar(y=y, x=df['avg_reqs'], orientation='h', width=0.3)
     fig.add_trace(trace, row=1, col=1)
-    trace = go.Bar(y=y, x=df_tileset_metrics['avg_lost'], orientation='h', width=0.3)
+    trace = go.Bar(y=y, x=df['avg_lost'], orientation='h', width=0.3)
     fig.add_trace(trace, row=1, col=2)
-    trace = go.Bar(y=y, x=df_tileset_metrics['avg_qlt'], orientation='h', width=0.3)
+    trace = go.Bar(y=y, x=df['avg_qlt'], orientation='h', width=0.3)
     fig.add_trace(trace, row=1, col=3)
-    trace = go.Bar(y=y, x=df_tileset_metrics['score'], orientation='h', width=0.3)
+    trace = go.Bar(y=y, x=df['score'], orientation='h', width=0.3)
     fig.add_trace(trace, row=1, col=4)
     fig.update_layout(width=1500, showlegend=False, barmode="stack",)
     fig.show()

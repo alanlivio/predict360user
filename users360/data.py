@@ -15,7 +15,6 @@ class Data:
     df_trajects = pd.DataFrame()
     df_users = pd.DataFrame()
     df_tileset_metrics = pd.DataFrame()
-    df_tileset_dict = dict()
 
     # singleton
     _instance = None
@@ -125,8 +124,6 @@ def calc_poles_prc():
 
 def calc_hmps(tileset=TileSet.default()):
     df = Data.singleton().df_trajects
-    if (len(df) > 2000):
-        print('calc_hmps can last >10m when >2000 trajectories')
     f_trace = lambda trace: tileset.request(trace)
     f_traject = lambda traces: np.apply_along_axis(f_trace, 1, traces)
     df['hmps'] = pd.Series(df['traces'].swifter.apply(f_traject))
@@ -159,7 +156,6 @@ def calc_entropy_users():
 
     # calc entropy
     def f_entropy_user(trajects):
-        df = Data.singleton().df_trajects
         hmps_sum = np.sum(np.sum(trajects['hmps'].to_numpy(), axis=0), axis=0)
         return scipy.stats.entropy(hmps_sum.reshape((-1)))
     df_users['entropy'] = df.groupby(['user']).apply(f_entropy_user)
@@ -175,34 +171,21 @@ def calc_entropy_users():
     df_users['entropy_class'] = df_users['entropy'].apply(f_threshold)
 
 
-def calc_tileset_metrics(tileset_l: list[TileSetIF], df: pd.DataFrame):
-    df = Data.singleton().df_trajects
-
-    # calc tileset reqs
-    def _create_tileset_df(tileset: TileSetIF, df: pd.DataFrame):
+def calc_tileset_metrics(tileset_l: list[TileSetIF], n_trajects=None):
+    assert(not Data.singleton().df_trajects.empty)
+    if n_trajects:
+        df = Data.singleton().df_trajects[:n_trajects]
+    else:
         df = Data.singleton().df_trajects
-        tcols = [c for c in df.columns if c.startswith('t_')]
+    
+    def create_tsdf(ts_idx):
+        tileset = tileset_l[ts_idx]
         def f_trace(trace):
-            df = Data.singleton().df_trajects
             heatmap, vp_quality, area_out = tileset.request(trace, return_metrics=True)
-            return [heatmap, int(np.sum(heatmap)), vp_quality, area_out]
-
-        tmpdf = df[tcols].applymap(f_trace)
-        def f_col(col):
-            df = Data.singleton().df_trajects
-            idxs = [f"{metric}_{col.replace('t_','')}" for metric in ['hm', 'reqs', 'lost', 'qlt']]
-            f_expand = lambda x: pd.Series(x, index=idxs)
-            return tmpdf[col].apply(f_expand)
-        return pd.concat([f_col(col) for col in tcols], axis=1)
-    df_tileset_dict = {ts.title: _create_tileset_df(ts, df) for ts in tileset_l}
-
-    # calc tileset metrics
-    data = {'scheme': [], 'avg_reqs': [], 'avg_qlt': [], 'avg_lost': []}
-    for tileset in tileset_l:
-        _df = df_tileset_dict[tileset.title]
-        data['scheme'].append(tileset.title)
-        data['avg_reqs'].append(np.nanmean(_df.loc[:, _df.columns.str.endswith('reqs')]))
-        data['avg_qlt'].append(np.nanmean(_df.loc[:, _df.columns.str.endswith('qlt')]))
-        data['avg_lost'].append(np.nanmean(_df.loc[:, _df.columns.str.endswith('lost')]))
-        data['score'] = data['avg_qlt'][-1] / data['avg_lost'][-1]
-    Data.singleton().df_tileset_metrics = pd.DataFrame(data)
+            return (int(np.sum(heatmap)), vp_quality, area_out)
+        f_traject = lambda traces: np.apply_along_axis(f_trace, 1, traces)
+        tmpdf = pd.DataFrame(df['traces'].swifter.apply(f_traject))
+        tmpdf.columns = [tileset.title]
+        return tmpdf
+    df_tileset_metrics = pd.concat(map(create_tsdf, range(len(tileset_l))), axis=1)
+    Data.singleton().df_tileset_metrics = df_tileset_metrics

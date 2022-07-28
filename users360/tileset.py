@@ -60,8 +60,8 @@ class TileSet(TileSetIF):
         if cls._variations is None:
             cls._variations = [
                 TileSet(4, 6, TileCover.CENTER),
-                TileSet(4, 6, TileCover.ANY),
-                TileSet(4, 6, TileCover.ONLY20PERC),
+                # TileSet(4, 6, TileCover.ANY),
+                # TileSet(4, 6, TileCover.ONLY20PERC),
             ]
         return cls._variations
 

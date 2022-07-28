@@ -14,6 +14,6 @@ class TestData(unittest.TestCase):
     def test_poles(self):
         calc_poles_prc()
 
-    # def test_tileset_metrics(self):
-    #     Data.singleton().calc_metrics_tiles(
-    #         [*TilesVoro.variations(), *Tiles.variations()], users=['0', '1'], perc=0.05)
+    def test_tileset_metrics(self):
+        ts_l = [TileSet.default()]
+        calc_tileset_metrics(ts_l, 2)

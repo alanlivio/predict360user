@@ -57,8 +57,8 @@ class TileSetVoro(TileSetIF):
         if cls._variations is None:
             cls._variations = [
                 TileSetVoro(VORONOI_14P, TileCover.CENTER),
-                TileSetVoro(VORONOI_14P, TileCover.ANY),
-                TileSetVoro(VORONOI_14P, TileCover.ONLY20PERC),
+                # TileSetVoro(VORONOI_14P, TileCover.ANY),
+                # TileSetVoro(VORONOI_14P, TileCover.ONLY20PERC),
                 # TileSetVoro(VORONOI_24P, TileCover.CEMTER),
                 # TileSetVoro(VORONOI_24P, TileCover.ANY),
                 # TileSetVoro(VORONOI_24P, TileCover.ONLY20PERC),
