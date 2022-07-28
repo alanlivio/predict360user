@@ -1,6 +1,6 @@
 # users360
 
-Python library to perform users behaviour analysis on 360-degree videos from [Rondon datasets collection](https://gitlab.com/miguelfromeror/head-motion-prediction).
+Python library to perform user behavior analysis on 360-degree videos from [Rondon datasets collection](https://gitlab.com/miguelfromeror/head-motion-prediction).
 
 ## Examples
 

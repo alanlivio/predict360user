@@ -13,16 +13,9 @@ class TestProjection(unittest.TestCase):
         ploj.add_polygon_as_points(TileSet.tile_points(4, 6, 0, 0))
     
     def test_fov_at_axis(self):
-        traces = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]]
+        traces = [1., 0., 0.], [-1., 0., 0.], [0., 1., 0.], [0., -1., 0.], [0., 0., 1.], [0., 0., -1.]
         for trace in traces:
             show_fov(trace, to_html=True)
     
     def test_trajects(self):
-        show_trajects(Trajectories.singleton().get_one_traject(), to_html=True)
-        show_trajects(Trajectories.singleton().get_one_video_trajects(), to_html=True)
-    
-    def test_entropy(self):
-        Trajectories.singleton().calc_entropy()
-        
-    def test_poles(self):
-        Trajectories.singleton().calc_poles_prc()
+        show_trajects(Data.singleton().get_one_trace(), to_html=True)
