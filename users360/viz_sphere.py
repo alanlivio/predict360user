@@ -80,7 +80,7 @@ class VizSphere():
         self._add_points(points)
 
     def add_polygon_from_trace(self, trace):
-        points = FOV.points(trace)
+        points = fov_points(trace)
         self._add_points(points)
 
     def add_trace(self, trace):
@@ -88,7 +88,7 @@ class VizSphere():
                                       mode='markers', marker={'size': 5, 'opacity': 1.0, 'color': 'red'}))
 
     def add_vp(self, trace):
-        points_fov = FOV.points(trace)
+        points_fov = fov_points(trace)
         n = len(points_fov)
         gens = go.Scatter3d(x=points_fov[:, 0],
                             y=points_fov[:, 1],

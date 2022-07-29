@@ -2,61 +2,60 @@ from head_motion_prediction.Utils import *
 from spherical_geometry import polygon
 import numpy as np
 from numpy.typing import NDArray
+from .data import *
 
-class FOV:
+X1Y0Z0 = np.array([1, 0, 0])
+HOR_DIST = degrees_to_radian(110)
+HOR_MARGIN = degrees_to_radian(110 / 2)
+VER_MARGIN = degrees_to_radian(90 / 2)
+_fov_x1y0z0_points = None
+_fov_x1y0z0_area = None
 
-    X1Y0Z0 = np.array([1, 0, 0])
-    HOR_DIST = degrees_to_radian(110)
-    HOR_MARGIN = degrees_to_radian(110/2)
-    VER_MARGIN = degrees_to_radian(90/2)
-    _x1y0z0_poly = None
-    _x1y0z0_area = None
-    _saved_points = None
-    _saved_polys = None
 
-    @classmethod
-    @property
-    def x1y0z0_poly(cls) -> NDArray:
-        if cls._x1y0z0_poly is None:
-            x1y0z0_fov_points_euler = np.array([
-                eulerian_in_range(-FOV.HOR_MARGIN, FOV.VER_MARGIN),
-                eulerian_in_range(FOV.HOR_MARGIN, FOV.VER_MARGIN),
-                eulerian_in_range(FOV.HOR_MARGIN, -FOV.VER_MARGIN),
-                eulerian_in_range(-FOV.HOR_MARGIN, -FOV.VER_MARGIN)
-            ])
-            cls._x1y0z0_poly = np.array([
-                eulerian_to_cartesian(*x1y0z0_fov_points_euler[0]),
-                eulerian_to_cartesian(*x1y0z0_fov_points_euler[1]),
-                eulerian_to_cartesian(*x1y0z0_fov_points_euler[2]),
-                eulerian_to_cartesian(*x1y0z0_fov_points_euler[3])
-            ])
-        return cls._x1y0z0_poly
-        
-    @classmethod
-    def x1y0z0_area(cls):
-        if cls._x1y0z0_area is None:
-            cls._x1y0z0_area = polygon.SphericalPolygon(cls.x1y0z0_poly).area()
-        
-    @classmethod
-    def points(cls, trace) -> NDArray:
-        if cls._saved_points is None:
-            cls._saved_points = {}
-        if (trace[0], trace[1], trace[2]) not in cls._saved_points:
-            rotation = rotationBetweenVectors(cls.X1Y0Z0, np.array(trace))
-            points = np.array([
-                rotation.rotate(cls.x1y0z0_poly[0]),
-                rotation.rotate(cls.x1y0z0_poly[1]),
-                rotation.rotate(cls.x1y0z0_poly[2]),
-                rotation.rotate(cls.x1y0z0_poly[3]),
-            ])
-            cls._saved_points[(trace[0], trace[1], trace[2])] =  points
-        return cls._saved_points[(trace[0], trace[1], trace[2])]
+def fov_x1y0z0_points() -> NDArray:
+    global _fov_x1y0z0_points
+    if _fov_x1y0z0_points is None:
+        fov_x1y0z0_fov_points_euler = np.array([
+            eulerian_in_range(-HOR_MARGIN, VER_MARGIN),
+            eulerian_in_range(HOR_MARGIN, VER_MARGIN),
+            eulerian_in_range(HOR_MARGIN, -VER_MARGIN),
+            eulerian_in_range(-HOR_MARGIN, -VER_MARGIN)
+        ])
+        _fov_x1y0z0_points = np.array([
+            eulerian_to_cartesian(*fov_x1y0z0_fov_points_euler[0]),
+            eulerian_to_cartesian(*fov_x1y0z0_fov_points_euler[1]),
+            eulerian_to_cartesian(*fov_x1y0z0_fov_points_euler[2]),
+            eulerian_to_cartesian(*fov_x1y0z0_fov_points_euler[3])
+        ])
+    return _fov_x1y0z0_points
 
-    @classmethod
-    def poly(cls, trace) -> polygon.SphericalPolygon:
-        if cls._saved_polys is None:
-            cls._saved_polys = {}
-        if (trace[0], trace[1], trace[2]) not in cls._saved_polys:
-            points_trace = cls.points(trace)
-            cls._saved_polys[(trace[0], trace[1], trace[2])] = polygon.SphericalPolygon(points_trace)
-        return cls._saved_polys[(trace[0], trace[1], trace[2])]
+
+def fov_x1y0z0_area():
+    global _fov_x1y0z0_area
+    if _fov_x1y0z0_area is None:
+        _fov_x1y0z0_area = polygon.SphericalPolygon(fov_x1y0z0_points()).area()
+    return _fov_x1y0z0_area
+
+
+def fov_points(trace) -> NDArray:
+    if Data.singleton().fov_points is None:
+        Data.singleton().fov_points = {}
+    if (trace[0], trace[1], trace[2]) not in Data.singleton().fov_points:
+        rotation = rotationBetweenVectors(X1Y0Z0, np.array(trace))
+        points = np.array([
+            rotation.rotate(fov_x1y0z0_points()[0]),
+            rotation.rotate(fov_x1y0z0_points()[1]),
+            rotation.rotate(fov_x1y0z0_points()[2]),
+            rotation.rotate(fov_x1y0z0_points()[3]),
+        ])
+        Data.singleton().fov_points[(trace[0], trace[1], trace[2])] = points
+    return Data.singleton().fov_points[(trace[0], trace[1], trace[2])]
+
+
+def fov_poly(trace) -> polygon.SphericalPolygon:
+    if Data.singleton().fov_polys is None:
+        Data.singleton().fov_polys = {}
+    if (trace[0], trace[1], trace[2]) not in Data.singleton().fov_polys:
+        points_trace = fov_points(trace)
+        Data.singleton().fov_polys[(trace[0], trace[1], trace[2])] = polygon.SphericalPolygon(points_trace)
+    return Data.singleton().fov_polys[(trace[0], trace[1], trace[2])]

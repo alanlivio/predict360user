@@ -55,7 +55,7 @@ class TileSetVoro(TileSetIF):
                 TileSetVoro(VORONOI_14P, TileCover.CENTER),
                 TileSetVoro(VORONOI_14P, TileCover.ANY),
                 TileSetVoro(VORONOI_14P, TileCover.ONLY20PERC),
-                TileSetVoro(VORONOI_24P, TileCover.CEMTER),
+                TileSetVoro(VORONOI_24P, TileCover.CENTER),
                 TileSetVoro(VORONOI_24P, TileCover.ANY),
                 TileSetVoro(VORONOI_24P, TileCover.ONLY20PERC),
             ]
@@ -88,11 +88,11 @@ class TileSetVoro(TileSetIF):
     def _request_110radius_center(self, trace, return_metrics):
         areas_out = []
         vp_quality = 0.0
-        fov_poly_trace = FOV.poly(trace)
+        fov_poly_trace = fov_poly(trace)
         heatmap = np.zeros(len(self.voro.regions))
         for index, _ in enumerate(self.voro.regions):
             dist = compute_orthodromic_distance(trace, self.voro.points[index])
-            if dist <= FOV.HOR_MARGIN:
+            if dist <= HOR_MARGIN:
                 heatmap[index] += 1
                 if(return_metrics):
                     poly = tsv_poly(self.voro, index)
@@ -107,11 +107,11 @@ class TileSetVoro(TileSetIF):
     def _request_min_cover(self, trace, required_cover: float, return_metrics):
         areas_out = []
         vp_quality = 0.0
-        fov_poly_trace = FOV.poly(trace)
+        fov_poly_trace = fov_poly(trace)
         heatmap = np.zeros(len(self.voro.regions))
         for index, _ in enumerate(self.voro.regions):
             dist = compute_orthodromic_distance(trace, self.voro.points[index])
-            if dist >= FOV.HOR_DIST:
+            if dist >= HOR_DIST:
                 continue
             poly = tsv_poly(self.voro, index)
             view_ratio = poly.overlap(fov_poly_trace)

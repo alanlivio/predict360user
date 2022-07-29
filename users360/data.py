@@ -17,7 +17,9 @@ class Data(Savable):
     ts_polys = dict()
     ts_centers = dict()
     tsv_polys = dict()
-
+    fov_points = dict()
+    fov_polys = dict()
+    
     # singleton
     _instance = None
 

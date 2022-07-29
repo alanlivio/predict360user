@@ -138,11 +138,11 @@ class TileSet(TileSetIF):
         heatmap = np.zeros((self.t_ver, self.t_hor), dtype=np.int32)
         areas_out = []
         vp_quality = 0.0
-        fov_poly_trace = FOV.poly(trace)
+        fov_poly_trace = fov_poly(trace)
         for row in range(self.t_ver):
             for col in range(self.t_hor):
                 dist = compute_orthodromic_distance(trace, tile_center(self.t_ver, self.t_hor, row, col))
-                if dist <= FOV.HOR_MARGIN:
+                if dist <= HOR_MARGIN:
                     heatmap[row][col] = 1
                     if (return_metrics):
                         try:
@@ -162,11 +162,11 @@ class TileSet(TileSetIF):
         heatmap = np.zeros((self.t_ver, self.t_hor), dtype=np.int32)
         areas_out = []
         vp_quality = 0.0
-        fov_poly_trace = FOV.poly(trace)
+        fov_poly_trace = fov_poly(trace)
         for row in range(self.t_ver):
             for col in range(self.t_hor):
                 dist = compute_orthodromic_distance(trace, tile_center(self.t_ver, self.t_hor, row, col))
-                if dist >= FOV.HOR_DIST:
+                if dist >= HOR_DIST:
                     continue
                 try:
                     poly_rc = tile_poly(self.t_ver, self.t_hor, row, col)
