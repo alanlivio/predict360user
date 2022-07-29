@@ -4,6 +4,7 @@ import plotly.graph_objs as go
 import plotly.express as px
 from plotly.subplots import make_subplots
 import scipy.stats
+import swifter
 
 class_color_map = {"hight": "red", "medium": "green", "low": "blue"}
 
@@ -58,7 +59,7 @@ def calc_trajects_entropy():
         calc_trajects_hmps()
     # calc entropy
     f_entropy = lambda x: scipy.stats.entropy(np.sum(x, axis=0).reshape((-1)))
-    df['entropy'] = df['hmps'].swifter.apply(f_entropy, axis=1)
+    df['entropy'] = df['hmps'].swifter.apply(f_entropy)
     # calc class
     idxs_sort = df['entropy'].argsort()
     trajects_len = len(df['entropy'])
@@ -73,16 +74,13 @@ def calc_trajects_entropy():
 def calc_trajects_entropy_users():
     df = Data.singleton().df_trajects
     df_users = Data.singleton().df_users
-
     if 'hmps' not in df.columns:
         calc_trajects_hmps()
-
     # calc entropy
     def f_entropy_user(trajects):
         hmps_sum = np.sum(np.sum(trajects['hmps'].to_numpy(), axis=0), axis=0)
         return scipy.stats.entropy(hmps_sum.reshape((-1)))
     df_users['entropy'] = df.groupby(['user']).apply(f_entropy_user)
-
     # calc class
     idxs_sort = df_users['entropy'].argsort()
     trajects_len = len(df_users['entropy'])
