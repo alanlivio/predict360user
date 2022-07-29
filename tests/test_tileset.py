@@ -3,7 +3,7 @@ import unittest
 from numpy import array as array
 
 
-class TestTiles(unittest.TestCase):
+class Test(unittest.TestCase):
 
     def test_tiles_poly(self):
         # t_ver, t_hor = 6 , 4
