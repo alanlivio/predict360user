@@ -74,9 +74,21 @@ class TileSetIF(ABC):
 
     @property
     def title(self):
+        match self.cover:
+            case TileCover.ANY:
+                return f'{self.prefix}_cov_any'
+            case TileCover.CENTER:
+                return f'{self.prefix}_cov_ctr'
+            case TileCover.ONLY20PERC:
+                return f'{self.prefix}_cov_20p'
+            case TileCover.ONLY33PERC:
+                return f'{self.prefix}_cov_33p'
+
+    @property
+    def prefix(self):
         pass
 
-    def str_hmp_sum(self, heatmaps):
+    def title_with_reqs(self, heatmaps):
         reqs_sum = np.sum(np.sum(heatmaps, axis=0))
         if isinstance(self, type(TileSet.default())):
             return f"(reqs={reqs_sum})"
@@ -111,17 +123,8 @@ class TileSet(TileSetIF):
         return cls._variations
 
     @property
-    def title(self):
-        prefix = f'tiles{self.t_ver}x{self.t_hor}'
-        match self.cover:
-            case TileCover.ANY:
-                return f'{prefix}_cov_any'
-            case TileCover.CENTER:
-                return f'{prefix}_cov_ctr'
-            case TileCover.ONLY20PERC:
-                return f'{prefix}_cov_20p'
-            case TileCover.ONLY33PERC:
-                return f'{prefix}_cov_33p'
+    def prefix(self):
+        return f'tiles{self.t_ver}x{self.t_hor}'
 
     def request(self, trace: NDArray, return_metrics=False):
         match self.cover:

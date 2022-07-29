@@ -149,7 +149,7 @@ def show_sphere_fov(trace, tileset=TileSet.default(), to_html=False):
     for t in erp_heatmap["data"]:
         fig.append_trace(t, row=1, col=2)
 
-    title = f"trace_[{trace[0]:.2},{trace[1]:.2},{trace[2]:.2}] {tileset.str_hmp_sum([heatmap])}"
+    title = f"trace_[{trace[0]:.2},{trace[1]:.2},{trace[2]:.2}] {tileset.title_with_reqs([heatmap])}"
     if isinstance(tileset, TileSet):
         # fix given phi 0 being the north pole at Utils.cartesian_to_eulerian
         fig.update_yaxes(autorange="reversed")
@@ -191,7 +191,7 @@ def show_sphere_trajects(df: pd.DataFrame, tileset=TileSet.default(), to_html=Fa
     for data in erp_heatmap["data"]:
         fig.append_trace(data, row=1, col=2)
 
-    title = f"trajects_{str(df.shape[0])} {tileset.str_hmp_sum(hmp_final)}"
+    title = f"trajects_{str(df.shape[0])} {tileset.title_with_reqs(hmp_final)}"
 
     if isinstance(tileset, TileSet):
         # fix given phi 0 being the north pole at Utils.cartesian_to_eulerian

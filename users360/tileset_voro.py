@@ -62,17 +62,8 @@ class TileSetVoro(TileSetIF):
         return cls._variations
 
     @property
-    def title(self):
-        prefix = f'voro{len(self.voro.points)}'
-        match self.cover:
-            case TileCover.ANY:
-                return f'{prefix}_cov_any'
-            case TileCover.CENTER:
-                return f'{prefix}_cov_ctr'
-            case TileCover.ONLY20PERC:
-                return f'{prefix}_cov_20p'
-            case TileCover.ONLY33PERC:
-                return f'{prefix}_cov_33p'
+    def prefix(self):
+        return f'voro{len(self.voro.points)}'
 
     def request(self, trace, return_metrics=False):
         match self.cover:
