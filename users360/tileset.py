@@ -1,9 +1,5 @@
 from head_motion_prediction.Utils import *
-from os.path import exists
 import numpy as np
-import os
-import pathlib
-import pickle
 from abc import abstractmethod
 from enum import Enum, auto
 from spherical_geometry import polygon
@@ -11,49 +7,10 @@ from abc import ABC
 import numpy as np
 from numpy.typing import NDArray
 from .fov import *
-from typing import Type
+from .data import *
 
 
-class TileSetData:
-    # main data
-    _ts_polys = dict()
-    _ts_centers = dict()
-
-    # singleton
-    _instance = None
-    _instance_pickle = pathlib.Path(__file__).parent.parent / 'output/tilesetdata.pickle'
-
-    @classmethod
-    def dump(cls):
-        with open(cls._instance_pickle, 'wb') as f:
-            pickle.dump(cls._instance, f)
-
-    @classmethod
-    def singleton(cls):
-        if cls._instance is None:
-            if exists(cls._instance_pickle):
-                with open(cls._instance_pickle, 'rb') as f:
-                    print(f"loading TileSetData from {cls._instance_pickle}")
-                    cls._instance = pickle.load(f)
-            else:
-                cls._instance = TileSetData()
-        return cls._instance
-
-
-def tile_points(t_ver, t_hor, row, col) -> NDArray:
-    d_ver = degrees_to_radian(180 / t_ver)
-    d_hor = degrees_to_radian(360 / t_hor)
-    assert (row < t_ver and col < t_hor)
-    points = np.array([
-        eulerian_to_cartesian(d_hor * col, d_ver * (row + 1)),
-        eulerian_to_cartesian(d_hor * (col + 1), d_ver * (row + 1)),
-        eulerian_to_cartesian(d_hor * (col + 1), d_ver * row),
-        eulerian_to_cartesian(d_hor * col, d_ver * row),
-    ])
-    return points
-
-
-def _tilesetdata_init(t_ver, t_hor):
+def _init_tileset(t_ver, t_hor):
     d_hor = degrees_to_radian(360 / t_hor)
     d_ver = degrees_to_radian(180 / t_ver)
     polys, centers = {}, {}
@@ -69,20 +26,33 @@ def _tilesetdata_init(t_ver, t_hor):
             phi_c = d_ver * (row + 0.5)
             # at eulerian_to_cartesian: theta is hor and phi is ver
             centers[row][col] = eulerian_to_cartesian(theta_c, phi_c)
-    TileSetData.singleton()._ts_polys[(t_ver, t_hor)] = polys
-    TileSetData.singleton()._ts_centers[(t_ver, t_hor)] = centers
+    Data.singleton().ts_polys[(t_ver, t_hor)] = polys
+    Data.singleton().ts_centers[(t_ver, t_hor)] = centers
+
+
+def tile_points(t_ver, t_hor, row, col) -> NDArray:
+    d_ver = degrees_to_radian(180 / t_ver)
+    d_hor = degrees_to_radian(360 / t_hor)
+    assert (row < t_ver and col < t_hor)
+    points = np.array([
+        eulerian_to_cartesian(d_hor * col, d_ver * (row + 1)),
+        eulerian_to_cartesian(d_hor * (col + 1), d_ver * (row + 1)),
+        eulerian_to_cartesian(d_hor * (col + 1), d_ver * row),
+        eulerian_to_cartesian(d_hor * col, d_ver * row),
+    ])
+    return points
 
 
 def tile_poly(t_ver, t_hor, row, col):
-    if (t_ver, t_hor) not in TileSetData.singleton()._ts_polys:
-        _tilesetdata_init(t_ver, t_hor)
-    return TileSetData.singleton()._ts_polys[(t_ver, t_hor)][row][col]
+    if (t_ver, t_hor) not in Data.singleton().ts_polys:
+        _init_tileset(t_ver, t_hor)
+    return Data.singleton().ts_polys[(t_ver, t_hor)][row][col]
 
 
 def tile_center(t_ver, t_hor, row, col):
-    if (t_ver, t_hor) not in TileSetData.singleton()._ts_polys:
-        _tilesetdata_init(t_ver, t_hor)
-    return TileSetData.singleton()._ts_centers[(t_ver, t_hor)][row][col]
+    if (t_ver, t_hor) not in Data.singleton().ts_polys:
+        _init_tileset(t_ver, t_hor)
+    return Data.singleton().ts_centers[(t_ver, t_hor)][row][col]
 
 
 class TileCover(Enum):

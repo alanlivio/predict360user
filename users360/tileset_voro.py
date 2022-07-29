@@ -25,8 +25,14 @@ VORONOI_14P = voro_trinity(14)
 VORONOI_24P = voro_trinity(24)
 
 
+def tsv_poly(voro: SphericalVoronoi, index):
+    if voro.points.size not in Data.singleton().tsv_polys:
+        polys = {i: polygon.SphericalPolygon(voro.vertices[voro.regions[i]]) for i, _ in enumerate(voro.regions)}
+        Data.singleton().tsv_polys[voro.points.size] = polys
+    return Data.singleton().tsv_polys[voro.points.size][index]
+
+
 class TileSetVoro(TileSetIF):
-    _saved_polys = None
     _default = None
     _variations = None
 
@@ -35,15 +41,6 @@ class TileSetVoro(TileSetIF):
         self.voro = voro
         self.cover = cover
         self.shape = (2, -1)
-
-    @classmethod
-    def tile_poly(cls, voro: SphericalVoronoi, index):
-        if cls._saved_polys is None:
-            cls._saved_polys = {}
-        if voro.points.size not in cls._saved_polys:
-            polys = {i: polygon.SphericalPolygon(voro.vertices[voro.regions[i]]) for i, _ in enumerate(voro.regions)}
-            cls._saved_polys[voro.points.size] = polys
-        return cls._saved_polys[voro.points.size][index]
 
     @classmethod
     def default(cls):
@@ -56,11 +53,11 @@ class TileSetVoro(TileSetIF):
         if cls._variations is None:
             cls._variations = [
                 TileSetVoro(VORONOI_14P, TileCover.CENTER),
-                # TileSetVoro(VORONOI_14P, TileCover.ANY),
-                # TileSetVoro(VORONOI_14P, TileCover.ONLY20PERC),
-                # TileSetVoro(VORONOI_24P, TileCover.CEMTER),
-                # TileSetVoro(VORONOI_24P, TileCover.ANY),
-                # TileSetVoro(VORONOI_24P, TileCover.ONLY20PERC),
+                TileSetVoro(VORONOI_14P, TileCover.ANY),
+                TileSetVoro(VORONOI_14P, TileCover.ONLY20PERC),
+                TileSetVoro(VORONOI_24P, TileCover.CEMTER),
+                TileSetVoro(VORONOI_24P, TileCover.ANY),
+                TileSetVoro(VORONOI_24P, TileCover.ONLY20PERC),
             ]
         return cls._variations
 
@@ -98,10 +95,10 @@ class TileSetVoro(TileSetIF):
             if dist <= FOV.HOR_MARGIN:
                 heatmap[index] += 1
                 if(return_metrics):
-                    tile_poly = TileSetVoro.tile_poly(self.voro, index)
-                    view_ratio = tile_poly.overlap(fov_poly_trace)
+                    poly = tsv_poly(self.voro, index)
+                    view_ratio = poly.overlap(fov_poly_trace)
                     areas_out.append(1 - view_ratio)
-                    vp_quality += fov_poly_trace.overlap(tile_poly)
+                    vp_quality += fov_poly_trace.overlap(poly)
         if (return_metrics):
             return heatmap, vp_quality, np.sum(areas_out)
         else:
@@ -116,13 +113,13 @@ class TileSetVoro(TileSetIF):
             dist = compute_orthodromic_distance(trace, self.voro.points[index])
             if dist >= FOV.HOR_DIST:
                 continue
-            tile_poly = TileSetVoro.tile_poly(self.voro, index)
-            view_ratio = tile_poly.overlap(fov_poly_trace)
+            poly = tsv_poly(self.voro, index)
+            view_ratio = poly.overlap(fov_poly_trace)
             if view_ratio > required_cover:
                 heatmap[index] += 1
                 if(return_metrics):
                     areas_out.append(1 - view_ratio)
-                    vp_quality += fov_poly_trace.overlap(tile_poly)
+                    vp_quality += fov_poly_trace.overlap(poly)
         if (return_metrics):
             return heatmap, vp_quality, np.sum(areas_out)
         else:

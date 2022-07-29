@@ -5,13 +5,15 @@ import plotly.express as px
 from plotly.subplots import make_subplots
 import scipy.stats
 import swifter
+from os.path import exists
+import numpy as np
+import pandas as pd
 
-class_color_map = {"hight": "red", "medium": "green", "low": "blue"}
-
+_CLASS_COR = {"hight": "red", "medium": "green", "low": "blue"}
 
 def get_trajects(users=list[str], videos=list[str], perc=1.0):
     df = Data.singleton().df_trajects
-    assert (perc <= 1.0 and perc >= 0.0)
+    assert(perc <= 1.0 and perc >= 0.0)
     if not users:
         df = df.loc[df.user.isin(users)]
     if not videos:
@@ -118,7 +120,7 @@ def show_trajects_poles_prc():
     if not 'poles_prc' in df.columns:
         calc_trajects_poles_prc()
     px.scatter(df, x='user', y='poles_prc', color='poles_class',
-               color_discrete_map=class_color_map,
+               color_discrete_map=_CLASS_COR,
                hover_data=[df.index], title='trajects poles_perc', width=600).show()
 
 
@@ -128,7 +130,7 @@ def show_trajects_entropy():
     if not 'entropy' in df.columns:
         calc_trajects_entropy()
     px.scatter(df, x='user', y='entropy', color='entropy_class',
-               color_discrete_map=class_color_map, hover_data=[df.index],
+               color_discrete_map=_CLASS_COR, hover_data=[df.index],
                title='trajects entropy', width=600).show()
 
 
@@ -139,7 +141,7 @@ def show_trajects_entropy_users():
         calc_trajects_entropy_users()
     assert('entropy_class' in df_users.columns)
     px.scatter(df_users, x='user', y='entropy', color='entropy_class',
-               color_discrete_map=class_color_map, title='users entropy', width=600).show()
+               color_discrete_map=_CLASS_COR, title='users entropy', width=600).show()
 
 
 def show_trajects_tileset_metrics():

@@ -11,7 +11,7 @@ class Test(unittest.TestCase):
 
         sphere = VizSphere()
         sphere.add_polygon_from_trace([1, 0, 0])
-        sphere.add_polygon_as_points(TileSet.tile_points(4, 6, 0, 0))
+        sphere.add_polygon_as_points(tile_points(4, 6, 0, 0))
 
     def test_fov_at_axis(self):
         traces = [1., 0., 0.], [-1., 0., 0.], [0., 1., 0.], [0., -1., 0.], [0., 0., 1.], [0., 0., -1.]

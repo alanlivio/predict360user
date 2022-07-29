@@ -56,12 +56,12 @@ class VizSphere():
         for row in range(t_ver):
             for col in range(t_hor):
                 # -- add tiles edges
-                tile_points = TileSet.tile_points(t_ver, t_hor, row, col)
-                n = len(tile_points)
+                tpoints = tile_points(t_ver, t_hor, row, col)
+                n = len(tpoints)
                 t = np.linspace(0, 1, 100)
                 for index in range(n):
-                    start = tile_points[index]
-                    end = tile_points[(index + 1) % n]
+                    start = tpoints[index]
+                    end = tpoints[(index + 1) % n]
                     result = np.array(geometric_slerp(start, end, t))
                     edge = go.Scatter3d(x=result[..., 0], y=result[..., 1], z=result[..., 2], mode='lines', line={
                         'width': 2, 'color': 'gray'}, name='region edge', showlegend=False)
@@ -76,7 +76,7 @@ class VizSphere():
         self._add_points(points)
 
     def add_polygon_as_row_col_tile(self, t_ver, t_hor, row, col):
-        points = TileSet.tile_points(t_ver, t_hor, row, col)
+        points = tile_points(t_ver, t_hor, row, col)
         self._add_points(points)
 
     def add_polygon_from_trace(self, trace):
@@ -163,7 +163,6 @@ def show_sphere_fov(trace, tileset=TileSet.default(), to_html=False):
 
 def show_sphere_trajects(df: pd.DataFrame, tileset=TileSet.default(), to_html=False):
     assert(not df.empty)
-    assert('hmps' in df)
 
     # subplot two figures https://stackoverflow.com/questions/67291178/how-to-create-subplots-using-plotly-express
     fig = make_subplots(rows=1, cols=2, specs=[[{"type": "surface"}, {"type": "image"}]])
