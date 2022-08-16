@@ -2,7 +2,6 @@ from __future__ import annotations
 from os.path import exists
 import os
 from .config import *
-import pathlib
 import pickle
 import pandas as pd
 import numpy as np
@@ -34,10 +33,9 @@ class Savable():
 
 
 class Data(Savable):
-    # main dfs
+    # trajects processed data
     df_trajects = pd.DataFrame()
     df_users = pd.DataFrame()
-    df_tileset_metrics = pd.DataFrame()
 
     # tileset processed data
     ts_polys = dict()
@@ -45,6 +43,7 @@ class Data(Savable):
     tsv_polys = dict()
     fov_points = dict()
     fov_polys = dict()
+    df_tileset_metrics = pd.DataFrame()
 
     # singleton
     _instance = None
@@ -58,17 +57,14 @@ class Data(Savable):
     def load_dataset(self):
         print('loading trajects from head_motion_prediction project')
         # save cwd and move to head_motion_prediction
-        project_path = "head_motion_prediction"
         cwd = os.getcwd()
-        if os.path.basename(cwd) != project_path:
-            os.chdir(HMDDIR)
+        os.chdir(HMDDIR)
 
         from .head_motion_prediction.David_MMSys_18 import Read_Dataset as david
         from .head_motion_prediction.Fan_NOSSDAV_17 import Read_Dataset as fan
         from .head_motion_prediction.Nguyen_MM_18 import Read_Dataset as nguyen
         from .head_motion_prediction.Xu_CVPR_18 import Read_Dataset as xucvpr
         from .head_motion_prediction.Xu_PAMI_18 import Read_Dataset as xupami
-
         ds_names = ['David_MMSys_18', 'Fan_NOSSDAV_17', 'Nguyen_MM_18', 'Xu_CVPR_18', 'Xu_PAMI_18']
         ds_sizes = [1083, 300, 432, 6654, 4408]
         ds_pkgs = [david, fan, nguyen, xucvpr, xupami][:1]
