@@ -12,7 +12,7 @@ import pathlib
 
 class VizSphere():
 
-    def __init__(self, tileset=TileSet.default()):
+    def __init__(self, tileset=TILESET_DEFAULT):
         if isinstance(tileset, TileSetVoro):
             self.data = self._init_data_sphere_voro(tileset.voro)
         else:
@@ -127,7 +127,7 @@ class VizSphere():
         fig.show()
 
 
-def show_sphere_fov(trace, tileset=TileSet.default(), to_html=False):
+def show_sphere_fov(trace, tileset=TILESET_DEFAULT, to_html=False):
     assert len(trace) == 3  # cartesian
 
     # default VizSphere
@@ -161,7 +161,7 @@ def show_sphere_fov(trace, tileset=TileSet.default(), to_html=False):
         fig.show()
 
 
-def show_sphere_trajects(df: pd.DataFrame, tileset=TileSet.default(), to_html=False):
+def show_sphere_trajects(df: pd.DataFrame, tileset=TILESET_DEFAULT, to_html=False):
     assert(not df.empty)
 
     # subplot two figures https://stackoverflow.com/questions/67291178/how-to-create-subplots-using-plotly-express

@@ -21,8 +21,8 @@ def voro_trinity(npatchs) -> SphericalVoronoi:
     return sv
 
 
-VORONOI_14P = voro_trinity(14)
-VORONOI_24P = voro_trinity(24)
+_VORO_14P = voro_trinity(14)
+_VORO_24P = voro_trinity(24)
 
 
 def tsv_poly(voro: SphericalVoronoi, index):
@@ -33,33 +33,12 @@ def tsv_poly(voro: SphericalVoronoi, index):
 
 
 class TileSetVoro(TileSetIF):
-    _default = None
-    _variations = None
 
     def __init__(self, voro: SphericalVoronoi, cover: TileCover):
         super().__init__()
         self.voro = voro
         self.cover = cover
         self.shape = (2, -1)
-
-    @classmethod
-    def default(cls):
-        if cls._default is None:
-            cls._default = TileSetVoro(VORONOI_14P, TileCover.CENTER)
-        return cls._default
-
-    @classmethod
-    def variations(cls):
-        if cls._variations is None:
-            cls._variations = [
-                TileSetVoro(VORONOI_14P, TileCover.CENTER),
-                TileSetVoro(VORONOI_14P, TileCover.ANY),
-                TileSetVoro(VORONOI_14P, TileCover.ONLY20PERC),
-                TileSetVoro(VORONOI_24P, TileCover.CENTER),
-                TileSetVoro(VORONOI_24P, TileCover.ANY),
-                TileSetVoro(VORONOI_24P, TileCover.ONLY20PERC),
-            ]
-        return cls._variations
 
     @property
     def prefix(self):
@@ -115,3 +94,15 @@ class TileSetVoro(TileSetIF):
             return heatmap, vp_quality, np.sum(areas_out)
         else:
             return heatmap
+
+
+_VORO14_CTR = TileSetVoro(_VORO_14P, TileCover.CENTER)
+_VORO14_ANY = TileSetVoro(_VORO_14P, TileCover.ANY)
+_VORO14_20P = TileSetVoro(_VORO_14P, TileCover.ONLY20PERC)
+_VORO24_CTR = TileSetVoro(_VORO_24P, TileCover.CENTER)
+_VORO24_ANY = TileSetVoro(_VORO_24P, TileCover.ANY)
+_VORO24_20P = TileSetVoro(_VORO_24P, TileCover.ONLY20PERC)
+
+TILESET_VORO_VARIATIONS = [_VORO14_CTR, _VORO14_ANY, _VORO14_20P,
+                           _VORO24_CTR, _VORO24_ANY, _VORO24_20P]
+TILESET_VORO_DEFAULT = _VORO14_CTR

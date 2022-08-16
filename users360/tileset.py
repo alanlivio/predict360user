@@ -90,7 +90,7 @@ class TileSetIF(ABC):
 
     def title_with_reqs(self, heatmaps):
         reqs_sum = np.sum(np.sum(heatmaps, axis=0))
-        if isinstance(self, type(TileSet.default())):
+        if isinstance(self, type(TILESET_DEFAULT)):
             return f"(reqs={reqs_sum})"
         else:
             return f"({self.title} reqs={reqs_sum})"
@@ -98,29 +98,10 @@ class TileSetIF(ABC):
 
 class TileSet(TileSetIF):
 
-    _default = None
-    _variations = None
-
     def __init__(self, t_ver, t_hor, cover: TileCover):
         self.t_ver, self.t_hor = t_ver, t_hor
         self.shape = (self.t_ver, self.t_hor)
         self.cover = cover
-
-    @classmethod
-    def default(cls) -> TileSetIF:
-        if cls._default is None:
-            cls._default = TileSet(4, 6, TileCover.CENTER)
-        return cls._default
-
-    @classmethod
-    def variations(cls):
-        if cls._variations is None:
-            cls._variations = [
-                TileSet(4, 6, TileCover.CENTER),
-                TileSet(4, 6, TileCover.ANY),
-                TileSet(4, 6, TileCover.ONLY20PERC),
-            ]
-        return cls._variations
 
     @property
     def prefix(self):
@@ -186,3 +167,10 @@ class TileSet(TileSetIF):
             return heatmap, vp_quality, np.sum(areas_out)
         else:
             return heatmap
+
+
+_4X6_CTR = TileSet(4, 6, TileCover.CENTER)
+_4X6_ANY = TileSet(4, 6, TileCover.ANY)
+_4X6_20P = TileSet(4, 6, TileCover.ONLY20PERC)
+TILESET_VARIATIONS = [_4X6_CTR, _4X6_ANY, _4X6_20P]
+TILESET_DEFAULT = _4X6_CTR

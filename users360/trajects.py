@@ -48,7 +48,7 @@ def calc_trajects_poles_prc():
     df['poles_class'] = df['poles_prc'].apply(f_threshold)
 
 
-def calc_trajects_hmps(tileset=TileSet.default()):
+def calc_trajects_hmps(tileset=TILESET_DEFAULT):
     df = Data.singleton().df_trajects
     f_trace = lambda trace: tileset.request(trace)
     f_traject = lambda traces: np.apply_along_axis(f_trace, 1, traces)
