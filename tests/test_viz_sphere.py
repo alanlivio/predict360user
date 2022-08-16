@@ -3,7 +3,7 @@ import unittest
 
 
 class Test(unittest.TestCase):
-    
+
     def test_polygons(self):
         sphere = VizSphere()
         sphere.add_polygon_from_trace([1, 0, 0])

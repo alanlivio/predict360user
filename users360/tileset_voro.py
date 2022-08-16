@@ -1,4 +1,3 @@
-from head_motion_prediction.Utils import *
 from scipy.spatial import SphericalVoronoi
 from spherical_geometry import polygon
 import numpy as np

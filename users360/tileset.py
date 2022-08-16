@@ -1,4 +1,4 @@
-from head_motion_prediction.Utils import *
+from .head_motion_prediction.Utils import *
 import numpy as np
 from abc import abstractmethod
 from enum import Enum, auto
@@ -7,7 +7,6 @@ from abc import ABC
 import numpy as np
 from numpy.typing import NDArray
 from .fov import *
-from .data import *
 
 
 def _init_tileset(t_ver, t_hor):

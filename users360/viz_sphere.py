@@ -1,7 +1,6 @@
 import numpy as np
 from .tileset import *
 from .tileset_voro import *
-from head_motion_prediction.Utils import *
 from scipy.spatial import SphericalVoronoi, geometric_slerp
 import plotly.graph_objs as go
 import plotly.express as px
@@ -154,7 +153,7 @@ def show_sphere_fov(trace, tileset=TILESET_DEFAULT, to_html=False):
         # fix given phi 0 being the north pole at Utils.cartesian_to_eulerian
         fig.update_yaxes(autorange="reversed")
     if to_html:
-        output_folder = pathlib.Path(__file__).parent.parent / 'output'
+        output_folder = pathlib.Path(__file__).parent.parent / 'data'
         plotly.offline.plot(fig, filename=f'{output_folder}/{title}.html', auto_open=False)
     else:
         fig.update_layout(width=800, showlegend=False, title_text=title)
@@ -180,6 +179,7 @@ def show_sphere_trajects(df: pd.DataFrame, tileset=TILESET_DEFAULT, to_html=Fals
     for trace in data:
         fig.append_trace(trace, row=1, col=1)
 
+    # TODO: do show hmps if not calculates
     # add erp_heatmap row=1, col=2
     hmp_sums = df['hmps'].apply(lambda traces: np.sum(traces, axis=0))
     if isinstance(tileset, TileSetVoro):
@@ -197,7 +197,7 @@ def show_sphere_trajects(df: pd.DataFrame, tileset=TILESET_DEFAULT, to_html=Fals
         # fix given phi 0 being the north pole at Utils.cartesian_to_eulerian
         fig.update_yaxes(autorange="reversed")
     if to_html:
-        output_folder = pathlib.Path(__file__).parent.parent / 'output'
+        output_folder = pathlib.Path(__file__).parent.parent / 'data'
         plotly.offline.plot(fig, filename=f'{output_folder}/{title}.html', auto_open=False)
     else:
         fig.update_layout(width=800, showlegend=False, title_text=title)

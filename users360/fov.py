@@ -1,4 +1,4 @@
-from head_motion_prediction.Utils import *
+from .head_motion_prediction.Utils import *
 from spherical_geometry import polygon
 import numpy as np
 from numpy.typing import NDArray
