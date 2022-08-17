@@ -12,5 +12,5 @@ class Test(unittest.TestCase):
         calc_trajects_poles_prc()
 
     def test_tileset_metrics(self):
-        ts_l = [TILESET_DEFAULT]
-        calc_trajects_tileset_metrics(ts_l, 2)
+        calc_trajects_tileset_metrics([TILESET_DEFAULT], 2)
+    
