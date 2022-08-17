@@ -5,7 +5,7 @@ from .config import *
 import pickle
 import pandas as pd
 import numpy as np
-
+import logging
 
 class Savable():
 
@@ -19,14 +19,14 @@ class Savable():
 
     def delete_saved(cls):
         if exists(cls._pickle_file()):
-            print(f"removing {cls._pickle_file()}")
+            logging.info(f"removing {cls._pickle_file()}")
             os.remove(cls._pickle_file())
 
     @classmethod
     def load_or_create(cls):
         if exists(cls._pickle_file()):
             with open(cls._pickle_file(), 'rb') as f:
-                print(f"loading {cls.__name__} from {cls._pickle_file()}")
+                logging.info(f"loading {cls.__name__} from {cls._pickle_file()}")
                 return pickle.load(f)
         else:
             return cls()
@@ -55,7 +55,7 @@ class Data(Savable):
         return cls._instance
 
     def load_dataset(self):
-        print('loading trajects from head_motion_prediction project')
+        logging.info('loading trajects from head_motion_prediction project')
         # save cwd and move to head_motion_prediction
         cwd = os.getcwd()
         os.chdir(HMDDIR)
