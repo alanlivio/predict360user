@@ -11,20 +11,6 @@ import pandas as pd
 
 _CLASS_COR = {"hight": "red", "medium": "green", "low": "blue"}
 
-def get_trajects(users=list[str], videos=list[str], perc=1.0):
-    df = Data.singleton().df_trajects
-    assert(perc <= 1.0 and perc >= 0.0)
-    if not users:
-        df = df.loc[df.user.isin(users)]
-    if not videos:
-        df = df.loc[df.video.isin(videos)]
-    if perc == 1.0:
-        return df
-    else:
-        size = df.size
-        step = int(size / (size * perc))
-        return df[::step]
-
 
 def get_one_trace():
     return Data.singleton().df_trajects.iloc[0]['traces'][0]
@@ -95,7 +81,7 @@ def calc_trajects_entropy_users():
 
 
 def calc_trajects_tileset_metrics(tileset_l: list[TileSetIF], n_trajects=None):
-    assert(not Data.singleton().df_trajects.empty)
+    assert (not Data.singleton().df_trajects.empty)
     if n_trajects:
         df = Data.singleton().df_trajects[:n_trajects]
     else:
@@ -116,7 +102,7 @@ def calc_trajects_tileset_metrics(tileset_l: list[TileSetIF], n_trajects=None):
 
 def show_trajects_poles_prc():
     df = Data.singleton().df_trajects
-    assert(not df.empty)
+    assert (not df.empty)
     if not 'poles_prc' in df.columns:
         calc_trajects_poles_prc()
     px.scatter(df, x='user', y='poles_prc', color='poles_class',
@@ -126,7 +112,7 @@ def show_trajects_poles_prc():
 
 def show_trajects_entropy():
     df = Data.singleton().df_trajects
-    assert(not df.empty)
+    assert (not df.empty)
     if not 'entropy' in df.columns:
         calc_trajects_entropy()
     px.scatter(df, x='user', y='entropy', color='entropy_class',
@@ -136,17 +122,17 @@ def show_trajects_entropy():
 
 def show_trajects_entropy_users():
     df_users = Data.singleton().df_users
-    assert(not df_users.empty)
+    assert (not df_users.empty)
     if not 'entropy' in df_users.columns:
         calc_trajects_entropy_users()
-    assert('entropy_class' in df_users.columns)
+    assert ('entropy_class' in df_users.columns)
     px.scatter(df_users, x='user', y='entropy', color='entropy_class',
                color_discrete_map=_CLASS_COR, title='users entropy', width=600).show()
 
 
 def show_trajects_tileset_metrics():
     df_tileset_metrics = Data.singleton().df_tileset_metrics
-    assert(not df_tileset_metrics.empty)
+    assert (not df_tileset_metrics.empty)
 
     # calc tileset metrics
     f_traject_reqs = lambda traces: np.sum(traces[:, 0])

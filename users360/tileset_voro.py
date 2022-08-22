@@ -44,15 +44,14 @@ class TileSetVoro(TileSetIF):
         return f'voro{len(self.voro.points)}'
 
     def request(self, trace, return_metrics=False):
-        match self.cover:
-            case TileCover.CENTER:
-                return self._request_110radius_center(trace, return_metrics)
-            case TileCover.ANY:
-                return self._request_min_cover(trace, 0, return_metrics)
-            case TileCover.ONLY20PERC:
-                return self._request_min_cover(trace, 0.2, return_metrics)
-            case TileCover.ONLY33PERC:
-                return self._request_min_cover(trace, 0.33, return_metrics)
+        if self.cover == TileCover.CENTER:
+            return self._request_110radius_center(trace, return_metrics)
+        elif self.cover == TileCover.ANY:
+            return self._request_min_cover(trace, 0, return_metrics)
+        elif self.cover == TileCover.ONLY20PERC:
+            return self._request_min_cover(trace, 0.2, return_metrics)
+        elif self.cover == TileCover.ONLY33PERC:
+            return self._request_min_cover(trace, 0.33, return_metrics)
 
     def _request_110radius_center(self, trace, return_metrics):
         areas_out = []

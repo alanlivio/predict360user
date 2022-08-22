@@ -1,11 +1,11 @@
 # healpy # exp_healpix.ipynb
+tensorflow
 jupyter
 numpy
 pandas
-pickle5
 plotly
 pyquaternion
 scipy
 sklearn
-spherical_geometry # voronoi
-swifter # multiprocess
+spherical_geometry
+swifter

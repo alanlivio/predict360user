@@ -68,20 +68,19 @@ class TileSetIF(ABC):
     shape: tuple[int, int]
 
     @abstractmethod
-    def request(self, trace, return_metrics=False) -> NDArray | tuple[NDArray, float, list]:
+    def request(self, trace, return_metrics=False):
         pass
 
     @property
     def title(self):
-        match self.cover:
-            case TileCover.ANY:
-                return f'{self.prefix}_cov_any'
-            case TileCover.CENTER:
-                return f'{self.prefix}_cov_ctr'
-            case TileCover.ONLY20PERC:
-                return f'{self.prefix}_cov_20p'
-            case TileCover.ONLY33PERC:
-                return f'{self.prefix}_cov_33p'
+        if (self.cover == TileCover.ANY):
+            return f'{self.prefix}_cov_any'
+        elif self.cover == TileCover.CENTER:
+            return f'{self.prefix}_cov_ctr'
+        elif self.cover == TileCover.ONLY20PERC:
+            return f'{self.prefix}_cov_20p'
+        elif self.cover == TileCover.ONLY33PERC:
+            return f'{self.prefix}_cov_33p'
 
     @property
     def prefix(self):
@@ -107,15 +106,14 @@ class TileSet(TileSetIF):
         return f'tiles{self.t_ver}x{self.t_hor}'
 
     def request(self, trace: NDArray, return_metrics=False):
-        match self.cover:
-            case TileCover.CENTER:
-                return self._request_110radius_center(trace, return_metrics)
-            case TileCover.ANY:
-                return self._request_min_cover(trace, 0.0, return_metrics)
-            case TileCover.ONLY20PERC:
-                return self._request_min_cover(trace, 0.2, return_metrics)
-            case TileCover.ONLY33PERC:
-                return self._request_min_cover(trace, 0.33, return_metrics)
+        if self.cover == TileCover.CENTER:
+            return self._request_110radius_center(trace, return_metrics)
+        elif self.cover == TileCover.ANY:
+            return self._request_min_cover(trace, 0.0, return_metrics)
+        elif self.cover == TileCover.ONLY20PERC:
+            return self._request_min_cover(trace, 0.2, return_metrics)
+        elif self.cover == TileCover.ONLY33PERC:
+            return self._request_min_cover(trace, 0.33, return_metrics)
 
     def _request_110radius_center(self, trace, return_metrics):
         heatmap = np.zeros((self.t_ver, self.t_hor), dtype=np.int32)
