@@ -1,4 +1,3 @@
-# healpy # exp_healpix.ipynb
 tensorflow
 jupyter
 numpy
