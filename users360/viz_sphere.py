@@ -67,43 +67,7 @@ class VizSphere():
                     data.append(edge)
         return data
 
-    def add_polygon(self, polygon: polygon.SphericalPolygon):
-        self._add_points([point for point in polygon.points])  # polygon.points is a generator
-
-    def add_polygon_as_points(self, points):
-        assert points.shape[1] == 3  # check if cartesian
-        self._add_points(points)
-
-    def add_polygon_as_row_col_tile(self, t_ver, t_hor, row, col):
-        points = tile_points(t_ver, t_hor, row, col)
-        self._add_points(points)
-
-    def add_polygon_from_trace(self, trace):
-        points = fov_points(trace)
-        self._add_points(points)
-
-    def add_trace(self, trace):
-        self.data.append(go.Scatter3d(x=[trace[0]], y=[trace[1]], z=[trace[2]],
-                                      mode='markers', marker={'size': 5, 'opacity': 1.0, 'color': 'red'}))
-
-    def add_vp(self, trace):
-        points_fov = fov_points(trace)
-        n = len(points_fov)
-        gens = go.Scatter3d(x=points_fov[:, 0],
-                            y=points_fov[:, 1],
-                            z=points_fov[:, 2],
-                            mode='markers', marker={'size': 5, 'opacity': 1.0, 'color': [f'rgb({np.random.randint(0,256)}, {np.random.randint(0,256)}, {np.random.randint(0,256)})' for _ in range(len(points_fov))]}, name='fov corner', showlegend=False)
-        self.data.append(gens)
-        t = np.linspace(0, 1, 100)
-        for index in range(n):
-            start = points_fov[index]
-            end = points_fov[(index + 1) % n]
-            result = np.array(geometric_slerp(start, end, t))
-            edge = go.Scatter3d(x=result[..., 0], y=result[..., 1], z=result[..., 2], mode='lines', line={
-                                'width': 5, 'color': 'blue'}, name='vp edge', showlegend=False)
-            self.data.append(edge)
-
-    def _add_points(self, points):
+    def _add_polygon_lines(self, points):
         # points
         n = len(points)
         t = np.linspace(0, 1, 100)
@@ -120,21 +84,62 @@ class VizSphere():
                                 'width': 5, 'color': 'blue'}, name='vp edge', showlegend=False)
             self.data.append(edge)
 
+    def add_polygon(self, polygon: polygon.SphericalPolygon):
+        assert polygon.points.shape[1] == 3
+        self._add_polygon_lines([point for point in polygon.points])
+
+    def add_polygon_from_points(self, points):
+        assert points.shape[1] == 3
+        self._add_polygon_lines(points)
+
+    def add_polygon_from_tile_row_col(self, t_ver, t_hor, row, col):
+        points = tile_points(t_ver, t_hor, row, col)
+        self._add_polygon_lines(points)
+
+    def add_trace_and_fov(self, trace):
+        self.data.append(go.Scatter3d(x=[trace[0]], y=[trace[1]], z=[trace[2]],
+                         mode='markers', marker={'size': 5, 'opacity': 1.0, 'color': 'red'}))
+        points = fov_points(trace)
+        self._add_polygon_lines(points)
+
     def show(self):
         fig = go.Figure(data=self.data)
         fig.update_layout(width=800, showlegend=False, title_text=self.title)
         fig.show()
 
+    # def add_vp(self, trace):
+    #     points_fov = fov_points(trace)
+    #     n = len(points_fov)
+    #     gens = go.Scatter3d(x=points_fov[:, 0],
+    #                         y=points_fov[:, 1],
+    #                         z=points_fov[:, 2],
+    #                         mode='markers', marker={'size': 5, 'opacity': 1.0, 'color': [f'rgb({np.random.randint(0,256)}, {np.random.randint(0,256)}, {np.random.randint(0,256)})' for _ in range(len(points_fov))]}, name='fov corner', showlegend=False)
+    #     self.data.append(gens)
+    #     t = np.linspace(0, 1, 100)
+    #     for index in range(n):
+    #         start = points_fov[index]
+    #         end = points_fov[(index + 1) % n]
+    #         result = np.array(geometric_slerp(start, end, t))
+    #         edge = go.Scatter3d(x=result[..., 0], y=result[..., 1], z=result[..., 2], mode='lines', line={
+    #                             'width': 5, 'color': 'blue'}, name='vp edge', showlegend=False)
+    #         self.data.append(edge)
+
+def _show_or_save_to_html(fig, title, to_html):
+    if to_html:
+        output_folder = pathlib.Path(__file__).parent.parent / 'data'
+        plotly.offline.plot(fig, filename=f'{output_folder}/{title}.html', auto_open=False)
+    else:
+        fig.update_layout(width=800, showlegend=False, title_text=title)
+        fig.show()
 
 def show_sphere_fov(trace, tileset=TILESET_DEFAULT, to_html=False):
     assert len(trace) == 3  # cartesian
 
-    # default VizSphere
+    # VizSphere
     sphere = VizSphere(tileset)
-    sphere.add_trace(trace)
-    sphere.add_vp(trace)
+    sphere.add_trace_and_fov(trace)
 
-    # erp heatmap
+    # Heatmap
     fig = make_subplots(rows=1, cols=2, specs=[[{"type": "surface"}, {"type": "image"}]])
     for t in sphere.data:
         fig.append_trace(t, row=1, col=1)
@@ -147,30 +152,23 @@ def show_sphere_fov(trace, tileset=TILESET_DEFAULT, to_html=False):
                             y=[str(y) for y in range(1, heatmap.shape[0] + 1)])
     for t in erp_heatmap["data"]:
         fig.append_trace(t, row=1, col=2)
-
-    title = f"trace_[{trace[0]:.2},{trace[1]:.2},{trace[2]:.2}] {tileset.title_with_reqs([heatmap])}"
     if isinstance(tileset, TileSet):
-        # fix given phi 0 being the north pole at Utils.cartesian_to_eulerian
-        fig.update_yaxes(autorange="reversed")
-    if to_html:
-        output_folder = pathlib.Path(__file__).parent.parent / 'data'
-        plotly.offline.plot(fig, filename=f'{output_folder}/{title}.html', auto_open=False)
-    else:
-        fig.update_layout(width=800, showlegend=False, title_text=title)
-        fig.show()
+        fig.update_yaxes(autorange="reversed")  # fix given phi 0 being the north pole at Utils.cartesian_to_eulerian
+
+    # show or save html
+    title = f"trace_[{trace[0]:.2},{trace[1]:.2},{trace[2]:.2}] {tileset.title_with_reqs([heatmap])}"
+    _show_or_save_to_html(fig, title, to_html)
 
 
 def show_sphere_trajects(df: pd.DataFrame, tileset=TILESET_DEFAULT, to_html=False):
-    assert(not df.empty)
+    assert (not df.empty)
 
     # subplot two figures https://stackoverflow.com/questions/67291178/how-to-create-subplots-using-plotly-express
     fig = make_subplots(rows=1, cols=2, specs=[[{"type": "surface"}, {"type": "image"}]])
 
-    # default VizSphere
+    # VizSphere
     sphere = VizSphere(tileset)
     data = sphere.data
-
-    # add traces to row=1,col=1
     def f_traces(traces):
         scatter = go.Scatter3d(x=traces[:, 0], y=traces[:, 1], z=traces[:, 2],
                                mode='lines', line={'width': 3, 'color': 'blue'}, showlegend=False)
@@ -179,8 +177,7 @@ def show_sphere_trajects(df: pd.DataFrame, tileset=TILESET_DEFAULT, to_html=Fals
     for trace in data:
         fig.append_trace(trace, row=1, col=1)
 
-    # TODO: do show hmps if not calculates
-    # add erp_heatmap row=1, col=2
+    # Heatmap. TODO: calcuate if not hmps in df
     hmp_sums = df['hmps'].apply(lambda traces: np.sum(traces, axis=0))
     if isinstance(tileset, TileSetVoro):
         hmp_sums = np.reshape(hmp_sums, tileset.shape)
@@ -190,15 +187,9 @@ def show_sphere_trajects(df: pd.DataFrame, tileset=TILESET_DEFAULT, to_html=Fals
                             y=[str(y) for y in range(1, hmp_final.shape[0] + 1)])
     for data in erp_heatmap["data"]:
         fig.append_trace(data, row=1, col=2)
-
-    title = f"trajects_{str(df.shape[0])} {tileset.title_with_reqs(hmp_final)}"
-
     if isinstance(tileset, TileSet):
-        # fix given phi 0 being the north pole at Utils.cartesian_to_eulerian
-        fig.update_yaxes(autorange="reversed")
-    if to_html:
-        output_folder = pathlib.Path(__file__).parent.parent / 'data'
-        plotly.offline.plot(fig, filename=f'{output_folder}/{title}.html', auto_open=False)
-    else:
-        fig.update_layout(width=800, showlegend=False, title_text=title)
-        fig.show()
+        fig.update_yaxes(autorange="reversed")  # fix given phi 0 being the north pole at Utils.cartesian_to_eulerian
+
+    # show or save html
+    title = f"trajects_{str(df.shape[0])} {tileset.title_with_reqs(hmp_final)}"
+    _show_or_save_to_html(fig, title, to_html)
