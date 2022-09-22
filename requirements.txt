@@ -8,3 +8,4 @@ scipy
 sklearn
 spherical_geometry
 swifter
+colour

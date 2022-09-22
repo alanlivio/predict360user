@@ -5,39 +5,37 @@ from scipy.spatial import SphericalVoronoi, geometric_slerp
 import plotly.graph_objs as go
 import plotly.express as px
 import plotly
+from numpy.random import randint
 from plotly.subplots import make_subplots
 import pathlib
+from colour import Color
 
 
 class VizSphere():
 
     def __init__(self, tileset=TILESET_DEFAULT):
         if isinstance(tileset, TileSetVoro):
-            self.data = self._init_data_sphere_voro(tileset.voro)
+            self.data = self._data_sphere_voro(tileset.voro)
         else:
-            self.data = self._init_data_sphere_tiles(tileset.t_ver, tileset.t_hor)
-        self.title = f"sphere"
+            self.data = self._data_sphere_tiled(tileset.t_ver, tileset.t_hor)
+        self.title = "sphere"
 
-    def _init_data_sphere(self) -> list:
+    def _data_sphere_surface(self) -> list:
+        # https://community.plotly.com/t/3d-surface-bug-a-custom-colorscale-defined-with-rgba-values-ignores-the-alpha-specification/30809
         theta = np.linspace(0, 2 * np.pi, 100)
         phi = np.linspace(0, np.pi, 100)
-        x = np.outer(np.cos(theta), np.sin(phi)) * 0.98
-        y = np.outer(np.sin(theta), np.sin(phi)) * 0.98
-        z = np.outer(np.ones(100), np.cos(phi)) * 0.98
-        # https://community.plotly.com/t/3d-surface-bug-a-custom-colorscale-defined-with-rgba-values-ignores-the-alpha-specification/30809
         colorscale = [[0, "rgba(200, 0, 0, 0.1)"], [1.0, "rgba(255, 0, 0, 0.1)"]]
-        return [go.Surface(x=x, y=y, z=z, colorscale=colorscale, showlegend=False, showscale=False)]
+        surface = go.Surface(x=np.outer(np.cos(theta), np.sin(phi)) * 0.98,
+                             y=np.outer(np.sin(theta), np.sin(phi)) * 0.98,
+                             z=np.outer(np.ones(100), np.cos(phi)) * 0.98,
+                             colorscale=colorscale,
+                             hoverinfo='skip',
+                             showlegend=False, showscale=False)
+        return [surface]
 
-    def _init_data_sphere_voro(self, sphere_voro: SphericalVoronoi, with_generators=False) -> list:
-        data = self._init_data_sphere()
-        # generator points
-        if with_generators:
-            gens = go.Scatter3d(x=sphere_voro.points[:, 0],
-                                y=sphere_voro.points[:, 1],
-                                z=sphere_voro.points[:, 2],
-                                mode='markers', marker={'size': 1, 'opacity': 1.0, 'color': 'blue'}, name='voron center')
-            data.append(gens)
-        # edges
+    def _data_sphere_voro(self, sphere_voro: SphericalVoronoi) -> list:
+        data = self._data_sphere_surface()
+        # tile edges
         for region in sphere_voro.regions:
             n = len(region)
             t = np.linspace(0, 1, 100)
@@ -45,16 +43,19 @@ class VizSphere():
                 start = sphere_voro.vertices[region][index]
                 end = sphere_voro.vertices[region][(index + 1) % n]
                 result = np.array(geometric_slerp(start, end, t))
-                edge = go.Scatter3d(x=result[..., 0], y=result[..., 1], z=result[..., 2],
+                edge = go.Scatter3d(x=result[..., 0],
+                                    y=result[..., 1],
+                                    z=result[..., 2],
+                                    hoverinfo='skip',
                                     mode='lines', line={'width': 2, 'color': 'gray'}, showlegend=False)
                 data.append(edge)
         return data
 
-    def _init_data_sphere_tiles(self, t_ver, t_hor) -> list:
-        data = self._init_data_sphere()
+    def _data_sphere_tiled(self, t_ver, t_hor) -> list:
+        data = self._data_sphere_surface()
+        # tiles edges
         for row in range(t_ver):
             for col in range(t_hor):
-                # -- add tiles edges
                 tpoints = tile_points(t_ver, t_hor, row, col)
                 n = len(tpoints)
                 t = np.linspace(0, 1, 100)
@@ -62,26 +63,39 @@ class VizSphere():
                     start = tpoints[index]
                     end = tpoints[(index + 1) % n]
                     result = np.array(geometric_slerp(start, end, t))
-                    edge = go.Scatter3d(x=result[..., 0], y=result[..., 1], z=result[..., 2], mode='lines', line={
-                        'width': 2, 'color': 'gray'}, name='region edge', showlegend=False)
+                    edge = go.Scatter3d(x=result[..., 0],
+                                        y=result[..., 1],
+                                        z=result[..., 2],
+                                        hoverinfo='skip',
+                                        mode='lines',
+                                        line={'width': 2, 'color': 'gray'})
                     data.append(edge)
         return data
 
     def _add_polygon_lines(self, points):
-        # points
+        # gen points
         n = len(points)
         t = np.linspace(0, 1, 100)
+        colours = [f'rgb({randint(0,256)}, {randint(0,256)}, {randint(0,256)})' for _ in range(len(points))]
         gens = go.Scatter3d(x=points[:, 0],
                             y=points[:, 1],
                             z=points[:, 2],
-                            mode='markers', showlegend=False, marker={'size': 5, 'opacity': 1.0, 'color': [f'rgb({np.random.randint(0,256)}, {np.random.randint(0,256)}, {np.random.randint(0,256)})' for _ in range(len(points))]})
+                            hoverinfo='skip',
+                            mode='markers',
+                            marker={'size': 4, 'color': colours})
         self.data.append(gens)
+
+        # edges
         for index in range(n):
             start = points[index]
             end = points[(index + 1) % n]
             result = np.array(geometric_slerp(start, end, t))
-            edge = go.Scatter3d(x=result[..., 0], y=result[..., 1], z=result[..., 2], mode='lines', line={
-                                'width': 5, 'color': 'blue'}, name='vp edge', showlegend=False)
+            edge = go.Scatter3d(x=result[..., 0],
+                                y=result[..., 1],
+                                z=result[..., 2],
+                                hoverinfo='skip',
+                                mode='lines',
+                                line={'width': 4, 'color': 'blue'})
             self.data.append(edge)
 
     def add_polygon(self, polygon: polygon.SphericalPolygon):
@@ -97,32 +111,53 @@ class VizSphere():
         self._add_polygon_lines(points)
 
     def add_trace_and_fov(self, trace):
-        self.data.append(go.Scatter3d(x=[trace[0]], y=[trace[1]], z=[trace[2]],
-                         mode='markers', marker={'size': 5, 'opacity': 1.0, 'color': 'red'}))
+        self.data.append(go.Scatter3d(x=[trace[0]],
+                                      y=[trace[1]],
+                                      z=[trace[2]],
+                                      mode='markers',
+                                      marker={'size': 4, 'color': 'red'}))
         points = fov_points(trace)
         self._add_polygon_lines(points)
+
+    def add_trajectory(self, trajectory):
+        # start, end colors
+        start_c = '#b2d8ff'
+        end_c = '#00264c'
+        
+        # start, end marks
+        self.data.append(go.Scatter3d(x=[trajectory[0][0]],
+                              y=[trajectory[0][1]],
+                              z=[trajectory[0][2]],
+                              mode='markers',
+                              marker={'size': 4, 'color': start_c}))
+        self.data.append(go.Scatter3d(x=[trajectory[-1][0]],
+                              y=[trajectory[-1][1]],
+                              z=[trajectory[-1][2]],
+                              mode='markers',
+                              marker={'size': 4, 'color': end_c}))
+        
+        # edges
+        n = len(trajectory)
+        t = np.linspace(0, 1, 100)
+        colors = [x.hex for x in list(Color(start_c).range_to(Color(end_c), n))]
+        for index in range(n - 1):
+            start = trajectory[index]
+            end = trajectory[(index + 1)]
+            result = np.array(geometric_slerp(start, end, t))
+            edge = go.Scatter3d(x=result[..., 0],
+                                y=result[..., 1],
+                                z=result[..., 2],
+                                hovertext=f'trajectory[{index}]',
+                                hoverinfo='text',
+                                mode='lines',
+                                line={'width': 5, 'color': colors[index]})
+            self.data.append(edge)
 
     def show(self):
         fig = go.Figure(data=self.data)
         fig.update_layout(width=800, showlegend=False, title_text=self.title)
         fig.show()
 
-    # def add_vp(self, trace):
-    #     points_fov = fov_points(trace)
-    #     n = len(points_fov)
-    #     gens = go.Scatter3d(x=points_fov[:, 0],
-    #                         y=points_fov[:, 1],
-    #                         z=points_fov[:, 2],
-    #                         mode='markers', marker={'size': 5, 'opacity': 1.0, 'color': [f'rgb({np.random.randint(0,256)}, {np.random.randint(0,256)}, {np.random.randint(0,256)})' for _ in range(len(points_fov))]}, name='fov corner', showlegend=False)
-    #     self.data.append(gens)
-    #     t = np.linspace(0, 1, 100)
-    #     for index in range(n):
-    #         start = points_fov[index]
-    #         end = points_fov[(index + 1) % n]
-    #         result = np.array(geometric_slerp(start, end, t))
-    #         edge = go.Scatter3d(x=result[..., 0], y=result[..., 1], z=result[..., 2], mode='lines', line={
-    #                             'width': 5, 'color': 'blue'}, name='vp edge', showlegend=False)
-    #         self.data.append(edge)
 
 def _show_or_save_to_html(fig, title, to_html):
     if to_html:
@@ -132,24 +167,26 @@ def _show_or_save_to_html(fig, title, to_html):
         fig.update_layout(width=800, showlegend=False, title_text=title)
         fig.show()
 
+
 def show_sphere_fov(trace, tileset=TILESET_DEFAULT, to_html=False):
     assert len(trace) == 3  # cartesian
 
-    # VizSphere
+    # subplot two figures
+    fig = make_subplots(rows=1, cols=2, specs=[[{"type": "surface"}, {"type": "image"}]])
+
+    # sphere
     sphere = VizSphere(tileset)
     sphere.add_trace_and_fov(trace)
-
-    # Heatmap
-    fig = make_subplots(rows=1, cols=2, specs=[[{"type": "surface"}, {"type": "image"}]])
     for t in sphere.data:
         fig.append_trace(t, row=1, col=1)
 
+    # heatmap
     heatmap = tileset.request(trace)
     if isinstance(tileset, TileSetVoro):
         heatmap = np.reshape(heatmap, tileset.shape)
-    erp_heatmap = px.imshow(heatmap, text_auto=True,
-                            x=[str(x) for x in range(1, heatmap.shape[1] + 1)],
-                            y=[str(y) for y in range(1, heatmap.shape[0] + 1)])
+    x = [str(x) for x in range(1, heatmap.shape[1] + 1)]
+    y = [str(y) for y in range(1, heatmap.shape[0] + 1)]
+    erp_heatmap = px.imshow(heatmap, text_auto=True, x=x, y=y)
     for t in erp_heatmap["data"]:
         fig.append_trace(t, row=1, col=2)
     if isinstance(tileset, TileSet):
@@ -163,33 +200,30 @@ def show_sphere_fov(trace, tileset=TILESET_DEFAULT, to_html=False):
 def show_sphere_trajects(df: pd.DataFrame, tileset=TILESET_DEFAULT, to_html=False):
     assert (not df.empty)
 
-    # subplot two figures https://stackoverflow.com/questions/67291178/how-to-create-subplots-using-plotly-express
+    # subplot two figures
     fig = make_subplots(rows=1, cols=2, specs=[[{"type": "surface"}, {"type": "image"}]])
 
-    # VizSphere
+    # sphere
     sphere = VizSphere(tileset)
-    data = sphere.data
-    def f_traces(traces):
-        scatter = go.Scatter3d(x=traces[:, 0], y=traces[:, 1], z=traces[:, 2],
-                               mode='lines', line={'width': 3, 'color': 'blue'}, showlegend=False)
-        data.append(scatter)
-    df['traces'].apply(f_traces)
-    for trace in data:
-        fig.append_trace(trace, row=1, col=1)
-
-    # Heatmap. TODO: calcuate if not hmps in df
-    hmp_sums = df['hmps'].apply(lambda traces: np.sum(traces, axis=0))
-    if isinstance(tileset, TileSetVoro):
-        hmp_sums = np.reshape(hmp_sums, tileset.shape)
-    hmp_final = np.sum(hmp_sums, axis=0)
-    erp_heatmap = px.imshow(hmp_final, text_auto=True,
-                            x=[str(x) for x in range(1, hmp_final.shape[1] + 1)],
-                            y=[str(y) for y in range(1, hmp_final.shape[0] + 1)])
-    for data in erp_heatmap["data"]:
-        fig.append_trace(data, row=1, col=2)
-    if isinstance(tileset, TileSet):
-        fig.update_yaxes(autorange="reversed")  # fix given phi 0 being the north pole at Utils.cartesian_to_eulerian
+    df['traces'].apply(lambda traces: sphere.add_trajectory(traces))
+    for d in sphere.data:
+        fig.append_trace(d, row=1, col=1)
+    # heatmap
+    # TODO: calcuate if hmps is not in df
+    if not df['hmps'].empty:
+        hmp_sums = df['hmps'].apply(lambda traces: np.sum(traces, axis=0))
+        if isinstance(tileset, TileSetVoro):
+            hmp_sums = np.reshape(hmp_sums, tileset.shape)
+        heatmap = np.sum(hmp_sums, axis=0)
+        x = [str(x) for x in range(1, heatmap.shape[1] + 1)]
+        y = [str(y) for y in range(1, heatmap.shape[0] + 1)]
+        erp_heatmap = px.imshow(heatmap, text_auto=True, x=x, y=y)
+        for data in erp_heatmap["data"]:
+            fig.append_trace(data, row=1, col=2)
+        if isinstance(tileset, TileSet):
+            # fix given phi 0 being the north pole at Utils.cartesian_to_eulerian
+            fig.update_yaxes(autorange="reversed")
 
     # show or save html
-    title = f"trajects_{str(df.shape[0])} {tileset.title_with_reqs(hmp_final)}"
+    title = f"trajects_{str(df.shape[0])} {tileset.title_with_reqs(heatmap)}"
     _show_or_save_to_html(fig, title, to_html)
