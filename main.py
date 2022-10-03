@@ -2,35 +2,38 @@ from users360 import *
 import sys
 import logging
 import numpy as np
-import tensorflow as tf
-from tensorflow import keras
 import argparse
-sys.path.insert(0, './')
 
-from users360.head_motion_prediction.position_only_baseline import *
-# from users360.head_motion_prediction.Pos_Only_Baseline_3dLoss import *
-
+# args
+ARGS = None
 DATASET_NAME: str
+MAKE_DATASET = False
+TRAIN_MODEL = False
+EVALUATE_MODEL = False
+MODEL = None
 MODEL_NAME: str
 M_WINDOW: int
 H_WINDOW: int
 INIT_WINDOW: int
 END_WINDOW: int
+RESULTS_FOLDER: str
+MODELS_FOLDER: str
+EXP_NAME: str
+
+# consts
 METRIC = all_metrics['orthodromic']
-np.random.seed(19680801)
 EPOCHS = 500
 NUM_TILES_WIDTH = 384
 NUM_TILES_HEIGHT = 216
 RATE = 0.2
-RESULTS_FOLDER: str
-MODELS_FOLDER: str
-EXP_NAME: str
 PERC_VIDEOS_TRAIN = 0.8
 PERC_USERS_TRAIN = 0.5
 BATCH_SIZE = 128.0
-TRAIN_MODEL = False
-EVALUATE_MODEL = False
-MODEL = None
+
+
+def create_model(name=""):
+    from users360.head_motion_prediction.position_only_baseline import create_pos_only_model
+    return create_pos_only_model(M_WINDOW, H_WINDOW)
 
 
 def transform_batches_cartesian_to_normalized_eulerian(positions_in_batch):
@@ -45,62 +48,6 @@ def transform_normalized_eulerian_to_cartesian(positions):
     positions = positions * np.array([2 * np.pi, np.pi])
     eulerian_samples = [eulerian_to_cartesian(pos[0], pos[1]) for pos in positions]
     return np.array(eulerian_samples)
-
-
-def parse_args(parser: argparse.ArgumentParser):
-    parser.description = 'train or evaluate users360 models and datasets.'
-    model_names = ['pos_only']
-    # model_names = ['TRACK', 'CVPR18', 'pos_only', 'no_motion', 'most_salient_point', 'true_saliency',
-    #                'content_based_saliency', 'CVPR18_orig', 'TRACK_AblatSal', 'TRACK_AblatFuse', 'MM18', 'pos_only_3d_loss']
-    dataset_names = ['David_MMSys_18']
-    parser.add_argument('--train', action='store_true', help='Flag that tells run the training procedure.')
-    parser.add_argument('--evaluate', action='store_true', help='Flag that tells run the evaluate procedure.')
-    parser.add_argument('-gpu_id', required=True, action='store', dest='gpu_id',
-                        help='The gpu used to train this network.')
-    parser.add_argument('-model_name', choices=model_names, required=True, action='store', dest='model_name',
-                        help='The name of the model used to reference the network structure used.')
-    parser.add_argument('-dataset_name', choices=dataset_names, required=True, action='store', dest='dataset_name',
-                        help='The name of the dataset used to train this network.')
-    parser.add_argument('-m_window', required=True, action='store',
-                        dest='m_window', help='Buffer window in timesteps', type=int)
-    parser.add_argument('-i_window', required=True, action='store',
-                        dest='i_window', help='Initial buffer to avoid stationary part', type=int)
-    parser.add_argument('-h_window', required=True, action='store',
-                        dest='h_window', help='Forecast window in timesteps used to predict (5 timesteps = 1 second)', type=int)
-    args = parser.parse_args()
-
-    TRAIN_MODEL = args.train
-    EVALUATE_MODEL = args.evaluate
-
-    os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-    if args.gpu_id:
-        os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu_id
-
-    MODEL_NAME = args.model_name
-    DATASET_NAME = args.dataset_name
-    M_WINDOW = args.m_window
-    H_WINDOW = args.h_window
-
-    if args.i_window is None:
-        INIT_WINDOW = M_WINDOW
-    else:
-        INIT_WINDOW = args.i_window
-    END_WINDOW = H_WINDOW
-    EXP_NAME = 'exp_' + str(INIT_WINDOW) + '_in_' + str(M_WINDOW) + '_out_' + str(H_WINDOW)
-    RESULTS_FOLDER = os.path.join(DATADIR, 'pos_only/results' + EXP_NAME)
-    MODELS_FOLDER = os.path.join(DATADIR, 'pos_only/models/' + EXP_NAME)
-    # Create results folder and models folder
-    if not os.path.exists(RESULTS_FOLDER):
-        os.makedirs(RESULTS_FOLDER)
-    if not os.path.exists(MODELS_FOLDER):
-        os.makedirs(MODELS_FOLDER)
-
-    # if MODEL_NAME == 'pos_only':
-        # MODEL = create_pos_only_model(M_WINDOW, H_WINDOW)
-    # elif MODEL_NAME == 'pos_only_3d_loss':
-    #     obj = Pos_Only_Class(H_WINDOW)
-    #     MODEL= obj.get_model()
-    MODEL = create_pos_only_model(M_WINDOW, H_WINDOW)
 
 
 def get_traces(video, user):
@@ -182,6 +129,7 @@ def partition():
 
 
 def train_model():
+    logging.info("train model")
     # TODO partition
     steps_per_ep_train = np.ceil(len(partition['train']) / BATCH_SIZE)
     steps_per_ep_validate = np.ceil(len(partition['test']) / BATCH_SIZE)
@@ -197,6 +145,7 @@ def train_model():
 
 
 def evaluate_model():
+    logging.info("evaluate model")
     traces_count = 0
     errors_per_video = {}
     errors_per_timestep = {}
@@ -254,7 +203,7 @@ def evaluate_model():
 
 
 def make_dataset():
-    logging.info(f"load_dataset")
+    logging.info(f"make_dataset")
     Data.singleton().load_dataset()
     df = Data.singleton().df_trajects
     logging.info(f"df_trajects.size={df.size}")
@@ -265,12 +214,66 @@ def make_dataset():
 
 if __name__ == "__main__":
     if not exists("data/Data.pickle"):
-        logging.error("data/Data.pickle does not exist. run make_dataset.py.")
+        logging.error("data/Data.pickle does not exist. Run python main.py --make_dataset")
+        exit
+
+    # create ArgumentParser
     parser = argparse.ArgumentParser()
-    parse_args(parser)
-    if TRAIN_MODEL:
-        logging.info("train ended")
+    parser.description = 'train or evaluate users360 models and datasets'
+    model_names = ['pos_only']
+    # model_names = ['TRACK', 'CVPR18', 'pos_only', 'no_motion', 'most_salient_point', 'true_saliency',
+    #                'content_based_saliency', 'CVPR18_orig', 'TRACK_AblatSal', 'TRACK_AblatFuse', 'MM18', 'pos_only_3d_loss']
+    dataset_names = ['David_MMSys_18']
+    parser.add_argument('--make_dataset', action='store_true',
+                        help='Flag that tells run make_dataset procedure')
+    parser.add_argument('--train', action='store_true',
+                        help='Flag that tells run the train procedure')
+    parser.add_argument('--evaluate', action='store_true',
+                        help='Flag that tells run the evaluate procedure')
+    parser.add_argument('-gpu_id', nargs='?', type=int, default=0,
+                        help='Used cuda gpu')
+    parser.add_argument('-model_name', nargs='?',
+                        choices=model_names, type=str, default=model_names[0],
+                        help='The name of the model used to reference the network structure used')
+    parser.add_argument('-dataset_name', nargs='?',
+                        choices=dataset_names, type=str, default=dataset_names[0],
+                        help='The name of the dataset used to train this network')
+    parser.add_argument('-m_window', nargs='?', type=int, default=5,
+                        help='Buffer window in timesteps',)
+    parser.add_argument('-i_window', nargs='?', type=int, default=5,
+                        help='Initial buffer to avoid stationary part')
+    parser.add_argument('-h_window', nargs='?', type=int, default=5,
+                        help='Forecast window in timesteps used to predict (5 timesteps = 1 second)')
+
+    # parse ArgumentParser
+    ARGS = parser.parse_args()
+    TRAIN_MODEL = ARGS.train
+    EVALUATE_MODEL = ARGS.evaluate
+    MODEL_NAME = ARGS.model_name
+    DATASET_NAME = ARGS.dataset_name
+    INIT_WINDOW = ARGS.i_window
+    M_WINDOW = ARGS.m_window
+    H_WINDOW = ARGS.h_window
+    END_WINDOW = H_WINDOW
+    EXP_NAME = 'exp_' + str(INIT_WINDOW) + '_in_' + str(M_WINDOW) + '_out_' + str(H_WINDOW)
+    RESULTS_FOLDER = os.path.join(DATADIR, 'pos_only/results' + EXP_NAME)
+    MODELS_FOLDER = os.path.join(DATADIR, 'pos_only/models/' + EXP_NAME)
+
+    # Create results folder and models folder
+    if not os.path.exists(RESULTS_FOLDER):
+        os.makedirs(RESULTS_FOLDER)
+    if not os.path.exists(MODELS_FOLDER):
+        os.makedirs(MODELS_FOLDER)
+    os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+    if ARGS.gpu_id:
+        os.environ["CUDA_VISIBLE_DEVICES"] = ARGS.gpu_id
+    if (ARGS.train or ARGS.evaluate):
+        MODEL = create_model()
+
+    # run procedures
+    if ARGS.make_dataset:
+        make_dataset()
+    if ARGS.train:
         train_model()
-    if EVALUATE_MODEL:
-        logging.info("evaluation ended")
+    if ARGS.evaluate:
         evaluate_model()

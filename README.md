@@ -15,7 +15,7 @@ pip install -r requeriments.txt
 make dataset:
 
 ```bash
-python make_dataset.py
+python main.py --make_dataset
 ```
 
 train:
