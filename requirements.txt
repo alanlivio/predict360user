@@ -1,3 +1,6 @@
+matplotlib
+cv2
+opencv-python
 tensorflow
 jupyter
 numpy
