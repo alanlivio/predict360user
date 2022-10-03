@@ -1,3 +1,4 @@
+#!env python
 from users360 import *
 import sys
 import logging
