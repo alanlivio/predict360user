@@ -6,7 +6,6 @@
     "-p",
     "test_*.py"
   ],
-  // "python.testing.cwd": "${workspaceFolder}/src",
   "python.testing.pytestEnabled": false,
   "python.testing.unittestEnabled": true,
   "jupyter.notebookFileRoot": "${workspaceFolder}"

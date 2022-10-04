@@ -239,11 +239,11 @@ if __name__ == "__main__":
     parser.add_argument('-dataset_name', nargs='?',
                         choices=dataset_names, type=str, default=dataset_names[0],
                         help='The name of the dataset used to train this network')
+    parser.add_argument('-i_window', nargs='?', type=int, default=30,
+                        help='Initial buffer to avoid stationary part')
     parser.add_argument('-m_window', nargs='?', type=int, default=5,
                         help='Buffer window in timesteps',)
-    parser.add_argument('-i_window', nargs='?', type=int, default=5,
-                        help='Initial buffer to avoid stationary part')
-    parser.add_argument('-h_window', nargs='?', type=int, default=5,
+    parser.add_argument('-h_window', nargs='?', type=int, default=25,
                         help='Forecast window in timesteps used to predict (5 timesteps = 1 second)')
 
     # parse ArgumentParser
