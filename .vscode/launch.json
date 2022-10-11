@@ -1,0 +1,30 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "training_procedure",
+            "type": "python",
+            "request": "launch",
+            "module": "training_procedure",
+            "args": [
+                "-evaluate",
+                "-gpu_id",
+                "0",
+                "-dataset_name",
+                "David_MMSys_18",
+                "-model_name",
+                "pos_only",
+                "-init_window",
+                "30",
+                "-m_window",
+                "5",
+                "-h_window",
+                "25"
+            ],
+            "justMyCode": true
+        }
+    ]
+}
