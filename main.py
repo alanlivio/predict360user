@@ -31,11 +31,10 @@ PERC_VIDEOS_TRAIN = 0.8
 PERC_USERS_TRAIN = 0.5
 BATCH_SIZE = 128.0
 
+from users360.head_motion_prediction.position_only_baseline import create_pos_only_model
 
 def create_model(name=""):
-    from users360.head_motion_prediction.position_only_baseline import create_pos_only_model
     return create_pos_only_model(M_WINDOW, H_WINDOW)
-
 
 def transform_batches_cartesian_to_normalized_eulerian(positions_in_batch):
     positions_in_batch = np.array(positions_in_batch)
@@ -55,6 +54,87 @@ def get_traces(video, user):
     row = Data.singleton().df_trajects.query(f"ds={DATASET_NAME} and ds_user={user} and ds_video={video}")
     return row['traces']
 
+def partition():
+
+    # get videos
+    def get_video_ids():
+        # Returns the ids of the videos in the dataset
+        list_of_videos = [o for o in os.listdir(DATASET_SAMPLED) if not o.endswith('.gitkeep')]
+        # Sort to avoid randomness of keys(), to guarantee reproducibility
+        list_of_videos.sort()
+        return list_of_videos
+
+    def get_user_ids():
+        # returns the unique ids of the users in the dataset
+        videos = get_video_ids()
+        users = []
+        for video in videos:
+            for user in [o for o in os.listdir(os.path.join(DATASET_SAMPLED, video)) if not o.endswith('.gitkeep')]:
+                users.append(user)
+        list_of_users = list(set(users))
+        # Sort to avoid randomness of keys(), to guarantee reproducibility
+        list_of_users.sort()
+        return list_of_users
+
+    def get_users_per_video():
+        # Returns a dictionary indexed by video, and under each index you can find the users for which the trace has been stored for this video
+        videos = get_video_ids()
+        users_per_video = {}
+        for video in videos:
+            users_per_video[video] = [user for user in os.listdir(os.path.join(DATASET_SAMPLED, video))]
+        return users_per_video
+    
+    users = get_user_ids()
+    videos = get_video_ids()
+    users_per_video = get_users_per_video()
+    
+    # split
+    
+    def read_sampled_positions_for_trace(video, user):
+        # returns only the positions from the trace
+        # ~time-stamp~ is removed from the output, only x, y, z (in 3d coordinates) is returned
+        path = os.path.join(DATASET_SAMPLED, video, user)
+        data = pd.read_csv(path, header=None)
+        return data.values[:, 1:]
+    
+    def read_sampled_data_for_trace(video, user):
+        # returns the whole data organized as follows:
+        # time-stamp, x, y, z (in 3d coordinates)
+        path = os.path.join(DATASET_SAMPLED, video, user)
+        data = pd.read_csv(path, header=None)
+        return data.values
+    
+    def split_list_by_percentage(the_list, percentage):
+        # Fixing random state for reproducibility
+        np.random.seed(19680801)
+        # Shuffle to select randomly
+        np.random.shuffle(the_list)
+        num_samples_first_part = int(len(the_list) * percentage)
+        train_part = the_list[:num_samples_first_part]
+        test_part = the_list[num_samples_first_part:]
+        return train_part, test_part
+    videos_train, videos_test = split_list_by_percentage(videos, PERC_VIDEOS_TRAIN)
+    users_train, users_test = split_list_by_percentage(users, PERC_USERS_TRAIN)
+
+    # partition_in_train_and_test_without_any_intersection
+    partition = {}
+    partition['train'] = []
+    partition['test'] = []
+    for video in videos_train:
+        for user in users_train:
+            # to get the length of the trace
+            trace_length = read_sampled_data_for_trace(video, user).shape[0]
+            for tstap in range(INIT_WINDOW, trace_length - END_WINDOW):
+                ID = {'video': video, 'user': user, 'time-stamp': tstap}
+                partition['train'].append(ID)
+    for video in videos_test:
+        for user in users_test:
+            # to get the length of the trace
+            trace_length = read_sampled_data_for_trace(video, user).shape[0]
+            for tstap in range(INIT_WINDOW, trace_length - END_WINDOW):
+                ID = {'video': video, 'user': user, 'time-stamp': tstap}
+                partition['test'].append(ID)
+    return partition
 
 def generate_arrays(list_IDs, future_window):
     while True:
@@ -93,47 +173,14 @@ def generate_arrays(list_IDs, future_window):
             # elif MODEL_NAME in ['pos_only_3d_loss']:
             #     yield ([np.array(encoder_pos_inputs_for_batch), np.array(decoder_pos_inputs_for_batch)], np.array(decoder_outputs_for_batch))
 
-
-def split_list_by_percentage(the_list, percentage):
-    # Fixing random state for reproducibility
-    np.random.seed(19680801)
-    # Shuffle to select randomly
-    np.random.shuffle(the_list)
-    num_samples_first_part = int(len(the_list) * percentage)
-    train_part = the_list[:num_samples_first_part]
-    test_part = the_list[num_samples_first_part:]
-    return train_part, test_part
-
-
-def partition():
-    videos_train, videos_test = split_list_by_percentage(videos, PERC_VIDEOS_TRAIN)
-    users_train, users_test = split_list_by_percentage(users, PERC_USERS_TRAIN)
-
-    partition = {}
-    partition['train'] = []
-    partition['test'] = []
-    for video in videos_train:
-        for user in users_train:
-            # to get the length of the trace
-            trace_length = read_sampled_data_for_trace(sampled_dataset_folder, video, user).shape[0]
-            for tstap in range(INIT_WINDOW, trace_length - END_WINDOW):
-                ID = {'video': video, 'user': user, 'time-stamp': tstap}
-                partition['train'].append(ID)
-    for video in videos_test:
-        for user in users_test:
-            # to get the length of the trace
-            trace_length = read_sampled_data_for_trace(sampled_dataset_folder, video, user).shape[0]
-            for tstap in range(INIT_WINDOW, trace_length - END_WINDOW):
-                ID = {'video': video, 'user': user, 'time-stamp': tstap}
-                partition['test'].append(ID)
-    return partition
-
-
 def train_model():
     logging.info("train model")
+    
     # TODO partition
     steps_per_ep_train = np.ceil(len(partition['train']) / BATCH_SIZE)
     steps_per_ep_validate = np.ceil(len(partition['test']) / BATCH_SIZE)
+    
+    # train
     csv_logger = keras.callbacks.CSVLogger(RESULTS_FOLDER + '/results.csv')
     model_checkpoint = keras.callbacks.ModelCheckpoint(
         MODELS_FOLDER + '/weights.hdf5', save_best_only=True, save_weights_only=True, mode='auto', period=1)
@@ -225,11 +272,11 @@ if __name__ == "__main__":
     # model_names = ['TRACK', 'CVPR18', 'pos_only', 'no_motion', 'most_salient_point', 'true_saliency',
     #                'content_based_saliency', 'CVPR18_orig', 'TRACK_AblatSal', 'TRACK_AblatFuse', 'MM18', 'pos_only_3d_loss']
     dataset_names = ['David_MMSys_18']
-    parser.add_argument('--make_dataset', action='store_true',
+    parser.add_argument('-make_dataset', action='store_true',
                         help='Flag that tells run make_dataset procedure')
-    parser.add_argument('--train', action='store_true',
+    parser.add_argument('-train', action='store_true',
                         help='Flag that tells run the train procedure')
-    parser.add_argument('--evaluate', action='store_true',
+    parser.add_argument('-evaluate', action='store_true',
                         help='Flag that tells run the evaluate procedure')
     parser.add_argument('-gpu_id', nargs='?', type=int, default=0,
                         help='Used cuda gpu')
@@ -252,6 +299,8 @@ if __name__ == "__main__":
     EVALUATE_MODEL = ARGS.evaluate
     MODEL_NAME = ARGS.model_name
     DATASET_NAME = ARGS.dataset_name
+    DATASET_ROOT = os.path.join('./users360/head_motion_prediction/', DATASET_NAME)
+    DATASET_SAMPLED = os.path.join(DATASET_ROOT, 'sampled_dataset')
     INIT_WINDOW = ARGS.i_window
     M_WINDOW = ARGS.m_window
     H_WINDOW = ARGS.h_window
@@ -259,19 +308,21 @@ if __name__ == "__main__":
     EXP_NAME = 'exp_' + str(INIT_WINDOW) + '_in_' + str(M_WINDOW) + '_out_' + str(H_WINDOW)
     RESULTS_FOLDER = os.path.join(DATADIR, 'pos_only/results' + EXP_NAME)
     MODELS_FOLDER = os.path.join(DATADIR, 'pos_only/models/' + EXP_NAME)
+    os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+    if ARGS.gpu_id:
+        os.environ["CUDA_VISIBLE_DEVICES"] = ARGS.gpu_id
 
-    # Create results folder and models folder
+    # Create results/models folders
     if not os.path.exists(RESULTS_FOLDER):
         os.makedirs(RESULTS_FOLDER)
     if not os.path.exists(MODELS_FOLDER):
         os.makedirs(MODELS_FOLDER)
-    os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-    if ARGS.gpu_id:
-        os.environ["CUDA_VISIBLE_DEVICES"] = ARGS.gpu_id
-    if (ARGS.train or ARGS.evaluate):
-        MODEL = create_model()
 
     # run procedures
+    if (ARGS.train or ARGS.evaluate):
+        PARTITION = partition()
+    if (ARGS.train or ARGS.evaluate):
+        MODEL = create_model()
     if ARGS.make_dataset:
         make_dataset()
     if ARGS.train:
