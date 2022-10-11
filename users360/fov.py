@@ -1,7 +1,6 @@
 from .head_motion_prediction.Utils import *
 from spherical_geometry import polygon
 import numpy as np
-from numpy.typing import NDArray
 from .data import *
 
 X1Y0Z0 = np.array([1, 0, 0])
@@ -25,7 +24,7 @@ fov_x1y0z0_points = np.array([
 # fov_x1y0z0_area = polygon.SphericalPolygon(fov_x1y0z0_points).area()
 
 
-def fov_points(trace) -> NDArray:
+def fov_points(trace) -> np.ndarray:
     if Data.singleton().fov_points is None:
         Data.singleton().fov_points = {}
     if (trace[0], trace[1], trace[2]) not in Data.singleton().fov_points:

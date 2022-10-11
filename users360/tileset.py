@@ -5,7 +5,6 @@ from enum import Enum, auto
 from spherical_geometry import polygon
 from abc import ABC
 import numpy as np
-from numpy.typing import NDArray
 from .fov import *
 
 
@@ -29,7 +28,7 @@ def _init_tileset(t_ver, t_hor):
     Data.singleton().ts_centers[(t_ver, t_hor)] = centers
 
 
-def tile_points(t_ver, t_hor, row, col) -> NDArray:
+def tile_points(t_ver, t_hor, row, col) -> np.ndarray:
     d_ver = degrees_to_radian(180 / t_ver)
     d_hor = degrees_to_radian(360 / t_hor)
     assert (row < t_ver and col < t_hor)
@@ -105,7 +104,7 @@ class TileSet(TileSetIF):
     def prefix(self):
         return f'tiles{self.t_ver}x{self.t_hor}'
 
-    def request(self, trace: NDArray, return_metrics=False):
+    def request(self, trace: np.ndarray, return_metrics=False):
         if self.cover == TileCover.CENTER:
             return self._request_110radius_center(trace, return_metrics)
         elif self.cover == TileCover.ANY:
@@ -139,7 +138,7 @@ class TileSet(TileSetIF):
         else:
             return heatmap
 
-    def _request_min_cover(self, trace: NDArray, required_cover: float, return_metrics):
+    def _request_min_cover(self, trace: np.ndarray, required_cover: float, return_metrics):
         heatmap = np.zeros((self.t_ver, self.t_hor), dtype=np.int32)
         areas_out = []
         vp_quality = 0.0
