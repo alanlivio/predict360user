@@ -1,11 +1,11 @@
-from .head_motion_prediction.Utils import *
-import numpy as np
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from enum import Enum, auto
-from spherical_geometry import polygon
-from abc import ABC
+
 import numpy as np
+from spherical_geometry import polygon
+
 from .fov import *
+from .head_motion_prediction.Utils import *
 
 
 def _init_tileset(t_ver, t_hor):

@@ -1,10 +1,12 @@
 #!env python
-from users360 import *
-import sys
-import logging
-import numpy as np
 import argparse
+import logging
+import sys
+
+import numpy as np
 import tensorflow.keras as keras
+
+from users360 import *
 
 # consts
 METRIC = all_metrics['orthodromic']
@@ -46,7 +48,9 @@ MODELS_FOLDER: str
 DATASET_SAMPLED_FOLDER: str
 EXP_NAME: str
 
-from users360.head_motion_prediction.position_only_baseline import create_pos_only_model
+from users360.head_motion_prediction.position_only_baseline import \
+    create_pos_only_model
+
 
 def create_model(name=""):
     return create_pos_only_model(M_WINDOW, H_WINDOW)

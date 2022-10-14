@@ -1,7 +1,9 @@
+import math
+
+import numpy as np
 from scipy.spatial import SphericalVoronoi
 from spherical_geometry import polygon
-import numpy as np
-import math
+
 from .tileset import *
 
 

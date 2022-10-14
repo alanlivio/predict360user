@@ -1,14 +1,16 @@
+import pathlib
+
 import numpy as np
-from .tileset import *
-from .tileset_voro import *
-from scipy.spatial import SphericalVoronoi, geometric_slerp
-import plotly.graph_objs as go
-import plotly.express as px
 import plotly
+import plotly.express as px
+import plotly.graph_objs as go
+from colour import Color
 from numpy.random import randint
 from plotly.subplots import make_subplots
-import pathlib
-from colour import Color
+from scipy.spatial import SphericalVoronoi, geometric_slerp
+
+from .tileset import *
+from .tileset_voro import *
 
 
 class VizSphere():

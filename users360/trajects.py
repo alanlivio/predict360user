@@ -1,13 +1,15 @@
-from .data import *
-from .tileset import *
-import plotly.graph_objs as go
-import plotly.express as px
-from plotly.subplots import make_subplots
-import scipy.stats
-import swifter
 from os.path import exists
+
 import numpy as np
 import pandas as pd
+import plotly.express as px
+import plotly.graph_objs as go
+import scipy.stats
+import swifter
+from plotly.subplots import make_subplots
+
+from .data import *
+from .tileset import *
 
 _CLASS_COR = {"hight": "red", "medium": "green", "low": "blue"}
 

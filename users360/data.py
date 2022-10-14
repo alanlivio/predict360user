@@ -1,11 +1,15 @@
 from __future__ import annotations
-from os.path import exists
-import os
-from .config import *
-import pickle
-import pandas as pd
-import numpy as np
+
 import logging
+import os
+import pickle
+from os.path import exists
+
+import numpy as np
+import pandas as pd
+
+from .config import *
+
 
 class Savable():
 
@@ -60,7 +64,8 @@ class Data(Savable):
         cwd = os.getcwd()
         os.chdir(HMDDIR)
 
-        from .head_motion_prediction.David_MMSys_18 import Read_Dataset as david
+        from .head_motion_prediction.David_MMSys_18 import \
+            Read_Dataset as david
         from .head_motion_prediction.Fan_NOSSDAV_17 import Read_Dataset as fan
         from .head_motion_prediction.Nguyen_MM_18 import Read_Dataset as nguyen
         from .head_motion_prediction.Xu_CVPR_18 import Read_Dataset as xucvpr
