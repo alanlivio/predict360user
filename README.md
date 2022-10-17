@@ -10,6 +10,14 @@ Install tensorfolow with cuda, please follow https://www.tensorflow.org/install/
 pip install -r requeriments.txt
 ```
 
+Ensure users360/head_motion_prediction submodule.
+
+```bash
+git submodule init
+git submodule update
+sed -i 's/^import keras$/import tensorflow.keras as keras/g' users360/head_motion_prediction/training_procedure.py
+```
+
 ## Usage user360
 
 train/evaluate:
