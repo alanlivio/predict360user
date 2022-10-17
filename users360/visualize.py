@@ -1,16 +1,21 @@
 import pathlib
+from os.path import exists
 
 import numpy as np
+import pandas as pd
 import plotly
 import plotly.express as px
 import plotly.graph_objs as go
+import scipy.stats
+import swifter
 from colour import Color
 from numpy.random import randint
 from plotly.subplots import make_subplots
 from scipy.spatial import SphericalVoronoi, geometric_slerp
 
-from .tileset import *
-from .tileset_voro import *
+from .data import *
+from .utils.tileset import *
+from .utils.tileset_voro import *
 
 
 class VizSphere():
@@ -125,19 +130,19 @@ class VizSphere():
         # start, end colors
         start_c = '#b2d8ff'
         end_c = '#00264c'
-        
+
         # start, end marks
         self.data.append(go.Scatter3d(x=[trajectory[0][0]],
-                              y=[trajectory[0][1]],
-                              z=[trajectory[0][2]],
-                              mode='markers',
-                              marker={'size': 4, 'color': start_c}))
+                                      y=[trajectory[0][1]],
+                                      z=[trajectory[0][2]],
+                                      mode='markers',
+                                      marker={'size': 4, 'color': start_c}))
         self.data.append(go.Scatter3d(x=[trajectory[-1][0]],
-                              y=[trajectory[-1][1]],
-                              z=[trajectory[-1][2]],
-                              mode='markers',
-                              marker={'size': 4, 'color': end_c}))
-        
+                                      y=[trajectory[-1][1]],
+                                      z=[trajectory[-1][2]],
+                                      mode='markers',
+                                      marker={'size': 4, 'color': end_c}))
+
         # edges
         n = len(trajectory)
         t = np.linspace(0, 1, 100)
@@ -195,7 +200,7 @@ def show_sphere_fov(trace, tileset=TILESET_DEFAULT, to_html=False):
         fig.update_yaxes(autorange="reversed")  # fix given phi 0 being the north pole at Utils.cartesian_to_eulerian
 
     # show or save html
-    title = f"trace_[{trace[0]:.2},{trace[1]:.2},{trace[2]:.2}] {tileset.title_with_reqs([heatmap])}"
+    title = f"trace_[{trace[0]:.2},{trace[1]:.2},{trace[2]:.2}]_{tileset.prefix}"
     _show_or_save_to_html(fig, title, to_html)
 
 
@@ -212,7 +217,7 @@ def show_sphere_trajects(df: pd.DataFrame, tileset=TILESET_DEFAULT, to_html=Fals
         fig.append_trace(d, row=1, col=1)
     # heatmap
     # TODO: calcuate if hmps is not in df
-    if not df['hmps'].empty:
+    if 'hmps' in df:
         hmp_sums = df['hmps'].apply(lambda traces: np.sum(traces, axis=0))
         if isinstance(tileset, TileSetVoro):
             hmp_sums = np.reshape(hmp_sums, tileset.shape)
@@ -227,5 +232,58 @@ def show_sphere_trajects(df: pd.DataFrame, tileset=TILESET_DEFAULT, to_html=Fals
             fig.update_yaxes(autorange="reversed")
 
     # show or save html
-    title = f"trajects_{str(df.shape[0])} {tileset.title_with_reqs(heatmap)}"
+    title = f"trajects_{str(df.shape[0])}_{tileset.title}"
     _show_or_save_to_html(fig, title, to_html)
+
+
+def calc_trajects_tileset_metrics(tileset_l: list[TileSetIF], n_trajects=None):
+    assert (not get_df_trajects().empty)
+    if n_trajects:
+        df = get_df_trajects()[:n_trajects]
+    else:
+        df = get_df_trajects()
+
+    def create_tsdf(ts_idx):
+        tileset = tileset_l[ts_idx]
+        def f_trace(trace):
+            heatmap, vp_quality, area_out = tileset.request(trace, return_metrics=True)
+            return (int(np.sum(heatmap)), vp_quality, area_out)
+        f_traject = lambda traces: np.apply_along_axis(f_trace, 1, traces)
+        tmpdf = pd.DataFrame(df['traces'].swifter.apply(f_traject))
+        tmpdf.columns = [tileset.title]
+        return tmpdf
+    df_tileset_metrics = pd.concat(map(create_tsdf, range(len(tileset_l))), axis=1)
+    Data.singleton().df_tileset_metrics = df_tileset_metrics
+
+
+def show_trajects_tileset_metrics():
+    df_tileset_metrics = Data.singleton().df_tileset_metrics
+    assert (not df_tileset_metrics.empty)
+
+    # calc tileset metrics
+    f_traject_reqs = lambda traces: np.sum(traces[:, 0])
+    f_traject_qlt = lambda traces: np.mean(traces[:, 1])
+    f_traject_lost = lambda traces: np.mean(traces[:, 2])
+    data = {'tileset': [], 'avg_reqs': [], 'avg_qlt': [], 'avg_lost': []}
+    for name in df_tileset_metrics.columns:
+        dfts = df_tileset_metrics[name]
+        data['tileset'].append(name)
+        data['avg_reqs'].append(dfts.apply(f_traject_reqs).mean())
+        data['avg_qlt'].append(dfts.apply(f_traject_qlt).mean())
+        data['avg_lost'].append(dfts.apply(f_traject_lost).mean())
+        data['score'] = data['avg_qlt'][-1] / data['avg_lost'][-1]
+    df = pd.DataFrame(data)
+
+    fig = make_subplots(rows=1, cols=4, subplot_titles=("avg_reqs", "avg_lost",
+                        "avg_qlt", "score=avg_qlt/avg_lost"), shared_yaxes=True)
+    y = df_tileset_metrics.columns
+    trace = go.Bar(y=y, x=df['avg_reqs'], orientation='h', width=0.3)
+    fig.add_trace(trace, row=1, col=1)
+    trace = go.Bar(y=y, x=df['avg_lost'], orientation='h', width=0.3)
+    fig.add_trace(trace, row=1, col=2)
+    trace = go.Bar(y=y, x=df['avg_qlt'], orientation='h', width=0.3)
+    fig.add_trace(trace, row=1, col=3)
+    trace = go.Bar(y=y, x=df['score'], orientation='h', width=0.3)
+    fig.add_trace(trace, row=1, col=4)
+    fig.update_layout(width=1500, showlegend=False, barmode="stack",)
+    fig.show()

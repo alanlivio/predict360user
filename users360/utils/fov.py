@@ -1,8 +1,8 @@
 import numpy as np
 from spherical_geometry import polygon
 
-from .data import *
-from .head_motion_prediction.Utils import *
+from ..data import *
+from ..head_motion_prediction.Utils import *
 
 X1Y0Z0 = np.array([1, 0, 0])
 HOR_DIST = degrees_to_radian(110)

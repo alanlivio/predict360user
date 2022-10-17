@@ -5,7 +5,6 @@ import numpy as np
 from spherical_geometry import polygon
 
 from .fov import *
-from .head_motion_prediction.Utils import *
 
 
 def _init_tileset(t_ver, t_hor):
@@ -102,7 +101,7 @@ class TileSet(TileSetIF):
 
     @property
     def prefix(self):
-        return f'tiles{self.t_ver}x{self.t_hor}'
+        return f'ts{self.t_ver}x{self.t_hor}'
 
     def request(self, trace: np.ndarray, return_metrics=False):
         if self.cover == TileCover.CENTER:

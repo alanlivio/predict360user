@@ -1,10 +1,12 @@
-# type: ignore
-from users360 import *
 import unittest
+
 from numpy import array as array
 
-class Test(unittest.TestCase):
+from users360 import *
 
+
+class Test(unittest.TestCase):
+        
     def test_tiles_poly(self):
         # t_ver, t_hor = 6 , 4
         # traces = [ [1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1] ]

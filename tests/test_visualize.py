@@ -1,5 +1,6 @@
-from users360 import *
 import unittest
+
+from users360 import *
 
 
 class Test(unittest.TestCase):
@@ -18,6 +19,8 @@ class Test(unittest.TestCase):
         for trace in traces:
             show_sphere_fov(trace, to_html=True)
 
-    def test_trajects(self):
-        show_sphere_fov(get_one_trace(), to_html=True)
+    def test_sphere_trajects(self):
         show_sphere_trajects(get_one_traject(), to_html=True)
+
+    # def test_tileset_metrics(self):
+    #     calc_trajects_tileset_metrics([TILESET_DEFAULT], 2)

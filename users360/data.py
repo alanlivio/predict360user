@@ -2,13 +2,16 @@ from __future__ import annotations
 
 import logging
 import os
+import pathlib
 import pickle
 from os.path import exists
 
 import numpy as np
 import pandas as pd
 
-from .config import *
+DATADIR = f"{pathlib.Path(__file__).parent.parent / 'data/'}"
+HMDDIR = f"{pathlib.Path(__file__).parent / 'head_motion_prediction/'}"
+logging.basicConfig(level=logging.INFO, format='%(levelname)s:%(message)s')
 
 
 class Savable():
@@ -56,6 +59,8 @@ class Data(Savable):
     def singleton(cls) -> Data:
         if cls._instance is None:
             cls._instance = Data.load_or_create()
+            cls._instance.load_dataset()
+            cls._instance.save()
         return cls._instance
 
     def load_dataset(self):
@@ -90,7 +95,7 @@ class Data(Savable):
                      ) for user in dataset.keys() for video in dataset[user].keys()]
             tmpdf = pd.DataFrame(data, columns=['ds', 'ds_user', 'ds_video', 'times', 'traces'])
             # size check
-            assert(tmpdf.ds.value_counts()[ds_names[idx]] == ds_sizes[idx])
+            assert (tmpdf.ds.value_counts()[ds_names[idx]] == ds_sizes[idx])
             return tmpdf
 
         # create df_trajects for all dataset
@@ -102,3 +107,20 @@ class Data(Savable):
 
         # back to cwd
         os.chdir(cwd)
+
+
+def get_df_trajects() -> pd.DataFrame:
+    return Data.singleton().df_trajects
+
+
+def save_df_trajects(df: pd.DataFrame):
+    Data.singleton().df_trajects = df
+    Data.singleton().save()
+
+
+def get_one_trace():
+    return Data.singleton().df_trajects.iloc[0]['traces'][0]
+
+
+def get_one_traject():
+    return Data.singleton().df_trajects.head(1)
