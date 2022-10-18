@@ -17,10 +17,10 @@ class Test(unittest.TestCase):
     def test_fov_at_axis(self):
         traces = [1., 0., 0.], [-1., 0., 0.], [0., 1., 0.], [0., -1., 0.], [0., 0., 1.], [0., 0., -1.]
         for trace in traces:
-            show_sphere_fov(trace, to_html=True)
+            show_fov(trace, to_html=True)
 
-    def test_sphere_trajects(self):
-        show_sphere_trajects(get_one_traject(), to_html=True)
+    def test_trajects(self):
+        show_trajects(get_one_traject(), to_html=True)
 
     # def test_tileset_metrics(self):
     #     calc_trajects_tileset_metrics([TILESET_DEFAULT], 2)

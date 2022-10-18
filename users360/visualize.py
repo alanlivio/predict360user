@@ -175,7 +175,7 @@ def _show_or_save_to_html(fig, title, to_html):
         fig.show()
 
 
-def show_sphere_fov(trace, tileset=TILESET_DEFAULT, to_html=False):
+def show_fov(trace, tileset=TILESET_DEFAULT, to_html=False):
     assert len(trace) == 3  # cartesian
 
     # subplot two figures
@@ -204,7 +204,7 @@ def show_sphere_fov(trace, tileset=TILESET_DEFAULT, to_html=False):
     _show_or_save_to_html(fig, title, to_html)
 
 
-def show_sphere_trajects(df: pd.DataFrame, tileset=TILESET_DEFAULT, to_html=False):
+def show_trajects(df: pd.DataFrame, tileset=TILESET_DEFAULT, to_html=False):
     assert (not df.empty)
 
     # subplot two figures
