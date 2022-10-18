@@ -85,9 +85,13 @@ class Data(Savable):
             # create sampled
             if len(os.listdir(ds_pkgs[idx].OUTPUT_FOLDER)) < 2:
                 ds_pkgs[idx].create_and_store_sampled_dataset()
+            # each load_sample_dateset return a dict with:
+            # {<video1>:{<user1>:[time-stamp, x, y, z], ...}, ...}"
             dataset = ds_pkgs[idx].load_sampled_dataset()
 
             # df with (dataset, user, video, times, traces)
+            # times has only time-stamps
+            # traces has only x, y, z (in 3d coordinates)
             data = [(ds_names[idx],
                     user,
                     video,
@@ -114,14 +118,39 @@ def get_df_trajects() -> pd.DataFrame:
     return Data.singleton().df_trajects
 
 
-def save_df_trajects(df: pd.DataFrame):
+def save_df_trajects(df: pd.DataFrame) -> None:
     Data.singleton().df_trajects = df
     Data.singleton().save()
 
 
-def get_one_trace():
-    return Data.singleton().df_trajects.iloc[0]['traces'][0]
+def get_one_trace() -> np.array:
+    return get_df_trajects().iloc[0]['traces'][0]
 
 
-def get_one_traject():
-    return Data.singleton().df_trajects.head(1)
+def get_one_traject() -> np.array:
+    return get_df_trajects().head(1)
+
+
+def get_traces(video, user, ds='David_MMSys_18') -> np.array:
+    # TODO: df indexed by (ds, ds_user, ds_video)
+    row = get_df_trajects().query(f"ds=='{ds}' and ds_user=='{user}' and ds_video=='{video}'")
+    assert (not row.empty)
+    return row['traces'].iloc[0]
+
+
+def get_video_ids(ds='David_MMSys_18'):
+    df = get_df_trajects()
+    return df.loc[df['ds'] == ds]['ds_video'].unique()
+
+
+def get_user_ids():
+    df = get_df_trajects()
+    return df.loc[df['ds'] == 'David_MMSys_18']['ds_user'].unique()
+
+
+def get_users_per_video():
+    videos = get_video_ids()
+    users_per_video = {}
+    for video in videos:
+        users_per_video[video] = [user for user in get_user_ids()]
+    return users_per_video

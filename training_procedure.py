@@ -3,14 +3,18 @@ import argparse
 import logging
 import sys
 
+import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow.keras as keras
 
 from users360 import *
+from users360.head_motion_prediction.position_only_baseline import \
+    create_pos_only_model
 
 # consts
 METRIC = all_metrics['orthodromic']
-EPOCHS = 500
+EPOCHS = 1
+# EPOCHS = 500
 NUM_TILES_WIDTH = 384
 NUM_TILES_HEIGHT = 216
 RATE = 0.2
@@ -48,12 +52,12 @@ MODELS_FOLDER: str
 DATASET_SAMPLED_FOLDER: str
 EXP_NAME: str
 
-from users360.head_motion_prediction.position_only_baseline import \
-    create_pos_only_model
 
-
-def create_model(name=""):
-    return create_pos_only_model(M_WINDOW, H_WINDOW)
+def create_model():
+    if MODEL_NAME == "pos_only":
+        return create_pos_only_model(M_WINDOW, H_WINDOW)
+    else:
+        raise NotImplemented()
 
 
 def transform_batches_cartesian_to_normalized_eulerian(positions_in_batch):
@@ -68,57 +72,6 @@ def transform_normalized_eulerian_to_cartesian(positions):
     positions = positions * np.array([2 * np.pi, np.pi])
     eulerian_samples = [eulerian_to_cartesian(pos[0], pos[1]) for pos in positions]
     return np.array(eulerian_samples)
-
-
-# def get_traces(video, user):
-#     row = Data.singleton().df_trajects.query(f"ds={DATASET_NAME} and ds_user={user} and ds_video={video}")
-#     return row['traces']
-
-# get videos
-def get_video_ids():
-    # Returns the ids of the videos in the dataset
-    list_of_videos = [o for o in os.listdir(DATASET_SAMPLED_FOLDER) if not o.endswith('.gitkeep')]
-    # Sort to avoid randomness of keys(), to guarantee reproducibility
-    list_of_videos.sort()
-    return list_of_videos
-
-
-def get_user_ids():
-    # returns the unique ids of the users in the dataset
-    videos = get_video_ids()
-    users = []
-    for video in videos:
-        for user in [o for o in os.listdir(os.path.join(DATASET_SAMPLED_FOLDER, video)) if not o.endswith('.gitkeep')]:
-            users.append(user)
-    list_of_users = list(set(users))
-    # Sort to avoid randomness of keys(), to guarantee reproducibility
-    list_of_users.sort()
-    return list_of_users
-
-
-def get_users_per_video():
-    # Returns a dictionary indexed by video, and under each index you can find the users for which the trace has been stored for this video
-    videos = get_video_ids()
-    users_per_video = {}
-    for video in videos:
-        users_per_video[video] = [user for user in os.listdir(os.path.join(DATASET_SAMPLED_FOLDER, video))]
-    return users_per_video
-
-
-def read_sampled_positions_for_trace(video, user):
-    # returns only the positions from the trace
-    # ~time-stamp~ is removed from the output, only x, y, z (in 3d coordinates) is returned
-    path = os.path.join(DATASET_SAMPLED_FOLDER, video, user)
-    data = pd.read_csv(path, header=None)
-    return data.values[:, 1:]
-
-
-def read_sampled_data_for_trace(video, user):
-    # returns the whole data organized as follows:
-    # time-stamp, x, y, z (in 3d coordinates)
-    path = os.path.join(DATASET_SAMPLED_FOLDER, video, user)
-    data = pd.read_csv(path, header=None)
-    return data.values
 
 
 def split_list_by_percentage(the_list, percentage):
@@ -242,7 +195,6 @@ def evaluate():
         for t in range(H_WINDOW):
             logging.info(f"video={video_name} {t} {np.mean(errors_per_video[video_name][t])}")
 
-    import matplotlib.pyplot as plt
     avg_error_per_timestep = []
     for t in range(H_WINDOW):
         logging.info(f"Average {t} {np.mean(errors_per_timestep[t])}")
@@ -337,7 +289,7 @@ if __name__ == "__main__":
         for video in VIDEOS:
             ALL_TRACES[video] = {}
             for user in USERS_PER_VIDEO[video]:
-                ALL_TRACES[video][user] = read_sampled_positions_for_trace(str(video), str(user))
+                ALL_TRACES[video][user] = get_traces(video, user)
 
         # split
         VIDEOS_TRAIN, VIDEOS_TEST = split_list_by_percentage(VIDEOS, PERC_VIDEOS_TRAIN)
@@ -349,14 +301,14 @@ if __name__ == "__main__":
         for video in VIDEOS_TRAIN:
             for user in USERS_TRAIN:
                 # to get the length of the trace
-                trace_length = read_sampled_data_for_trace(video, user).shape[0]
+                trace_length = get_traces(video, user).shape[0]
                 for tstap in range(INIT_WINDOW, trace_length - END_WINDOW):
                     ID = {'video': video, 'user': user, 'time-stamp': tstap}
                     PARTITION['train'].append(ID)
         for video in VIDEOS_TEST:
             for user in USERS_TEST:
                 # to get the length of the trace
-                trace_length = read_sampled_data_for_trace(video, user).shape[0]
+                trace_length = get_traces(video, user).shape[0]
                 for tstap in range(INIT_WINDOW, trace_length - END_WINDOW):
                     ID = {'video': video, 'user': user, 'time-stamp': tstap}
                     PARTITION['test'].append(ID)

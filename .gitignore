@@ -129,6 +129,7 @@ dmypy.json
 .pyre/
 
 # added
+.tmp
 data/*.pickle
 data/*.html
 data/David_MMSys_18
