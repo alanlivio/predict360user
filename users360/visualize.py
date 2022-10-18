@@ -25,7 +25,7 @@ class VizSphere():
             self.data = self._data_sphere_voro(tileset.voro)
         else:
             self.data = self._data_sphere_tiled(tileset.t_ver, tileset.t_hor)
-        self.title = "sphere"
+        self.title = "trajectory"
 
     def _data_sphere_surface(self) -> list:
         # https://community.plotly.com/t/3d-surface-bug-a-custom-colorscale-defined-with-rgba-values-ignores-the-alpha-specification/30809

@@ -36,7 +36,7 @@ END_WINDOW: int
 MODEL = None
 USERS = None
 VIDEOS = None
-VIDEOS_TRAIN = None 
+VIDEOS_TRAIN = None
 VIDEOS_TEST = None
 USERS_TRAIN = None
 USERS_TEST = None
@@ -54,6 +54,7 @@ from users360.head_motion_prediction.position_only_baseline import \
 
 def create_model(name=""):
     return create_pos_only_model(M_WINDOW, H_WINDOW)
+
 
 def transform_batches_cartesian_to_normalized_eulerian(positions_in_batch):
     positions_in_batch = np.array(positions_in_batch)
@@ -81,6 +82,7 @@ def get_video_ids():
     list_of_videos.sort()
     return list_of_videos
 
+
 def get_user_ids():
     # returns the unique ids of the users in the dataset
     videos = get_video_ids()
@@ -93,6 +95,7 @@ def get_user_ids():
     list_of_users.sort()
     return list_of_users
 
+
 def get_users_per_video():
     # Returns a dictionary indexed by video, and under each index you can find the users for which the trace has been stored for this video
     videos = get_video_ids()
@@ -100,7 +103,8 @@ def get_users_per_video():
     for video in videos:
         users_per_video[video] = [user for user in os.listdir(os.path.join(DATASET_SAMPLED_FOLDER, video))]
     return users_per_video
-    
+
+
 def read_sampled_positions_for_trace(video, user):
     # returns only the positions from the trace
     # ~time-stamp~ is removed from the output, only x, y, z (in 3d coordinates) is returned
@@ -108,12 +112,14 @@ def read_sampled_positions_for_trace(video, user):
     data = pd.read_csv(path, header=None)
     return data.values[:, 1:]
 
+
 def read_sampled_data_for_trace(video, user):
     # returns the whole data organized as follows:
     # time-stamp, x, y, z (in 3d coordinates)
     path = os.path.join(DATASET_SAMPLED_FOLDER, video, user)
     data = pd.read_csv(path, header=None)
     return data.values
+
 
 def split_list_by_percentage(the_list, percentage):
     # Fixing random state for reproducibility
@@ -124,6 +130,7 @@ def split_list_by_percentage(the_list, percentage):
     train_part = the_list[:num_samples_first_part]
     test_part = the_list[num_samples_first_part:]
     return train_part, test_part
+
 
 def generate_arrays(list_IDs, future_window):
     while True:
@@ -140,9 +147,9 @@ def generate_arrays(list_IDs, future_window):
             x_i = IDs['time-stamp']
             # Load the data
             if MODEL_NAME == 'pos_only':
-                encoder_pos_inputs_for_batch.append(ALL_TRACES[video][user][x_i-M_WINDOW:x_i])
-                decoder_pos_inputs_for_batch.append(ALL_TRACES[video][user][x_i:x_i+1])
-                decoder_outputs_for_batch.append(ALL_TRACES[video][user][x_i+1:x_i+future_window+1])
+                encoder_pos_inputs_for_batch.append(ALL_TRACES[video][user][x_i - M_WINDOW:x_i])
+                decoder_pos_inputs_for_batch.append(ALL_TRACES[video][user][x_i:x_i + 1])
+                decoder_outputs_for_batch.append(ALL_TRACES[video][user][x_i + 1:x_i + future_window + 1])
             else:
                 raise NotImplementedError()
             count += 1
@@ -163,15 +170,17 @@ def generate_arrays(list_IDs, future_window):
             else:
                 raise NotImplementedError()
 
+
 def train():
     steps_per_ep_train = np.ceil(len(PARTITION['train']) / BATCH_SIZE)
     steps_per_ep_validate = np.ceil(len(PARTITION['test']) / BATCH_SIZE)
-    
+
     # train
     csv_logger_f = os.path.join(RESULTS_FOLDER, 'results.csv')
     csv_logger = keras.callbacks.CSVLogger(csv_logger_f)
     weights_f = os.path.join(MODELS_FOLDER, 'weights.hdf5')
-    model_checkpoint = keras.callbacks.ModelCheckpoint(weights_f, save_best_only=True, save_weights_only=True, mode='auto', period=1)
+    model_checkpoint = keras.callbacks.ModelCheckpoint(
+        weights_f, save_best_only=True, save_weights_only=True, mode='auto', period=1)
     if MODEL_NAME == 'pos_only':
         MODEL.fit_generator(
             generator=generate_arrays(PARTITION['train'], future_window=H_WINDOW),
@@ -182,13 +191,14 @@ def train():
     else:
         raise NotImplementedError()
 
+
 def evaluate():
-    
+
     if MODEL_NAME == "pos_only":
         MODEL.load_weights(MODELS_FOLDER + '/weights.hdf5')
     else:
         raise NotImplementedError()
-    
+
     traces_count = 0
     errors_per_video = {}
     errors_per_timestep = {}
@@ -206,12 +216,12 @@ def evaluate():
 
         # Load the data
         if MODEL_NAME == 'pos_only':
-            encoder_pos_inputs_for_sample = np.array([ALL_TRACES[video][user][x_i-M_WINDOW:x_i]])
+            encoder_pos_inputs_for_sample = np.array([ALL_TRACES[video][user][x_i - M_WINDOW:x_i]])
             decoder_pos_inputs_for_sample = np.array([ALL_TRACES[video][user][x_i:x_i + 1]])
         else:
             raise NotImplementedError()
-        
-        groundtruth = ALL_TRACES[video][user][x_i+1:x_i+H_WINDOW+1]
+
+        groundtruth = ALL_TRACES[video][user][x_i + 1:x_i + H_WINDOW + 1]
 
         if MODEL_NAME == 'pos_only':
             model_pred = MODEL.predict([transform_batches_cartesian_to_normalized_eulerian(
@@ -256,8 +266,8 @@ def make_dataset():
 
 
 if __name__ == "__main__":
-    if not exists("data/Data.pickle"):
-        logging.error("data/Data.pickle does not exist. Run python main.py --make_dataset")
+    if not exists(Data.singleton()._pickle_file()):
+        logging.error(f"{Data.singleton()._pickle_file()} does not exist. Run python main.py --make_dataset")
         exit
 
     # create ArgumentParser
@@ -298,17 +308,18 @@ if __name__ == "__main__":
     M_WINDOW = ARGS.m_window
     H_WINDOW = ARGS.h_window
     END_WINDOW = H_WINDOW
-    
-    # DATASET_SAMPLED_FOLDER  
-    DATASET_DIR_HMP = os.path.join('users360','head_motion_prediction', DATASET_NAME)
+
+    # DATASET_SAMPLED_FOLDER
+    DATASET_DIR_HMP = os.path.join('users360', 'head_motion_prediction', DATASET_NAME)
     DATASET_SAMPLED_FOLDER = os.path.join(DATASET_DIR_HMP, 'sampled_dataset')
-    
+
     # RESULTS_FOLDER, MODELS_FOLDER folders
     DATASET_DIR = os.path.join(DATADIR, DATASET_NAME)
-    EXP_NAME = '_init_' + str(INIT_WINDOW) + '_in_' + str(M_WINDOW) + '_out_' + str(H_WINDOW) + '_end_' + str(END_WINDOW)
+    EXP_NAME = '_init_' + str(INIT_WINDOW) + '_in_' + str(M_WINDOW) + '_out_' + \
+        str(H_WINDOW) + '_end_' + str(END_WINDOW)
     if MODEL_NAME == 'pos_only':
-        RESULTS_FOLDER = os.path.join(DATASET_DIR, 'pos_only',  'Results_EncDec_eulerian' + EXP_NAME)
-        MODELS_FOLDER = os.path.join(DATASET_DIR, 'pos_only' , 'Models_EncDec_eulerian' + EXP_NAME)
+        RESULTS_FOLDER = os.path.join(DATASET_DIR, 'pos_only', 'Results_EncDec_eulerian' + EXP_NAME)
+        MODELS_FOLDER = os.path.join(DATASET_DIR, 'pos_only', 'Models_EncDec_eulerian' + EXP_NAME)
     else:
         raise NotImplementedError()
     if not os.path.exists(RESULTS_FOLDER):
@@ -317,7 +328,7 @@ if __name__ == "__main__":
         os.makedirs(MODELS_FOLDER)
 
     # prepare partitions/model for train/evaluate
-    if (ARGS.train or ARGS.evaluate): 
+    if (ARGS.train or ARGS.evaluate):
         logging.info("prepare partitions")
         USERS = get_user_ids()
         VIDEOS = get_video_ids()
@@ -327,7 +338,7 @@ if __name__ == "__main__":
             ALL_TRACES[video] = {}
             for user in USERS_PER_VIDEO[video]:
                 ALL_TRACES[video][user] = read_sampled_positions_for_trace(str(video), str(user))
-        
+
         # split
         VIDEOS_TRAIN, VIDEOS_TEST = split_list_by_percentage(VIDEOS, PERC_VIDEOS_TRAIN)
         USERS_TRAIN, USERS_TEST = split_list_by_percentage(USERS, PERC_USERS_TRAIN)
@@ -349,6 +360,7 @@ if __name__ == "__main__":
                 for tstap in range(INIT_WINDOW, trace_length - END_WINDOW):
                     ID = {'video': video, 'user': user, 'time-stamp': tstap}
                     PARTITION['test'].append(ID)
+
         # create model
         os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
         if ARGS.gpu_id:

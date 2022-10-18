@@ -18,7 +18,7 @@ class Savable():
 
     @classmethod
     def _pickle_file(cls):
-        return f'{DATADIR}/{cls.__name__}.pickle'
+        return os.path.join(DATADIR, f'{cls.__name__}.pickle')
 
     def save(self):
         with open(self._pickle_file(), 'wb') as f:
@@ -30,7 +30,7 @@ class Savable():
             os.remove(cls._pickle_file())
 
     @classmethod
-    def load_or_create(cls):
+    def load_or_create_instance(cls):
         if exists(cls._pickle_file()):
             with open(cls._pickle_file(), 'rb') as f:
                 logging.info(f"loading {cls.__name__} from {cls._pickle_file()}")
@@ -58,7 +58,8 @@ class Data(Savable):
     @classmethod
     def singleton(cls) -> Data:
         if cls._instance is None:
-            cls._instance = Data.load_or_create()
+            cls._instance = Data.load_or_create_instance()
+        if cls._instance.df_trajects.empty:
             cls._instance.load_dataset()
             cls._instance.save()
         return cls._instance
@@ -95,7 +96,7 @@ class Data(Savable):
                      ) for user in dataset.keys() for video in dataset[user].keys()]
             tmpdf = pd.DataFrame(data, columns=['ds', 'ds_user', 'ds_video', 'times', 'traces'])
             # size check
-            assert (tmpdf.ds.value_counts()[ds_names[idx]] == ds_sizes[idx])
+            assert (tmpdf['ds'].value_counts()[ds_names[idx]] == ds_sizes[idx])
             return tmpdf
 
         # create df_trajects for all dataset
