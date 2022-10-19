@@ -46,7 +46,6 @@ USERS_TRAIN = None
 USERS_TEST = None
 USERS_PER_VIDEO = None
 PARTITION = None
-ALL_TRACES = None
 RESULTS_FOLDER: str
 MODELS_FOLDER: str
 DATASET_SAMPLED_FOLDER: str
@@ -100,9 +99,9 @@ def generate_arrays(list_IDs, future_window):
             x_i = IDs['time-stamp']
             # Load the data
             if MODEL_NAME == 'pos_only':
-                encoder_pos_inputs_for_batch.append(ALL_TRACES[video][user][x_i - M_WINDOW:x_i])
-                decoder_pos_inputs_for_batch.append(ALL_TRACES[video][user][x_i:x_i + 1])
-                decoder_outputs_for_batch.append(ALL_TRACES[video][user][x_i + 1:x_i + future_window + 1])
+                encoder_pos_inputs_for_batch.append(get_traces(video, user)[x_i - M_WINDOW:x_i])
+                decoder_pos_inputs_for_batch.append(get_traces(video, user)[x_i:x_i + 1])
+                decoder_outputs_for_batch.append(get_traces(video, user)[x_i + 1:x_i + future_window + 1])
             else:
                 raise NotImplementedError()
             count += 1
@@ -169,12 +168,12 @@ def evaluate():
 
         # Load the data
         if MODEL_NAME == 'pos_only':
-            encoder_pos_inputs_for_sample = np.array([ALL_TRACES[video][user][x_i - M_WINDOW:x_i]])
-            decoder_pos_inputs_for_sample = np.array([ALL_TRACES[video][user][x_i:x_i + 1]])
+            encoder_pos_inputs_for_sample = np.array([get_traces(video, user)[x_i - M_WINDOW:x_i]])
+            decoder_pos_inputs_for_sample = np.array([get_traces(video, user)[x_i:x_i + 1]])
         else:
             raise NotImplementedError()
 
-        groundtruth = ALL_TRACES[video][user][x_i + 1:x_i + H_WINDOW + 1]
+        groundtruth = get_traces(video, user)[x_i + 1:x_i + H_WINDOW + 1]
 
         if MODEL_NAME == 'pos_only':
             model_pred = MODEL.predict([transform_batches_cartesian_to_normalized_eulerian(
@@ -208,20 +207,7 @@ def evaluate():
     plt.show()
 
 
-def make_dataset():
-    Data.singleton().load_dataset()
-    df = Data.singleton().df_trajects
-    logging.info(f"df_trajects.size={df.size}")
-    logging.info("calc_trajects_entropy")
-    calc_trajects_entropy()
-    Data.singleton().save()
-
-
 if __name__ == "__main__":
-    if not exists(Data.singleton()._pickle_file()):
-        logging.error(f"{Data.singleton()._pickle_file()} does not exist. Run python main.py --make_dataset")
-        exit
-
     # create ArgumentParser
     parser = argparse.ArgumentParser()
     parser.description = 'train or evaluate users360 models and datasets'
@@ -229,8 +215,6 @@ if __name__ == "__main__":
     # model_names = ['TRACK', 'CVPR18', 'pos_only', 'no_motion', 'most_salient_point', 'true_saliency',
     #                'content_based_saliency', 'CVPR18_orig', 'TRACK_AblatSal', 'TRACK_AblatFuse', 'MM18', 'pos_only_3d_loss']
     dataset_names = ['David_MMSys_18']
-    parser.add_argument('-make_dataset', action='store_true',
-                        help='Flag that tells run make_dataset procedure')
     parser.add_argument('-train', action='store_true',
                         help='Flag that tells run the train procedure')
     parser.add_argument('-evaluate', action='store_true',
@@ -285,11 +269,6 @@ if __name__ == "__main__":
         USERS = get_user_ids()
         VIDEOS = get_video_ids()
         USERS_PER_VIDEO = get_users_per_video()
-        ALL_TRACES = {}
-        for video in VIDEOS:
-            ALL_TRACES[video] = {}
-            for user in USERS_PER_VIDEO[video]:
-                ALL_TRACES[video][user] = get_traces(video, user)
 
         # split
         VIDEOS_TRAIN, VIDEOS_TEST = split_list_by_percentage(VIDEOS, PERC_VIDEOS_TRAIN)
@@ -319,9 +298,6 @@ if __name__ == "__main__":
             os.environ["CUDA_VISIBLE_DEVICES"] = ARGS.gpu_id
         logging.info("create model")
         MODEL = create_model()
-    if ARGS.make_dataset:
-        logging.info("make_dataset")
-        make_dataset()
     if ARGS.train:
         logging.info("train")
         train()
