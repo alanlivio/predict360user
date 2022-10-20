@@ -1,10 +1,17 @@
 # users360
 
-Python library to perform user behavior analysis on 360-degree videos from [Rondon datasets collection](https://gitlab.com/miguelfromeror/head-motion-prediction).
+This project extends [Rondon 360-videos models/dataset collection](https://gitlab.com/miguelfromeror/head-motion-prediction) with support to:
 
-## Requeriments 
+* access users' trajectories at datasets as a panda.DataFrame 
+* view users' trajectories with a Plotly 3d visualization
+* perform user clustering by entropy
+* perform tileset analyses
+* perform prediction models filtred by users clustering
 
-Install tensorfolow with cuda, please follow https://www.tensorflow.org/install/
+
+* Requirements 
+
+To install TensorFlow with Cuda, please follow https://www.tensorflow.org/install/
 
 ```bash
 pip install -r requeriments.txt
