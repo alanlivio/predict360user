@@ -142,14 +142,6 @@ def get_video_ids(ds='David_MMSys_18') -> np.array:
     return df.loc[df['ds'] == ds]['ds_video'].unique()
 
 
-def get_user_ids() -> np.array:
+def get_user_ids(ds='David_MMSys_18') -> np.array:
     df = get_df_trajects()
-    return df.loc[df['ds'] == 'David_MMSys_18']['ds_user'].unique()
-
-
-def get_users_per_video() -> dict[str, dict]:
-    videos = get_video_ids()
-    users_per_video = {}
-    for video in videos:
-        users_per_video[video] = [user for user in get_user_ids()]
-    return users_per_video
+    return df.loc[df['ds'] == ds]['ds_user'].unique()

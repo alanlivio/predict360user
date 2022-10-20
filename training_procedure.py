@@ -45,7 +45,6 @@ VIDEOS_TRAIN:list
 VIDEOS_TEST:list
 USERS_TRAIN:list 
 USERS_TEST:list
-USERS_PER_VIDEO:dict 
 PARTITION:dict 
 RESULTS_FOLDER: str
 MODELS_FOLDER: str
@@ -209,13 +208,12 @@ def evaluate() -> None:
 
 
 if __name__ == "__main__":
-    # create ArgumentParser
+    
+    # argparse
     parser = argparse.ArgumentParser()
     parser.description = 'train or evaluate users360 models and datasets'
-    model_names = ['pos_only']
-    # model_names = ['TRACK', 'CVPR18', 'pos_only', 'no_motion', 'most_salient_point', 'true_saliency',
-    #                'content_based_saliency', 'CVPR18_orig', 'TRACK_AblatSal', 'TRACK_AblatFuse', 'MM18', 'pos_only_3d_loss']
-    dataset_names = ['David_MMSys_18']
+    model_names = ['pos_only', 'TRACK', 'CVPR18', 'MM18', 'most_salient_point']
+    dataset_names = ['David_MMSys_18','Fan_NOSSDAV_17', 'Nguyen_MM_18', 'Xu_CVPR_18', 'Xu_PAMI_18']
     parser.add_argument('-train', action='store_true',
                         help='Flag that tells run the train procedure')
     parser.add_argument('-evaluate', action='store_true',
@@ -269,7 +267,6 @@ if __name__ == "__main__":
         logging.info("prepare partitions")
         USERS = get_user_ids()
         VIDEOS = get_video_ids()
-        USERS_PER_VIDEO = get_users_per_video()
 
         # split
         VIDEOS_TRAIN, VIDEOS_TEST = split_list_by_percentage(VIDEOS, PERC_VIDEOS_TRAIN)
@@ -297,7 +294,7 @@ if __name__ == "__main__":
         os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
         if ARGS.gpu_id:
             os.environ["CUDA_VISIBLE_DEVICES"] = ARGS.gpu_id
-        logging.info("create model")
+        logging.info("create_model")
         MODEL = create_model()
     if ARGS.train:
         logging.info("train")
