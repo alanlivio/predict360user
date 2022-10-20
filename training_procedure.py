@@ -2,6 +2,7 @@
 import argparse
 import logging
 import sys
+from typing import Generator
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -83,7 +84,7 @@ def split_list_by_percentage(the_list, percentage) -> tuple[list, list]:
     return train_part, test_part
 
 
-def generate_arrays(list_IDs, future_window):
+def generate_arrays(list_IDs, future_window) -> Generator:
     while True:
         encoder_pos_inputs_for_batch = []
         encoder_sal_inputs_for_batch = []

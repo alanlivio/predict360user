@@ -6,7 +6,6 @@ import pandas as pd
 import plotly
 import plotly.express as px
 import plotly.graph_objs as go
-import scipy.stats
 import swifter
 from colour import Color
 from numpy.random import randint
@@ -79,7 +78,7 @@ class VizSphere():
                     data.append(edge)
         return data
 
-    def _add_polygon_lines(self, points):
+    def _add_polygon_lines(self, points) -> None:
         # gen points
         n = len(points)
         t = np.linspace(0, 1, 100)
@@ -105,15 +104,15 @@ class VizSphere():
                                 line={'width': 4, 'color': 'blue'})
             self.data.append(edge)
 
-    def add_polygon(self, polygon: polygon.SphericalPolygon):
+    def add_polygon(self, polygon: polygon.SphericalPolygon) -> None:
         assert polygon.points.shape[1] == 3
         self._add_polygon_lines([point for point in polygon.points])
 
-    def add_polygon_from_points(self, points):
+    def add_polygon_from_points(self, points) -> None:
         assert points.shape[1] == 3
         self._add_polygon_lines(points)
 
-    def add_polygon_from_tile_row_col(self, t_ver, t_hor, row, col):
+    def add_polygon_from_tile_row_col(self, t_ver, t_hor, row, col) -> None:
         points = tile_points(t_ver, t_hor, row, col)
         self._add_polygon_lines(points)
 
@@ -160,18 +159,9 @@ class VizSphere():
                                 line={'width': 5, 'color': colors[index]})
             self.data.append(edge)
 
-    def show(self):
+    def show(self) -> None:
         fig = go.Figure(data=self.data)
         fig.update_layout(width=800, showlegend=False, title_text=self.title)
-        fig.show()
-
-
-def _show_or_save_to_html(fig, title, to_html):
-    if to_html:
-        output_folder = pathlib.Path(__file__).parent.parent / 'data'
-        plotly.offline.plot(fig, filename=f'{output_folder}/{title}.html', auto_open=False)
-    else:
-        fig.update_layout(width=800, showlegend=False, title_text=title)
         fig.show()
 
 
@@ -201,7 +191,8 @@ def show_fov(trace, tileset=TILESET_DEFAULT, to_html=False) -> None:
 
     # show or save html
     title = f"trace_[{trace[0]:.2},{trace[1]:.2},{trace[2]:.2}]_{tileset.prefix}"
-    _show_or_save_to_html(fig, title, to_html)
+    fig.update_layout(width=800, showlegend=False, title_text=title)
+    fig.show()
 
 
 def show_trajects(df: pd.DataFrame, tileset=TILESET_DEFAULT, to_html=False) -> None:
@@ -213,7 +204,7 @@ def show_trajects(df: pd.DataFrame, tileset=TILESET_DEFAULT, to_html=False) -> N
     # sphere
     sphere = VizSphere(tileset)
     df['traces'].apply(lambda traces: sphere.add_trajectory(traces))
-    for d in sphere.data:
+    for d in sphere.data: # load all data from the sphere
         fig.append_trace(d, row=1, col=1)
     # heatmap
     # TODO: calcuate if hmps is not in df
@@ -225,15 +216,16 @@ def show_trajects(df: pd.DataFrame, tileset=TILESET_DEFAULT, to_html=False) -> N
         x = [str(x) for x in range(1, heatmap.shape[1] + 1)]
         y = [str(y) for y in range(1, heatmap.shape[0] + 1)]
         erp_heatmap = px.imshow(heatmap, text_auto=True, x=x, y=y)
-        for data in erp_heatmap["data"]:
-            fig.append_trace(data, row=1, col=2)
+        erp_heatmap.update_layout(width=100, height=100)
+        fig.append_trace(erp_heatmap.data[0], row=1, col=2)
         if isinstance(tileset, TileSet):
             # fix given phi 0 being the north pole at Utils.cartesian_to_eulerian
             fig.update_yaxes(autorange="reversed")
 
     # show or save html
-    title = f"trajects_{str(df.shape[0])}_{tileset.title}"
-    _show_or_save_to_html(fig, title, to_html)
+    title = f"{str(df.shape[0])}_trajects_{tileset.prefix}"
+    fig.update_layout(width=800, showlegend=False, title_text=title)
+    fig.show()
 
 
 def calc_trajects_tileset_metrics(tileset_l: list[TileSetIF], n_trajects=None) -> None:
