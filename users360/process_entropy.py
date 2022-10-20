@@ -14,14 +14,14 @@ from .utils.tileset import *
 _CLASS_COR = {"hight": "red", "medium": "green", "low": "blue"}
 
 
-def calc_trajects_hmps(tileset=TILESET_DEFAULT):
+def calc_trajects_hmps(tileset=TILESET_DEFAULT) -> None:
     df = get_df_trajects()
     f_trace = lambda trace: tileset.request(trace)
     f_traject = lambda traces: np.apply_along_axis(f_trace, 1, traces)
     df['hmps'] = pd.Series(df['traces'].swifter.apply(f_traject))
 
 
-def calc_trajects_entropy():
+def calc_trajects_entropy() -> None:
     df = get_df_trajects()
     if 'hmps' not in df.columns:
         calc_trajects_hmps()
@@ -39,13 +39,13 @@ def calc_trajects_entropy():
     df['entropy_class'] = df['entropy'].apply(f_threshold)
 
 
-def calc_trajects_entropy_users():
+def calc_trajects_entropy_users() -> None:
     df = get_df_trajects()
     df_users = Data.singleton().df_users
     if 'hmps' not in df.columns:
         calc_trajects_hmps()
     # calc entropy
-    def f_entropy_user(trajects):
+    def f_entropy_user(trajects) -> np.ndarray:
         hmps_sum = np.sum(np.sum(trajects['hmps'].to_numpy(), axis=0), axis=0)
         return scipy.stats.entropy(hmps_sum.reshape((-1)))
     df_users['entropy'] = df.groupby(['user']).apply(f_entropy_user)
@@ -59,7 +59,7 @@ def calc_trajects_entropy_users():
     f_threshold = lambda x: 'low' if x < threshold_medium else ('medium' if x < threshold_hight else 'hight')
     df_users['entropy_class'] = df_users['entropy'].apply(f_threshold)
 
-def calc_trajects_poles_prc():
+def calc_trajects_poles_prc() -> None:
     df = get_df_trajects()
     f_traject = lambda traces: np.count_nonzero(abs(traces[:, 2]) > 0.7) / len(traces)
     df['poles_prc'] = pd.Series(df['traces'].apply(f_traject))
@@ -73,7 +73,7 @@ def calc_trajects_poles_prc():
     df['poles_class'] = df['poles_prc'].apply(f_threshold)
     
 
-def show_trajects_poles_prc():
+def show_trajects_poles_prc() -> None:
     df = get_df_trajects()
     assert (not df.empty)
     if not 'poles_prc' in df.columns:
@@ -82,7 +82,7 @@ def show_trajects_poles_prc():
                color_discrete_map=_CLASS_COR,
                hover_data=[df.index], title='trajects poles_perc', width=600).show()
 
-def show_trajects_entropy():
+def show_trajects_entropy() -> None:
     df = get_df_trajects()
     assert (not df.empty)
     if not 'entropy' in df.columns:
@@ -92,7 +92,7 @@ def show_trajects_entropy():
                title='trajects entropy', width=600).show()
 
 
-def show_trajects_entropy_users():
+def show_trajects_entropy_users() -> None:
     df_users = Data.singleton().df_users
     assert (not df_users.empty)
     if not 'entropy' in df_users.columns:

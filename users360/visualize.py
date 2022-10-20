@@ -20,7 +20,7 @@ from .utils.tileset_voro import *
 
 class VizSphere():
 
-    def __init__(self, tileset=TILESET_DEFAULT):
+    def __init__(self, tileset=TILESET_DEFAULT) -> None:
         if isinstance(tileset, TileSetVoro):
             self.data = self._data_sphere_voro(tileset.voro)
         else:
@@ -117,7 +117,7 @@ class VizSphere():
         points = tile_points(t_ver, t_hor, row, col)
         self._add_polygon_lines(points)
 
-    def add_trace_and_fov(self, trace):
+    def add_trace_and_fov(self, trace) -> None:
         self.data.append(go.Scatter3d(x=[trace[0]],
                                       y=[trace[1]],
                                       z=[trace[2]],
@@ -126,7 +126,7 @@ class VizSphere():
         points = fov_points(trace)
         self._add_polygon_lines(points)
 
-    def add_trajectory(self, trajectory):
+    def add_trajectory(self, trajectory) -> None:
         # start, end colors
         start_c = '#b2d8ff'
         end_c = '#00264c'
@@ -175,7 +175,7 @@ def _show_or_save_to_html(fig, title, to_html):
         fig.show()
 
 
-def show_fov(trace, tileset=TILESET_DEFAULT, to_html=False):
+def show_fov(trace, tileset=TILESET_DEFAULT, to_html=False) -> None:
     assert len(trace) == 3  # cartesian
 
     # subplot two figures
@@ -188,7 +188,7 @@ def show_fov(trace, tileset=TILESET_DEFAULT, to_html=False):
         fig.append_trace(t, row=1, col=1)
 
     # heatmap
-    heatmap = tileset.request(trace)
+    heatmap: np.array = tileset.request(trace)
     if isinstance(tileset, TileSetVoro):
         heatmap = np.reshape(heatmap, tileset.shape)
     x = [str(x) for x in range(1, heatmap.shape[1] + 1)]
@@ -204,7 +204,7 @@ def show_fov(trace, tileset=TILESET_DEFAULT, to_html=False):
     _show_or_save_to_html(fig, title, to_html)
 
 
-def show_trajects(df: pd.DataFrame, tileset=TILESET_DEFAULT, to_html=False):
+def show_trajects(df: pd.DataFrame, tileset=TILESET_DEFAULT, to_html=False) -> None:
     assert (not df.empty)
 
     # subplot two figures
@@ -236,16 +236,16 @@ def show_trajects(df: pd.DataFrame, tileset=TILESET_DEFAULT, to_html=False):
     _show_or_save_to_html(fig, title, to_html)
 
 
-def calc_trajects_tileset_metrics(tileset_l: list[TileSetIF], n_trajects=None):
+def calc_trajects_tileset_metrics(tileset_l: list[TileSetIF], n_trajects=None) -> None:
     assert (not get_df_trajects().empty)
     if n_trajects:
         df = get_df_trajects()[:n_trajects]
     else:
         df = get_df_trajects()
 
-    def create_tsdf(ts_idx):
+    def create_tsdf(ts_idx) -> pd.DataFrame:
         tileset = tileset_l[ts_idx]
-        def f_trace(trace):
+        def f_trace(trace)-> tuple[int, float, float]:
             heatmap, vp_quality, area_out = tileset.request(trace, return_metrics=True)
             return (int(np.sum(heatmap)), vp_quality, area_out)
         f_traject = lambda traces: np.apply_along_axis(f_trace, 1, traces)
@@ -256,7 +256,7 @@ def calc_trajects_tileset_metrics(tileset_l: list[TileSetIF], n_trajects=None):
     Data.singleton().df_tileset_metrics = df_tileset_metrics
 
 
-def show_trajects_tileset_metrics():
+def show_trajects_tileset_metrics() -> None:
     df_tileset_metrics = Data.singleton().df_tileset_metrics
     assert (not df_tileset_metrics.empty)
 

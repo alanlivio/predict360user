@@ -3,6 +3,7 @@ plotly
 scipy # entropy
 spherical_geometry # voronoi tiles
 swifter # parallell df processing
+psutil # swifter req
 colour
 
 # bellow fixed requirements from head_motion_prediciton/README.md

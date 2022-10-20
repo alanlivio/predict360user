@@ -7,7 +7,7 @@ from spherical_geometry import polygon
 from .fov import *
 
 
-def _init_tileset(t_ver, t_hor):
+def _init_tileset(t_ver, t_hor) -> None:
     d_hor = degrees_to_radian(360 / t_hor)
     d_ver = degrees_to_radian(180 / t_ver)
     polys, centers = {}, {}
@@ -40,13 +40,13 @@ def tile_points(t_ver, t_hor, row, col) -> np.ndarray:
     return points
 
 
-def tile_poly(t_ver, t_hor, row, col):
+def tile_poly(t_ver, t_hor, row, col) -> polygon.SphericalPolygon:
     if (t_ver, t_hor) not in Data.singleton().ts_polys:
         _init_tileset(t_ver, t_hor)
     return Data.singleton().ts_polys[(t_ver, t_hor)][row][col]
 
 
-def tile_center(t_ver, t_hor, row, col):
+def tile_center(t_ver, t_hor, row, col) -> np.array:
     if (t_ver, t_hor) not in Data.singleton().ts_polys:
         _init_tileset(t_ver, t_hor)
     return Data.singleton().ts_centers[(t_ver, t_hor)][row][col]
@@ -70,7 +70,7 @@ class TileSetIF(ABC):
         pass
 
     @property
-    def title(self):
+    def title(self) -> str:
         if (self.cover == TileCover.ANY):
             return f'{self.prefix}_cov_any'
         elif self.cover == TileCover.CENTER:
@@ -81,26 +81,19 @@ class TileSetIF(ABC):
             return f'{self.prefix}_cov_33p'
 
     @property
-    def prefix(self):
+    def prefix(self) -> str:
         pass
-
-    def title_with_reqs(self, heatmaps):
-        reqs_sum = np.sum(np.sum(heatmaps, axis=0))
-        if isinstance(self, type(TILESET_DEFAULT)):
-            return f"(reqs={reqs_sum})"
-        else:
-            return f"({self.title} reqs={reqs_sum})"
 
 
 class TileSet(TileSetIF):
 
-    def __init__(self, t_ver, t_hor, cover: TileCover):
+    def __init__(self, t_ver, t_hor, cover: TileCover) -> None:
         self.t_ver, self.t_hor = t_ver, t_hor
         self.shape = (self.t_ver, self.t_hor)
         self.cover = cover
 
     @property
-    def prefix(self):
+    def prefix(self) -> str:
         return f'ts{self.t_ver}x{self.t_hor}'
 
     def request(self, trace: np.ndarray, return_metrics=False):

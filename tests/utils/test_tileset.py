@@ -1,13 +1,11 @@
 import unittest
 
-from numpy import array as array
-
 from users360 import *
 
 
 class Test(unittest.TestCase):
-        
-    def test_tiles_poly(self):
+
+    def test_tiles_poly(self) -> None:
         # t_ver, t_hor = 6 , 4
         # traces = [ [1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1] ]
         # for trace in traces:
@@ -23,7 +21,7 @@ class Test(unittest.TestCase):
 
         # trace = [1, 0, 0]
         self.assertAlmostEqual(tile_poly(6, 4, 0, 0).area(), 0.143348, places=6)
-        self.assertAlmostEqual(fov_poly([1, 0, 0]).area(), 3.161202, places=6)  
+        self.assertAlmostEqual(fov_poly([1, 0, 0]).area(), 3.161202, places=6)
         self.assertAlmostEqual(tile_poly(6, 4, 0, 0).overlap(fov_poly([1, 0, 0])), 0.000032, places=6)
         self.assertAlmostEqual(1 - tile_poly(6, 4, 0, 0).overlap(fov_poly([1, 0, 0])), 0.999968, places=6)
         self.assertAlmostEqual(tile_poly(6, 4, 0, 1).area(), 0.143348, places=6)
@@ -53,7 +51,7 @@ class Test(unittest.TestCase):
         self.assertAlmostEqual(tile_poly(6, 4, 1, 3).area(), 0.500154, places=6)
         self.assertAlmostEqual(fov_poly([1, 0, 0]).area(), 3.161202, places=6)
         self.assertAlmostEqual(tile_poly(6, 4, 1, 3).overlap(fov_poly([1, 0, 0])), 0.433070, places=6)
-        self.assertAlmostEqual(1 - tile_poly(6, 4, 1, 3).overlap(fov_poly([1, 0, 0])), 0.566930, places=6)  
+        self.assertAlmostEqual(1 - tile_poly(6, 4, 1, 3).overlap(fov_poly([1, 0, 0])), 0.566930, places=6)
         self.assertAlmostEqual(tile_poly(6, 4, 2, 0).area(), 0.927295, places=6)
         self.assertAlmostEqual(fov_poly([1, 0, 0]).area(), 3.161202, places=6)
         self.assertAlmostEqual(tile_poly(6, 4, 2, 0).overlap(fov_poly([1, 0, 0])), 0.618675, places=6)

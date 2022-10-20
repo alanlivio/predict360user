@@ -26,7 +26,7 @@ _VORO_14P = voro_trinity(14)
 _VORO_24P = voro_trinity(24)
 
 
-def tsv_poly(voro: SphericalVoronoi, index):
+def tsv_poly(voro: SphericalVoronoi, index) ->  polygon.SphericalPolygon:
     if voro.points.size not in Data.singleton().tsv_polys:
         polys = {i: polygon.SphericalPolygon(voro.vertices[voro.regions[i]]) for i, _ in enumerate(voro.regions)}
         Data.singleton().tsv_polys[voro.points.size] = polys
@@ -35,14 +35,14 @@ def tsv_poly(voro: SphericalVoronoi, index):
 
 class TileSetVoro(TileSetIF):
 
-    def __init__(self, voro: SphericalVoronoi, cover: TileCover):
+    def __init__(self, voro: SphericalVoronoi, cover: TileCover) -> None:
         super().__init__()
         self.voro = voro
         self.cover = cover
         self.shape = (2, -1)
 
     @property
-    def prefix(self):
+    def prefix(self) -> str:
         return f'voro{len(self.voro.points)}'
 
     def request(self, trace, return_metrics=False):

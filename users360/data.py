@@ -14,32 +14,31 @@ HMDDIR = f"{pathlib.Path(__file__).parent / 'head_motion_prediction/'}"
 logging.basicConfig(level=logging.INFO, format='%(levelname)s:%(message)s')
 
 
-class Savable():
-
+class Data():
+    
     @classmethod
-    def _pickle_file(cls):
+    def _pickle_file(cls) -> str:
         return os.path.join(DATADIR, f'{cls.__name__}.pickle')
 
-    def save(self):
+    def save(self) -> None:
         with open(self._pickle_file(), 'wb') as f:
             pickle.dump(self, f)
 
-    def delete_saved(cls):
+    @classmethod
+    def delete_saved(cls) -> None:
         if exists(cls._pickle_file()):
             logging.info(f"removing {cls._pickle_file()}")
             os.remove(cls._pickle_file())
 
     @classmethod
-    def load_or_create_instance(cls):
+    def load_or_create_instance(cls) -> Data:
         if exists(cls._pickle_file()):
             with open(cls._pickle_file(), 'rb') as f:
                 logging.info(f"loading {cls.__name__} from {cls._pickle_file()}")
                 return pickle.load(f)
         else:
             return cls()
-
-
-class Data(Savable):
+        
     # trajects processed data
     df_trajects = pd.DataFrame()
     df_users = pd.DataFrame()
@@ -54,17 +53,17 @@ class Data(Savable):
 
     # singleton
     _instance = None
-
+    
     @classmethod
     def singleton(cls) -> Data:
-        if cls._instance is None:
+        if not cls._instance:
             cls._instance = Data.load_or_create_instance()
         if cls._instance.df_trajects.empty:
             cls._instance.load_dataset()
             cls._instance.save()
         return cls._instance
 
-    def load_dataset(self):
+    def load_dataset(self) -> None:
         logging.info('loading trajects from head_motion_prediction project')
         # save cwd and move to head_motion_prediction
         cwd = os.getcwd()
@@ -138,17 +137,17 @@ def get_traces(video, user, ds='David_MMSys_18') -> np.array:
     return row['traces'].iloc[0]
 
 
-def get_video_ids(ds='David_MMSys_18'):
+def get_video_ids(ds='David_MMSys_18') -> np.array:
     df = get_df_trajects()
     return df.loc[df['ds'] == ds]['ds_video'].unique()
 
 
-def get_user_ids():
+def get_user_ids() -> np.array:
     df = get_df_trajects()
     return df.loc[df['ds'] == 'David_MMSys_18']['ds_user'].unique()
 
 
-def get_users_per_video():
+def get_users_per_video() -> dict[str, dict]:
     videos = get_video_ids()
     users_per_video = {}
     for video in videos:

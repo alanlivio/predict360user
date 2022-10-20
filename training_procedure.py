@@ -37,29 +37,28 @@ INIT_WINDOW: int
 END_WINDOW: int
 
 # other vars
-MODEL = None
-USERS = None
-VIDEOS = None
-VIDEOS_TRAIN = None
-VIDEOS_TEST = None
-USERS_TRAIN = None
-USERS_TEST = None
-USERS_PER_VIDEO = None
-PARTITION = None
+MODEL: keras.models.Model
+USERS :list 
+VIDEOS:list 
+VIDEOS_TRAIN:list
+VIDEOS_TEST:list
+USERS_TRAIN:list 
+USERS_TEST:list
+USERS_PER_VIDEO:dict 
+PARTITION:dict 
 RESULTS_FOLDER: str
 MODELS_FOLDER: str
 DATASET_SAMPLED_FOLDER: str
 EXP_NAME: str
 
-
-def create_model():
+def create_model()-> keras.models.Model :
     if MODEL_NAME == "pos_only":
         return create_pos_only_model(M_WINDOW, H_WINDOW)
     else:
         raise NotImplemented()
 
 
-def transform_batches_cartesian_to_normalized_eulerian(positions_in_batch):
+def transform_batches_cartesian_to_normalized_eulerian(positions_in_batch) -> np.array:
     positions_in_batch = np.array(positions_in_batch)
     eulerian_batches = [[cartesian_to_eulerian(pos[0], pos[1], pos[2])
                          for pos in batch] for batch in positions_in_batch]
@@ -67,13 +66,13 @@ def transform_batches_cartesian_to_normalized_eulerian(positions_in_batch):
     return eulerian_batches
 
 
-def transform_normalized_eulerian_to_cartesian(positions):
+def transform_normalized_eulerian_to_cartesian(positions) -> np.array:
     positions = positions * np.array([2 * np.pi, np.pi])
     eulerian_samples = [eulerian_to_cartesian(pos[0], pos[1]) for pos in positions]
     return np.array(eulerian_samples)
 
 
-def split_list_by_percentage(the_list, percentage):
+def split_list_by_percentage(the_list, percentage) -> tuple[list, list]:
     # Fixing random state for reproducibility
     np.random.seed(19680801)
     # Shuffle to select randomly
@@ -123,7 +122,7 @@ def generate_arrays(list_IDs, future_window):
                 raise NotImplementedError()
 
 
-def train():
+def train() -> None:
     steps_per_ep_train = np.ceil(len(PARTITION['train']) / BATCH_SIZE)
     steps_per_ep_validate = np.ceil(len(PARTITION['test']) / BATCH_SIZE)
 
@@ -144,7 +143,7 @@ def train():
         raise NotImplementedError()
 
 
-def evaluate():
+def evaluate() -> None:
 
     if MODEL_NAME == "pos_only":
         MODEL.load_weights(MODELS_FOLDER + '/weights.hdf5')
@@ -205,6 +204,7 @@ def evaluate():
     plt.xlabel('Prediction step s (sec.)')
     plt.legend()
     plt.show()
+
 
 
 if __name__ == "__main__":
