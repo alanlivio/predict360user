@@ -1,12 +1,13 @@
 #!env python
 import argparse
 import logging
-import sys
 from typing import Generator
 
 import matplotlib.pyplot as plt
 import numpy as np
+import tensorflow as tf
 import tensorflow.keras as keras
+from sklearn.model_selection import train_test_split
 
 from users360 import *
 from users360.head_motion_prediction.position_only_baseline import \
@@ -23,6 +24,7 @@ RATE = 0.2
 # PERC_USERS_TRAIN = 0.5
 PERC_VIDEOS_TRAIN = 0.99
 PERC_USERS_TRAIN = 0.99
+PERC_TEST = 0.01
 BATCH_SIZE = 128.0
 
 # vars from argparse
@@ -39,19 +41,20 @@ END_WINDOW: int
 
 # other vars
 MODEL: keras.models.Model
-USERS :list 
-VIDEOS:list 
-VIDEOS_TRAIN:list
-VIDEOS_TEST:list
-USERS_TRAIN:list 
-USERS_TEST:list
-PARTITION:dict 
+USERS: list
+VIDEOS: list
+VIDEOS_TRAIN: list
+VIDEOS_TEST: list
+USERS_TRAIN: list
+USERS_TEST: list
+PARTITION: dict
 RESULTS_FOLDER: str
 MODELS_FOLDER: str
 DATASET_SAMPLED_FOLDER: str
 EXP_NAME: str
 
-def create_model()-> keras.models.Model :
+
+def create_model() -> keras.models.Model:
     if MODEL_NAME == "pos_only":
         return create_pos_only_model(M_WINDOW, H_WINDOW)
     else:
@@ -70,17 +73,6 @@ def transform_normalized_eulerian_to_cartesian(positions) -> np.array:
     positions = positions * np.array([2 * np.pi, np.pi])
     eulerian_samples = [eulerian_to_cartesian(pos[0], pos[1]) for pos in positions]
     return np.array(eulerian_samples)
-
-
-def split_list_by_percentage(the_list, percentage) -> tuple[list, list]:
-    # Fixing random state for reproducibility
-    np.random.seed(19680801)
-    # Shuffle to select randomly
-    np.random.shuffle(the_list)
-    num_samples_first_part = int(len(the_list) * percentage)
-    train_part = the_list[:num_samples_first_part]
-    test_part = the_list[num_samples_first_part:]
-    return train_part, test_part
 
 
 def generate_arrays(list_IDs, future_window) -> Generator:
@@ -206,14 +198,13 @@ def evaluate() -> None:
     plt.show()
 
 
-
 if __name__ == "__main__":
-    
+
     # argparse
     parser = argparse.ArgumentParser()
     parser.description = 'train or evaluate users360 models and datasets'
     model_names = ['pos_only', 'TRACK', 'CVPR18', 'MM18', 'most_salient_point']
-    dataset_names = ['David_MMSys_18','Fan_NOSSDAV_17', 'Nguyen_MM_18', 'Xu_CVPR_18', 'Xu_PAMI_18']
+    dataset_names = ['David_MMSys_18', 'Fan_NOSSDAV_17', 'Nguyen_MM_18', 'Xu_CVPR_18', 'Xu_PAMI_18']
     parser.add_argument('-train', action='store_true',
                         help='Flag that tells run the train procedure')
     parser.add_argument('-evaluate', action='store_true',
@@ -265,30 +256,17 @@ if __name__ == "__main__":
     # prepare partitions/model for train/evaluate
     if (ARGS.train or ARGS.evaluate):
         logging.info("prepare partitions")
-        USERS = get_user_ids()
-        VIDEOS = get_video_ids()
-
-        # split
-        VIDEOS_TRAIN, VIDEOS_TEST = split_list_by_percentage(VIDEOS, PERC_VIDEOS_TRAIN)
-        USERS_TRAIN, USERS_TEST = split_list_by_percentage(USERS, PERC_USERS_TRAIN)
-
+        X, Y = train_test_split(get_df_trajects(), test_size=PERC_TEST, random_state=1)
         PARTITION = {}
-        PARTITION['train'] = []
-        PARTITION['test'] = []
-        for video in VIDEOS_TRAIN:
-            for user in USERS_TRAIN:
-                # to get the length of the trace
-                trace_length = get_traces(video, user).shape[0]
-                for tstap in range(INIT_WINDOW, trace_length - END_WINDOW):
-                    ID = {'video': video, 'user': user, 'time-stamp': tstap}
-                    PARTITION['train'].append(ID)
-        for video in VIDEOS_TEST:
-            for user in USERS_TEST:
-                # to get the length of the trace
-                trace_length = get_traces(video, user).shape[0]
-                for tstap in range(INIT_WINDOW, trace_length - END_WINDOW):
-                    ID = {'video': video, 'user': user, 'time-stamp': tstap}
-                    PARTITION['test'].append(ID)
+        PARTITION['train'] = [{'video': row[1]['ds_video'], 'user': row[1]
+                               ['ds_user'], 'time-stamp': tstap}
+                              for row in X.iterrows()
+                              for tstap in range(INIT_WINDOW, row[1]['traces'].shape[0] - END_WINDOW)]
+        PARTITION['test'] = [{'video': row[1]['ds_video'], 'user': row[1]
+                              ['ds_user'], 'time-stamp': tstap}
+                             for row in Y.iterrows()
+                             for tstap in range(INIT_WINDOW, row[1]['traces'].shape[0] - END_WINDOW)]
+        VIDEOS_TEST = Y['ds_video'].unique()
 
         # create model
         os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
