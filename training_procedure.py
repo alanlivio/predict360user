@@ -27,12 +27,13 @@ PERC_USERS_TRAIN = 0.99
 PERC_TEST = 0.01
 BATCH_SIZE = 128.0
 
-# vars from argparse
+# argparse vars
 ARGS = None
 DATASET_NAME: str
 MAKE_DATASET = False
 TRAIN_MODEL = False
 EVALUATE_MODEL = False
+ENTROPY_CLASS: str
 MODEL_NAME: str
 M_WINDOW: int
 H_WINDOW: int
@@ -138,7 +139,7 @@ def train() -> None:
 def evaluate() -> None:
 
     if MODEL_NAME == "pos_only":
-        MODEL.load_weights(MODELS_FOLDER + '/weights.hdf5')
+        MODEL.load_weights(os.path.join(MODELS_FOLDER, 'weights.hdf5'))
     else:
         raise NotImplementedError()
 
@@ -217,6 +218,8 @@ if __name__ == "__main__":
     parser.add_argument('-dataset_name', nargs='?',
                         choices=dataset_names, type=str, default=dataset_names[0],
                         help='The name of the dataset used to train this network')
+    parser.add_argument('-entropy_class', nargs='?',
+                        help='Name entropy_class to filter dataset')
     parser.add_argument('-init_window', nargs='?', type=int, default=30,
                         help='Initial buffer to avoid stationary part')
     parser.add_argument('-m_window', nargs='?', type=int, default=5,
@@ -230,6 +233,7 @@ if __name__ == "__main__":
     EVALUATE_MODEL = ARGS.evaluate
     MODEL_NAME = ARGS.model_name
     DATASET_NAME = ARGS.dataset_name
+    ENTROPY_CLASS = ARGS.entropy_class
     INIT_WINDOW = ARGS.init_window
     M_WINDOW = ARGS.m_window
     H_WINDOW = ARGS.h_window
@@ -242,21 +246,28 @@ if __name__ == "__main__":
     # RESULTS_FOLDER, MODELS_FOLDER folders
     DATASET_DIR = os.path.join(DATADIR, DATASET_NAME)
     EXP_NAME = '_init_' + str(INIT_WINDOW) + '_in_' + str(M_WINDOW) + '_out_' + \
-        str(H_WINDOW) + '_end_' + str(END_WINDOW)
+        str(H_WINDOW) + '_end_' + str(END_WINDOW) + ('_' + ENTROPY_CLASS + "_entropy" if ENTROPY_CLASS else '')
     if MODEL_NAME == 'pos_only':
         RESULTS_FOLDER = os.path.join(DATASET_DIR, 'pos_only', 'Results_EncDec_eulerian' + EXP_NAME)
         MODELS_FOLDER = os.path.join(DATASET_DIR, 'pos_only', 'Models_EncDec_eulerian' + EXP_NAME)
     else:
         raise NotImplementedError()
+    logging.info(f"MODELS_FOLDER is {MODELS_FOLDER}")
+    logging.info(f"RESULTS_FOLDER is {RESULTS_FOLDER}")
     if not os.path.exists(RESULTS_FOLDER):
         os.makedirs(RESULTS_FOLDER)
     if not os.path.exists(MODELS_FOLDER):
         os.makedirs(MODELS_FOLDER)
 
-    # prepare partitions/model for train/evaluate
+    # prepare partitions for train/evaluate
     if (ARGS.train or ARGS.evaluate):
         logging.info("prepare partitions")
-        X, Y = train_test_split(get_df_trajects(), test_size=PERC_TEST, random_state=1)
+        df = get_df_trajects()
+        if ENTROPY_CLASS:
+            if 'entropy_class' not in df:
+                raise Exception("not df.entropy_class column")
+            df = df[df['entropy_class'] == ENTROPY_CLASS]
+        X, Y = train_test_split(df, test_size=PERC_TEST, random_state=1)
         PARTITION = {}
         PARTITION['train'] = [{'video': row[1]['ds_video'], 'user': row[1]
                                ['ds_user'], 'time-stamp': tstap}

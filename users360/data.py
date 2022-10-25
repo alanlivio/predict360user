@@ -38,7 +38,7 @@ class Data():
                 return pickle.load(f)
         else:
             return cls()
-        
+
     # trajects processed data
     df_trajects = pd.DataFrame()
     df_users = pd.DataFrame()
@@ -53,7 +53,7 @@ class Data():
 
     # singleton
     _instance = None
-    
+
     @classmethod
     def singleton(cls) -> Data:
         if not cls._instance:
