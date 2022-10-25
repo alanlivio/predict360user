@@ -11,11 +11,11 @@ import pandas as pd
 
 DATADIR = f"{pathlib.Path(__file__).parent.parent / 'data/'}"
 HMDDIR = f"{pathlib.Path(__file__).parent / 'head_motion_prediction/'}"
-logging.basicConfig(level=logging.INFO, format='%(levelname)s:%(message)s')
+logging.basicConfig(level=logging.INFO, format='-- users360: %(levelname)-s %(message)s')
 
 
 class Data():
-    
+
     @classmethod
     def _pickle_file(cls) -> str:
         return os.path.join(DATADIR, f'{cls.__name__}.pickle')
