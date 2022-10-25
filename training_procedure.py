@@ -1,6 +1,7 @@
 #!env python
+
 import argparse
-import logging
+import os
 from typing import Generator
 
 import matplotlib.pyplot as plt
@@ -15,44 +16,13 @@ from users360.head_motion_prediction.position_only_baseline import \
 
 # consts
 METRIC = all_metrics['orthodromic']
-EPOCHS = 1
 # EPOCHS = 500
+EPOCHS = 1
 NUM_TILES_WIDTH = 384
 NUM_TILES_HEIGHT = 216
 RATE = 0.2
-# PERC_VIDEOS_TRAIN = 0.8
-# PERC_USERS_TRAIN = 0.5
-PERC_VIDEOS_TRAIN = 0.99
-PERC_USERS_TRAIN = 0.99
-PERC_TEST = 0.01
+# PERC_TEST = 0.8
 BATCH_SIZE = 128.0
-
-# argparse vars
-ARGS = None
-DATASET_NAME: str
-MAKE_DATASET = False
-TRAIN_MODEL = False
-EVALUATE_MODEL = False
-ENTROPY_CLASS: str
-MODEL_NAME: str
-M_WINDOW: int
-H_WINDOW: int
-INIT_WINDOW: int
-END_WINDOW: int
-
-# other vars
-MODEL: keras.models.Model
-USERS: list
-VIDEOS: list
-VIDEOS_TRAIN: list
-VIDEOS_TEST: list
-USERS_TRAIN: list
-USERS_TEST: list
-PARTITION: dict
-RESULTS_FOLDER: str
-MODELS_FOLDER: str
-DATASET_SAMPLED_FOLDER: str
-EXP_NAME: str
 
 
 def create_model() -> keras.models.Model:
@@ -137,7 +107,6 @@ def train() -> None:
 
 
 def evaluate() -> None:
-
     if MODEL_NAME == "pos_only":
         MODEL.load_weights(os.path.join(MODELS_FOLDER, 'weights.hdf5'))
     else:
@@ -200,7 +169,6 @@ def evaluate() -> None:
 
 
 if __name__ == "__main__":
-
     # argparse
     parser = argparse.ArgumentParser()
     parser.description = 'train or evaluate users360 models and datasets'
@@ -218,32 +186,33 @@ if __name__ == "__main__":
     parser.add_argument('-dataset_name', nargs='?',
                         choices=dataset_names, type=str, default=dataset_names[0],
                         help='The name of the dataset used to train this network')
-    parser.add_argument('-entropy_class', nargs='?',
-                        help='Name entropy_class to filter dataset')
     parser.add_argument('-init_window', nargs='?', type=int, default=30,
                         help='Initial buffer to avoid stationary part')
     parser.add_argument('-m_window', nargs='?', type=int, default=5,
                         help='Buffer window in timesteps',)
     parser.add_argument('-h_window', nargs='?', type=int, default=25,
                         help='Forecast window in timesteps used to predict (5 timesteps = 1 second)')
+    parser.add_argument('-entropy_class', nargs='?', type=str, default='',
+                        help='Name entropy_class to filter dataset')
+    parser.add_argument('-perc_test', nargs='?', type=float, default=0.8,
+                        help='Test percetage (default is 0.8)')
 
     # vars from argparse
-    ARGS = parser.parse_args()
-    TRAIN_MODEL = ARGS.train
-    EVALUATE_MODEL = ARGS.evaluate
-    MODEL_NAME = ARGS.model_name
-    DATASET_NAME = ARGS.dataset_name
-    ENTROPY_CLASS = ARGS.entropy_class
-    INIT_WINDOW = ARGS.init_window
-    M_WINDOW = ARGS.m_window
-    H_WINDOW = ARGS.h_window
+    args = parser.parse_args()
+    MODEL_NAME = args.model_name
+    DATASET_NAME = args.dataset_name
+    INIT_WINDOW = args.init_window
+    M_WINDOW = args.m_window
+    H_WINDOW = args.h_window
     END_WINDOW = H_WINDOW
+    ENTROPY_CLASS = args.entropy_class
+    PERC_TEST = args.perc_test
 
     # DATASET_SAMPLED_FOLDER
     DATASET_DIR_HMP = os.path.join('users360', 'head_motion_prediction', DATASET_NAME)
     DATASET_SAMPLED_FOLDER = os.path.join(DATASET_DIR_HMP, 'sampled_dataset')
 
-    # RESULTS_FOLDER, MODELS_FOLDER folders
+    # RESULTS_FOLDER, MODELS_FOLDER
     DATASET_DIR = os.path.join(DATADIR, DATASET_NAME)
     EXP_NAME = '_init_' + str(INIT_WINDOW) + '_in_' + str(M_WINDOW) + '_out_' + \
         str(H_WINDOW) + '_end_' + str(END_WINDOW) + ('_' + ENTROPY_CLASS + "_entropy" if ENTROPY_CLASS else '')
@@ -260,8 +229,8 @@ if __name__ == "__main__":
         os.makedirs(MODELS_FOLDER)
 
     # prepare partitions for train/evaluate
-    if (ARGS.train or ARGS.evaluate):
-        logging.info("prepare partitions")
+    if (args.train or args.evaluate):
+        logging.info("prepare train/test partitions ...")
         df = get_df_trajects()
         if ENTROPY_CLASS:
             if 'entropy_class' not in df:
@@ -278,16 +247,22 @@ if __name__ == "__main__":
                              for row in Y.iterrows()
                              for tstap in range(INIT_WINDOW, row[1]['traces'].shape[0] - END_WINDOW)]
         VIDEOS_TEST = Y['ds_video'].unique()
+        USERS_TEST = Y['ds_user'].unique()
+        logging.info(f"PERC_TEST is {PERC_TEST}")
+        logging.info(f"X has {len(X)} traces")
+        logging.info(f"Y has {len(Y)} traces")
+        logging.info(f"PARTITION['train'] has {len(PARTITION['train'])} windows")
+        logging.info(f"PARTITION['test'] has {len(PARTITION['test'])} windows")
 
         # create model
         os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-        if ARGS.gpu_id:
-            os.environ["CUDA_VISIBLE_DEVICES"] = ARGS.gpu_id
-        logging.info("create_model")
+        if args.gpu_id:
+            os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu_id
+        logging.info("create_model ...")
         MODEL = create_model()
-    if ARGS.train:
-        logging.info("train")
+    if args.train:
+        logging.info("train ...")
         train()
-    if ARGS.evaluate:
-        logging.info("evaluate")
+    if args.evaluate:
+        logging.info("evaluate ...")
         evaluate()
