@@ -1,6 +1,7 @@
 #!env python
 
 import argparse
+import logging
 import os
 from typing import Generator
 
@@ -13,6 +14,9 @@ from sklearn.model_selection import train_test_split
 from users360 import *
 from users360.head_motion_prediction.position_only_baseline import \
     create_pos_only_model
+
+logging.basicConfig(level=logging.INFO, format='-- training_procedure.py %(levelname)-s %(message)s')
+
 
 # consts
 METRIC = all_metrics['orthodromic']
@@ -221,6 +225,7 @@ if __name__ == "__main__":
         MODELS_FOLDER = os.path.join(DATASET_DIR, 'pos_only', 'Models_EncDec_eulerian' + EXP_NAME)
     else:
         raise NotImplementedError()
+
     logging.info(f"MODELS_FOLDER is {MODELS_FOLDER}")
     logging.info(f"RESULTS_FOLDER is {RESULTS_FOLDER}")
     if not os.path.exists(RESULTS_FOLDER):

@@ -11,7 +11,6 @@ import pandas as pd
 
 DATADIR = f"{pathlib.Path(__file__).parent.parent / 'data/'}"
 HMDDIR = f"{pathlib.Path(__file__).parent / 'head_motion_prediction/'}"
-logging.basicConfig(level=logging.INFO, format='-- users360: %(levelname)-s %(message)s')
 
 
 class Data():
