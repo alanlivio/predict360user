@@ -16,12 +16,9 @@ from users360.head_motion_prediction.position_only_baseline import \
 
 # consts
 METRIC = all_metrics['orthodromic']
-# EPOCHS = 500
-EPOCHS = 1
 NUM_TILES_WIDTH = 384
 NUM_TILES_HEIGHT = 216
 RATE = 0.2
-# PERC_TEST = 0.8
 BATCH_SIZE = 128.0
 
 
@@ -192,6 +189,8 @@ if __name__ == "__main__":
                         help='Buffer window in timesteps',)
     parser.add_argument('-h_window', nargs='?', type=int, default=25,
                         help='Forecast window in timesteps used to predict (5 timesteps = 1 second)')
+    parser.add_argument('-epochs', nargs='?', type=int, default=500,
+                        help='epochs numbers (default is 500)')
     parser.add_argument('-entropy_class', nargs='?', type=str, default='',
                         help='Name entropy_class to filter dataset')
     parser.add_argument('-perc_test', nargs='?', type=float, default=0.8,
@@ -200,6 +199,7 @@ if __name__ == "__main__":
     # vars from argparse
     args = parser.parse_args()
     MODEL_NAME = args.model_name
+    EPOCHS = args.epochs
     DATASET_NAME = args.dataset_name
     INIT_WINDOW = args.init_window
     M_WINDOW = args.m_window
@@ -253,6 +253,7 @@ if __name__ == "__main__":
         logging.info(f"Y has {len(Y)} traces")
         logging.info(f"PARTITION['train'] has {len(PARTITION['train'])} windows")
         logging.info(f"PARTITION['test'] has {len(PARTITION['test'])} windows")
+        logging.info(f"EPOCHS is {EPOCHS}")
 
         # create model
         os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
