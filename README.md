@@ -11,7 +11,14 @@ This project extends [Rondon 360-videos models/dataset collection](https://gitla
 
 * Requirements 
 
-To install TensorFlow with Cuda, please follow https://www.tensorflow.org/install/
+To install TensorFlow with Cuda, please follow https://www.tensorflow.org/install/.
+For instance, you can do the following command with conda.
+
+```bash
+conda install -c conda-forge cudatoolkit=11.2 cudnn=8.1.0
+```
+
+Then install requirements,
 
 ```bash
 pip install -r requeriments.txt
