@@ -258,6 +258,8 @@ if __name__ == "__main__":
         logging.info(f"Y has {len(Y)} traces")
         logging.info(f"PARTITION['train'] has {len(PARTITION['train'])} windows")
         logging.info(f"PARTITION['test'] has {len(PARTITION['test'])} windows")
+        entropy_text = ENTROPY_CLASS if ENTROPY_CLASS else "all"
+        logging.info(f"entropy_class is {entropy_text}")
         logging.info(f"EPOCHS is {EPOCHS}")
 
         # create model
