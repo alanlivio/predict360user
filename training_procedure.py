@@ -7,13 +7,10 @@ from typing import Generator
 
 import matplotlib.pyplot as plt
 import numpy as np
-import tensorflow as tf
 import tensorflow.keras as keras
 from sklearn.model_selection import train_test_split
 
 from users360 import *
-from users360.head_motion_prediction.position_only_baseline import \
-    create_pos_only_model
 
 logging.basicConfig(level=logging.INFO, format='-- training_procedure.py %(levelname)-s %(message)s')
 
@@ -28,6 +25,8 @@ BATCH_SIZE = 128.0
 
 def create_model() -> keras.models.Model:
     if MODEL_NAME == "pos_only":
+        from users360.head_motion_prediction.position_only_baseline import \
+            create_pos_only_model
         return create_pos_only_model(M_WINDOW, H_WINDOW)
     else:
         raise NotImplemented()
@@ -91,9 +90,9 @@ def train() -> None:
     steps_per_ep_validate = np.ceil(len(PARTITION['test']) / BATCH_SIZE)
 
     # train
-    csv_logger_f = os.path.join(RESULTS_FOLDER, 'results.csv')
+    csv_logger_f = os.path.join(MODEL_FOLDER, 'results.csv')
     csv_logger = keras.callbacks.CSVLogger(csv_logger_f)
-    weights_f = os.path.join(MODELS_FOLDER, 'weights.hdf5')
+    weights_f = os.path.join(MODEL_FOLDER, 'weights.hdf5')
     model_checkpoint = keras.callbacks.ModelCheckpoint(
         weights_f, save_best_only=True, save_weights_only=True, mode='auto', period=1)
     if MODEL_NAME == 'pos_only':
@@ -109,7 +108,7 @@ def train() -> None:
 
 def evaluate() -> None:
     if MODEL_NAME == "pos_only":
-        MODEL.load_weights(os.path.join(MODELS_FOLDER, 'weights.hdf5'))
+        MODEL.load_weights(os.path.join(MODEL_FOLDER, 'weights.hdf5'))
     else:
         raise NotImplementedError()
 
@@ -174,18 +173,23 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.description = 'train or evaluate users360 models and datasets'
     model_names = ['pos_only', 'TRACK', 'CVPR18', 'MM18', 'most_salient_point']
+    entropy_classes = ['all', 'low', 'medium', 'hight']
     dataset_names = ['David_MMSys_18', 'Fan_NOSSDAV_17', 'Nguyen_MM_18', 'Xu_CVPR_18', 'Xu_PAMI_18']
     parser.add_argument('-train', action='store_true',
                         help='Flag that tells run the train procedure')
+    parser.add_argument('-train_entropy', nargs='?', default=entropy_classes[0],
+                        choices=entropy_classes, help='Name of entropy_class to filter training')
     parser.add_argument('-evaluate', action='store_true',
                         help='Flag that tells run the evaluate procedure')
+    parser.add_argument('-evaluate_entropy', nargs='?', default=entropy_classes[0],
+                        choices=entropy_classes, help='Name of entropy_class to filter evaluation')
     parser.add_argument('-gpu_id', nargs='?', type=int, default=0,
                         help='Used cuda gpu')
     parser.add_argument('-model_name', nargs='?',
-                        choices=model_names, type=str, default=model_names[0],
+                        choices=model_names, default=model_names[0],
                         help='The name of the model used to reference the network structure used')
     parser.add_argument('-dataset_name', nargs='?',
-                        choices=dataset_names, type=str, default=dataset_names[0],
+                        choices=dataset_names, default=dataset_names[0],
                         help='The name of the dataset used to train this network')
     parser.add_argument('-init_window', nargs='?', type=int, default=30,
                         help='Initial buffer to avoid stationary part')
@@ -195,8 +199,6 @@ if __name__ == "__main__":
                         help='Forecast window in timesteps used to predict (5 timesteps = 1 second)')
     parser.add_argument('-epochs', nargs='?', type=int, default=500,
                         help='epochs numbers (default is 500)')
-    parser.add_argument('-entropy_class', nargs='?', type=str, default='',
-                        help='Name entropy_class to filter dataset')
     parser.add_argument('-perc_test', nargs='?', type=float, default=0.8,
                         help='Test percetage (default is 0.8)')
 
@@ -209,39 +211,35 @@ if __name__ == "__main__":
     M_WINDOW = args.m_window
     H_WINDOW = args.h_window
     END_WINDOW = H_WINDOW
-    ENTROPY_CLASS = args.entropy_class
     PERC_TEST = args.perc_test
 
     # DATASET_SAMPLED_FOLDER
     DATASET_DIR_HMP = os.path.join('users360', 'head_motion_prediction', DATASET_NAME)
     DATASET_SAMPLED_FOLDER = os.path.join(DATASET_DIR_HMP, 'sampled_dataset')
 
-    # RESULTS_FOLDER, MODELS_FOLDER
-    DATASET_DIR = os.path.join(DATADIR, DATASET_NAME)
-    EXP_NAME = '_init_' + str(INIT_WINDOW) + '_in_' + str(M_WINDOW) + '_out_' + \
-        str(H_WINDOW) + '_end_' + str(END_WINDOW) + ('_' + ENTROPY_CLASS + "_entropy" if ENTROPY_CLASS else '')
+    # MODEL_FOLDER
+    WIN_PARAMS = 'init_' + str(INIT_WINDOW) + '_in_' + str(M_WINDOW) + '_out_' + \
+        str(H_WINDOW) + '_end_' + str(END_WINDOW)
+    DATASET_FILTER = f'_{args.train_entropy}_entropy' if args.train_entropy != 'all' else ''
     if MODEL_NAME == 'pos_only':
-        RESULTS_FOLDER = os.path.join(DATASET_DIR, 'pos_only', 'Results_EncDec_eulerian' + EXP_NAME)
-        MODELS_FOLDER = os.path.join(DATASET_DIR, 'pos_only', 'Models_EncDec_eulerian' + EXP_NAME)
+        MODEL_FOLDER = os.path.join(DATADIR, f'{MODEL_NAME}_{WIN_PARAMS}_{DATASET_NAME}{DATASET_FILTER}')
     else:
         raise NotImplementedError()
 
-    logging.info(f"MODELS_FOLDER is {MODELS_FOLDER}")
-    logging.info(f"RESULTS_FOLDER is {RESULTS_FOLDER}")
-    if not os.path.exists(RESULTS_FOLDER):
-        os.makedirs(RESULTS_FOLDER)
-    if not os.path.exists(MODELS_FOLDER):
-        os.makedirs(MODELS_FOLDER)
+    if not os.path.exists(MODEL_FOLDER):
+        os.makedirs(MODEL_FOLDER)
+    logging.info(f"MODEL_FOLDER is {MODEL_FOLDER}")
 
     # prepare partitions for train/evaluate
     if (args.train or args.evaluate):
+        logging.info("")
         logging.info("prepare train/test partitions ...")
         df = get_df_trajects()
-        if ENTROPY_CLASS:
-            if 'entropy_class' not in df:
-                raise Exception("not df.entropy_class column")
-            df = df[df['entropy_class'] == ENTROPY_CLASS]
         X, Y = train_test_split(df, test_size=PERC_TEST, random_state=1)
+        if args.train_entropy != 'all':
+            X = X[X['entropy_class'] == args.train_entropy]
+        if args.evaluate_entropy != 'all':
+            Y = Y[Y['entropy_class'] == args.evaluate_entropy]
         PARTITION = {}
         PARTITION['train'] = [{'video': row[1]['ds_video'], 'user': row[1]
                                ['ds_user'], 'time-stamp': tstap}
@@ -253,24 +251,28 @@ if __name__ == "__main__":
                              for tstap in range(INIT_WINDOW, row[1]['traces'].shape[0] - END_WINDOW)]
         VIDEOS_TEST = Y['ds_video'].unique()
         USERS_TEST = Y['ds_user'].unique()
-        logging.info(f"PERC_TEST is {PERC_TEST}")
-        logging.info(f"X has {len(X)} traces")
-        logging.info(f"Y has {len(Y)} traces")
-        logging.info(f"PARTITION['train'] has {len(PARTITION['train'])} windows")
-        logging.info(f"PARTITION['test'] has {len(PARTITION['test'])} windows")
-        entropy_text = ENTROPY_CLASS if ENTROPY_CLASS else "all"
-        logging.info(f"entropy_class is {entropy_text}")
-        logging.info(f"EPOCHS is {EPOCHS}")
 
         # create model
         os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
         if args.gpu_id:
-            os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu_id
+            os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu_id)
+        logging.info("")
         logging.info("create_model ...")
         MODEL = create_model()
     if args.train:
+        logging.info("")
         logging.info("train ...")
+        logging.info(f"EPOCHS is {EPOCHS}")
+        logging.info(f"PERC_TRAIN is {1-PERC_TEST}")
+        logging.info(f"train_entropy is {args.train_entropy}")
+        logging.info(f"X has {len(X)} traces")
+        logging.info(f"PARTITION['train'] has {len(PARTITION['train'])} windows")
         train()
     if args.evaluate:
+        logging.info("")
         logging.info("evaluate ...")
+        logging.info(f"PERC_TRAIN is {PERC_TEST}")
+        logging.info(f"evaluate_entropy is {args.evaluate_entropy}")
+        logging.info(f"Y has {len(Y)} traces")
+        logging.info(f"PARTITION['test'] has {len(PARTITION['test'])} windows")
         evaluate()

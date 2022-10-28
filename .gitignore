@@ -29,7 +29,7 @@ MANIFEST
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
-#  before PyInstaller builds the exe, so as to inject date/other infos into it.   
+#  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
 *.spec
 
@@ -170,4 +170,4 @@ typings
 .tmp
 data/*.pickle
 data/*.html
-data/David_MMSys_18
+data/pos_only*
