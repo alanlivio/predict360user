@@ -90,7 +90,7 @@ def train() -> None:
     steps_per_ep_validate = np.ceil(len(PARTITION['test']) / BATCH_SIZE)
 
     # train
-    csv_logger_f = os.path.join(MODEL_FOLDER, 'results.csv')
+    csv_logger_f = os.path.join(MODEL_FOLDER, 'train_results.csv')
     csv_logger = keras.callbacks.CSVLogger(csv_logger_f)
     weights_f = os.path.join(MODEL_FOLDER, 'weights.hdf5')
     model_checkpoint = keras.callbacks.ModelCheckpoint(
@@ -157,15 +157,19 @@ def evaluate() -> None:
 
     avg_error_per_timestep = []
     for t in range(H_WINDOW):
-        logging.info(f"Average {t} {np.mean(errors_per_timestep[t])}")
-        avg_error_per_timestep.append(np.mean(errors_per_timestep[t]))
+        avg = np.mean(errors_per_timestep[t])
+        logging.info(f"avg_error at timestep {t} {avg}")
+        avg_error_per_timestep.append(avg)
     plt.plot(np.arange(H_WINDOW) + 1 * RATE, avg_error_per_timestep, label=MODEL_NAME)
     met = 'orthodromic'
     plt.title('Average %s in %s dataset using %s model' % (met, DATASET_NAME, MODEL_NAME))
     plt.ylabel(met)
     plt.xlabel('Prediction step s (sec.)')
     plt.legend()
-    plt.show()
+    res_file = os.path.join(MODEL_FOLDER, f"results_evaluate_{DATASET_NAME}{DATASET_FILTER}_{str(PERC_TEST).replace('.','_')}")
+    np.savetxt(f'{res_file}.csv', avg_error_per_timestep)
+    plt.savefig(res_file)
+    logging.info(f"avg_error per timestep at {t} {avg}")
 
 
 if __name__ == "__main__":
