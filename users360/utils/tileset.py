@@ -6,6 +6,9 @@ from spherical_geometry import polygon
 
 from .fov import *
 
+_ts_polys = dict()
+_ts_centers = dict()
+
 
 def _init_tileset(t_ver, t_hor) -> None:
     d_hor = degrees_to_radian(360 / t_hor)
@@ -23,8 +26,8 @@ def _init_tileset(t_ver, t_hor) -> None:
             phi_c = d_ver * (row + 0.5)
             # at eulerian_to_cartesian: theta is hor and phi is ver
             centers[row][col] = eulerian_to_cartesian(theta_c, phi_c)
-    Data.singleton().ts_polys[(t_ver, t_hor)] = polys
-    Data.singleton().ts_centers[(t_ver, t_hor)] = centers
+    _ts_polys[(t_ver, t_hor)] = polys
+    _ts_centers[(t_ver, t_hor)] = centers
 
 
 def tile_points(t_ver, t_hor, row, col) -> np.ndarray:
@@ -41,15 +44,15 @@ def tile_points(t_ver, t_hor, row, col) -> np.ndarray:
 
 
 def tile_poly(t_ver, t_hor, row, col) -> polygon.SphericalPolygon:
-    if (t_ver, t_hor) not in Data.singleton().ts_polys:
+    if (t_ver, t_hor) not in _ts_polys:
         _init_tileset(t_ver, t_hor)
-    return Data.singleton().ts_polys[(t_ver, t_hor)][row][col]
+    return _ts_polys[(t_ver, t_hor)][row][col]
 
 
 def tile_center(t_ver, t_hor, row, col) -> np.array:
-    if (t_ver, t_hor) not in Data.singleton().ts_polys:
+    if (t_ver, t_hor) not in _ts_polys:
         _init_tileset(t_ver, t_hor)
-    return Data.singleton().ts_centers[(t_ver, t_hor)][row][col]
+    return _ts_centers[(t_ver, t_hor)][row][col]
 
 
 class TileCover(Enum):

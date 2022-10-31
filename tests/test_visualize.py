@@ -23,4 +23,4 @@ class Test(unittest.TestCase):
             show_fov(trace)
 
     def test_visualize_trajects(self) -> None:
-        show_trajects(get_one_traject())
+        show_trajects(get_df_trajects().head(1))

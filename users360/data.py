@@ -38,16 +38,9 @@ class Data():
         else:
             return cls()
 
-    # trajects processed data
+    # dfs
     df_trajects = pd.DataFrame()
     df_users = pd.DataFrame()
-
-    # tileset processed data
-    ts_polys = dict()
-    ts_centers = dict()
-    tsv_polys = dict()
-    fov_points = dict()
-    fov_polys = dict()
     df_tileset_metrics = pd.DataFrame()
 
     # singleton
@@ -123,10 +116,6 @@ def save_df_trajects(df: pd.DataFrame) -> None:
 
 def get_one_trace() -> np.array:
     return get_df_trajects().iloc[0]['traces'][0]
-
-
-def get_one_traject() -> np.array:
-    return get_df_trajects().head(1)
 
 
 def get_traces(video, user, ds='David_MMSys_18') -> np.array:
