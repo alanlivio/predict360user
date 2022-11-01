@@ -13,49 +13,43 @@ DATADIR = f"{pathlib.Path(__file__).parent.parent / 'data/'}"
 HMDDIR = f"{pathlib.Path(__file__).parent / 'head_motion_prediction/'}"
 
 
+# Singleton following https://python-patterns.guide/gang-of-four/singleton/
 class Data():
 
-    @classmethod
-    def _pickle_file(cls) -> str:
-        return os.path.join(DATADIR, f'{cls.__name__}.pickle')
-
-    def save(self) -> None:
-        with open(self._pickle_file(), 'wb') as f:
-            pickle.dump(self, f)
-
-    @classmethod
-    def delete_saved(cls) -> None:
-        if exists(cls._pickle_file()):
-            logging.info(f"removing {cls._pickle_file()}")
-            os.remove(cls._pickle_file())
-
-    @classmethod
-    def load_or_create_instance(cls) -> Data:
-        if exists(cls._pickle_file()):
-            with open(cls._pickle_file(), 'rb') as f:
-                logging.info(f"loading {cls.__name__} from {cls._pickle_file()}")
-                return pickle.load(f)
-        else:
-            return cls()
-
-    # dfs
-    df_trajects = pd.DataFrame()
-    df_users = pd.DataFrame()
-    df_tileset_metrics = pd.DataFrame()
-
-    # singleton
+    # singleton and its pickle filename
     _instance = None
+    _pickle_f = None
+
+    # centralized data
+    df_users: pd.Dataframe
+    df_trajects: pd.Dataframe
+
+    def __init__(self) -> None:
+        raise RuntimeError('Call instance() instead')
 
     @classmethod
-    def singleton(cls) -> Data:
-        if not cls._instance:
-            cls._instance = Data.load_or_create_instance()
+    def save(cls) -> None:
+        with open(cls._pickle_f, 'wb') as f:
+            pickle.dump(cls._pickle_f, f)
+
+    @classmethod
+    def instance(cls, pickle_sufix='') -> Data:
+        if cls._instance is not None:
+            return cls._instance
+        
+        filename = f'Data_{pickle_sufix}.pickle' if pickle_sufix else f'Data.pickle'
+        cls._pickle_f = os.path.join(DATADIR, filename)
+        if exists(cls._pickle_f):
+            with open(cls._pickle_f, 'rb') as f:
+                logging.info(f"loading Data from {cls._pickle_f}")
+                cls._instance: Data = pickle.load(f)
+        else:
+            cls._instance = cls.__new__(cls)
         if cls._instance.df_trajects.empty:
-            cls._instance.load_dataset()
-            cls._instance.save()
+            cls._instance._load_data()
         return cls._instance
 
-    def load_dataset(self) -> None:
+    def _load_data(self) -> None:
         logging.info('loading trajects from head_motion_prediction project')
         # save cwd and move to head_motion_prediction
         cwd = os.getcwd()
@@ -72,7 +66,7 @@ class Data():
         ds_pkgs = [david, fan, nguyen, xucvpr, xupami][:1]
         ds_idxs = range(len(ds_pkgs))
 
-        def load_dataset_xyz(idx, n_traces=100) -> pd.DataFrame:
+        def load_data_from_hmp_xyz(idx, n_traces=100) -> pd.DataFrame:
             # create sampled
             if len(os.listdir(ds_pkgs[idx].OUTPUT_FOLDER)) < 2:
                 ds_pkgs[idx].create_and_store_sampled_dataset()
@@ -106,30 +100,25 @@ class Data():
 
 
 def get_df_trajects() -> pd.DataFrame:
-    return Data.singleton().df_trajects
-
-
-def save_df_trajects(df: pd.DataFrame) -> None:
-    Data.singleton().df_trajects = df
-    Data.singleton().save()
+    return Data.instance().df_trajects
 
 
 def get_one_trace() -> np.array:
-    return get_df_trajects().iloc[0]['traces'][0]
+    return Data.instance().df_trajects.iloc[0]['traces'][0]
 
 
 def get_traces(video, user, ds='David_MMSys_18') -> np.array:
     # TODO: df indexed by (ds, ds_user, ds_video)
-    row = get_df_trajects().query(f"ds=='{ds}' and ds_user=='{user}' and ds_video=='{video}'")
+    row = Data.instance().df_trajects.query(f"ds=='{ds}' and ds_user=='{user}' and ds_video=='{video}'")
     assert (not row.empty)
     return row['traces'].iloc[0]
 
 
 def get_video_ids(ds='David_MMSys_18') -> np.array:
-    df = get_df_trajects()
+    df = Data.instance().df_trajects
     return df.loc[df['ds'] == ds]['ds_video'].unique()
 
 
 def get_user_ids(ds='David_MMSys_18') -> np.array:
-    df = get_df_trajects()
+    df = Data.instance().df_trajects
     return df.loc[df['ds'] == ds]['ds_user'].unique()

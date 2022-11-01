@@ -204,7 +204,7 @@ def show_trajects(df: pd.DataFrame, tileset=TILESET_DEFAULT, to_html=False) -> N
     # sphere
     sphere = VizSphere(tileset)
     df['traces'].apply(lambda traces: sphere.add_trajectory(traces))
-    for d in sphere.data: # load all data from the sphere
+    for d in sphere.data:  # load all data from the sphere
         fig.append_trace(d, row=1, col=1)
     # heatmap
     # TODO: calcuate if hmps is not in df
@@ -237,7 +237,7 @@ def calc_trajects_tileset_metrics(tileset_l: list[TileSetIF], n_trajects=None) -
 
     def create_tsdf(ts_idx) -> pd.DataFrame:
         tileset = tileset_l[ts_idx]
-        def f_trace(trace)-> tuple[int, float, float]:
+        def f_trace(trace) -> tuple[int, float, float]:
             heatmap, vp_quality, area_out = tileset.request(trace, return_metrics=True)
             return (int(np.sum(heatmap)), vp_quality, area_out)
         f_traject = lambda traces: np.apply_along_axis(f_trace, 1, traces)
@@ -245,11 +245,11 @@ def calc_trajects_tileset_metrics(tileset_l: list[TileSetIF], n_trajects=None) -
         tmpdf.columns = [tileset.title]
         return tmpdf
     df_tileset_metrics = pd.concat(map(create_tsdf, range(len(tileset_l))), axis=1)
-    Data.singleton().df_tileset_metrics = df_tileset_metrics
+    Data.instance().df_tileset_metrics = df_tileset_metrics
 
 
 def show_trajects_tileset_metrics() -> None:
-    df_tileset_metrics = Data.singleton().df_tileset_metrics
+    df_tileset_metrics = Data.instance().df_tileset_metrics
     assert (not df_tileset_metrics.empty)
 
     # calc tileset metrics
