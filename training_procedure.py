@@ -7,12 +7,15 @@ from typing import Generator
 
 import matplotlib.pyplot as plt
 import numpy as np
+
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+
 import tensorflow.keras as keras
 from sklearn.model_selection import train_test_split
 
 from users360 import *
 
-logging.basicConfig(level=logging.INFO, format='-- training_procedure.py %(levelname)-s %(message)s')
+logging.basicConfig(level=logging.INFO, format='-- %(module)s %(message)s')
 
 
 # consts
