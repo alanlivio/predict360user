@@ -3,19 +3,24 @@
 import argparse
 import logging
 import os
+from contextlib import redirect_stderr
 from typing import Generator
 
 import matplotlib.pyplot as plt
 import numpy as np
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+with redirect_stderr(open(os.devnull, "w")):
+    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+    import keras
+    import tensorflow.keras as keras
+    import keras_tqdm
 
-import tensorflow.keras as keras
 from sklearn.model_selection import train_test_split
+from tqdm.auto import tqdm
 
 from users360 import *
 
-logging.basicConfig(level=logging.INFO, format='-- %(module)s %(message)s')
+logging.basicConfig(level=logging.INFO, format='-- %(filename)s: %(message)s')
 
 
 # consts
@@ -95,9 +100,8 @@ def train() -> None:
     # train
     csv_logger_f = os.path.join(MODEL_FOLDER, 'train_results.csv')
     csv_logger = keras.callbacks.CSVLogger(csv_logger_f)
-    weights_f = os.path.join(MODEL_FOLDER, 'weights.hdf5')
     model_checkpoint = keras.callbacks.ModelCheckpoint(
-        weights_f, save_best_only=True, save_weights_only=True, mode='auto', period=1)
+        MODEL_WEIGHTS, save_best_only=True, save_weights_only=True, mode='auto', period=1)
     if MODEL_NAME == 'pos_only':
         MODEL.fit_generator(
             generator=generate_arrays(PARTITION['train'], future_window=H_WINDOW),
@@ -111,18 +115,13 @@ def train() -> None:
 
 def evaluate() -> None:
     if MODEL_NAME == "pos_only":
-        MODEL.load_weights(os.path.join(MODEL_FOLDER, 'weights.hdf5'))
+        MODEL.load_weights(MODEL_WEIGHTS)
     else:
         raise NotImplementedError()
-
-    traces_count = 0
     errors_per_video = {}
     errors_per_timestep = {}
 
-    for ID in PARTITION['test']:
-        traces_count += 1
-        logging.info(f"Progress: {traces_count}/{len(PARTITION['test'])}")
-
+    for ID in tqdm(PARTITION['test'], desc="trace predictions"):
         user = ID['user']
         video = ID['video']
         x_i = ID['time-stamp']
@@ -294,7 +293,7 @@ if __name__ == "__main__":
         logging.info(f"PERC_TRAIN is {1-PERC_TEST}")
         logging.info(f"train_entropy is {args.entropy}")
         logging.info(f"X has {len(X)} traces")
-        logging.info(f"PARTITION['train'] has {len(PARTITION['train'])} windows")
+        logging.info(f"PARTITION['train'] has {len(PARTITION['train'])} trace predictions")
         train()
     if args.evaluate:
         logging.info("")
@@ -302,5 +301,5 @@ if __name__ == "__main__":
         logging.info(f"PERC_TRAIN is {PERC_TEST}")
         logging.info(f"evaluate_entropy is {args.entropy}")
         logging.info(f"Y has {len(Y)} traces")
-        logging.info(f"PARTITION['test'] has {len(PARTITION['test'])} windows")
+        logging.info(f"PARTITION['test'] has {len(PARTITION['test'])} trace predictions")
         evaluate()

@@ -168,6 +168,4 @@ typings
 
 ### Added ###
 .tmp
-data/*.pickle
-data/*.html
-data/pos_only*
+data/*

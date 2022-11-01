@@ -6,6 +6,8 @@ spherical_geometry # voronoi tiles
 swifter # parallell df processing
 psutil # swifter req
 colour
+tqdm # progress bar
+keras-tqdm # progress bar
 
 # There are bellow fixed requirements from head_motion_prediciton/README.md
 # the commented versions are the previous ones
