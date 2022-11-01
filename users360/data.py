@@ -36,7 +36,7 @@ class Data():
     def instance(cls, pickle_sufix='') -> Data:
         if cls._instance is not None:
             return cls._instance
-        
+
         filename = f'Data_{pickle_sufix}.pickle' if pickle_sufix else f'Data.pickle'
         cls._pickle_f = os.path.join(DATADIR, filename)
         if exists(cls._pickle_f):
@@ -45,7 +45,7 @@ class Data():
                 cls._instance: Data = pickle.load(f)
         else:
             cls._instance = cls.__new__(cls)
-        if cls._instance.df_trajects.empty:
+        if not hasattr(cls._instance, 'df_trajects'):
             cls._instance._load_data()
         return cls._instance
 
@@ -66,7 +66,7 @@ class Data():
         ds_pkgs = [david, fan, nguyen, xucvpr, xupami][:1]
         ds_idxs = range(len(ds_pkgs))
 
-        def load_data_from_hmp_xyz(idx, n_traces=100) -> pd.DataFrame:
+        def _load_dataset_xyz(idx, n_traces=100) -> pd.DataFrame:
             # create sampled
             if len(os.listdir(ds_pkgs[idx].OUTPUT_FOLDER)) < 2:
                 ds_pkgs[idx].create_and_store_sampled_dataset()
@@ -89,7 +89,7 @@ class Data():
             return tmpdf
 
         # create df_trajects for all dataset
-        self.df_trajects = pd.concat(map(load_dataset_xyz, ds_idxs), ignore_index=True)
+        self.df_trajects = pd.concat(map(_load_dataset_xyz, ds_idxs), ignore_index=True)
         self.df_trajects.insert(0, 'user', self.df_trajects.groupby(['ds', 'ds_user']).ngroup())
         # create df_users
         self.df_users = pd.DataFrame()
