@@ -257,11 +257,13 @@ if __name__ == "__main__":
     # prepare partitions for train/evaluate
     if (args.train or args.evaluate):
         logging.info("")
-        logging.info("prepare train/test partitions ...")
+        logging.info("preparing train/test partitions ...")
         df = get_df_trajects()
         if args.entropy == 'all':
             X, Y = train_test_split(df, test_size=PERC_TEST, random_state=1)
         else:
+            if not 'entropy_class' in df.columns:
+                calc_trajects_entropy()
             assert not df['entropy_class'].empty, f"df has no 'entropy_class' collumn "
             X, Y = train_test_split(df[df['entropy_class'] == args.entropy], test_size=PERC_TEST, random_state=1)
             assert not X.empty, f"{DATASET_NAME} train partition has none traject with {args.entropy} entropy "
@@ -283,11 +285,11 @@ if __name__ == "__main__":
         if args.gpu_id:
             os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu_id)
         logging.info("")
-        logging.info("create_model ...")
+        logging.info("creating model ...")
         MODEL = create_model()
     if args.train:
         logging.info("")
-        logging.info("train ...")
+        logging.info("training ...")
         logging.info(f"EPOCHS is {EPOCHS}")
         logging.info(f"PERC_TRAIN is {1-PERC_TEST}")
         logging.info(f"train_entropy is {args.entropy}")
@@ -296,7 +298,7 @@ if __name__ == "__main__":
         train()
     if args.evaluate:
         logging.info("")
-        logging.info("evaluate ...")
+        logging.info("evaluating ...")
         logging.info(f"PERC_TRAIN is {PERC_TEST}")
         logging.info(f"evaluate_entropy is {args.entropy}")
         logging.info(f"Y has {len(Y)} trajects")

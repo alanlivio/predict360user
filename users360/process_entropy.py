@@ -18,6 +18,7 @@ def calc_trajects_hmps(tileset=TILESET_DEFAULT) -> None:
     df = Data.instance().df_trajects
     f_trace = lambda trace: tileset.request(trace)
     f_traject = lambda traces: np.apply_along_axis(f_trace, 1, traces)
+    logging.info("calculating heatmaps ...")
     df['hmps'] = pd.Series(df['traces'].swifter.apply(f_traject))
 
 
@@ -27,6 +28,7 @@ def calc_trajects_entropy() -> None:
         calc_trajects_hmps()
     # calc entropy
     f_entropy = lambda x: scipy.stats.entropy(np.sum(x, axis=0).reshape((-1)))
+    logging.info("calculating trajects entropy ...")
     df['entropy'] = df['hmps'].swifter.apply(f_entropy)
     # calc class
     idxs_sort = df['entropy'].argsort()
@@ -48,6 +50,7 @@ def calc_trajects_entropy_users() -> None:
     def f_entropy_user(trajects) -> np.ndarray:
         hmps_sum = np.sum(np.sum(trajects['hmps'].to_numpy(), axis=0), axis=0)
         return scipy.stats.entropy(hmps_sum.reshape((-1)))
+    logging.info("calculating users entropy ...")
     df_users['entropy'] = df.groupby(['user']).apply(f_entropy_user)
     # calc class
     idxs_sort = df_users['entropy'].argsort()
