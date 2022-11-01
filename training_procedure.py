@@ -151,7 +151,7 @@ def evaluate() -> None:
                 errors_per_timestep[t] = []
             errors_per_timestep[t].append(METRIC(groundtruth[t], model_prediction[t]))
 
-    result_basefilename = os.path.join(MODEL_FOLDER, f"evaluate_{DATASET_NAME}{DATASET_FILTER}_test{str(PERC_TEST).replace('.',',')}")
+    result_basefilename = os.path.join(MODEL_FOLDER, f"evaluate{ENTROPY_SUFIX}_test{str(PERC_TEST).replace('.',',')}")
 
     # avg_error_per_video
     avg_error_per_video = []
@@ -188,14 +188,20 @@ if __name__ == "__main__":
     model_names = ['pos_only', 'TRACK', 'CVPR18', 'MM18', 'most_salient_point']
     entropy_classes = ['all', 'low', 'medium', 'hight']
     dataset_names = ['David_MMSys_18', 'Fan_NOSSDAV_17', 'Nguyen_MM_18', 'Xu_CVPR_18', 'Xu_PAMI_18']
+
+    # main actions params
     parser.add_argument('-train', action='store_true',
                         help='Flag that tells run the train procedure')
-    parser.add_argument('-train_entropy', nargs='?', default=entropy_classes[0],
-                        choices=entropy_classes, help='Name of entropy_class to filter training')
     parser.add_argument('-evaluate', action='store_true',
                         help='Flag that tells run the evaluate procedure')
-    parser.add_argument('-evaluate_entropy', nargs='?', default=entropy_classes[0],
-                        choices=entropy_classes, help='Name of entropy_class to filter evaluation')
+    parser.add_argument('-compare_evaluateresults', action='store_true',
+                        help='Flag that tells run the train procedure')
+
+    # train only params
+    parser.add_argument('-epochs', nargs='?', type=int, default=500,
+                        help='epochs numbers (default is 500)')
+
+    # train/evaluate params
     parser.add_argument('-gpu_id', nargs='?', type=int, default=0,
                         help='Used cuda gpu')
     parser.add_argument('-model_name', nargs='?',
@@ -210,10 +216,10 @@ if __name__ == "__main__":
                         help='Buffer window in timesteps',)
     parser.add_argument('-h_window', nargs='?', type=int, default=25,
                         help='Forecast window in timesteps used to predict (5 timesteps = 1 second)')
-    parser.add_argument('-epochs', nargs='?', type=int, default=500,
-                        help='epochs numbers (default is 500)')
-    parser.add_argument('-perc_test', nargs='?', type=float, default=0.8,
-                        help='Test percetage (default is 0.8)')
+    parser.add_argument('-perc_test', nargs='?', type=float, default=0.2,
+                        help='Test percetage (default is 0.2)')
+    parser.add_argument('-entropy', nargs='?', default=entropy_classes[0],
+                        choices=entropy_classes, help='Name of entropy_class to filter training/evalaute')
 
     # vars from argparse
     args = parser.parse_args()
@@ -231,17 +237,22 @@ if __name__ == "__main__":
     DATASET_SAMPLED_FOLDER = os.path.join(DATASET_DIR_HMP, 'sampled_dataset')
 
     # MODEL_FOLDER
-    WIN_PARAMS = 'init_' + str(INIT_WINDOW) + '_in_' + str(M_WINDOW) + '_out_' + \
-        str(H_WINDOW) + '_end_' + str(END_WINDOW)
-    DATASET_FILTER = f'_{args.train_entropy}_entropy' if args.train_entropy != 'all' else ''
+    # WIN_PARAMS = 'init_' + str(INIT_WINDOW) + '_in_' + str(M_WINDOW) + '_out_' + \
+    # str(H_WINDOW) + '_end_' + str(END_WINDOW)
+    ENTROPY_SUFIX = f'_{args.entropy}_entropy' if args.entropy != 'all' else ''
     if MODEL_NAME == 'pos_only':
-        MODEL_FOLDER = os.path.join(DATADIR, f'{MODEL_NAME}_{WIN_PARAMS}_{DATASET_NAME}{DATASET_FILTER}')
+        MODEL_FOLDER = os.path.join(DATADIR, f'{MODEL_NAME}_{DATASET_NAME}{ENTROPY_SUFIX}')
     else:
         raise NotImplementedError()
+    MODEL_WEIGHTS = os.path.join(MODEL_FOLDER, 'weights.hdf5')
 
     if not os.path.exists(MODEL_FOLDER):
         os.makedirs(MODEL_FOLDER)
     logging.info(f"MODEL_FOLDER is {MODEL_FOLDER}")
+
+    if (not args.train and args.evaluate and not os.path.exists(MODEL_WEIGHTS)):
+        # check model if only for evaluate
+        raise RuntimeError(f"{MODEL_WEIGHTS} does not exists")
 
     # prepare partitions for train/evaluate
     if (args.train or args.evaluate):
@@ -249,10 +260,11 @@ if __name__ == "__main__":
         logging.info("prepare train/test partitions ...")
         df = get_df_trajects()
         X, Y = train_test_split(df, test_size=PERC_TEST, random_state=1)
-        if args.train_entropy != 'all':
-            X = X[X['entropy_class'] == args.train_entropy]
-        if args.evaluate_entropy != 'all':
-            Y = Y[Y['entropy_class'] == args.evaluate_entropy]
+        if args.entropy != 'all':
+            X = X[X['entropy_class'] == args.entropy]
+            Y = Y[Y['entropy_class'] == args.entropy]
+            if (X.empty or Y.empty):
+                raise RuntimeError(f"dataset {DATASET_NAME} has none {args.entropy} entropy traces")
         PARTITION = {}
         PARTITION['train'] = [{'video': row[1]['ds_video'], 'user': row[1]
                                ['ds_user'], 'time-stamp': tstap}
@@ -277,7 +289,7 @@ if __name__ == "__main__":
         logging.info("train ...")
         logging.info(f"EPOCHS is {EPOCHS}")
         logging.info(f"PERC_TRAIN is {1-PERC_TEST}")
-        logging.info(f"train_entropy is {args.train_entropy}")
+        logging.info(f"train_entropy is {args.entropy}")
         logging.info(f"X has {len(X)} traces")
         logging.info(f"PARTITION['train'] has {len(PARTITION['train'])} windows")
         train()
@@ -285,7 +297,7 @@ if __name__ == "__main__":
         logging.info("")
         logging.info("evaluate ...")
         logging.info(f"PERC_TRAIN is {PERC_TEST}")
-        logging.info(f"evaluate_entropy is {args.evaluate_entropy}")
+        logging.info(f"evaluate_entropy is {args.entropy}")
         logging.info(f"Y has {len(Y)} traces")
         logging.info(f"PARTITION['test'] has {len(PARTITION['test'])} windows")
         evaluate()
