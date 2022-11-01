@@ -4,7 +4,8 @@ import plotly.io as pio
 
 from users360 import *
 
-pio.renderers.default = "plotly_mimetype"
+pio.renderers.default = None
+
 
 class Test(unittest.TestCase):
 
@@ -19,7 +20,7 @@ class Test(unittest.TestCase):
 
     def test_visualize_fov_at_axis(self) -> None:
         traces = [[1., 0., 0.], [-1., 0., 0.], [0., 1., 0.], [0., -1., 0.], [0., 0., 1.], [0., 0., -1.]]
-        for trace in traces: 
+        for trace in traces:
             show_fov(trace)
 
     def test_visualize_trajects(self) -> None:
