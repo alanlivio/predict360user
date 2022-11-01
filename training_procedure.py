@@ -151,14 +151,22 @@ def evaluate() -> None:
                 errors_per_timestep[t] = []
             errors_per_timestep[t].append(METRIC(groundtruth[t], model_prediction[t]))
 
+    result_basefilename = os.path.join(MODEL_FOLDER, f"evaluate_{DATASET_NAME}{DATASET_FILTER}_test{str(PERC_TEST).replace('.',',')}")
+
+    # avg_error_per_video
+    avg_error_per_video = []
     for video_name in VIDEOS_TEST:
         for t in range(H_WINDOW):
-            logging.info(f"video={video_name} {t} {np.mean(errors_per_video[video_name][t])}")
+            avg = np.mean(errors_per_video[video_name][t])
+            avg_error_per_video.append(f"video={video_name} {t} {avg}")
+    result_file = f'{result_basefilename}_avg_error_per_video.csv'
+    np.savetxt(result_file, avg_error_per_video, fmt='%s')
+    logging.info(f"saving {result_file}")
 
+    # avg_error_per_timestep
     avg_error_per_timestep = []
     for t in range(H_WINDOW):
         avg = np.mean(errors_per_timestep[t])
-        logging.info(f"avg_error at timestep {t} {avg}")
         avg_error_per_timestep.append(avg)
     plt.plot(np.arange(H_WINDOW) + 1 * RATE, avg_error_per_timestep, label=MODEL_NAME)
     met = 'orthodromic'
@@ -166,10 +174,11 @@ def evaluate() -> None:
     plt.ylabel(met)
     plt.xlabel('Prediction step s (sec.)')
     plt.legend()
-    res_file = os.path.join(MODEL_FOLDER, f"results_evaluate_{DATASET_NAME}{DATASET_FILTER}_{str(PERC_TEST).replace('.','_')}")
-    np.savetxt(f'{res_file}.csv', avg_error_per_timestep)
-    plt.savefig(res_file)
-    logging.info(f"avg_error per timestep at {t} {avg}")
+    result_file = f"{result_basefilename}_avg_error_per_timestep"
+    logging.info(f"saving {result_file}.csv")
+    np.savetxt(f'{result_file}.csv', avg_error_per_timestep)
+    logging.info(f"saving {result_file}.png")
+    plt.savefig(result_file)
 
 
 if __name__ == "__main__":
