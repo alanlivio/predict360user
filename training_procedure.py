@@ -4,6 +4,7 @@ import argparse
 import logging
 import os
 from contextlib import redirect_stderr
+from os.path import exists, join
 from typing import Generator
 
 import matplotlib.pyplot as plt
@@ -98,7 +99,7 @@ def train() -> None:
     steps_per_ep_validate = np.ceil(len(PARTITION['test']) / BATCH_SIZE)
 
     # train
-    csv_logger_f = os.path.join(MODEL_FOLDER, 'train_results.csv')
+    csv_logger_f = join(MODEL_FOLDER, 'train_results.csv')
     csv_logger = keras.callbacks.CSVLogger(csv_logger_f)
     model_checkpoint = keras.callbacks.ModelCheckpoint(
         MODEL_WEIGHTS, save_best_only=True, save_weights_only=True, mode='auto', period=1)
@@ -121,7 +122,7 @@ def evaluate() -> None:
     errors_per_video = {}
     errors_per_timestep = {}
 
-    for ID in tqdm(PARTITION['test'], desc="trace predictions"):
+    for ID in tqdm(PARTITION['test'], desc="position predictions"):
         user = ID['user']
         video = ID['video']
         x_i = ID['time-stamp']
@@ -153,7 +154,7 @@ def evaluate() -> None:
                 errors_per_timestep[t] = []
             errors_per_timestep[t].append(METRIC(groundtruth[t], model_prediction[t]))
 
-    result_basefilename = os.path.join(MODEL_FOLDER, f"evaluate{ENTROPY_SUFIX}_test{str(PERC_TEST).replace('.',',')}")
+    result_basefilename = join(MODEL_FOLDER, f"evaluate{ENTROPY_SUFIX}_test{str(PERC_TEST).replace('.',',')}")
 
     # avg_error_per_video
     avg_error_per_video = []
@@ -235,38 +236,36 @@ if __name__ == "__main__":
     PERC_TEST = args.perc_test
 
     # DATASET_SAMPLED_FOLDER
-    DATASET_DIR_HMP = os.path.join('users360', 'head_motion_prediction', DATASET_NAME)
-    DATASET_SAMPLED_FOLDER = os.path.join(DATASET_DIR_HMP, 'sampled_dataset')
+    DATASET_DIR_HMP = join('users360', 'head_motion_prediction', DATASET_NAME)
+    DATASET_SAMPLED_FOLDER = join(DATASET_DIR_HMP, 'sampled_dataset')
 
     # MODEL_FOLDER
     # WIN_PARAMS = 'init_' + str(INIT_WINDOW) + '_in_' + str(M_WINDOW) + '_out_' + \
     # str(H_WINDOW) + '_end_' + str(END_WINDOW)
     ENTROPY_SUFIX = f'_{args.entropy}_entropy' if args.entropy != 'all' else ''
     if MODEL_NAME == 'pos_only':
-        MODEL_FOLDER = os.path.join(DATADIR, f'{MODEL_NAME}_{DATASET_NAME}{ENTROPY_SUFIX}')
+        MODEL_FOLDER = join(DATADIR, f'{MODEL_NAME}_{DATASET_NAME}{ENTROPY_SUFIX}')
     else:
         raise NotImplementedError()
-    MODEL_WEIGHTS = os.path.join(MODEL_FOLDER, 'weights.hdf5')
-
-    if not os.path.exists(MODEL_FOLDER):
+    MODEL_WEIGHTS = join(MODEL_FOLDER, 'weights.hdf5')
+    if not exists(MODEL_FOLDER):
         os.makedirs(MODEL_FOLDER)
     logging.info(f"MODEL_FOLDER is {MODEL_FOLDER}")
-
-    if (not args.train and args.evaluate and not os.path.exists(MODEL_WEIGHTS)):
-        # check model if only for evaluate
-        raise RuntimeError(f"{MODEL_WEIGHTS} does not exists")
+    # if not train, check if MODEL_WEIGHTS exists
+    assert not args.train and args.evaluate and exists(MODEL_WEIGHTS), f"{MODEL_WEIGHTS} does not exists"
 
     # prepare partitions for train/evaluate
     if (args.train or args.evaluate):
         logging.info("")
         logging.info("prepare train/test partitions ...")
         df = get_df_trajects()
-        X, Y = train_test_split(df, test_size=PERC_TEST, random_state=1)
-        if args.entropy != 'all':
-            X = X[X['entropy_class'] == args.entropy]
-            Y = Y[Y['entropy_class'] == args.entropy]
-            if (X.empty or Y.empty):
-                raise RuntimeError(f"dataset {DATASET_NAME} has none {args.entropy} entropy traces")
+        if args.entropy == 'all':
+            X, Y = train_test_split(df, test_size=PERC_TEST, random_state=1)
+        else:
+            assert not df['entropy_class'].empty, f"df has no 'entropy_class' collumn "
+            X, Y = train_test_split(df[df['entropy_class'] == args.entropy], test_size=PERC_TEST, random_state=1)
+            assert not X.empty, f"{DATASET_NAME} train partition has none traject with {args.entropy} entropy "
+            assert not Y.empty, f"{DATASET_NAME} test partition has none traject with {args.entropy} entropy "
         PARTITION = {}
         PARTITION['train'] = [{'video': row[1]['ds_video'], 'user': row[1]
                                ['ds_user'], 'time-stamp': tstap}
@@ -292,14 +291,14 @@ if __name__ == "__main__":
         logging.info(f"EPOCHS is {EPOCHS}")
         logging.info(f"PERC_TRAIN is {1-PERC_TEST}")
         logging.info(f"train_entropy is {args.entropy}")
-        logging.info(f"X has {len(X)} traces")
-        logging.info(f"PARTITION['train'] has {len(PARTITION['train'])} trace predictions")
+        logging.info(f"X has {len(X)} trajects")
+        logging.info(f"PARTITION['train'] has {len(PARTITION['train'])} position predictions")
         train()
     if args.evaluate:
         logging.info("")
         logging.info("evaluate ...")
         logging.info(f"PERC_TRAIN is {PERC_TEST}")
         logging.info(f"evaluate_entropy is {args.entropy}")
-        logging.info(f"Y has {len(Y)} traces")
-        logging.info(f"PARTITION['test'] has {len(PARTITION['test'])} trace predictions")
+        logging.info(f"Y has {len(Y)} trajects")
+        logging.info(f"PARTITION['test'] has {len(PARTITION['test'])} position predictions")
         evaluate()
