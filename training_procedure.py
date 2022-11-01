@@ -4,7 +4,7 @@ import argparse
 import logging
 import os
 from contextlib import redirect_stderr
-from os.path import exists, join
+from os.path import exists, isdir, join
 from typing import Generator
 
 import matplotlib.pyplot as plt
@@ -154,7 +154,7 @@ def evaluate() -> None:
                 errors_per_timestep[t] = []
             errors_per_timestep[t].append(METRIC(groundtruth[t], model_prediction[t]))
 
-    result_basefilename = join(MODEL_FOLDER, f"evaluate{ENTROPY_SUFIX}_test{str(PERC_TEST).replace('.',',')}")
+    result_basefilename = join(MODEL_FOLDER, f"test{str(PERC_TEST).replace('.',',')}")
 
     # avg_error_per_video
     avg_error_per_video = []
@@ -171,15 +171,34 @@ def evaluate() -> None:
     for t in range(H_WINDOW):
         avg = np.mean(errors_per_timestep[t])
         avg_error_per_timestep.append(avg)
-    plt.plot(np.arange(H_WINDOW) + 1 * RATE, avg_error_per_timestep, label=MODEL_NAME)
+    plt.plot(np.arange(H_WINDOW) + 1 * RATE, avg_error_per_timestep)
     met = 'orthodromic'
     plt.title('Average %s in %s dataset using %s model' % (met, DATASET_NAME, MODEL_NAME))
     plt.ylabel(met)
+    plt.xlim(2.5)
     plt.xlabel('Prediction step s (sec.)')
     plt.legend()
     result_file = f"{result_basefilename}_avg_error_per_timestep"
     logging.info(f"saving {result_file}.csv")
     np.savetxt(f'{result_file}.csv', avg_error_per_timestep)
+    logging.info(f"saving {result_file}.png")
+    plt.savefig(result_file)
+
+
+def compare_results() -> None:
+    dirs = [d for d in os.listdir(DATADIR) if d.startswith(MODEL_NAME)]
+    for dir in dirs:
+        filename = next(f for f in os.listdir(join(DATADIR, dir)) if f.endswith('_avg_error_per_timestep.csv'))
+        csv = np.loadtxt(join(DATADIR, dir, filename))
+        plt.plot(np.arange(H_WINDOW) + 1 * RATE, csv, label=dir)
+    assert dirs, 'none results'
+    met = 'orthodromic'
+    plt.title('Average %s in %s dataset using %s model' % (met, DATASET_NAME, MODEL_NAME))
+    plt.ylabel(met)
+    plt.xlim(2.5)
+    plt.xlabel('Prediction step s (sec.)')
+    plt.legend()
+    result_file = join(DATADIR, f"compare_{MODEL_NAME}")
     logging.info(f"saving {result_file}.png")
     plt.savefig(result_file)
 
@@ -193,12 +212,13 @@ if __name__ == "__main__":
     dataset_names = ['David_MMSys_18', 'Fan_NOSSDAV_17', 'Nguyen_MM_18', 'Xu_CVPR_18', 'Xu_PAMI_18']
 
     # main actions params
-    parser.add_argument('-train', action='store_true',
-                        help='Flag that tells run the train procedure')
-    parser.add_argument('-evaluate', action='store_true',
-                        help='Flag that tells run the evaluate procedure')
-    parser.add_argument('-compare_evaluateresults', action='store_true',
-                        help='Flag that tells run the train procedure')
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('-train', action='store_true',
+                       help='Flag that tells run the train procedure')
+    group.add_argument('-evaluate', action='store_true',
+                       help='Flag that tells run the evaluate procedure')
+    group.add_argument('-compare_results', action='store_true',
+                       help='Flag that tells run the train procedure')
 
     # train only params
     parser.add_argument('-epochs', nargs='?', type=int, default=500,
@@ -223,8 +243,6 @@ if __name__ == "__main__":
                         help='Test percetage (default is 0.2)')
     parser.add_argument('-entropy', nargs='?', default=entropy_classes[0],
                         choices=entropy_classes, help='Name of entropy_class to filter training/evalaute')
-
-    # vars from argparse
     args = parser.parse_args()
     MODEL_NAME = args.model_name
     EPOCHS = args.epochs
@@ -235,27 +253,28 @@ if __name__ == "__main__":
     END_WINDOW = H_WINDOW
     PERC_TEST = args.perc_test
 
-    # DATASET_SAMPLED_FOLDER
-    DATASET_DIR_HMP = join('users360', 'head_motion_prediction', DATASET_NAME)
-    DATASET_SAMPLED_FOLDER = join(DATASET_DIR_HMP, 'sampled_dataset')
-
-    # MODEL_FOLDER
-    # WIN_PARAMS = 'init_' + str(INIT_WINDOW) + '_in_' + str(M_WINDOW) + '_out_' + \
-    # str(H_WINDOW) + '_end_' + str(END_WINDOW)
-    ENTROPY_SUFIX = f'_{args.entropy}_entropy' if args.entropy != 'all' else ''
-    if MODEL_NAME == 'pos_only':
-        MODEL_FOLDER = join(DATADIR, f'{MODEL_NAME}_{DATASET_NAME}{ENTROPY_SUFIX}')
-    else:
-        raise NotImplementedError()
-    MODEL_WEIGHTS = join(MODEL_FOLDER, 'weights.hdf5')
-    if not exists(MODEL_FOLDER):
-        os.makedirs(MODEL_FOLDER)
-    logging.info(f"MODEL_FOLDER is {MODEL_FOLDER}")
-    # if not train, check if MODEL_WEIGHTS exists
-    assert not args.train and args.evaluate and exists(MODEL_WEIGHTS), f"{MODEL_WEIGHTS} does not exists"
-
-    # prepare partitions for train/evaluate
+    # prepare variables/partitions/model for train/evaluate
     if (args.train or args.evaluate):
+        # -- variables
+        # DATASET_SAMPLED_FOLDER
+        # DATASET_DIR_HMP = join('users360', 'head_motion_prediction', DATASET_NAME)
+        # DATASET_SAMPLED_FOLDER = join(DATASET_DIR_HMP, 'sampled_dataset')
+        # MODEL_FOLDER
+        # WIN_PARAMS = 'init_' + str(INIT_WINDOW) + '_in_' + str(M_WINDOW) + '_out_' + \
+        # str(H_WINDOW) + '_end_' + str(END_WINDOW)
+        ENTROPY_SUFIX = f'_{args.entropy}_entropy' if args.entropy != 'all' else ''
+        if MODEL_NAME == 'pos_only':
+            MODEL_FOLDER = join(DATADIR, f'{MODEL_NAME}_{DATASET_NAME}{ENTROPY_SUFIX}')
+        else:
+            raise NotImplementedError()
+        MODEL_WEIGHTS = join(MODEL_FOLDER, 'weights.hdf5')
+        if not exists(MODEL_FOLDER):
+            os.makedirs(MODEL_FOLDER)
+        logging.info(f"MODEL_FOLDER is {MODEL_FOLDER}")
+        # if not train, check if MODEL_WEIGHTS exists
+        assert not args.train and args.evaluate and exists(MODEL_WEIGHTS), f"{MODEL_WEIGHTS} does not exists"
+
+        # -- partitions
         logging.info("")
         logging.info("preparing train/test partitions ...")
         df = get_df_trajects()
@@ -280,13 +299,14 @@ if __name__ == "__main__":
         VIDEOS_TEST = Y['ds_video'].unique()
         USERS_TEST = Y['ds_user'].unique()
 
-        # create model
+        # -- model
         os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
         if args.gpu_id:
             os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu_id)
         logging.info("")
         logging.info("creating model ...")
         MODEL = create_model()
+
     if args.train:
         logging.info("")
         logging.info("training ...")
@@ -296,7 +316,7 @@ if __name__ == "__main__":
         logging.info(f"X has {len(X)} trajects")
         logging.info(f"PARTITION['train'] has {len(PARTITION['train'])} position predictions")
         train()
-    if args.evaluate:
+    elif args.evaluate:
         logging.info("")
         logging.info("evaluating ...")
         logging.info(f"PERC_TRAIN is {PERC_TEST}")
@@ -304,3 +324,7 @@ if __name__ == "__main__":
         logging.info(f"Y has {len(Y)} trajects")
         logging.info(f"PARTITION['test'] has {len(PARTITION['test'])} position predictions")
         evaluate()
+    elif args.compare_results:
+        logging.info("")
+        logging.info("comparing results ...")
+        compare_results()
