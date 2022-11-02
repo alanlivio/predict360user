@@ -37,11 +37,11 @@ class Data():
         if cls._instance is not None:
             return cls._instance
 
-        filename = f'Data_{pickle_sufix}.pickle' if pickle_sufix else f'Data.pickle'
+        filename = f'data_{pickle_sufix}.pickle' if pickle_sufix else 'data.pickle'
         cls._pickle_f = os.path.join(DATADIR, filename)
         if exists(cls._pickle_f):
             with open(cls._pickle_f, 'rb') as f:
-                logging.info(f"loading Data from {cls._pickle_f}")
+                logging.info(f"loading data from {cls._pickle_f}")
                 cls._instance: Data = pickle.load(f)
         else:
             cls._instance = cls.__new__(cls)
