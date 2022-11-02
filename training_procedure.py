@@ -273,7 +273,6 @@ if __name__ == "__main__":
             os.makedirs(MODEL_FOLDER)
         logging.info(f"MODEL_FOLDER is {MODEL_FOLDER}")
         # if not train, check if MODEL_WEIGHTS exists
-        assert not args.train and args.evaluate and exists(MODEL_WEIGHTS), f"{MODEL_WEIGHTS} does not exists"
 
         # -- partitions
         logging.info("")
@@ -320,6 +319,7 @@ if __name__ == "__main__":
     elif args.evaluate:
         logging.info("")
         logging.info("evaluating ...")
+        assert exists(MODEL_WEIGHTS), f"{MODEL_WEIGHTS} does not exists"
         logging.info(f"PERC_TRAIN is {PERC_TEST}")
         logging.info(f"evaluate_entropy is {args.entropy}")
         logging.info(f"Y has {len(Y)} trajects")
