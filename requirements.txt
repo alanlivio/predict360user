@@ -11,10 +11,10 @@ tqdm # progress bar
 keras-tqdm # progress bar
 tensorboard
 
-# requirements from head_motion_prediciton/README.md
+# requirements from head_motion_prediction/README.md
 # the commented versions are the previous ones
 # make sure that this patch is applyied:
-#   sed -i 's/^import keras$/import tensorflow.keras as keras/g' training_procedure.py 
+#   sed -i 's/^import keras$/import tensorflow.keras as keras/g' users360/head_motion_prediction/training_procedure.py
 keras==2.4.0  # ==2.3.1
 matplotlib #==3.1.3
 numpy #==1.18.1
