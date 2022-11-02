@@ -1,3 +1,4 @@
+# requirements from users360
 jupyter
 plotly
 scipy # entropy
@@ -8,8 +9,9 @@ psutil # swifter req
 colour
 tqdm # progress bar
 keras-tqdm # progress bar
+tensorboard
 
-# There are bellow fixed requirements from head_motion_prediciton/README.md
+# requirements from head_motion_prediciton/README.md
 # the commented versions are the previous ones
 # make sure that this patch is applyied:
 #   sed -i 's/^import keras$/import tensorflow.keras as keras/g' training_procedure.py 

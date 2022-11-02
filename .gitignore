@@ -169,3 +169,5 @@ typings
 ### Added ###
 .tmp
 data/*
+Graph/*
+logs/*

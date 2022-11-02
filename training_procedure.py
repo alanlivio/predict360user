@@ -101,13 +101,14 @@ def train() -> None:
     # train
     csv_logger_f = join(MODEL_FOLDER, 'train_results.csv')
     csv_logger = keras.callbacks.CSVLogger(csv_logger_f)
+    tb_callback = keras.callbacks.TensorBoard(log_dir=f'{MODEL_FOLDER}/logs')
     model_checkpoint = keras.callbacks.ModelCheckpoint(
         MODEL_WEIGHTS, save_best_only=True, save_weights_only=True, mode='auto', period=1)
     if MODEL_NAME == 'pos_only':
         MODEL.fit_generator(
             generator=generate_arrays(PARTITION['train'], future_window=H_WINDOW),
             verbose=1, steps_per_epoch=steps_per_ep_train, epochs=EPOCHS,
-            callbacks=[csv_logger, model_checkpoint],
+            callbacks=[csv_logger, model_checkpoint, tb_callback],
             validation_data=generate_arrays(PARTITION['test'], future_window=H_WINDOW), validation_steps=steps_per_ep_validate
         )
     else:
