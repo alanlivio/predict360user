@@ -28,11 +28,6 @@ class Data():
         raise RuntimeError('Call instance() instead')
 
     @classmethod
-    def save(cls) -> None:
-        with open(cls._pickle_f, 'wb') as f:
-            pickle.dump(cls._pickle_f, f)
-
-    @classmethod
     def instance(cls, pickle_sufix='') -> Data:
         if cls._instance is not None:
             return cls._instance
@@ -48,6 +43,10 @@ class Data():
         if not hasattr(cls._instance, 'df_trajects'):
             cls._instance._load_data()
         return cls._instance
+
+    def save(self) -> None:
+        with open(cls._pickle_f, 'wb') as f:
+            pickle.dump(self, f)
 
     def _load_data(self) -> None:
         logging.info('loading trajects from head_motion_prediction project')

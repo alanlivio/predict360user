@@ -259,7 +259,7 @@ if __name__ == "__main__":
     # prepare variables/partitions/model for train/evaluate
     if (args.calculate_entropy):
         calc_trajects_entropy()
-        Data.instance.save()
+        Data.instance().save()
     if (args.train or args.evaluate):
         # -- variables
         # DATASET_SAMPLED_FOLDER
