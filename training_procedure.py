@@ -220,6 +220,8 @@ if __name__ == "__main__":
                        help='Flag that tells run the evaluate procedure')
     group.add_argument('-compare_results', action='store_true',
                        help='Flag that tells run the train procedure')
+    group.add_argument('-calculate_entropy', action='store_true',
+                       help='Flag that tells run the calculate entropy procedure')
 
     # train only params
     parser.add_argument('-epochs', nargs='?', type=int, default=500,
@@ -255,6 +257,9 @@ if __name__ == "__main__":
     PERC_TEST = args.perc_test
 
     # prepare variables/partitions/model for train/evaluate
+    if (args.calculate_entropy):
+        calc_trajects_entropy()
+        Data.instance.save()
     if (args.train or args.evaluate):
         # -- variables
         # DATASET_SAMPLED_FOLDER
