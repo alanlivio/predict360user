@@ -63,7 +63,7 @@ class Data():
         from .head_motion_prediction.Xu_PAMI_18 import Read_Dataset as xupami
         ds_names = ['David_MMSys_18', 'Fan_NOSSDAV_17', 'Nguyen_MM_18', 'Xu_CVPR_18', 'Xu_PAMI_18']
         ds_sizes = [1083, 300, 432, 6654, 4408]
-        ds_pkgs = [david, fan, nguyen, xucvpr, xupami][:1]
+        ds_pkgs = [david, fan, nguyen, xucvpr, xupami]  # [:1]
         ds_idxs = range(len(ds_pkgs))
 
         def _load_dataset_xyz(idx, n_traces=100) -> pd.DataFrame:
@@ -109,7 +109,10 @@ def get_one_trace() -> np.array:
 
 def get_traces(video, user, ds='David_MMSys_18') -> np.array:
     # TODO: df indexed by (ds, ds_user, ds_video)
-    row = Data.instance().df_trajects.query(f"ds=='{ds}' and ds_user=='{user}' and ds_video=='{video}'")
+    if ds == 'all':
+        row = Data.instance().df_trajects.query(f"ds_user=='{user}' and ds_video=='{video}'")
+    else:
+        row = Data.instance().df_trajects.query(f"ds=='{ds}' and ds_user=='{user}' and ds_video=='{video}'")
     assert (not row.empty)
     return row['traces'].iloc[0]
 

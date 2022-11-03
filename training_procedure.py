@@ -70,9 +70,9 @@ def generate_arrays(list_IDs, future_window) -> Generator:
             x_i = IDs['time-stamp']
             # Load the data
             if MODEL_NAME == 'pos_only':
-                encoder_pos_inputs_for_batch.append(get_traces(video, user)[x_i - M_WINDOW:x_i])
-                decoder_pos_inputs_for_batch.append(get_traces(video, user)[x_i:x_i + 1])
-                decoder_outputs_for_batch.append(get_traces(video, user)[x_i + 1:x_i + future_window + 1])
+                encoder_pos_inputs_for_batch.append(get_traces(video, user, DATASET_NAME)[x_i - M_WINDOW:x_i])
+                decoder_pos_inputs_for_batch.append(get_traces(video, user, DATASET_NAME)[x_i:x_i + 1])
+                decoder_outputs_for_batch.append(get_traces(video, user, DATASET_NAME)[x_i + 1:x_i + future_window + 1])
             else:
                 raise NotImplementedError()
             count += 1
@@ -133,12 +133,12 @@ def evaluate() -> None:
 
         # Load the data
         if MODEL_NAME == 'pos_only':
-            encoder_pos_inputs_for_sample = np.array([get_traces(video, user)[x_i - M_WINDOW:x_i]])
-            decoder_pos_inputs_for_sample = np.array([get_traces(video, user)[x_i:x_i + 1]])
+            encoder_pos_inputs_for_sample = np.array([get_traces(video, user, DATASET_NAME)[x_i - M_WINDOW:x_i]])
+            decoder_pos_inputs_for_sample = np.array([get_traces(video, user, DATASET_NAME)[x_i:x_i + 1]])
         else:
             raise NotImplementedError()
 
-        groundtruth = get_traces(video, user)[x_i + 1:x_i + H_WINDOW + 1]
+        groundtruth = get_traces(video, user, DATASET_NAME)[x_i + 1:x_i + H_WINDOW + 1]
 
         if MODEL_NAME == 'pos_only':
             model_pred = MODEL.predict([transform_batches_cartesian_to_normalized_eulerian(
@@ -210,7 +210,7 @@ if __name__ == "__main__":
     parser.description = 'train or evaluate users360 models and datasets'
     model_names = ['pos_only', 'TRACK', 'CVPR18', 'MM18', 'most_salient_point']
     entropy_classes = ['all', 'low', 'medium', 'hight']
-    dataset_names = ['David_MMSys_18', 'Fan_NOSSDAV_17', 'Nguyen_MM_18', 'Xu_CVPR_18', 'Xu_PAMI_18']
+    dataset_names = ['all', 'David_MMSys_18', 'Fan_NOSSDAV_17', 'Nguyen_MM_18', 'Xu_CVPR_18', 'Xu_PAMI_18']
 
     # main actions params
     group = parser.add_mutually_exclusive_group()
