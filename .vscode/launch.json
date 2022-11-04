@@ -23,18 +23,12 @@
             "justMyCode": true
         },
         {
-            "name": "evaluate all",
+            "name": "compare_result",
             "type": "python",
             "request": "launch",
             "module": "training_procedure",
             "args": [
-                "-evaluate",
-                "-dataset_name",
-                "David_MMSys_18",
-                "-model_name",
-                "pos_only",
-                "-perc_test",
-                "0.001",
+                "-compare_results",
             ],
             "justMyCode": true
         }

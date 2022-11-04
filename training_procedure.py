@@ -188,11 +188,11 @@ def evaluate() -> None:
 
 def compare_results() -> None:
     dirs = [d for d in os.listdir(DATADIR) if d.startswith(MODEL_NAME)]
-    for dir in dirs:
-        filename = next(f for f in os.listdir(join(DATADIR, dir)) if f.endswith('_avg_error_per_timestep.csv'))
-        csv = np.loadtxt(join(DATADIR, dir, filename))
-        plt.plot(np.arange(H_WINDOW) + 1 * RATE, csv, label=dir)
-    assert dirs, 'none results'
+    csv_file_l = [(dir, f) for dir in dirs for f in os.listdir(join(DATADIR, dir)) if f.endswith('_avg_error_per_timestep.csv')]
+    csv_data_l = [(dir, np.loadtxt(join(DATADIR, dir, f))) for (dir, f) in csv_file_l]
+    assert csv_data_l
+    add_plot = lambda dir, csv_data: plt.plot(np.arange(H_WINDOW) + 1 * RATE, csv_data, label=dir)
+    [add_plot(csv_data[0], csv_data[1]) for csv_data in csv_data_l]
     met = 'orthodromic'
     plt.title('Average %s in %s dataset using %s model' % (met, DATASET_NAME, MODEL_NAME))
     plt.ylabel(met)
