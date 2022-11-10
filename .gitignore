@@ -169,6 +169,7 @@ typings
 ### Added ###
 .tmp
 data/*
+data-*
 Graph/*
 logs/*
 bkp*

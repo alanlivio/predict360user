@@ -45,6 +45,7 @@ class Data():
         return cls._instance
 
     def save(self) -> None:
+        logging.info(f'saving data to {self._pickle_f}')
         with open(cls._pickle_f, 'wb') as f:
             pickle.dump(self, f)
 

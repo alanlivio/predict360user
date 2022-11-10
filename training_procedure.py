@@ -4,7 +4,7 @@ import argparse
 import logging
 import os
 from contextlib import redirect_stderr
-from os.path import exists, isdir, join
+from os.path import basename, exists, isdir, join
 from typing import Generator
 
 import matplotlib.pyplot as plt
@@ -190,7 +190,7 @@ def compare_results() -> None:
     dirs = [d for d in os.listdir(DATADIR) if d.startswith(MODEL_NAME)]
     csv_file_l = [(dir, f) for dir in dirs for f in os.listdir(join(DATADIR, dir)) if f.endswith('_avg_error_per_timestep.csv')]
     csv_data_l = [(dir, np.loadtxt(join(DATADIR, dir, f))) for (dir, f) in csv_file_l]
-    assert csv_data_l
+    assert csv_data_l, f"you should first run {basename(__file__)} -evaluate -entropy <all,low,medium,hight>"
     add_plot = lambda dir, csv_data: plt.plot(np.arange(H_WINDOW) + 1 * RATE, csv_data, label=dir)
     [add_plot(csv_data[0], csv_data[1]) for csv_data in csv_data_l]
     met = 'orthodromic'
@@ -256,18 +256,11 @@ if __name__ == "__main__":
     END_WINDOW = H_WINDOW
     PERC_TEST = args.perc_test
 
-    # prepare variables/partitions/model for train/evaluate
     if (args.calculate_entropy):
         calc_trajects_entropy()
         Data.instance().save()
     if (args.train or args.evaluate):
-        # -- variables
-        # DATASET_SAMPLED_FOLDER
-        # DATASET_DIR_HMP = join('users360', 'head_motion_prediction', DATASET_NAME)
-        # DATASET_SAMPLED_FOLDER = join(DATASET_DIR_HMP, 'sampled_dataset')
-        # MODEL_FOLDER
-        # WIN_PARAMS = 'init_' + str(INIT_WINDOW) + '_in_' + str(M_WINDOW) + '_out_' + \
-        # str(H_WINDOW) + '_end_' + str(END_WINDOW)
+        # -- prepare variables
         ENTROPY_SUFIX = f'_{args.entropy}_entropy' if args.entropy != 'all' else ''
         if MODEL_NAME == 'pos_only':
             MODEL_FOLDER = join(DATADIR, f'{MODEL_NAME}_{DATASET_NAME}{ENTROPY_SUFIX}')
@@ -279,7 +272,7 @@ if __name__ == "__main__":
         logging.info(f"MODEL_FOLDER is {MODEL_FOLDER}")
         # if not train, check if MODEL_WEIGHTS exists
 
-        # -- partitions
+        # -- prepare partitions
         logging.info("")
         logging.info("preparing train/test partitions ...")
         df = get_df_trajects()
@@ -311,7 +304,6 @@ if __name__ == "__main__":
         logging.info("")
         logging.info("creating model ...")
         MODEL = create_model()
-
     if args.train:
         logging.info("")
         logging.info("training ...")
