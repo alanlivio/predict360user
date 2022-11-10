@@ -256,23 +256,20 @@ if __name__ == "__main__":
     END_WINDOW = H_WINDOW
     PERC_TEST = args.perc_test
 
+    # -- prepare variables
+    ENTROPY_SUFIX = f'_{args.entropy}_entropy' if args.entropy != 'all' else ''
+    if MODEL_NAME == 'pos_only':
+        MODEL_FOLDER = join(DATADIR, f'{MODEL_NAME}_{DATASET_NAME}{ENTROPY_SUFIX}')
+    else:
+        raise NotImplementedError()
+    if not exists(MODEL_FOLDER):
+        os.makedirs(MODEL_FOLDER)
+    logging.info(f"MODEL_FOLDER is {MODEL_FOLDER}")
+
     if (args.calculate_entropy):
         calc_trajects_entropy()
         Data.instance().save()
     if (args.train or args.evaluate):
-        # -- prepare variables
-        ENTROPY_SUFIX = f'_{args.entropy}_entropy' if args.entropy != 'all' else ''
-        if MODEL_NAME == 'pos_only':
-            MODEL_FOLDER = join(DATADIR, f'{MODEL_NAME}_{DATASET_NAME}{ENTROPY_SUFIX}')
-        else:
-            raise NotImplementedError()
-        MODEL_WEIGHTS = join(MODEL_FOLDER, 'weights.hdf5')
-        if not exists(MODEL_FOLDER):
-            os.makedirs(MODEL_FOLDER)
-        logging.info(f"MODEL_FOLDER is {MODEL_FOLDER}")
-        # if not train, check if MODEL_WEIGHTS exists
-
-        # -- prepare partitions
         logging.info("")
         logging.info("preparing train/test partitions ...")
         df = get_df_trajects()
@@ -309,13 +306,13 @@ if __name__ == "__main__":
         logging.info("training ...")
         logging.info(f"EPOCHS is {EPOCHS}")
         logging.info(f"PERC_TRAIN is {1-PERC_TEST}")
-        logging.info(f"train_entropy is {args.entropy}")
         logging.info(f"X has {len(X)} trajects")
         logging.info(f"PARTITION['train'] has {len(PARTITION['train'])} position predictions")
         train()
     elif args.evaluate:
         logging.info("")
         logging.info("evaluating ...")
+        MODEL_WEIGHTS = join(MODEL_FOLDER, 'weights.hdf5')
         assert exists(MODEL_WEIGHTS), f"{MODEL_WEIGHTS} does not exists"
         logging.info(f"PERC_TRAIN is {PERC_TEST}")
         logging.info(f"evaluate_entropy is {args.entropy}")
