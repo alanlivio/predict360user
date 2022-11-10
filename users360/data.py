@@ -47,7 +47,7 @@ class Data():
 
     def save(self) -> None:
         logging.info(f'saving data to {self._pickle_f}')
-        with open(cls._pickle_f, 'wb') as f:
+        with open(self._pickle_f, 'wb') as f:
             pickle.dump(self, f)
 
     def _load_data(self) -> None:
