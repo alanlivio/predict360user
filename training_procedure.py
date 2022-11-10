@@ -215,13 +215,15 @@ if __name__ == "__main__":
     # main actions params
     group = parser.add_mutually_exclusive_group()
     group.add_argument('-train', action='store_true',
-                       help='Flag that tells run the train procedure')
+                       help='Run the train procedure')
     group.add_argument('-evaluate', action='store_true',
-                       help='Flag that tells run the evaluate procedure')
+                       help='Run the evaluate procedure')
     group.add_argument('-compare_results', action='store_true',
-                       help='Flag that tells run the train procedure')
+                       help='Run the train procedure')
+    group.add_argument('-load_raw_dataset', action='store_true',
+                       help='Load raw dataset and save as pickle ')
     group.add_argument('-calculate_entropy', action='store_true',
-                       help='Flag that tells run the calculate entropy procedure')
+                       help='Run the calculate entropy procedure')
 
     # train only params
     parser.add_argument('-epochs', nargs='?', type=int, default=500,
@@ -256,7 +258,6 @@ if __name__ == "__main__":
     END_WINDOW = H_WINDOW
     PERC_TEST = args.perc_test
 
-    # -- prepare variables
     ENTROPY_SUFIX = f'_{args.entropy}_entropy' if args.entropy != 'all' else ''
     if MODEL_NAME == 'pos_only':
         MODEL_FOLDER = join(DATADIR, f'{MODEL_NAME}_{DATASET_NAME}{ENTROPY_SUFIX}')
@@ -266,6 +267,8 @@ if __name__ == "__main__":
         os.makedirs(MODEL_FOLDER)
     logging.info(f"MODEL_FOLDER is {MODEL_FOLDER}")
 
+    if (args.load_raw_dataset):
+        Data.instance().save()
     if (args.calculate_entropy):
         calc_trajects_entropy()
         Data.instance().save()
