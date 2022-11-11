@@ -161,6 +161,9 @@ def evaluate() -> None:
     avg_error_per_video = []
     for video_name in VIDEOS_TEST:
         for t in range(H_WINDOW):
+            if not video_name in errors_per_video:
+                logging.error(f'missing {video_name} in VIDEOS_TEST')
+                continue
             avg = np.mean(errors_per_video[video_name][t])
             avg_error_per_video.append(f"video={video_name} {t} {avg}")
     result_file = f'{result_basefilename}_avg_error_per_video.csv'
@@ -304,6 +307,9 @@ if __name__ == "__main__":
         logging.info("")
         logging.info("creating model ...")
         MODEL = create_model()
+        MODEL_WEIGHTS = join(MODEL_FOLDER, 'weights.hdf5')
+        logging.info(f"MODEL_WEIGHTS={MODEL_WEIGHTS}")
+
     if args.train:
         logging.info("")
         logging.info("training ...")
@@ -315,7 +321,6 @@ if __name__ == "__main__":
     elif args.evaluate:
         logging.info("")
         logging.info("evaluating ...")
-        MODEL_WEIGHTS = join(MODEL_FOLDER, 'weights.hdf5')
         assert exists(MODEL_WEIGHTS), f"{MODEL_WEIGHTS} does not exists"
         logging.info(f"PERC_TRAIN is {PERC_TEST}")
         logging.info(f"evaluate_entropy is {args.entropy}")
