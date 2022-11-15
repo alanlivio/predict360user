@@ -155,7 +155,7 @@ def evaluate() -> None:
                 errors_per_timestep[t] = []
             errors_per_timestep[t].append(METRIC(groundtruth[t], model_prediction[t]))
 
-    result_basefilename = join(MODEL_FOLDER, f"test{str(PERC_TEST).replace('.',',')}")
+    result_basefilename = join(MODEL_FOLDER, PERC_TEST_PREFIX)
 
     # avg_error_per_video
     avg_error_per_video = []
@@ -179,7 +179,7 @@ def evaluate() -> None:
     result_file = f"{result_basefilename}_avg_error_per_timestep"
     logging.info(f"saving {result_file}.csv")
     np.savetxt(f'{result_file}.csv', avg_error_per_timestep)
-    
+
     # avg_error_per_timestep.png
     plt.plot(np.arange(H_WINDOW) + 1 * RATE, avg_error_per_timestep)
     met = 'orthodromic'
@@ -194,10 +194,12 @@ def evaluate() -> None:
 
 def compare_results() -> None:
     suffix = '_avg_error_per_timestep.csv'
+    prefix = PERC_TEST_PREFIX
 
     # find files with suffix
     dirs = [d for d in os.listdir(DATADIR) if d.startswith(MODEL_NAME)]
-    csv_file_l = [(dir, f) for dir in dirs for f in os.listdir(join(DATADIR, dir)) if f.endswith(suffix)]
+    csv_file_l = [(dir, f) for dir in dirs for f in os.listdir(join(DATADIR, dir)) 
+        if (f.endswith(suffix) and f.startswith(prefix))]
     csv_data_l = [(dir, f, np.loadtxt(join(DATADIR, dir, f))) for (dir, f) in csv_file_l]
     assert csv_data_l, f"you should first run {basename(__file__)} -evaluate -entropy <all,low,medium,hight>"
 
@@ -272,6 +274,7 @@ if __name__ == "__main__":
     H_WINDOW = args.h_window
     END_WINDOW = H_WINDOW
     PERC_TEST = args.perc_test
+    PERC_TEST_PREFIX = f"test{str(PERC_TEST).replace('.',',')}"
 
     ENTROPY_SUFFIX = f'_{args.entropy}_entropy' if args.entropy != 'all' else ''
     if MODEL_NAME == 'pos_only':
