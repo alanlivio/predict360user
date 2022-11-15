@@ -175,26 +175,39 @@ def evaluate() -> None:
     for t in range(H_WINDOW):
         avg = np.mean(errors_per_timestep[t])
         avg_error_per_timestep.append(avg)
+    # avg_error_per_timestep.csv
+    result_file = f"{result_basefilename}_avg_error_per_timestep"
+    logging.info(f"saving {result_file}.csv")
+    np.savetxt(f'{result_file}.csv', avg_error_per_timestep)
+    
+    # avg_error_per_timestep.png
     plt.plot(np.arange(H_WINDOW) + 1 * RATE, avg_error_per_timestep)
     met = 'orthodromic'
     plt.title('Average %s in %s dataset using %s model' % (met, DATASET_NAME, MODEL_NAME))
     plt.ylabel(met)
     plt.xlim(2.5)
     plt.xlabel('Prediction step s (sec.)')
-    result_file = f"{result_basefilename}_avg_error_per_timestep"
-    logging.info(f"saving {result_file}.csv")
-    np.savetxt(f'{result_file}.csv', avg_error_per_timestep)
     logging.info(f"saving {result_file}.png")
-    plt.savefig(result_file)
+    plt.legend(bbox_to_anchor=(0, 1), loc='upper left', ncol=1)
+    plt.savefig(result_file, bbox_inches='tight')
 
 
 def compare_results() -> None:
+    suffix = '_avg_error_per_timestep.csv'
+
+    # find files with suffix
     dirs = [d for d in os.listdir(DATADIR) if d.startswith(MODEL_NAME)]
-    csv_file_l = [(dir, f) for dir in dirs for f in os.listdir(join(DATADIR, dir)) if f.endswith('_avg_error_per_timestep.csv')]
-    csv_data_l = [(dir, np.loadtxt(join(DATADIR, dir, f))) for (dir, f) in csv_file_l]
+    csv_file_l = [(dir, f) for dir in dirs for f in os.listdir(join(DATADIR, dir)) if f.endswith(suffix)]
+    csv_data_l = [(dir, f, np.loadtxt(join(DATADIR, dir, f))) for (dir, f) in csv_file_l]
     assert csv_data_l, f"you should first run {basename(__file__)} -evaluate -entropy <all,low,medium,hight>"
-    add_plot = lambda dir, csv_data: plt.plot(np.arange(H_WINDOW) + 1 * RATE, csv_data, label=dir)
-    [add_plot(csv_data[0], csv_data[1]) for csv_data in csv_data_l]
+
+    # sort by the last horizon hight
+    last_horizon_avg = lambda item: item[2][-1]  # [2] is csv_data [-1] is last horizon
+    csv_data_l.sort(reverse=True, key=last_horizon_avg)
+
+    # plot as image
+    add_plot = lambda dir, file, csv_data: plt.plot(np.arange(H_WINDOW) + 1 * RATE, csv_data, label=f"{dir}_{file.removesuffix(suffix)}")
+    [add_plot(*csv_data) for csv_data in csv_data_l]
     met = 'orthodromic'
     plt.title('Average %s in %s dataset using %s model' % (met, DATASET_NAME, MODEL_NAME))
     plt.ylabel(met)
@@ -202,7 +215,8 @@ def compare_results() -> None:
     plt.xlabel('Prediction step s (sec.)')
     result_file = join(DATADIR, f"compare_{MODEL_NAME}")
     logging.info(f"saving {result_file}.png")
-    plt.savefig(result_file)
+    plt.legend(bbox_to_anchor=(0, 1), loc='upper left', ncol=1)
+    plt.savefig(result_file, bbox_inches='tight')
 
 
 if __name__ == "__main__":
@@ -259,9 +273,9 @@ if __name__ == "__main__":
     END_WINDOW = H_WINDOW
     PERC_TEST = args.perc_test
 
-    ENTROPY_SUFIX = f'_{args.entropy}_entropy' if args.entropy != 'all' else ''
+    ENTROPY_SUFFIX = f'_{args.entropy}_entropy' if args.entropy != 'all' else ''
     if MODEL_NAME == 'pos_only':
-        MODEL_FOLDER = join(DATADIR, f'{MODEL_NAME}_{DATASET_NAME}{ENTROPY_SUFIX}')
+        MODEL_FOLDER = join(DATADIR, f'{MODEL_NAME}_{DATASET_NAME}{ENTROPY_SUFFIX}')
     else:
         raise NotImplementedError()
     if not exists(MODEL_FOLDER):

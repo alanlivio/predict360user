@@ -165,7 +165,7 @@ class VizSphere():
         fig.show()
 
 
-def show_fov(trace, tileset=TILESET_DEFAULT, to_html=False) -> None:
+def show_fov(trace, tileset=TILESET_DEFAULT) -> None:
     assert len(trace) == 3  # cartesian
 
     # subplot two figures
@@ -189,13 +189,12 @@ def show_fov(trace, tileset=TILESET_DEFAULT, to_html=False) -> None:
     if isinstance(tileset, TileSet):
         fig.update_yaxes(autorange="reversed")  # fix given phi 0 being the north pole at Utils.cartesian_to_eulerian
 
-    # show or save html
     title = f"trace_[{trace[0]:.2},{trace[1]:.2},{trace[2]:.2}]_{tileset.prefix}"
     fig.update_layout(width=800, showlegend=False, title_text=title)
     fig.show()
 
 
-def show_trajects(df: pd.DataFrame, tileset=TILESET_DEFAULT, to_html=False) -> None:
+def show_trajects(df: pd.DataFrame, tileset=TILESET_DEFAULT) -> None:
     assert (not df.empty)
 
     # subplot two figures
@@ -222,7 +221,6 @@ def show_trajects(df: pd.DataFrame, tileset=TILESET_DEFAULT, to_html=False) -> N
             # fix given phi 0 being the north pole at Utils.cartesian_to_eulerian
             fig.update_yaxes(autorange="reversed")
 
-    # show or save html
     title = f"{str(df.shape[0])}_trajects_{tileset.prefix}"
     fig.update_layout(width=800, showlegend=False, title_text=title)
     fig.show()
