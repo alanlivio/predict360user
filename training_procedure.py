@@ -181,7 +181,6 @@ def evaluate() -> None:
     plt.ylabel(met)
     plt.xlim(2.5)
     plt.xlabel('Prediction step s (sec.)')
-    plt.legend()
     result_file = f"{result_basefilename}_avg_error_per_timestep"
     logging.info(f"saving {result_file}.csv")
     np.savetxt(f'{result_file}.csv', avg_error_per_timestep)
@@ -201,7 +200,6 @@ def compare_results() -> None:
     plt.ylabel(met)
     plt.xlim(2.5)
     plt.xlabel('Prediction step s (sec.)')
-    plt.legend()
     result_file = join(DATADIR, f"compare_{MODEL_NAME}")
     logging.info(f"saving {result_file}.png")
     plt.savefig(result_file)
