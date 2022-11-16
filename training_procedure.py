@@ -198,8 +198,8 @@ def compare_results() -> None:
 
     # find files with suffix
     dirs = [d for d in os.listdir(DATADIR) if d.startswith(MODEL_NAME)]
-    csv_file_l = [(dir, f) for dir in dirs for f in os.listdir(join(DATADIR, dir)) 
-        if (f.endswith(suffix) and f.startswith(prefix))]
+    csv_file_l = [(dir, f) for dir in dirs for f in os.listdir(join(DATADIR, dir))
+                  if (f.endswith(suffix) and f.startswith(prefix))]
     csv_data_l = [(dir, f, np.loadtxt(join(DATADIR, dir, f))) for (dir, f) in csv_file_l]
     assert csv_data_l, f"you should first run {basename(__file__)} -evaluate -entropy <all,low,medium,hight>"
 
@@ -281,48 +281,47 @@ if __name__ == "__main__":
         os.makedirs(MODEL_FOLDER)
     logging.info(f"MODEL_FOLDER is {MODEL_FOLDER}")
 
-    # actions params
-    if (args.load_raw_dataset):
+    # actions
+    if args.load_raw_dataset:
         Data.instance().save()
-    elif (args.calculate_entropy):
+    elif args.calculate_entropy:
         calc_trajects_entropy()
         Data.instance().save()
     elif args.compare_results:
         compare_results()
-    elif (args.train or args.evaluate):
+    elif args.train or args.evaluate:
         logging.info("")
-        logging.info("preparing train/test partitions ...")
+        logging.info("partioning train/test ...")
         df = get_df_trajects()
         if args.entropy == 'all':
             X, Y = train_test_split(df, test_size=PERC_TEST, random_state=1)
         else:
             if not 'entropy_class' in df.columns:
                 calc_trajects_entropy()
-            assert not df['entropy_class'].empty, f"df has no 'entropy_class' collumn "
+            assert not df['entropy_class'].empty, "df has no 'entropy_class' collumn"
             X, Y = train_test_split(df[df['entropy_class'] == args.entropy], test_size=PERC_TEST, random_state=1)
             assert not X.empty, f"{DATASET_NAME} train partition has none traject with {args.entropy} entropy "
             assert not Y.empty, f"{DATASET_NAME} test partition has none traject with {args.entropy} entropy "
         PARTITION = {}
         PARTITION['train'] = [{'video': row[1]['ds_video'], 'user': row[1]
-                               ['ds_user'], 'time-stamp': tstap}
+                              ['ds_user'], 'time-stamp': tstap}
                               for row in X.iterrows()
                               for tstap in range(INIT_WINDOW, row[1]['traces'].shape[0] - END_WINDOW)]
         PARTITION['test'] = [{'video': row[1]['ds_video'], 'user': row[1]
-                              ['ds_user'], 'time-stamp': tstap}
+                             ['ds_user'], 'time-stamp': tstap}
                              for row in Y.iterrows()
                              for tstap in range(INIT_WINDOW, row[1]['traces'].shape[0] - END_WINDOW)]
         VIDEOS_TEST = Y['ds_video'].unique()
         USERS_TEST = Y['ds_user'].unique()
-
-        # -- model
-        os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-        if args.gpu_id:
-            os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu_id)
         logging.info("")
         logging.info("creating model ...")
         MODEL = create_model()
+        os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+        if args.gpu_id:
+            os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu_id)
         MODEL_WEIGHTS = join(MODEL_FOLDER, 'weights.hdf5')
         logging.info(f"MODEL_WEIGHTS={MODEL_WEIGHTS}")
+        
         if args.train:
             logging.info("")
             logging.info("training ...")
