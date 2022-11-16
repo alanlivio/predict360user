@@ -231,16 +231,16 @@ if __name__ == "__main__":
 
     # main actions params
     group = parser.add_mutually_exclusive_group()
-    group.add_argument('-train', action='store_true',
-                       help='Run the train procedure')
-    group.add_argument('-evaluate', action='store_true',
-                       help='Run the evaluate procedure')
-    group.add_argument('-compare_results', action='store_true',
-                       help='Run the train procedure')
     group.add_argument('-load_raw_dataset', action='store_true',
                        help='Load raw dataset and save as pickle ')
     group.add_argument('-calculate_entropy', action='store_true',
                        help='Run the calculate entropy procedure')
+    group.add_argument('-compare_results', action='store_true',
+                       help='Run the train procedure')
+    group.add_argument('-train', action='store_true',
+                       help='Run the train procedure')
+    group.add_argument('-evaluate', action='store_true',
+                       help='Run the evaluate procedure')
 
     # train only params
     parser.add_argument('-epochs', nargs='?', type=int, default=500,
@@ -275,22 +275,21 @@ if __name__ == "__main__":
     END_WINDOW = H_WINDOW
     PERC_TEST = args.perc_test
     PERC_TEST_PREFIX = f"test{str(PERC_TEST).replace('.',',')}"
-
     ENTROPY_SUFFIX = f'_{args.entropy}_entropy' if args.entropy != 'all' else ''
-    if MODEL_NAME == 'pos_only':
-        MODEL_FOLDER = join(DATADIR, f'{MODEL_NAME}_{DATASET_NAME}{ENTROPY_SUFFIX}')
-    else:
-        raise NotImplementedError()
+    MODEL_FOLDER = join(DATADIR, f'{MODEL_NAME}_{DATASET_NAME}{ENTROPY_SUFFIX}')
     if not exists(MODEL_FOLDER):
         os.makedirs(MODEL_FOLDER)
     logging.info(f"MODEL_FOLDER is {MODEL_FOLDER}")
 
+    # actions params
     if (args.load_raw_dataset):
         Data.instance().save()
-    if (args.calculate_entropy):
+    elif (args.calculate_entropy):
         calc_trajects_entropy()
         Data.instance().save()
-    if (args.train or args.evaluate):
+    elif args.compare_results:
+        compare_results()
+    elif (args.train or args.evaluate):
         logging.info("")
         logging.info("preparing train/test partitions ...")
         df = get_df_trajects()
@@ -324,25 +323,20 @@ if __name__ == "__main__":
         MODEL = create_model()
         MODEL_WEIGHTS = join(MODEL_FOLDER, 'weights.hdf5')
         logging.info(f"MODEL_WEIGHTS={MODEL_WEIGHTS}")
-
-    if args.train:
-        logging.info("")
-        logging.info("training ...")
-        logging.info(f"EPOCHS is {EPOCHS}")
-        logging.info(f"PERC_TRAIN is {1-PERC_TEST}")
-        logging.info(f"X has {len(X)} trajects")
-        logging.info(f"PARTITION['train'] has {len(PARTITION['train'])} position predictions")
-        train()
-    elif args.evaluate:
-        logging.info("")
-        logging.info("evaluating ...")
-        assert exists(MODEL_WEIGHTS), f"{MODEL_WEIGHTS} does not exists"
-        logging.info(f"PERC_TRAIN is {PERC_TEST}")
-        logging.info(f"evaluate_entropy is {args.entropy}")
-        logging.info(f"Y has {len(Y)} trajects")
-        logging.info(f"PARTITION['test'] has {len(PARTITION['test'])} position predictions")
-        evaluate()
-    elif args.compare_results:
-        logging.info("")
-        logging.info("comparing results ...")
-        compare_results()
+        if args.train:
+            logging.info("")
+            logging.info("training ...")
+            logging.info(f"EPOCHS is {EPOCHS}")
+            logging.info(f"PERC_TRAIN is {1-PERC_TEST}")
+            logging.info(f"X has {len(X)} trajects")
+            logging.info(f"PARTITION['train'] has {len(PARTITION['train'])} position predictions")
+            train()
+        elif args.evaluate:
+            logging.info("")
+            logging.info("evaluating ...")
+            assert exists(MODEL_WEIGHTS), f"{MODEL_WEIGHTS} does not exists"
+            logging.info(f"PERC_TRAIN is {PERC_TEST}")
+            logging.info(f"evaluate_entropy is {args.entropy}")
+            logging.info(f"Y has {len(Y)} trajects")
+            logging.info(f"PARTITION['test'] has {len(PARTITION['test'])} position predictions")
+            evaluate()
