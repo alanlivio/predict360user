@@ -5,30 +5,34 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "evaluate hight",
-            "type": "python",
-            "request": "launch",
-            "module": "training_procedure",
-            "args": [
-                "-evaluate",
-                "-dataset_name",
-                "David_MMSys_18",
-                "-model_name",
-                "pos_only",
-                "-perc_test",
-                "0.001",
-                "-entropy",
-                "hight"
-            ],
-            "justMyCode": true
-        },
-        {
-            "name": "compare_result",
+            "name": "-compare_result",
             "type": "python",
             "request": "launch",
             "module": "training_procedure",
             "args": [
                 "-compare_results",
+            ],
+            "justMyCode": true
+        },
+        {
+            "name": "-evaluate",
+            "type": "python",
+            "request": "launch",
+            "module": "training_procedure",
+            "args": [
+                "-evaluate"
+            ],
+            "justMyCode": true
+        },
+        {
+            "name": "evaluate -test_entropy hight",
+            "type": "python",
+            "request": "launch",
+            "module": "training_procedure",
+            "args": [
+                "-evaluate",
+                "-test_entropy",
+                "hight",
             ],
             "justMyCode": true
         }

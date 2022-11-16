@@ -245,6 +245,12 @@ if __name__ == "__main__":
     # train only params
     parser.add_argument('-epochs', nargs='?', type=int, default=500,
                         help='epochs numbers (default is 500)')
+    parser.add_argument('-train_entropy', nargs='?', default=entropy_classes[0],
+                        choices=entropy_classes, help='Name of entropy_class to filter training/evalaute')
+
+    # evaluate only params
+    parser.add_argument('-test_entropy', nargs='?', default='same',
+                        choices=entropy_classes, help='Name of entropy_class to filter training/evalaute')
 
     # train/evaluate params
     parser.add_argument('-gpu_id', nargs='?', type=int, default=0,
@@ -263,8 +269,7 @@ if __name__ == "__main__":
                         help='Forecast window in timesteps used to predict (5 timesteps = 1 second)')
     parser.add_argument('-perc_test', nargs='?', type=float, default=0.2,
                         help='Test percetage (default is 0.2)')
-    parser.add_argument('-entropy', nargs='?', default=entropy_classes[0],
-                        choices=entropy_classes, help='Name of entropy_class to filter training/evalaute')
+
     args = parser.parse_args()
     MODEL_NAME = args.model_name
     EPOCHS = args.epochs
@@ -274,68 +279,84 @@ if __name__ == "__main__":
     H_WINDOW = args.h_window
     END_WINDOW = H_WINDOW
     PERC_TEST = args.perc_test
+
+    # used in multiple actions
     PERC_TEST_PREFIX = f"test{str(PERC_TEST).replace('.',',')}"
-    ENTROPY_SUFFIX = f'_{args.entropy}_entropy' if args.entropy != 'all' else ''
-    MODEL_FOLDER = join(DATADIR, f'{MODEL_NAME}_{DATASET_NAME}{ENTROPY_SUFFIX}')
+    model_entropy_sufix = f'_{args.train_entropy}_entropy' if args.train_entropy != 'all' else ''
+    MODEL_FOLDER = join(DATADIR, f'{MODEL_NAME}_{DATASET_NAME}{model_entropy_sufix}')
     if not exists(MODEL_FOLDER):
         os.makedirs(MODEL_FOLDER)
     logging.info(f"MODEL_FOLDER is {MODEL_FOLDER}")
 
-    # actions
+    # not -train, -evaluation actions
     if args.load_raw_dataset:
         Data.instance().save()
-    elif args.calculate_entropy:
+        exit()
+    if args.calculate_entropy:
         calc_trajects_entropy()
         Data.instance().save()
-    elif args.compare_results:
+        exit()
+    if args.compare_results:
         compare_results()
-    elif args.train or args.evaluate:
-        logging.info("")
-        logging.info("partioning train/test ...")
-        df = get_df_trajects()
-        if args.entropy == 'all':
-            X, Y = train_test_split(df, test_size=PERC_TEST, random_state=1)
+        exit()
+
+    # -train, -evaluation actions
+    # partioning
+    logging.info("")
+    logging.info("partioning train/test ...")
+    df = get_df_trajects()
+    args.test_entropy = args.train_entropy if args.test_entropy == "same" else args.test_entropy
+    logging.info(f"X_train entropy is {args.train_entropy}")
+    logging.info(f"X_test entropy is {args.test_entropy}")
+    X_train, X_test = [], []
+    if (args.train_entropy != 'all') and (args.test_entropy != 'all'):
+        assert not df['entropy_class'].empty, "dataset has no 'entropy_class' collumn, run -calc_trajects_entropy"
+        X_train, X_test = train_test_split(df, test_size=PERC_TEST, random_state=1)
+    else:
+        if args.train_entropy == 'all':
+            X_train, _ = train_test_split(df, test_size=PERC_TEST, random_state=1)
         else:
-            if not 'entropy_class' in df.columns:
-                calc_trajects_entropy()
-            assert not df['entropy_class'].empty, "df has no 'entropy_class' collumn"
-            X, Y = train_test_split(df[df['entropy_class'] == args.entropy], test_size=PERC_TEST, random_state=1)
-            assert not X.empty, f"{DATASET_NAME} train partition has none traject with {args.entropy} entropy "
-            assert not Y.empty, f"{DATASET_NAME} test partition has none traject with {args.entropy} entropy "
-        PARTITION = {}
-        PARTITION['train'] = [{'video': row[1]['ds_video'], 'user': row[1]
-                              ['ds_user'], 'time-stamp': tstap}
-                              for row in X.iterrows()
-                              for tstap in range(INIT_WINDOW, row[1]['traces'].shape[0] - END_WINDOW)]
-        PARTITION['test'] = [{'video': row[1]['ds_video'], 'user': row[1]
-                             ['ds_user'], 'time-stamp': tstap}
-                             for row in Y.iterrows()
-                             for tstap in range(INIT_WINDOW, row[1]['traces'].shape[0] - END_WINDOW)]
-        VIDEOS_TEST = Y['ds_video'].unique()
-        USERS_TEST = Y['ds_user'].unique()
+            X_train, _ = train_test_split(df[df['entropy_class'] == args.train_entropy], test_size=PERC_TEST, random_state=1)
+        if args.test_entropy == 'all':
+            _, X_test = train_test_split(df, test_size=PERC_TEST, random_state=1)
+        else:
+            _, X_test = train_test_split(df[df['entropy_class'] == args.test_entropy], test_size=PERC_TEST, random_state=1)
+    assert (not X_test.empty and not X_train.empty)
+    logging.info(f"PERC_TRAIN is {1-PERC_TEST}")
+    logging.info(f"X_train has {len(X_train)} trajectories")
+    logging.info(f"X_test has {len(X_test)} trajectories")
+    PARTITION = {}
+    PARTITION['train'] = [{'video': row[1]['ds_video'], 'user': row[1]
+                          ['ds_user'], 'time-stamp': tstap}
+                          for row in X_train.iterrows()
+                          for tstap in range(INIT_WINDOW, row[1]['traces'].shape[0] - END_WINDOW)]
+    PARTITION['test'] = [{'video': row[1]['ds_video'], 'user': row[1]
+                         ['ds_user'], 'time-stamp': tstap}
+                         for row in X_test.iterrows()
+                         for tstap in range(INIT_WINDOW, row[1]['traces'].shape[0] - END_WINDOW)]
+    VIDEOS_TEST = X_test['ds_video'].unique()
+    USERS_TEST = X_test['ds_user'].unique()
+    logging.info(f"PARTITION['train'] has {len(PARTITION['train'])} position predictions")
+    logging.info(f"PARTITION['test'] has {len(PARTITION['test'])} position predictions")
+
+    # creating model
+    logging.info("")
+    logging.info("creating model ...")
+    os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+    if args.gpu_id:
+        os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu_id)
+    MODEL_WEIGHTS = join(MODEL_FOLDER, 'weights.hdf5')
+    logging.info(f"MODEL_WEIGHTS={MODEL_WEIGHTS}")
+    MODEL = create_model()
+
+    if args.train:
         logging.info("")
-        logging.info("creating model ...")
-        MODEL = create_model()
-        os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-        if args.gpu_id:
-            os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu_id)
-        MODEL_WEIGHTS = join(MODEL_FOLDER, 'weights.hdf5')
-        logging.info(f"MODEL_WEIGHTS={MODEL_WEIGHTS}")
-        
-        if args.train:
-            logging.info("")
-            logging.info("training ...")
-            logging.info(f"EPOCHS is {EPOCHS}")
-            logging.info(f"PERC_TRAIN is {1-PERC_TEST}")
-            logging.info(f"X has {len(X)} trajects")
-            logging.info(f"PARTITION['train'] has {len(PARTITION['train'])} position predictions")
-            train()
-        elif args.evaluate:
-            logging.info("")
-            logging.info("evaluating ...")
-            assert exists(MODEL_WEIGHTS), f"{MODEL_WEIGHTS} does not exists"
-            logging.info(f"PERC_TRAIN is {PERC_TEST}")
-            logging.info(f"evaluate_entropy is {args.entropy}")
-            logging.info(f"Y has {len(Y)} trajects")
-            logging.info(f"PARTITION['test'] has {len(PARTITION['test'])} position predictions")
-            evaluate()
+        logging.info("training ...")
+        logging.info(f"EPOCHS is {EPOCHS}")
+        train()
+    elif args.evaluate:
+        logging.info("")
+        logging.info("evaluating ...")
+        assert exists(MODEL_WEIGHTS), f"{MODEL_WEIGHTS} does not exists"
+        logging.info(f"evaluate_entropy is {args.train_entropy}")
+        evaluate()
