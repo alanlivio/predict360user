@@ -231,6 +231,7 @@ if __name__ == "__main__":
     group.add_argument('-load_raw_dataset', action='store_true', help='Load raw dataset and save it as pickle ')
     group.add_argument('-calculate_entropy', action='store_true', help='Calculate trajectories entropy')
     group.add_argument('-compare_results', action='store_true', help='Show a comparison of -evaluate results')
+    group.add_argument('-show_train_distribution', action='store_true', help='Show train distribution')
     group.add_argument('-train', action='store_true', help='Train model')
     group.add_argument('-evaluate', action='store_true', help='Evaluate model')
 
@@ -298,6 +299,7 @@ if __name__ == "__main__":
     args.test_entropy = args.train_entropy if args.test_entropy == "same" else args.test_entropy
     logging.info(f"X_train entropy is {args.train_entropy}")
     logging.info(f"X_test entropy is {args.test_entropy}")
+    
     X_train, X_test = [], []
     if (args.train_entropy != 'all') and (args.test_entropy != 'all'):
         assert not df['entropy_class'].empty, "dataset has no 'entropy_class' collumn, run -calc_trajects_entropy"
@@ -312,18 +314,22 @@ if __name__ == "__main__":
         else:
             _, X_test = train_test_split(df[df['entropy_class'] == args.test_entropy], test_size=PERC_TEST, random_state=1)
     assert (not X_test.empty and not X_train.empty)
+    
+    if args.show_train_distribution:
+        raise NotImplementedError()
+    
     logging.info(f"PERC_TRAIN is {1-PERC_TEST}")
     logging.info(f"X_train has {len(X_train)} trajectories")
     logging.info(f"X_test has {len(X_test)} trajectories")
     PARTITION = {}
-    PARTITION['train'] = [{'video': row[1]['ds_video'], 'user': row[1]
-                          ['ds_user'], 'time-stamp': tstap}
-                          for row in X_train.iterrows()
+    PARTITION['train'] = [{'video': row[1]['ds_video'], 
+                           'user': row[1]['ds_user'], 'time-stamp': tstap}
+                           for row in X_train.iterrows()
+                           for tstap in range(INIT_WINDOW, row[1]['traces'].shape[0] - END_WINDOW)]
+    PARTITION['test'] = [{'video': row[1]['ds_video'], 
+                          'user': row[1]['ds_user'], 'time-stamp': tstap}
+                          for row in X_test.iterrows()
                           for tstap in range(INIT_WINDOW, row[1]['traces'].shape[0] - END_WINDOW)]
-    PARTITION['test'] = [{'video': row[1]['ds_video'], 'user': row[1]
-                         ['ds_user'], 'time-stamp': tstap}
-                         for row in X_test.iterrows()
-                         for tstap in range(INIT_WINDOW, row[1]['traces'].shape[0] - END_WINDOW)]
     VIDEOS_TEST = X_test['ds_video'].unique()
     USERS_TEST = X_test['ds_user'].unique()
     logging.info(f"PARTITION['train'] has {len(PARTITION['train'])} position predictions")
