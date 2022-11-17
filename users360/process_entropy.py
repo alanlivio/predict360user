@@ -88,9 +88,12 @@ def show_trajects_poles_prc() -> None:
     assert (not df.empty)
     if not 'poles_prc' in df.columns:
         calc_trajects_poles_prc()
-    px.scatter(df, x='ds_user', y='poles_prc', color='poles_class',
-               color_discrete_map=_CLASS_COR,
-               hover_data=[df.index], title='trajects poles_perc', width=600).show()
+    fig = px.scatter(df, y='ds_user', x='poles_prc', color='poles_class',
+                     color_discrete_map=_CLASS_COR,
+                     hover_data=[df.index], title='trajects poles_perc', width=600)
+    fig.update_yaxes(showticklabels=False)
+    fig.update_traces(marker_size=2)
+    fig.show()
 
 
 def show_trajects_entropy() -> None:
@@ -98,19 +101,26 @@ def show_trajects_entropy() -> None:
     assert (not df.empty)
     if not 'entropy' in df.columns:
         calc_trajects_entropy()
-    px.scatter(df, y='ds_user', x='entropy', color='entropy_class',
-               color_discrete_map=_CLASS_COR,
-               title='trajects entropy', width=600).show()
+    df = Data.instance().df_trajects
+    fig = px.scatter(df, y='ds_user', x='entropy', color='entropy_class',
+                     color_discrete_map=_CLASS_COR,
+                     title='trajects entropy', width=600)
+    fig.update_yaxes(showticklabels=False)
+    fig.update_traces(marker_size=2)
+    fig.show()
 
 
 def show_trajects_entropy_users() -> None:
     df_users = Data.instance().df_users
     assert (not df_users.empty)
-    if not 'entropy' in df_users.columns:
+    if (not 'entropy' in df_users.columns) or (df_users['entropy'].isna().all()):
         calc_trajects_entropy_users()
     assert ('entropy_class' in df_users.columns)
-    px.scatter(df_users, y='ds_user', x='entropy', color='entropy_class',
-               color_discrete_map=_CLASS_COR, title='users entropy', width=600).show()
+    fig = px.scatter(df_users, y='ds_user', x='entropy', color='entropy_class',
+                     color_discrete_map=_CLASS_COR, title='users entropy', width=600)
+    fig.update_yaxes(showticklabels=False)
+    fig.update_traces(marker_size=2)
+    fig.show()
 
 
 def calc_tileset_reqs_metrics(tileset_l: list[TileSetIF], n_trajects=None) -> None:
