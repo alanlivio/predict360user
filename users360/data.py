@@ -80,25 +80,21 @@ class Data():
             # times has only time-stamps
             # traces has only x, y, z (in 3d coordinates)
             data = [(DS_NAMES[idx],
-                    DS_NAMES[idx]+ '_' + user,
-                    DS_NAMES[idx]+ '_' + video,
+                    DS_NAMES[idx] + '_' + user,
+                    DS_NAMES[idx] + '_' + video,
                     # np.around(dataset[user][video][:n_traces, 0], decimals=2),
-                    dataset[user][video][:n_traces, 1:]
+                     dataset[user][video][:n_traces, 1:]
                      ) for user in dataset.keys() for video in dataset[user].keys()]
             tmpdf = pd.DataFrame(data, columns=[
-                'ds', 'ds_user', 'ds_video', 
+                'ds', 'ds_user', 'ds_video',
                 # 'times',
                 'traces'])
             # size check
             assert (tmpdf['ds'].value_counts()[DS_NAMES[idx]] == ds_sizes[idx])
             return tmpdf
 
-        # create df_trajects for all dataset
+        # create df_trajects for each dataset
         self.df_trajects = pd.concat(map(_load_dataset_xyz, ds_idxs), ignore_index=True)
-        self.df_trajects.insert(0, 'user', self.df_trajects.groupby(['ds', 'ds_user']).ngroup())
-        # create df_users
-        self.df_users = pd.DataFrame()
-        self.df_users['user'] = self.df_trajects.groupby(['user']).ngroup().unique()
 
         # back to cwd
         os.chdir(cwd)
