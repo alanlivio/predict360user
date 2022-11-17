@@ -82,10 +82,13 @@ class Data():
             data = [(DS_NAMES[idx],
                     DS_NAMES[idx]+ '_' + user,
                     DS_NAMES[idx]+ '_' + video,
-                    np.around(dataset[user][video][:n_traces, 0], decimals=2),
+                    # np.around(dataset[user][video][:n_traces, 0], decimals=2),
                     dataset[user][video][:n_traces, 1:]
                      ) for user in dataset.keys() for video in dataset[user].keys()]
-            tmpdf = pd.DataFrame(data, columns=['ds', 'ds_user', 'ds_video', 'times', 'traces'])
+            tmpdf = pd.DataFrame(data, columns=[
+                'ds', 'ds_user', 'ds_video', 
+                # 'times',
+                'traces'])
             # size check
             assert (tmpdf['ds'].value_counts()[DS_NAMES[idx]] == ds_sizes[idx])
             return tmpdf
