@@ -11,10 +11,13 @@ import pandas as pd
 
 DATADIR = f"{pathlib.Path(__file__).parent.parent / 'data/'}"
 HMDDIR = f"{pathlib.Path(__file__).parent / 'head_motion_prediction/'}"
+DS_NAMES = ['david', 'fan', 'nguyen', 'xucvpr', 'xupami']
 
 logging.basicConfig(level=logging.INFO, format='-- %(filename)s: %(message)s')
 
 # Singleton following https://python-patterns.guide/gang-of-four/singleton/
+
+
 class Data():
 
     # singleton and its pickle filename
@@ -52,41 +55,39 @@ class Data():
 
     def _load_data(self) -> None:
         logging.info('loading trajects from head_motion_prediction project')
-        # save cwd and move to head_motion_prediction
+        # save cwd and move to head_motion_prediction for invoking funcs
         cwd = os.getcwd()
         os.chdir(HMDDIR)
-
         from .head_motion_prediction.David_MMSys_18 import \
             Read_Dataset as david
         from .head_motion_prediction.Fan_NOSSDAV_17 import Read_Dataset as fan
         from .head_motion_prediction.Nguyen_MM_18 import Read_Dataset as nguyen
         from .head_motion_prediction.Xu_CVPR_18 import Read_Dataset as xucvpr
         from .head_motion_prediction.Xu_PAMI_18 import Read_Dataset as xupami
-        ds_names = ['David_MMSys_18', 'Fan_NOSSDAV_17', 'Nguyen_MM_18', 'Xu_CVPR_18', 'Xu_PAMI_18']
+        DS_PKGS = [david, fan, nguyen, xucvpr, xupami]  # [:1]
         ds_sizes = [1083, 300, 432, 6654, 4408]
-        ds_pkgs = [david, fan, nguyen, xucvpr, xupami]  # [:1]
-        ds_idxs = range(len(ds_pkgs))
+        ds_idxs = range(len(DS_PKGS))
 
         def _load_dataset_xyz(idx, n_traces=100) -> pd.DataFrame:
             # create sampled
-            if len(os.listdir(ds_pkgs[idx].OUTPUT_FOLDER)) < 2:
-                ds_pkgs[idx].create_and_store_sampled_dataset()
+            if len(os.listdir(DS_PKGS[idx].OUTPUT_FOLDER)) < 2:
+                DS_PKGS[idx].create_and_store_sampled_dataset()
             # each load_sample_dateset return a dict with:
             # {<video1>:{<user1>:[time-stamp, x, y, z], ...}, ...}"
-            dataset = ds_pkgs[idx].load_sampled_dataset()
+            dataset = DS_PKGS[idx].load_sampled_dataset()
 
             # df with (dataset, user, video, times, traces)
             # times has only time-stamps
             # traces has only x, y, z (in 3d coordinates)
-            data = [(ds_names[idx],
-                    user,
-                    video,
+            data = [(DS_NAMES[idx],
+                    DS_NAMES[idx]+ '_' + user,
+                    DS_NAMES[idx]+ '_' + video,
                     np.around(dataset[user][video][:n_traces, 0], decimals=2),
                     dataset[user][video][:n_traces, 1:]
                      ) for user in dataset.keys() for video in dataset[user].keys()]
             tmpdf = pd.DataFrame(data, columns=['ds', 'ds_user', 'ds_video', 'times', 'traces'])
             # size check
-            assert (tmpdf['ds'].value_counts()[ds_names[idx]] == ds_sizes[idx])
+            assert (tmpdf['ds'].value_counts()[DS_NAMES[idx]] == ds_sizes[idx])
             return tmpdf
 
         # create df_trajects for all dataset
