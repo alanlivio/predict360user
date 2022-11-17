@@ -224,7 +224,7 @@ if __name__ == "__main__":
     parser.description = 'train or evaluate users360 models and datasets'
     model_names = ['pos_only', 'TRACK', 'CVPR18', 'MM18', 'most_salient_point']
     entropy_classes = ['all', 'low', 'medium', 'hight']
-    dataset_names = ['all', 'David_MMSys_18', 'Fan_NOSSDAV_17', 'Nguyen_MM_18', 'Xu_CVPR_18', 'Xu_PAMI_18']
+    dataset_names = ['all', *DS_NAMES]
 
     # main actions params
     group = parser.add_mutually_exclusive_group()
