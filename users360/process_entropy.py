@@ -43,15 +43,20 @@ def calc_trajects_entropy() -> None:
 
 def calc_trajects_entropy_users() -> None:
     df = Data.instance().df_trajects
-    df_users = Data.instance().df_users
+    # df_users = Data.instance().df_users
     if 'hmps' not in df.columns:
         calc_trajects_hmps()
     # calc entropy
-    def f_entropy_user(trajects) -> np.ndarray:
-        hmps_sum = np.sum(np.sum(trajects['hmps'].to_numpy(), axis=0), axis=0)
-        return scipy.stats.entropy(hmps_sum.reshape((-1)))
     logging.info("calculating users entropy ...")
-    df_users['entropy'] = df.groupby(['user']).apply(f_entropy_user)
+    def f_entropy_user(same_user_rows) -> np.ndarray:
+        same_user_rows_np = same_user_rows['hmps'].to_numpy()
+        hmps_sum = sum(np.sum(x, axis=0) for x in same_user_rows_np)
+        entropy = scipy.stats.entropy(hmps_sum.reshape((-1)))
+        return entropy
+    df_users = df.groupby(['ds_user']).apply(f_entropy_user)
+    df_users = df_users.reset_index()
+    df_users.columns = ['ds_user', 'entropy']
+    assert not df_users['entropy'].isna().all()
     # calc class
     idxs_sort = df_users['entropy'].argsort()
     trajects_len = len(df_users['entropy'])
@@ -61,6 +66,7 @@ def calc_trajects_entropy_users() -> None:
     threshold_hight = df_users['entropy'][idx_threshold_hight]
     f_threshold = lambda x: 'low' if x < threshold_medium else ('medium' if x < threshold_hight else 'hight')
     df_users['entropy_class'] = df_users['entropy'].apply(f_threshold)
+    Data.instance().df_users = df_users
 
 
 def calc_trajects_poles_prc() -> None:
@@ -82,7 +88,7 @@ def show_trajects_poles_prc() -> None:
     assert (not df.empty)
     if not 'poles_prc' in df.columns:
         calc_trajects_poles_prc()
-    px.scatter(df, x='user', y='poles_prc', color='poles_class',
+    px.scatter(df, x='ds_user', y='poles_prc', color='poles_class',
                color_discrete_map=_CLASS_COR,
                hover_data=[df.index], title='trajects poles_perc', width=600).show()
 
@@ -92,18 +98,18 @@ def show_trajects_entropy() -> None:
     assert (not df.empty)
     if not 'entropy' in df.columns:
         calc_trajects_entropy()
-    px.scatter(df, x='user', y='entropy', color='entropy_class',
-               color_discrete_map=_CLASS_COR, hover_data=[df.index],
+    px.scatter(df, y='ds_user', x='entropy', color='entropy_class',
+               color_discrete_map=_CLASS_COR,
                title='trajects entropy', width=600).show()
 
 
 def show_trajects_entropy_users() -> None:
-    df_users = Data.singleton().df_users
+    df_users = Data.instance().df_users
     assert (not df_users.empty)
     if not 'entropy' in df_users.columns:
         calc_trajects_entropy_users()
     assert ('entropy_class' in df_users.columns)
-    px.scatter(df_users, x='user', y='entropy', color='entropy_class',
+    px.scatter(df_users, y='ds_user', x='entropy', color='entropy_class',
                color_discrete_map=_CLASS_COR, title='users entropy', width=600).show()
 
 
