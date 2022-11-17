@@ -5,17 +5,10 @@ import logging
 import os
 from contextlib import redirect_stderr
 from os.path import basename, exists, isdir, join
-from typing import Generator
+from typing import Any, Generator
 
 import matplotlib.pyplot as plt
 import numpy as np
-
-with redirect_stderr(open(os.devnull, "w")):
-    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-    import keras
-    import tensorflow.keras as keras
-    import keras_tqdm
-
 from sklearn.model_selection import train_test_split
 from tqdm.auto import tqdm
 
@@ -32,7 +25,7 @@ RATE = 0.2
 BATCH_SIZE = 128.0
 
 
-def create_model() -> keras.models.Model:
+def create_model() -> Any:
     if MODEL_NAME == "pos_only":
         from users360.head_motion_prediction.position_only_baseline import \
             create_pos_only_model
@@ -95,6 +88,10 @@ def generate_arrays(list_IDs, future_window) -> Generator:
 
 
 def train() -> None:
+    with redirect_stderr(open(os.devnull, "w")):
+        os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+        import tensorflow.keras as keras
+
     steps_per_ep_train = np.ceil(len(PARTITION['train']) / BATCH_SIZE)
     steps_per_ep_validate = np.ceil(len(PARTITION['test']) / BATCH_SIZE)
 
@@ -231,16 +228,11 @@ if __name__ == "__main__":
 
     # main actions params
     group = parser.add_mutually_exclusive_group()
-    group.add_argument('-load_raw_dataset', action='store_true',
-                       help='Load raw dataset and save as pickle ')
-    group.add_argument('-calculate_entropy', action='store_true',
-                       help='Run the calculate entropy procedure')
-    group.add_argument('-compare_results', action='store_true',
-                       help='Run the train procedure')
-    group.add_argument('-train', action='store_true',
-                       help='Run the train procedure')
-    group.add_argument('-evaluate', action='store_true',
-                       help='Run the evaluate procedure')
+    group.add_argument('-load_raw_dataset', action='store_true', help='Load raw dataset and save it as pickle ')
+    group.add_argument('-calculate_entropy', action='store_true', help='Calculate trajectories entropy')
+    group.add_argument('-compare_results', action='store_true', help='Show a comparison of -evaluate results')
+    group.add_argument('-train', action='store_true', help='Train model')
+    group.add_argument('-evaluate', action='store_true', help='Evaluate model')
 
     # train only params
     parser.add_argument('-epochs', nargs='?', type=int, default=500,
@@ -254,21 +246,19 @@ if __name__ == "__main__":
 
     # train/evaluate params
     parser.add_argument('-gpu_id', nargs='?', type=int, default=0,
-                        help='Used cuda gpu')
-    parser.add_argument('-model_name', nargs='?',
-                        choices=model_names, default=model_names[0],
-                        help='The name of the model used to reference the network structure used')
-    parser.add_argument('-dataset_name', nargs='?',
-                        choices=dataset_names, default=dataset_names[0],
-                        help='The name of the dataset used to train this network')
+                        help='Used cuda gpu (default: 0)')
+    parser.add_argument('-model_name', nargs='?', choices=model_names, default=model_names[0],
+                        help='The name of the reference model to used (default: pos_only)')
+    parser.add_argument('-dataset_name', nargs='?', choices=dataset_names, default=dataset_names[0],
+                        help='The name of the dataset used to train this network  (default: all)')
     parser.add_argument('-init_window', nargs='?', type=int, default=30,
-                        help='Initial buffer to avoid stationary part')
+                        help='Initial buffer to avoid stationary part (default: 30)')
     parser.add_argument('-m_window', nargs='?', type=int, default=5,
-                        help='Buffer window in timesteps',)
+                        help='Buffer window in timesteps (default: 5)')
     parser.add_argument('-h_window', nargs='?', type=int, default=25,
-                        help='Forecast window in timesteps used to predict (5 timesteps = 1 second)')
+                        help='Forecast window in timesteps (5 timesteps = 1 second) used to predict (default: 25)')
     parser.add_argument('-perc_test', nargs='?', type=float, default=0.2,
-                        help='Test percetage (default is 0.2)')
+                        help='Test percetage (default: 0.2)')
 
     args = parser.parse_args()
     MODEL_NAME = args.model_name
