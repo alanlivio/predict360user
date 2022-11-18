@@ -55,6 +55,7 @@ class Data():
 
     def _load_data(self) -> None:
         logging.info('loading trajects from head_motion_prediction project')
+        
         # save cwd and move to head_motion_prediction for invoking funcs
         cwd = os.getcwd()
         os.chdir(HMDDIR)
@@ -95,9 +96,11 @@ class Data():
 
         # create df_trajects for each dataset
         self.df_trajects = pd.concat(map(_load_dataset_xyz, ds_idxs), ignore_index=True)
-
+        assert (not self.df_trajects.empty)
         # back to cwd
         os.chdir(cwd)
+        # create df_users
+        self.df_users = pd.Dataframe()
 
 
 def get_df_trajects() -> pd.DataFrame:

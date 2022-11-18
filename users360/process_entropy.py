@@ -15,30 +15,34 @@ _CLASS_COR = {"hight": "red", "medium": "green", "low": "blue"}
 
 
 def calc_trajects_hmps(tileset=TILESET_DEFAULT) -> None:
-    df = Data.instance().df_trajects
+    df_trajects = Data.instance().df_trajects
     f_trace = lambda trace: tileset.request(trace)
     f_traject = lambda traces: np.apply_along_axis(f_trace, 1, traces)
     logging.info("calculating heatmaps ...")
-    df['hmps'] = pd.Series(df['traces'].swifter.apply(f_traject))
+    df_trajects['hmps'] = pd.Series(df_trajects['traces'].swifter.apply(f_traject))
+    assert not df_trajects['hmps'].isna().any()
+
 
 
 def calc_trajects_entropy() -> None:
-    df = Data.instance().df_trajects
-    if 'hmps' not in df.columns:
+    df_trajects = Data.instance().df_trajects
+    if 'hmps' not in df_trajects.columns:
         calc_trajects_hmps()
-    # calc entropy
+    # calc df_trajects.entropy
     f_entropy = lambda x: scipy.stats.entropy(np.sum(x, axis=0).reshape((-1)))
     logging.info("calculating trajects entropy ...")
-    df['entropy'] = df['hmps'].swifter.apply(f_entropy)
-    # calc class
-    idxs_sort = df['entropy'].argsort()
-    trajects_len = len(df['entropy'])
+    df_trajects['entropy'] = df_trajects['hmps'].swifter.apply(f_entropy)
+    assert not df_trajects['entropy'].isna().any()
+    # calc df_trajects.entropy_class
+    idxs_sort = df_trajects['entropy'].argsort()
+    trajects_len = len(df_trajects['entropy'])
     idx_threshold_medium = idxs_sort[int(trajects_len * .60)]
     idx_threshold_hight = idxs_sort[int(trajects_len * .90)]
-    threshold_medium = df['entropy'][idx_threshold_medium]
-    threshold_hight = df['entropy'][idx_threshold_hight]
+    threshold_medium = df_trajects['entropy'][idx_threshold_medium]
+    threshold_hight = df_trajects['entropy'][idx_threshold_hight]
     f_threshold = lambda x: 'low' if x < threshold_medium else ('medium' if x < threshold_hight else 'hight')
-    df['entropy_class'] = df['entropy'].apply(f_threshold)
+    df_trajects['entropy_class'] = df_trajects['entropy'].apply(f_threshold)
+    assert not df_trajects['entropy_class'].isna().any()
 
 
 def calc_trajects_entropy_users() -> None:
@@ -71,39 +75,39 @@ def calc_trajects_entropy_users() -> None:
 
 
 def calc_trajects_poles_prc() -> None:
-    df = Data.instance().df_trajects
+    df_trajects = Data.instance().df_trajects
     f_traject = lambda traces: np.count_nonzero(abs(traces[:, 2]) > 0.7) / len(traces)
-    df['poles_prc'] = pd.Series(df['traces'].apply(f_traject))
-    idxs_sort = df['poles_prc'].argsort()
-    trajects_len = len(df['poles_prc'])
+    df_trajects['poles_prc'] = pd.Series(df_trajects['traces'].apply(f_traject))
+    assert not df_trajects['poles_prc'].isna().any()
+    idxs_sort = df_trajects['poles_prc'].argsort()
+    trajects_len = len(df_trajects['poles_prc'])
     idx_threshold_medium = idxs_sort[int(trajects_len * .60)]
     idx_threshold_hight = idxs_sort[int(trajects_len * .90)]
-    threshold_medium = df['poles_prc'][idx_threshold_medium]
-    threshold_hight = df['poles_prc'][idx_threshold_hight]
+    threshold_medium = df_trajects['poles_prc'][idx_threshold_medium]
+    threshold_hight = df_trajects['poles_prc'][idx_threshold_hight]
     f_threshold = lambda x: 'low' if x < threshold_medium else ('medium' if x < threshold_hight else 'hight')
-    df['poles_class'] = df['poles_prc'].apply(f_threshold)
+    df_trajects['poles_class'] = df_trajects['poles_prc'].apply(f_threshold)
+    assert not df_trajects['poles_class'].isna().any()
+
 
 
 def show_trajects_poles_prc() -> None:
-    df = Data.instance().df_trajects
-    assert (not df.empty)
-    if not 'poles_prc' in df.columns:
+    df_trajects = Data.instance().df_trajects
+    if not {'poles_prc', 'poles_class'}.issubset(df_trajects.columns):
         calc_trajects_poles_prc()
-    fig = px.scatter(df, y='ds_user', x='poles_prc', color='poles_class',
+    fig = px.scatter(df_trajects, y='ds_user', x='poles_prc', color='poles_class',
                      color_discrete_map=_CLASS_COR,
-                     hover_data=[df.index], title='trajects poles_perc', width=600)
+                     hover_data=[df_trajects.index], title='trajects poles_perc', width=600)
     fig.update_yaxes(showticklabels=False)
     fig.update_traces(marker_size=2)
     fig.show()
 
 
 def show_trajects_entropy() -> None:
-    df = Data.instance().df_trajects
-    assert (not df.empty)
-    if not 'entropy' in df.columns:
+    if not {'entropy', 'entropy_class'}.issubset(Data.instance().df_trajects.columns):
         calc_trajects_entropy()
-    df = Data.instance().df_trajects
-    fig = px.scatter(df, y='ds_user', x='entropy', color='entropy_class',
+    df_trajects = Data.instance().df_trajects
+    fig = px.scatter(df_trajects, y='ds_user', x='entropy', color='entropy_class',
                      color_discrete_map=_CLASS_COR,
                      title='trajects entropy', width=600)
     fig.update_yaxes(showticklabels=False)
@@ -112,11 +116,9 @@ def show_trajects_entropy() -> None:
 
 
 def show_trajects_entropy_users() -> None:
-    df_users = Data.instance().df_users
-    assert (not df_users.empty)
-    if (not 'entropy' in df_users.columns) or (df_users['entropy'].isna().all()):
+    if not {'entropy', 'entropy_class'}.issubset(Data.instance().df_users.columns):
         calc_trajects_entropy_users()
-    assert ('entropy_class' in df_users.columns)
+    df_users = Data.instance().df_users
     fig = px.scatter(df_users, y='ds_user', x='entropy', color='entropy_class',
                      color_discrete_map=_CLASS_COR, title='users entropy', width=600)
     fig.update_yaxes(showticklabels=False)
