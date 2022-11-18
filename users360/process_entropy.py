@@ -107,9 +107,21 @@ def show_trajects_entropy() -> None:
     if not {'entropy', 'entropy_class'}.issubset(Data.instance().df_trajects.columns):
         calc_trajects_entropy()
     df_trajects = Data.instance().df_trajects
+    fig = px.scatter(df_trajects, y='ds', x='entropy', color='entropy_class',
+                     color_discrete_map=_CLASS_COR,
+                     title='trajects entropy by ds', width=600)
+    fig.update_yaxes(showticklabels=False)
+    fig.update_traces(marker_size=2)
+    fig.show()
     fig = px.scatter(df_trajects, y='ds_user', x='entropy', color='entropy_class',
                      color_discrete_map=_CLASS_COR,
-                     title='trajects entropy', width=600)
+                     title='trajects entropy by ds_user', width=600)
+    fig.update_yaxes(showticklabels=False)
+    fig.update_traces(marker_size=2)
+    fig.show()
+    fig = px.scatter(df_trajects, y='ds_video', x='entropy', color='entropy_class',
+                     color_discrete_map=_CLASS_COR,
+                     title='trajects entropy by ds_video', width=600)
     fig.update_yaxes(showticklabels=False)
     fig.update_traces(marker_size=2)
     fig.show()
@@ -120,7 +132,7 @@ def show_trajects_entropy_users() -> None:
         calc_trajects_entropy_users()
     df_users = Data.instance().df_users
     fig = px.scatter(df_users, y='ds_user', x='entropy', color='entropy_class',
-                     color_discrete_map=_CLASS_COR, title='users entropy', width=600)
+                     color_discrete_map=_CLASS_COR, title='users entropy by ds_user', width=600)
     fig.update_yaxes(showticklabels=False)
     fig.update_traces(marker_size=2)
     fig.show()

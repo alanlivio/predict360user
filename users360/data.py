@@ -29,7 +29,7 @@ class Data():
     df_trajects: pd.Dataframe
 
     def __init__(self) -> None:
-        raise RuntimeError('Call instance() instead')
+        raise RuntimeError('call instance() instead')
 
     @classmethod
     def instance(cls, pickle_sufix='') -> Data:
@@ -55,7 +55,7 @@ class Data():
 
     def _load_data(self) -> None:
         logging.info('loading trajects from head_motion_prediction project')
-        
+
         # save cwd and move to head_motion_prediction for invoking funcs
         cwd = os.getcwd()
         os.chdir(HMDDIR)
