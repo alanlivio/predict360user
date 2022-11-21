@@ -25,7 +25,6 @@ class Data():
     _pickle_f = None
 
     # centralized data
-    df_users: pd.Dataframe
     df_trajects: pd.Dataframe
 
     def __init__(self) -> None:
@@ -99,8 +98,6 @@ class Data():
         assert (not self.df_trajects.empty)
         # back to cwd
         os.chdir(cwd)
-        # create df_users
-        self.df_users = pd.Dataframe()
 
 
 def get_df_trajects() -> pd.DataFrame:

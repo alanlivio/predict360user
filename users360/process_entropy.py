@@ -23,7 +23,6 @@ def calc_trajects_hmps(tileset=TILESET_DEFAULT) -> None:
     assert not df_trajects['hmps'].isna().any()
 
 
-
 def calc_trajects_entropy() -> None:
     df_trajects = Data.instance().df_trajects
     if 'hmps' not in df_trajects.columns:
@@ -47,31 +46,29 @@ def calc_trajects_entropy() -> None:
 
 def calc_trajects_entropy_users() -> None:
     df_trajects = Data.instance().df_trajects
-    df_users = Data.instance().df_users
     if 'hmps' not in df_trajects.columns:
         calc_trajects_hmps()
-    # calc df_users.entropy
+    # calc user_entropy
     logging.info("calculating users entropy ...")
     def f_entropy_user(same_user_rows) -> np.ndarray:
         same_user_rows_np = same_user_rows['hmps'].to_numpy()
         hmps_sum = sum(np.sum(x, axis=0) for x in same_user_rows_np)
         entropy = scipy.stats.entropy(hmps_sum.reshape((-1)))
         return entropy
-    new_columns = df_trajects.groupby(['ds_user']).apply(f_entropy_user)
-    new_columns = new_columns.reset_index()
-    new_columns.columns = ['ds_user', 'entropy']
-    df_users['ds_user'], df_users['entropy'] = new_columns['ds_user'], new_columns['entropy'] 
-    assert not df_users['entropy'].isna().any()
-    # calc df_users.entropy_class
-    idxs_sort = df_users['entropy'].argsort()
-    trajects_len = len(df_users['entropy'])
+    tmpdf = df_trajects.groupby(['ds_user']).apply(f_entropy_user).reset_index()
+    tmpdf.columns = ['ds_user', 'user_entropy']
+    assert not tmpdf['user_entropy'].isna().any()
+    # calc user_entropy_class
+    idxs_sort = tmpdf['user_entropy'].argsort()
+    trajects_len = len(tmpdf['user_entropy'])
     idx_threshold_medium = idxs_sort[int(trajects_len * .60)]
     idx_threshold_hight = idxs_sort[int(trajects_len * .90)]
-    threshold_medium = df_users['entropy'][idx_threshold_medium]
-    threshold_hight = df_users['entropy'][idx_threshold_hight]
+    threshold_medium = tmpdf['user_entropy'][idx_threshold_medium]
+    threshold_hight = tmpdf['user_entropy'][idx_threshold_hight]
     f_threshold = lambda x: 'low' if x < threshold_medium else ('medium' if x < threshold_hight else 'hight')
-    df_users['entropy_class'] = df_users['entropy'].apply(f_threshold)
-    assert not df_users['entropy_class'].isna().any()
+    tmpdf['user_entropy_class'] = tmpdf['user_entropy'].apply(f_threshold)
+    assert not tmpdf['user_entropy_class'].isna().any()
+    Data.instance().df_trajects = pd.merge(df_trajects, tmpdf, on='ds_user')
 
 
 def calc_trajects_poles_prc() -> None:
@@ -88,7 +85,6 @@ def calc_trajects_poles_prc() -> None:
     f_threshold = lambda x: 'low' if x < threshold_medium else ('medium' if x < threshold_hight else 'hight')
     df_trajects['poles_class'] = df_trajects['poles_prc'].apply(f_threshold)
     assert not df_trajects['poles_class'].isna().any()
-
 
 
 def show_trajects_poles_prc() -> None:
@@ -128,10 +124,10 @@ def show_trajects_entropy() -> None:
 
 
 def show_trajects_entropy_users() -> None:
-    if not {'entropy', 'entropy_class'}.issubset(Data.instance().df_users.columns):
+    if not {'entropy', 'entropy_class'}.issubset(Data.instance().df_trajects.columns):
         calc_trajects_entropy_users()
-    df_users = Data.instance().df_users
-    fig = px.scatter(df_users, y='ds_user', x='entropy', color='entropy_class',
+    df_trajects = Data.instance().df_trajects
+    fig = px.scatter(df_trajects, y='ds_user', x='user_entropy', color='user_entropy_class',
                      color_discrete_map=_CLASS_COR, title='users entropy by ds_user', width=600)
     fig.update_yaxes(showticklabels=False)
     fig.update_traces(marker_size=2)
