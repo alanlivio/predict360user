@@ -19,39 +19,39 @@ def calc_trajects_hmps(tileset=TILESET_DEFAULT) -> None:
     f_trace = lambda trace: tileset.request(trace)
     f_traject = lambda traces: np.apply_along_axis(f_trace, 1, traces)
     logging.info("calculating heatmaps ...")
-    df_trajects['hmps'] = pd.Series(df_trajects['traces'].swifter.apply(f_traject))
-    assert not df_trajects['hmps'].isna().any()
+    df_trajects['traject_hmps'] = pd.Series(df_trajects['traject'].swifter.apply(f_traject))
+    assert not df_trajects['traject_hmps'].isna().any()
 
 
 def calc_trajects_entropy() -> None:
     df_trajects = Data.instance().df_trajects
-    if 'hmps' not in df_trajects.columns:
+    if 'traject_hmps' not in df_trajects.columns:
         calc_trajects_hmps()
     # calc df_trajects.entropy
     f_entropy = lambda x: scipy.stats.entropy(np.sum(x, axis=0).reshape((-1)))
     logging.info("calculating trajects entropy ...")
-    df_trajects['entropy'] = df_trajects['hmps'].swifter.apply(f_entropy)
-    assert not df_trajects['entropy'].isna().any()
+    df_trajects['traject_entropy'] = df_trajects['traject_hmps'].swifter.apply(f_entropy)
+    assert not df_trajects['traject_entropy'].isna().any()
     # calc df_trajects.entropy_class
-    idxs_sort = df_trajects['entropy'].argsort()
-    trajects_len = len(df_trajects['entropy'])
+    idxs_sort = df_trajects['traject_entropy'].argsort()
+    trajects_len = len(df_trajects['traject_entropy'])
     idx_threshold_medium = idxs_sort[int(trajects_len * .60)]
     idx_threshold_hight = idxs_sort[int(trajects_len * .90)]
-    threshold_medium = df_trajects['entropy'][idx_threshold_medium]
-    threshold_hight = df_trajects['entropy'][idx_threshold_hight]
+    threshold_medium = df_trajects['traject_entropy'][idx_threshold_medium]
+    threshold_hight = df_trajects['traject_entropy'][idx_threshold_hight]
     f_threshold = lambda x: 'low' if x < threshold_medium else ('medium' if x < threshold_hight else 'hight')
-    df_trajects['entropy_class'] = df_trajects['entropy'].apply(f_threshold)
-    assert not df_trajects['entropy_class'].isna().any()
+    df_trajects['traject_entropy_class'] = df_trajects['traject_entropy'].apply(f_threshold)
+    assert not df_trajects['traject_entropy_class'].isna().any()
 
 
 def calc_trajects_entropy_users() -> None:
     df_trajects = Data.instance().df_trajects
-    if 'hmps' not in df_trajects.columns:
+    if 'traject_hmps' not in df_trajects.columns:
         calc_trajects_hmps()
     # calc user_entropy
     logging.info("calculating users entropy ...")
     def f_entropy_user(same_user_rows) -> np.ndarray:
-        same_user_rows_np = same_user_rows['hmps'].to_numpy()
+        same_user_rows_np = same_user_rows['traject_hmps'].to_numpy()
         hmps_sum = sum(np.sum(x, axis=0) for x in same_user_rows_np)
         entropy = scipy.stats.entropy(hmps_sum.reshape((-1)))
         return entropy
@@ -74,7 +74,7 @@ def calc_trajects_entropy_users() -> None:
 def calc_trajects_poles_prc() -> None:
     df_trajects = Data.instance().df_trajects
     f_traject = lambda traces: np.count_nonzero(abs(traces[:, 2]) > 0.7) / len(traces)
-    df_trajects['poles_prc'] = pd.Series(df_trajects['traces'].apply(f_traject))
+    df_trajects['poles_prc'] = pd.Series(df_trajects['traject'].apply(f_traject))
     assert not df_trajects['poles_prc'].isna().any()
     idxs_sort = df_trajects['poles_prc'].argsort()
     trajects_len = len(df_trajects['poles_prc'])
@@ -100,36 +100,40 @@ def show_trajects_poles_prc() -> None:
 
 
 def show_trajects_entropy() -> None:
-    if not {'entropy', 'entropy_class'}.issubset(Data.instance().df_trajects.columns):
+    if not {'traject_entropy', 'traject_entropy_class'}.issubset(Data.instance().df_trajects.columns):
         calc_trajects_entropy()
     df_trajects = Data.instance().df_trajects
-    fig = px.scatter(df_trajects, y='ds', x='entropy', color='entropy_class',
+    fig = px.scatter(df_trajects, y='ds', x='traject_entropy', color='traject_entropy_class',
                      color_discrete_map=_CLASS_COR,
-                     title='trajects entropy by ds', width=600)
+                     title='trajects_entropy by ds', width=600)
+    fig.update_traces(marker_size=2)
+    fig.show()
+    fig = px.scatter(df_trajects, y='ds_user', x='traject_entropy', color='traject_entropy_class',
+                     color_discrete_map=_CLASS_COR,
+                     title='trajects_entropy by ds_user', width=600)
     fig.update_yaxes(showticklabels=False)
     fig.update_traces(marker_size=2)
     fig.show()
-    fig = px.scatter(df_trajects, y='ds_user', x='entropy', color='entropy_class',
+    fig = px.scatter(df_trajects, y='ds_video', x='traject_entropy', color='traject_entropy_class',
                      color_discrete_map=_CLASS_COR,
-                     title='trajects entropy by ds_user', width=600)
-    fig.update_yaxes(showticklabels=False)
-    fig.update_traces(marker_size=2)
-    fig.show()
-    fig = px.scatter(df_trajects, y='ds_video', x='entropy', color='entropy_class',
-                     color_discrete_map=_CLASS_COR,
-                     title='trajects entropy by ds_video', width=600)
+                     title='trajects_entropy by ds_video', width=600)
     fig.update_yaxes(showticklabels=False)
     fig.update_traces(marker_size=2)
     fig.show()
 
 
 def show_trajects_entropy_users() -> None:
-    if not {'entropy', 'entropy_class'}.issubset(Data.instance().df_trajects.columns):
+    if not {'traject_entropy', 'traject_entropy_class'}.issubset(Data.instance().df_trajects.columns):
         calc_trajects_entropy_users()
     df_trajects = Data.instance().df_trajects
     fig = px.scatter(df_trajects, y='ds_user', x='user_entropy', color='user_entropy_class',
-                     color_discrete_map=_CLASS_COR, title='users entropy by ds_user', width=600)
-    fig.update_yaxes(showticklabels=False)
+                     color_discrete_map=_CLASS_COR, title='user_entropy by ds_user', width=600)
+    fig.update_yaxes(showticEklabels=False)
+    fig.update_traces(marker_size=2)
+    fig.show()
+    fig = px.scatter(df_trajects, y='user_entropy_class', x='traject_entropy', color='traject_entropy_class',
+                     color_discrete_map=_CLASS_COR,
+                     title='trajects_entropy by user_entropy_class', width=600)
     fig.update_traces(marker_size=2)
     fig.show()
 
@@ -147,7 +151,7 @@ def calc_tileset_reqs_metrics(tileset_l: list[TileSetIF], n_trajects=None) -> No
             heatmap, vp_quality, area_out = tileset.request(trace, return_metrics=True)
             return (int(np.sum(heatmap)), vp_quality, area_out)
         f_traject = lambda traces: np.apply_along_axis(f_trace, 1, traces)
-        tmpdf = pd.DataFrame(df['traces'].swifter.apply(f_traject))
+        tmpdf = pd.DataFrame(df['traject'].swifter.apply(f_traject))
         tmpdf.columns = [tileset.title]
         return tmpdf
     df_tileset_metrics = pd.concat(map(create_tsdf, range(len(tileset_l))), axis=1)

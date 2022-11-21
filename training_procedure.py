@@ -302,17 +302,17 @@ if __name__ == "__main__":
     
     X_train, X_test = [], []
     if (args.train_entropy != 'all') and (args.test_entropy != 'all'):
-        assert not df['entropy_class'].empty, "dataset has no 'entropy_class' collumn, run -calc_trajects_entropy"
+        assert not df['traject_entropy_class'].empty, "dataset has no 'traject_entropy_class' collumn, run -calc_trajects_entropy"
         X_train, X_test = train_test_split(df, test_size=PERC_TEST, random_state=1)
     else:
         if args.train_entropy == 'all':
             X_train, _ = train_test_split(df, test_size=PERC_TEST, random_state=1)
         else:
-            X_train, _ = train_test_split(df[df['entropy_class'] == args.train_entropy], test_size=PERC_TEST, random_state=1)
+            X_train, _ = train_test_split(df[df['traject_entropy_class'] == args.train_entropy], test_size=PERC_TEST, random_state=1)
         if args.test_entropy == 'all':
             _, X_test = train_test_split(df, test_size=PERC_TEST, random_state=1)
         else:
-            _, X_test = train_test_split(df[df['entropy_class'] == args.test_entropy], test_size=PERC_TEST, random_state=1)
+            _, X_test = train_test_split(df[df['traject_entropy_class'] == args.test_entropy], test_size=PERC_TEST, random_state=1)
     assert (not X_test.empty and not X_train.empty)
     
     if args.show_train_distribution:
@@ -325,11 +325,11 @@ if __name__ == "__main__":
     PARTITION['train'] = [{'video': row[1]['ds_video'], 
                            'user': row[1]['ds_user'], 'time-stamp': tstap}
                            for row in X_train.iterrows()
-                           for tstap in range(INIT_WINDOW, row[1]['traces'].shape[0] - END_WINDOW)]
+                           for tstap in range(INIT_WINDOW, row[1]['traject'].shape[0] - END_WINDOW)]
     PARTITION['test'] = [{'video': row[1]['ds_video'], 
                           'user': row[1]['ds_user'], 'time-stamp': tstap}
                           for row in X_test.iterrows()
-                          for tstap in range(INIT_WINDOW, row[1]['traces'].shape[0] - END_WINDOW)]
+                          for tstap in range(INIT_WINDOW, row[1]['traject'].shape[0] - END_WINDOW)]
     VIDEOS_TEST = X_test['ds_video'].unique()
     USERS_TEST = X_test['ds_user'].unique()
     logging.info(f"PARTITION['train'] has {len(PARTITION['train'])} position predictions")

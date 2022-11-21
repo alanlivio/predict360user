@@ -88,7 +88,7 @@ class Data():
             tmpdf = pd.DataFrame(data, columns=[
                 'ds', 'ds_user', 'ds_video',
                 # 'times',
-                'traces'])
+                'traject'])
             # size check
             assert (tmpdf['ds'].value_counts()[DS_NAMES[idx]] == ds_sizes[idx])
             return tmpdf
@@ -105,7 +105,7 @@ def get_df_trajects() -> pd.DataFrame:
 
 
 def get_one_trace() -> np.array:
-    return Data.instance().df_trajects.iloc[0]['traces'][0]
+    return Data.instance().df_trajects.iloc[0]['traject'][0]
 
 
 def get_traces(video, user, ds='David_MMSys_18') -> np.array:
@@ -115,7 +115,7 @@ def get_traces(video, user, ds='David_MMSys_18') -> np.array:
     else:
         row = Data.instance().df_trajects.query(f"ds=='{ds}' and ds_user=='{user}' and ds_video=='{video}'")
     assert (not row.empty)
-    return row['traces'].iloc[0]
+    return row['traject'].iloc[0]
 
 
 def get_video_ids(ds='David_MMSys_18') -> np.array:

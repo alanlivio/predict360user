@@ -202,13 +202,13 @@ def show_trajects(df: pd.DataFrame, tileset=TILESET_DEFAULT) -> None:
 
     # sphere
     sphere = VizSphere(tileset)
-    df['traces'].apply(lambda traces: sphere.add_trajectory(traces))
+    df['traject'].apply(lambda traces: sphere.add_trajectory(traces))
     for d in sphere.data:  # load all data from the sphere
         fig.append_trace(d, row=1, col=1)
     # heatmap
     # TODO: calcuate if hmps is not in df
-    if 'hmps' in df:
-        hmp_sums = df['hmps'].apply(lambda traces: np.sum(traces, axis=0))
+    if 'traject_hmps' in df:
+        hmp_sums = df['traject_hmps'].apply(lambda traces: np.sum(traces, axis=0))
         if isinstance(tileset, TileSetVoro):
             hmp_sums = np.reshape(hmp_sums, tileset.shape)
         heatmap = np.sum(hmp_sums, axis=0)
