@@ -9,7 +9,6 @@ from typing import Any, Generator
 
 import matplotlib.pyplot as plt
 import numpy as np
-from sklearn.model_selection import train_test_split
 from tqdm.auto import tqdm
 
 from users360 import *
@@ -295,24 +294,11 @@ if __name__ == "__main__":
     # partioning
     logging.info("")
     logging.info("partioning train/test ...")
-    df = get_df_trajects()
     args.test_entropy = args.train_entropy if args.test_entropy == "same" else args.test_entropy
     logging.info(f"X_train entropy is {args.train_entropy}")
     logging.info(f"X_test entropy is {args.test_entropy}")
-    
     X_train, X_test = [], []
-    if (args.train_entropy != 'all') and (args.test_entropy != 'all'):
-        assert not df['traject_entropy_class'].empty, "dataset has no 'traject_entropy_class' collumn, run -calc_trajects_entropy"
-        X_train, X_test = train_test_split(df, test_size=PERC_TEST, random_state=1)
-    else:
-        if args.train_entropy == 'all':
-            X_train, _ = train_test_split(df, test_size=PERC_TEST, random_state=1)
-        else:
-            X_train, _ = train_test_split(df[df['traject_entropy_class'] == args.train_entropy], test_size=PERC_TEST, random_state=1)
-        if args.test_entropy == 'all':
-            _, X_test = train_test_split(df, test_size=PERC_TEST, random_state=1)
-        else:
-            _, X_test = train_test_split(df[df['traject_entropy_class'] == args.test_entropy], test_size=PERC_TEST, random_state=1)
+    X_train, X_test = get_train_test_split(args.train_entropy, args.test_entropy, PERC_TEST)
     assert (not X_test.empty and not X_train.empty)
     
     if args.show_train_distribution:
