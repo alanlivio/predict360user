@@ -39,7 +39,8 @@ def calc_trajects_entropy() -> None:
     idx_threshold_hight = idxs_sort[int(trajects_len * .90)]
     threshold_medium = df_trajects['traject_entropy'][idx_threshold_medium]
     threshold_hight = df_trajects['traject_entropy'][idx_threshold_hight]
-    f_threshold = lambda x: 'low' if x < threshold_medium else ('medium' if x < threshold_hight else 'hight')
+    f_threshold = lambda x: 'low' if x < threshold_medium else (
+        'medium' if x < threshold_hight else 'hight')
     df_trajects['traject_entropy_class'] = df_trajects['traject_entropy'].apply(f_threshold)
     assert not df_trajects['traject_entropy_class'].isna().any()
 
@@ -65,7 +66,8 @@ def calc_trajects_entropy_users() -> None:
     idx_threshold_hight = idxs_sort[int(trajects_len * .90)]
     threshold_medium = tmpdf['user_entropy'][idx_threshold_medium]
     threshold_hight = tmpdf['user_entropy'][idx_threshold_hight]
-    f_threshold = lambda x: 'low' if x < threshold_medium else ('medium' if x < threshold_hight else 'hight')
+    f_threshold = lambda x: 'low' if x < threshold_medium else (
+        'medium' if x < threshold_hight else 'hight')
     tmpdf['user_entropy_class'] = tmpdf['user_entropy'].apply(f_threshold)
     assert not tmpdf['user_entropy_class'].isna().any()
     Data.instance().df_trajects = pd.merge(df_trajects, tmpdf, on='ds_user')
@@ -82,7 +84,8 @@ def calc_trajects_poles_prc() -> None:
     idx_threshold_hight = idxs_sort[int(trajects_len * .90)]
     threshold_medium = df_trajects['poles_prc'][idx_threshold_medium]
     threshold_hight = df_trajects['poles_prc'][idx_threshold_hight]
-    f_threshold = lambda x: 'low' if x < threshold_medium else ('medium' if x < threshold_hight else 'hight')
+    f_threshold = lambda x: 'low' if x < threshold_medium else (
+        'medium' if x < threshold_hight else 'hight')
     df_trajects['poles_class'] = df_trajects['poles_prc'].apply(f_threshold)
     assert not df_trajects['poles_class'].isna().any()
 
