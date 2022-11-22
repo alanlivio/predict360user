@@ -6,7 +6,6 @@ from users360 import *
 
 pio.renderers.default = None
 
-
 class Test(unittest.TestCase):
 
     def test_visualize_polygons(self) -> None:

@@ -1,7 +1,5 @@
 import unittest
 
-import pandas as pd
-
 from users360 import *
 
 
