@@ -1,3 +1,3 @@
 from .data import *
-from .process_entropy import *
+from .entropy import *
 from .visualize import *

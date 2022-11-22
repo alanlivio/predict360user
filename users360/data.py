@@ -99,7 +99,6 @@ class Data():
         # back to cwd
         os.chdir(cwd)
 
-
 def get_df_trajects() -> pd.DataFrame:
     return Data.instance().df_trajects
 
