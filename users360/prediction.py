@@ -32,32 +32,6 @@ def show_train_test_split(train_entropy, test_entropy, perc_test) -> None:
     X_train, X_test = get_train_test_split(train_entropy, test_entropy, perc_test)
     X_train['partition'] = 'train'
     X_test['partition'] = 'test'
-    df_trajects = pd.concat([X_train, X_test])
-
-    fig = px.scatter(df_trajects, y='ds', x='traject_entropy',
-                     color='traject_entropy_class',
-                     facet_col="partition", color_discrete_map=ENTROPY_CLASS_COLORS,
-                     title=f'trajects_entropy by ds', width=600)
-    fig.update_traces(marker_size=2)
-    fig.show()
-    fig = px.scatter(df_trajects, y='ds_user', x='traject_entropy',
-                     color='traject_entropy_class',
-                     facet_col="partition", color_discrete_map=ENTROPY_CLASS_COLORS,
-                     title=f'trajects_entropy by ds_user', width=600)
-    fig.update_yaxes(showticklabels=False)
-    fig.update_traces(marker_size=2)
-    fig.show()
-    fig = px.scatter(df_trajects, y='ds_video', x='traject_entropy',
-                     color='traject_entropy_class',
-                     facet_col="partition", color_discrete_map=ENTROPY_CLASS_COLORS,
-                     title=f'trajects_entropy by ds_video', width=600)
-    fig.update_yaxes(showticklabels=False)
-    fig.update_traces(marker_size=2)
-    fig.show()
-    fig = px.scatter(df_trajects, y='user_entropy_class', x='traject_entropy',
-                     color='traject_entropy_class',
-                     facet_col="partition",
-                     color_discrete_map=ENTROPY_CLASS_COLORS,
-                     title='trajects_entropy by user_entropy_class', width=600)
-    fig.update_traces(marker_size=2)
-    fig.show()
+    Data.instance().df_trajects = pd.concat([X_train, X_test])
+    show_trajects_entropy(facet='partition')
+    show_trajects_entropy_users(facet='partition')

@@ -11,7 +11,7 @@ from plotly.subplots import make_subplots
 from .data import *
 from .utils.tileset import *
 
-ENTROPY_CLASS_COLORS = {"hight": "red", "medium": "green", "low": "blue"}
+ENTROPY_CLASS_COLORS = {"low": "blue", "medium": "green", "hight": "red"}
 
 
 def calc_trajects_hmps(tileset=TILESET_DEFAULT) -> None:
@@ -96,49 +96,37 @@ def show_trajects_poles_prc() -> None:
         calc_trajects_poles_prc()
     fig = px.scatter(df_trajects, y='ds_user', x='poles_prc', color='poles_class',
                      color_discrete_map=ENTROPY_CLASS_COLORS,
-                     hover_data=[df_trajects.index], title='trajects poles_perc', width=600)
+                     hover_data=[df_trajects.index], title='trajects poles_perc', width=700)
     fig.update_yaxes(showticklabels=False)
     fig.update_traces(marker_size=2)
     fig.show()
 
 
-def show_trajects_entropy() -> None:
+def show_trajects_entropy(facet=None) -> None:
     if not {'traject_entropy', 'traject_entropy_class'}.issubset(Data.instance().df_trajects.columns):
         calc_trajects_entropy()
     df_trajects = Data.instance().df_trajects
-    fig = px.scatter(df_trajects, y='ds', x='traject_entropy', color='traject_entropy_class',
-                     color_discrete_map=ENTROPY_CLASS_COLORS,
-                     title='trajects_entropy by ds', width=600)
-    fig.update_traces(marker_size=2)
-    fig.show()
-    fig = px.scatter(df_trajects, y='ds_user', x='traject_entropy', color='traject_entropy_class',
-                     color_discrete_map=ENTROPY_CLASS_COLORS,
-                     title='trajects_entropy by ds_user', width=600)
-    fig.update_yaxes(showticklabels=False)
-    fig.update_traces(marker_size=2)
-    fig.show()
-    fig = px.scatter(df_trajects, y='ds_video', x='traject_entropy', color='traject_entropy_class',
-                     color_discrete_map=ENTROPY_CLASS_COLORS,
-                     title='trajects_entropy by ds_video', width=600)
-    fig.update_yaxes(showticklabels=False)
-    fig.update_traces(marker_size=2)
-    fig.show()
+    px.box(df_trajects, x='ds', y='traject_entropy',
+           color='traject_entropy_class', facet_row=facet,
+           color_discrete_map=ENTROPY_CLASS_COLORS,
+           title='traject_entropy by ds', width=700).show()
+    px.histogram(df_trajects, x='ds', y='traject_entropy_class', histfunc='count',
+                 barmode='group', facet_row=facet, color='traject_entropy_class',
+                 color_discrete_map=ENTROPY_CLASS_COLORS,
+                 title=f'traject_entropy_class by ds', width=700).show()
 
 
-def show_trajects_entropy_users() -> None:
+def show_trajects_entropy_users(facet=None) -> None:
     if not {'traject_entropy', 'traject_entropy_class'}.issubset(Data.instance().df_trajects.columns):
         calc_trajects_entropy_users()
     df_trajects = Data.instance().df_trajects
-    fig = px.scatter(df_trajects, y='ds_user', x='user_entropy', color='user_entropy_class',
-                     color_discrete_map=ENTROPY_CLASS_COLORS, title='user_entropy by ds_user', width=600)
-    fig.update_yaxes(showticEklabels=False)
-    fig.update_traces(marker_size=2)
-    fig.show()
-    fig = px.scatter(df_trajects, y='user_entropy_class', x='traject_entropy', color='traject_entropy_class',
-                     color_discrete_map=ENTROPY_CLASS_COLORS,
-                     title='trajects_entropy by user_entropy_class', width=600)
-    fig.update_traces(marker_size=2)
-    fig.show()
+    px.box(df_trajects, x='ds', y='user_entropy',
+           color='user_entropy_class', facet_row=facet,           color_discrete_map=ENTROPY_CLASS_COLORS,
+           title='user_entropy by ds', width=700).show()
+    px.histogram(df_trajects, x='ds', y='user_entropy_class', histfunc='count',
+                 barmode='group', facet_row=facet, color='user_entropy_class',
+                 color_discrete_map=ENTROPY_CLASS_COLORS,
+                 title=f'user_entropy_class by ds', width=700).show()
 
 
 def calc_tileset_reqs_metrics(tileset_l: list[TileSetIF], n_trajects=None) -> None:
