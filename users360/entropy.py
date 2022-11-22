@@ -11,7 +11,7 @@ from plotly.subplots import make_subplots
 from .data import *
 from .utils.tileset import *
 
-_CLASS_COR = {"hight": "red", "medium": "green", "low": "blue"}
+ENTROPY_CLASS_COLORS = {"hight": "red", "medium": "green", "low": "blue"}
 
 
 def calc_trajects_hmps(tileset=TILESET_DEFAULT) -> None:
@@ -92,7 +92,7 @@ def show_trajects_poles_prc() -> None:
     if not {'poles_prc', 'poles_class'}.issubset(df_trajects.columns):
         calc_trajects_poles_prc()
     fig = px.scatter(df_trajects, y='ds_user', x='poles_prc', color='poles_class',
-                     color_discrete_map=_CLASS_COR,
+                     color_discrete_map=ENTROPY_CLASS_COLORS,
                      hover_data=[df_trajects.index], title='trajects poles_perc', width=600)
     fig.update_yaxes(showticklabels=False)
     fig.update_traces(marker_size=2)
@@ -104,18 +104,18 @@ def show_trajects_entropy() -> None:
         calc_trajects_entropy()
     df_trajects = Data.instance().df_trajects
     fig = px.scatter(df_trajects, y='ds', x='traject_entropy', color='traject_entropy_class',
-                     color_discrete_map=_CLASS_COR,
+                     color_discrete_map=ENTROPY_CLASS_COLORS,
                      title='trajects_entropy by ds', width=600)
     fig.update_traces(marker_size=2)
     fig.show()
     fig = px.scatter(df_trajects, y='ds_user', x='traject_entropy', color='traject_entropy_class',
-                     color_discrete_map=_CLASS_COR,
+                     color_discrete_map=ENTROPY_CLASS_COLORS,
                      title='trajects_entropy by ds_user', width=600)
     fig.update_yaxes(showticklabels=False)
     fig.update_traces(marker_size=2)
     fig.show()
     fig = px.scatter(df_trajects, y='ds_video', x='traject_entropy', color='traject_entropy_class',
-                     color_discrete_map=_CLASS_COR,
+                     color_discrete_map=ENTROPY_CLASS_COLORS,
                      title='trajects_entropy by ds_video', width=600)
     fig.update_yaxes(showticklabels=False)
     fig.update_traces(marker_size=2)
@@ -127,12 +127,12 @@ def show_trajects_entropy_users() -> None:
         calc_trajects_entropy_users()
     df_trajects = Data.instance().df_trajects
     fig = px.scatter(df_trajects, y='ds_user', x='user_entropy', color='user_entropy_class',
-                     color_discrete_map=_CLASS_COR, title='user_entropy by ds_user', width=600)
+                     color_discrete_map=ENTROPY_CLASS_COLORS, title='user_entropy by ds_user', width=600)
     fig.update_yaxes(showticEklabels=False)
     fig.update_traces(marker_size=2)
     fig.show()
     fig = px.scatter(df_trajects, y='user_entropy_class', x='traject_entropy', color='traject_entropy_class',
-                     color_discrete_map=_CLASS_COR,
+                     color_discrete_map=ENTROPY_CLASS_COLORS,
                      title='trajects_entropy by user_entropy_class', width=600)
     fig.update_traces(marker_size=2)
     fig.show()
