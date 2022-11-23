@@ -15,14 +15,9 @@ from users360 import *
 
 logging.basicConfig(level=logging.INFO, format='-- %(filename)s: %(message)s')
 
-
-# consts
 METRIC = all_metrics['orthodromic']
-NUM_TILES_WIDTH = 384
-NUM_TILES_HEIGHT = 216
 RATE = 0.2
 BATCH_SIZE = 128.0
-
 
 def create_model() -> Any:
     if MODEL_NAME == "pos_only":
