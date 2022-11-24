@@ -82,7 +82,8 @@ class VizSphere():
         # gen points
         n = len(points)
         t = np.linspace(0, 1, 100)
-        colours = [f'rgb({randint(0,256)}, {randint(0,256)}, {randint(0,256)})' for _ in range(len(points))]
+        colours = [
+            f'rgb({randint(0,256)}, {randint(0,256)}, {randint(0,256)})' for _ in range(len(points))]
         gens = go.Scatter3d(x=points[:, 0],
                             y=points[:, 1],
                             z=points[:, 2],
@@ -187,7 +188,8 @@ def show_fov(trace, tileset=TILESET_DEFAULT) -> None:
     for t in erp_heatmap["data"]:
         fig.append_trace(t, row=1, col=2)
     if isinstance(tileset, TileSet):
-        fig.update_yaxes(autorange="reversed")  # fix given phi 0 being the north pole at Utils.cartesian_to_eulerian
+        # fix given phi 0 being the north pole at Utils.cartesian_to_eulerian
+        fig.update_yaxes(autorange="reversed")
 
     title = f"trace_[{trace[0]:.2},{trace[1]:.2},{trace[2]:.2}]_{tileset.prefix}"
     fig.update_layout(width=800, showlegend=False, title_text=title)

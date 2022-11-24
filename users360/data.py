@@ -99,6 +99,7 @@ class Data():
         # back to cwd
         os.chdir(cwd)
 
+
 def get_df_trajects() -> pd.DataFrame:
     return Data.instance().df_trajects
 
@@ -112,7 +113,8 @@ def get_traces(video, user, ds='David_MMSys_18') -> np.array:
     if ds == 'all':
         row = Data.instance().df_trajects.query(f"ds_user=='{user}' and ds_video=='{video}'")
     else:
-        row = Data.instance().df_trajects.query(f"ds=='{ds}' and ds_user=='{user}' and ds_video=='{video}'")
+        row = Data.instance().df_trajects.query(
+            f"ds=='{ds}' and ds_user=='{user}' and ds_video=='{video}'")
     assert (not row.empty)
     return row['traject'].iloc[0]
 

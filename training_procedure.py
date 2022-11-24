@@ -19,6 +19,7 @@ METRIC = all_metrics['orthodromic']
 RATE = 0.2
 BATCH_SIZE = 128.0
 
+
 def create_model() -> Any:
     if MODEL_NAME == "pos_only":
         from users360.head_motion_prediction.position_only_baseline import \
@@ -38,7 +39,8 @@ def transform_batches_cartesian_to_normalized_eulerian(positions_in_batch) -> np
 
 def transform_normalized_eulerian_to_cartesian(positions) -> np.array:
     positions = positions * np.array([2 * np.pi, np.pi])
-    eulerian_samples = [eulerian_to_cartesian(pos[0], pos[1]) for pos in positions]
+    eulerian_samples = [eulerian_to_cartesian(
+        pos[0], pos[1]) for pos in positions]
     return np.array(eulerian_samples)
 
 
@@ -57,9 +59,12 @@ def generate_arrays(list_IDs, future_window) -> Generator:
             x_i = IDs['time-stamp']
             # Load the data
             if MODEL_NAME == 'pos_only':
-                encoder_pos_inputs_for_batch.append(get_traces(video, user, DATASET_NAME)[x_i - M_WINDOW:x_i])
-                decoder_pos_inputs_for_batch.append(get_traces(video, user, DATASET_NAME)[x_i:x_i + 1])
-                decoder_outputs_for_batch.append(get_traces(video, user, DATASET_NAME)[x_i + 1:x_i + future_window + 1])
+                encoder_pos_inputs_for_batch.append(get_traces(
+                    video, user, DATASET_NAME)[x_i - M_WINDOW:x_i])
+                decoder_pos_inputs_for_batch.append(
+                    get_traces(video, user, DATASET_NAME)[x_i:x_i + 1])
+                decoder_outputs_for_batch.append(get_traces(video, user, DATASET_NAME)[
+                                                 x_i + 1:x_i + future_window + 1])
             else:
                 raise NotImplementedError()
             count += 1
@@ -141,10 +146,12 @@ def evaluate() -> None:
         for t in range(len(groundtruth)):
             if t not in errors_per_video[video].keys():
                 errors_per_video[video][t] = []
-            errors_per_video[video][t].append(METRIC(groundtruth[t], model_prediction[t]))
+            errors_per_video[video][t].append(
+                METRIC(groundtruth[t], model_prediction[t]))
             if t not in errors_per_timestep.keys():
                 errors_per_timestep[t] = []
-            errors_per_timestep[t].append(METRIC(groundtruth[t], model_prediction[t]))
+            errors_per_timestep[t].append(
+                METRIC(groundtruth[t], model_prediction[t]))
 
     result_basefilename = join(MODEL_FOLDER, PERC_TEST_PREFIX)
 
@@ -174,7 +181,8 @@ def evaluate() -> None:
     # avg_error_per_timestep.png
     plt.plot(np.arange(H_WINDOW) + 1 * RATE, avg_error_per_timestep)
     met = 'orthodromic'
-    plt.title('Average %s in %s dataset using %s model' % (met, DATASET_NAME, MODEL_NAME))
+    plt.title('Average %s in %s dataset using %s model' %
+              (met, DATASET_NAME, MODEL_NAME))
     plt.ylabel(met)
     plt.xlim(2.5)
     plt.xlabel('Prediction step s (sec.)')
@@ -191,15 +199,18 @@ def compare_results() -> None:
     dirs = [d for d in os.listdir(DATADIR) if d.startswith(MODEL_NAME)]
     csv_file_l = [(dir, f) for dir in dirs for f in os.listdir(join(DATADIR, dir))
                   if (f.endswith(suffix) and f.startswith(prefix))]
-    csv_data_l = [(dir, f, np.loadtxt(join(DATADIR, dir, f))) for (dir, f) in csv_file_l]
+    csv_data_l = [(dir, f, np.loadtxt(join(DATADIR, dir, f)))
+                  for (dir, f) in csv_file_l]
     assert csv_data_l, f"you should first run {basename(__file__)} -evaluate -entropy <all,low,medium,hight>"
 
     # sort by the last horizon hight
-    last_horizon_avg = lambda item: item[2][-1]  # [2] is csv_data [-1] is last horizon
+    # [2] is csv_data [-1] is last horizon
+    def last_horizon_avg(item): return item[2][-1]
     csv_data_l.sort(reverse=True, key=last_horizon_avg)
 
     # plot as image
-    add_plot = lambda dir, file, csv_data: plt.plot(np.arange(H_WINDOW) + 1 * RATE, csv_data, label=f"{dir}_{file.removesuffix(suffix)}")
+    def add_plot(dir, file, csv_data): return plt.plot(np.arange(H_WINDOW) + 1 * RATE,
+        csv_data, label=f"{dir}_{file.removesuffix(suffix)}")
     [add_plot(*csv_data) for csv_data in csv_data_l]
     met = 'orthodromic'
     plt.title('Average %s in %s dataset using %s model' % (met, DATASET_NAME, MODEL_NAME))
@@ -222,10 +233,14 @@ if __name__ == "__main__":
 
     # main actions params
     group = parser.add_mutually_exclusive_group()
-    group.add_argument('-load_raw_dataset', action='store_true', help='Load raw dataset and save it as pickle ')
-    group.add_argument('-calculate_entropy', action='store_true', help='Calculate trajectories entropy')
-    group.add_argument('-compare_results', action='store_true', help='Show a comparison of -evaluate results')
-    group.add_argument('-show_train_distribution', action='store_true', help='Show train distribution')
+    group.add_argument('-load_raw_dataset', action='store_true',
+                       help='Load raw dataset and save it as pickle ')
+    group.add_argument('-calculate_entropy', action='store_true',
+                       help='Calculate trajectories entropy')
+    group.add_argument('-compare_results', action='store_true',
+                       help='Show a comparison of -evaluate results')
+    group.add_argument('-show_train_distribution',
+                       action='store_true', help='Show train distribution')
     group.add_argument('-train', action='store_true', help='Train model')
     group.add_argument('-evaluate', action='store_true', help='Evaluate model')
 
@@ -268,7 +283,8 @@ if __name__ == "__main__":
     # used in multiple actions
     PERC_TEST_PREFIX = f"test{str(PERC_TEST).replace('.',',')}"
     model_entropy_sufix = f'_{args.train_entropy}_entropy' if args.train_entropy != 'all' else ''
-    MODEL_FOLDER = join(DATADIR, f'{MODEL_NAME}_{DATASET_NAME}{model_entropy_sufix}')
+    MODEL_FOLDER = join(
+        DATADIR, f'{MODEL_NAME}_{DATASET_NAME}{model_entropy_sufix}')
     if not exists(MODEL_FOLDER):
         os.makedirs(MODEL_FOLDER)
     logging.info(f"MODEL_FOLDER is {MODEL_FOLDER}")
@@ -293,28 +309,31 @@ if __name__ == "__main__":
     logging.info(f"X_train entropy is {args.train_entropy}")
     logging.info(f"X_test entropy is {args.test_entropy}")
     X_train, X_test = [], []
-    X_train, X_test = get_train_test_split(args.train_entropy, args.test_entropy, PERC_TEST)
+    X_train, X_test = get_train_test_split(
+        args.train_entropy, args.test_entropy, PERC_TEST)
     assert (not X_test.empty and not X_train.empty)
-    
+
     if args.show_train_distribution:
         raise NotImplementedError()
-    
+
     logging.info(f"PERC_TRAIN is {1-PERC_TEST}")
     logging.info(f"X_train has {len(X_train)} trajectories")
     logging.info(f"X_test has {len(X_test)} trajectories")
     PARTITION = {}
-    PARTITION['train'] = [{'video': row[1]['ds_video'], 
-                           'user': row[1]['ds_user'], 'time-stamp': tstap}
-                           for row in X_train.iterrows()
-                           for tstap in range(INIT_WINDOW, row[1]['traject'].shape[0] - END_WINDOW)]
-    PARTITION['test'] = [{'video': row[1]['ds_video'], 
+    PARTITION['train'] = [{'video': row[1]['ds_video'],
                           'user': row[1]['ds_user'], 'time-stamp': tstap}
-                          for row in X_test.iterrows()
+                          for row in X_train.iterrows()
                           for tstap in range(INIT_WINDOW, row[1]['traject'].shape[0] - END_WINDOW)]
+    PARTITION['test'] = [{'video': row[1]['ds_video'],
+                         'user': row[1]['ds_user'], 'time-stamp': tstap}
+                         for row in X_test.iterrows()
+                         for tstap in range(INIT_WINDOW, row[1]['traject'].shape[0] - END_WINDOW)]
     VIDEOS_TEST = X_test['ds_video'].unique()
     USERS_TEST = X_test['ds_user'].unique()
-    logging.info(f"PARTITION['train'] has {len(PARTITION['train'])} position predictions")
-    logging.info(f"PARTITION['test'] has {len(PARTITION['test'])} position predictions")
+    logging.info(
+        f"PARTITION['train'] has {len(PARTITION['train'])} position predictions")
+    logging.info(
+        f"PARTITION['test'] has {len(PARTITION['test'])} position predictions")
 
     # creating model
     logging.info("")

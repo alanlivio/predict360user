@@ -8,6 +8,7 @@ from .tileset import *
 
 _tsv_polys = dict()
 
+
 def voro_trinity(npatchs) -> SphericalVoronoi:
     points = np.empty((0, 3))
     for index in range(0, npatchs):
@@ -29,7 +30,8 @@ _VORO_24P = voro_trinity(24)
 
 def tsv_poly(voro: SphericalVoronoi, index) -> polygon.SphericalPolygon:
     if voro.points.size not in _tsv_polys:
-        polys = {i: polygon.SphericalPolygon(voro.vertices[voro.regions[i]]) for i, _ in enumerate(voro.regions)}
+        polys = {i: polygon.SphericalPolygon(
+            voro.vertices[voro.regions[i]]) for i, _ in enumerate(voro.regions)}
         _tsv_polys[voro.points.size] = polys
     return _tsv_polys[voro.points.size][index]
 
