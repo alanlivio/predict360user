@@ -158,6 +158,9 @@ def evaluate() -> None:
     avg_error_per_video = []
     for video_name in VIDEOS_TEST:
         for t in range(H_WINDOW):
+            if not video_name in errors_per_video:
+                logging.error(f'missing {video_name} in VIDEOS_TEST')
+                continue
             avg = np.mean(errors_per_video[video_name][t])
             avg_error_per_video.append(f"video={video_name} {t} {avg}")
     result_file = f'{result_basefilename}_avg_error_per_video.csv'
