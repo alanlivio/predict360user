@@ -152,7 +152,7 @@ def evaluate() -> None:
             errors_per_timestep[t].append(
                 METRIC(groundtruth[t], model_prediction[t]))
 
-    result_basefilename = join(MODEL_FOLDER, PERC_TEST_PREFIX)
+    result_basefilename = join(MODEL_FOLDER, PERC_TEST_ENTROPY_PREFIX)
 
     # avg_error_per_video
     avg_error_per_video = []
@@ -188,15 +188,14 @@ def evaluate() -> None:
 
 def compare_results() -> None:
     suffix = '_avg_error_per_timestep.csv'
-    prefix = PERC_TEST_PREFIX
 
     # find files with suffix
     dirs = [d for d in os.listdir(DATADIR) if d.startswith(MODEL_NAME)]
     csv_file_l = [(dir, f) for dir in dirs for f in os.listdir(join(DATADIR, dir))
-                  if (f.endswith(suffix) and f.startswith(prefix))]
+                  if (f.endswith(suffix) and f.startswith(PERC_TEST_PREFIX))]
     csv_data_l = [(dir, f, np.loadtxt(join(DATADIR, dir, f)))
                   for (dir, f) in csv_file_l]
-    assert csv_data_l, f"you should first run {basename(__file__)} -evaluate -entropy <all,low,medium,hight>"
+    assert csv_data_l, f"there is data/<model_name>/{PERC_TEST_PREFIX}_*, run -evaluate -entropy <all,low,medium,hight>"
 
     # sort by the last horizon hight
     # [2] is csv_data [-1] is last horizon
@@ -266,25 +265,8 @@ if __name__ == "__main__":
                         help='Test percetage (default: 0.2)')
 
     args = parser.parse_args()
-    MODEL_NAME = args.model_name
-    EPOCHS = args.epochs
-    DATASET_NAME = args.dataset_name
-    INIT_WINDOW = args.init_window
-    M_WINDOW = args.m_window
-    H_WINDOW = args.h_window
-    END_WINDOW = H_WINDOW
-    PERC_TEST = args.perc_test
-
-    # used in multiple actions
-    PERC_TEST_PREFIX = f"test{str(PERC_TEST).replace('.',',')}"
-    model_entropy_sufix = f'_{args.train_entropy}_entropy' if args.train_entropy != 'all' else ''
-    MODEL_FOLDER = join(
-        DATADIR, f'{MODEL_NAME}_{DATASET_NAME}{model_entropy_sufix}')
-    if not exists(MODEL_FOLDER):
-        os.makedirs(MODEL_FOLDER)
-    logging.info(f"MODEL_FOLDER is {MODEL_FOLDER}")
-
-    # not -train, -evaluation actions
+    
+    # dataset actions
     if args.load_raw_dataset:
         Data.instance().save()
         exit()
@@ -292,25 +274,40 @@ if __name__ == "__main__":
         calc_trajects_entropy()
         Data.instance().save()
         exit()
+    
+    # used in next actions
+    MODEL_NAME = args.model_name
+    EPOCHS = args.epochs
+    DATASET_NAME = args.dataset_name
+    INIT_WINDOW = args.init_window
+    M_WINDOW = args.m_window
+    H_WINDOW = args.h_window
+    END_WINDOW = H_WINDOW
+    model_entropy_sufix = f'_{args.train_entropy}_entropy' if args.train_entropy != 'all' else ''
+    MODEL_FOLDER = join(DATADIR, f'{MODEL_NAME}_{DATASET_NAME}{model_entropy_sufix}')
+    if not exists(MODEL_FOLDER):
+        os.makedirs(MODEL_FOLDER)
+    logging.info(f"MODEL_FOLDER is {MODEL_FOLDER}")
+    PERC_TEST = args.perc_test
+    logging.info(f"PERC_TEST is {PERC_TEST}")
+    PERC_TEST_PREFIX = f"test_{str(PERC_TEST).replace('.',',')}"
+    args.test_entropy = args.train_entropy if args.test_entropy == "same" else args.test_entropy
+    PERC_TEST_ENTROPY_PREFIX = f"{PERC_TEST_PREFIX}_{args.test_entropy}"
+
+    # compare_results action
     if args.compare_results:
         compare_results()
         exit()
 
-    # -train, -evaluation actions
-    # partioning
+    # partion used in train, evaluation actions
     logging.info("")
     logging.info("partioning train/test ...")
-    args.test_entropy = args.train_entropy if args.test_entropy == "same" else args.test_entropy
     logging.info(f"X_train entropy is {args.train_entropy}")
     logging.info(f"X_test entropy is {args.test_entropy}")
     X_train, X_test = [], []
     X_train, X_test = get_train_test_split(args.train_entropy, args.test_entropy, PERC_TEST)
     assert (not X_test.empty and not X_train.empty)
 
-    if args.show_train_distribution:
-        raise NotImplementedError()
-
-    logging.info(f"PERC_TRAIN is {1-PERC_TEST}")
     logging.info(f"X_train has {len(X_train)} trajectories")
     logging.info(f"X_test has {len(X_test)} trajectories")
     PARTITION = {}
@@ -324,10 +321,8 @@ if __name__ == "__main__":
                          for tstap in range(INIT_WINDOW, row[1]['traject'].shape[0] - END_WINDOW)]
     VIDEOS_TEST = X_test['ds_video'].unique()
     USERS_TEST = X_test['ds_user'].unique()
-    logging.info(
-        f"PARTITION['train'] has {len(PARTITION['train'])} position predictions")
-    logging.info(
-        f"PARTITION['test'] has {len(PARTITION['test'])} position predictions")
+    logging.info(f"PARTITION['train'] has {len(PARTITION['train'])} position predictions")
+    logging.info(f"PARTITION['test'] has {len(PARTITION['test'])} position predictions")
 
     # creating model
     logging.info("")
