@@ -124,10 +124,7 @@ def evaluate() -> None:
         video = ID['video']
         x_i = ID['time-stamp']
 
-        if video not in errors_per_video.keys():
-            errors_per_video[video] = {}
-
-        # Load the data
+        # MODEL.predict
         if MODEL_NAME == 'pos_only':
             encoder_pos_inputs_for_sample = np.array([get_traces(video, user, DATASET_NAME)[x_i - M_WINDOW:x_i]])
             decoder_pos_inputs_for_sample = np.array([get_traces(video, user, DATASET_NAME)[x_i:x_i + 1]])
@@ -143,6 +140,8 @@ def evaluate() -> None:
         else:
             raise NotImplementedError()
 
+        if not video in errors_per_video:
+            errors_per_video[video] = {}
         for t in range(len(groundtruth)):
             if t not in errors_per_video[video].keys():
                 errors_per_video[video][t] = []
@@ -159,9 +158,6 @@ def evaluate() -> None:
     avg_error_per_video = []
     for video_name in VIDEOS_TEST:
         for t in range(H_WINDOW):
-            if not video_name in errors_per_video:
-                logging.error(f'missing {video_name} in VIDEOS_TEST')
-                continue
             avg = np.mean(errors_per_video[video_name][t])
             avg_error_per_video.append(f"video={video_name} {t} {avg}")
     result_file = f'{result_basefilename}_avg_error_per_video.csv'
@@ -187,7 +183,6 @@ def evaluate() -> None:
     plt.xlim(2.5)
     plt.xlabel('Prediction step s (sec.)')
     logging.info(f"saving {result_file}.png")
-    plt.legend(bbox_to_anchor=(0, 1), loc='upper left', ncol=1)
     plt.savefig(result_file, bbox_inches='tight')
 
 
@@ -309,8 +304,7 @@ if __name__ == "__main__":
     logging.info(f"X_train entropy is {args.train_entropy}")
     logging.info(f"X_test entropy is {args.test_entropy}")
     X_train, X_test = [], []
-    X_train, X_test = get_train_test_split(
-        args.train_entropy, args.test_entropy, PERC_TEST)
+    X_train, X_test = get_train_test_split(args.train_entropy, args.test_entropy, PERC_TEST)
     assert (not X_test.empty and not X_train.empty)
 
     if args.show_train_distribution:
