@@ -210,7 +210,7 @@ def compare_results() -> None:
         csv_data, label=f"{dir}_{file.removesuffix(suffix)}")
     [add_plot(*csv_data) for csv_data in csv_data_l]
     met = 'orthodromic'
-    plt.title('Average %s in %s dataset using %s model' % (met, DATASET_NAME, MODEL_NAME))
+    plt.title('avg %s (y) by pred. horizon (x) for %s of dataset %s' % (met,PERC_TEST , DATASET_NAME))
     plt.ylabel(met)
     plt.xlim(2.5)
     plt.xlabel('Prediction step s (sec.)')
@@ -280,21 +280,24 @@ if __name__ == "__main__":
     
     # used in next actions
     MODEL_NAME = args.model_name
-    EPOCHS = args.epochs
     DATASET_NAME = args.dataset_name
+    PERC_TEST = args.perc_test
+    EPOCHS = args.epochs
     INIT_WINDOW = args.init_window
     M_WINDOW = args.m_window
     H_WINDOW = args.h_window
     END_WINDOW = H_WINDOW
-    model_entropy_sufix = f'_{args.train_entropy}_entropy' if args.train_entropy != 'all' else ''
-    MODEL_FOLDER = join(DATADIR, f'{MODEL_NAME}_{DATASET_NAME}{model_entropy_sufix}')
+    args.test_entropy = args.train_entropy if args.test_entropy == "same" else args.test_entropy
+    train_entropy_sufix = '' if args.train_entropy == 'all' else f'_{args.train_entropy}_entropy' 
+    ds_sufix = '' if args.dataset_name == 'all' else f'_{DATASET_NAME}'
+    logging.info(f"train_entropy_sufix is {train_entropy_sufix}")
+    logging.info(f"ds_sufix is {ds_sufix}")
+    MODEL_FOLDER = join(DATADIR, f'{MODEL_NAME}{ds_sufix}{train_entropy_sufix}')
     if not exists(MODEL_FOLDER):
         os.makedirs(MODEL_FOLDER)
     logging.info(f"MODEL_FOLDER is {MODEL_FOLDER}")
-    PERC_TEST = args.perc_test
     logging.info(f"PERC_TEST is {PERC_TEST}")
     PERC_TEST_PREFIX = f"test_{str(PERC_TEST).replace('.',',')}"
-    args.test_entropy = args.train_entropy if args.test_entropy == "same" else args.test_entropy
     PERC_TEST_ENTROPY_PREFIX = f"{PERC_TEST_PREFIX}_{args.test_entropy}"
 
     # compare_results action
@@ -302,7 +305,7 @@ if __name__ == "__main__":
         compare_results()
         exit()
 
-    # partion used in train, evaluation actions
+    # partition for -train, -evaluation
     logging.info("")
     logging.info("partioning train/test ...")
     logging.info(f"X_train entropy is {args.train_entropy}")
