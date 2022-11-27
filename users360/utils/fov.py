@@ -25,20 +25,20 @@ _fov_x1y0z0_points = np.array([
 
 
 def fov_points(trace) -> np.ndarray:
-    if (trace[0], trace[1], trace[2]) not in _fov_points:
-        rotation = rotationBetweenVectors(X1Y0Z0, np.array(trace))
-        points = np.array([
-            rotation.rotate(_fov_x1y0z0_points[0]),
-            rotation.rotate(_fov_x1y0z0_points[1]),
-            rotation.rotate(_fov_x1y0z0_points[2]),
-            rotation.rotate(_fov_x1y0z0_points[3]),
-        ])
-        _fov_points[(trace[0], trace[1], trace[2])] = points
-    return _fov_points[(trace[0], trace[1], trace[2])]
+  if (trace[0], trace[1], trace[2]) not in _fov_points:
+    rotation = rotationBetweenVectors(X1Y0Z0, np.array(trace))
+    points = np.array([
+        rotation.rotate(_fov_x1y0z0_points[0]),
+        rotation.rotate(_fov_x1y0z0_points[1]),
+        rotation.rotate(_fov_x1y0z0_points[2]),
+        rotation.rotate(_fov_x1y0z0_points[3]),
+    ])
+    _fov_points[(trace[0], trace[1], trace[2])] = points
+  return _fov_points[(trace[0], trace[1], trace[2])]
 
 
 def fov_poly(trace) -> polygon.SphericalPolygon:
-    if (trace[0], trace[1], trace[2]) not in _fov_polys:
-        points_trace = fov_points(trace)
-        _fov_polys[(trace[0], trace[1], trace[2])] = polygon.SphericalPolygon(points_trace)
-    return _fov_polys[(trace[0], trace[1], trace[2])]
+  if (trace[0], trace[1], trace[2]) not in _fov_polys:
+    points_trace = fov_points(trace)
+    _fov_polys[(trace[0], trace[1], trace[2])] = polygon.SphericalPolygon(points_trace)
+  return _fov_polys[(trace[0], trace[1], trace[2])]
