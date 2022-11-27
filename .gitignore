@@ -167,7 +167,7 @@ cython_debug/
 typings
 
 ### Added ###
-.tmp
+.tmp*
 data/*
 data-*
 Graph/*
