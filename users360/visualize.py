@@ -1,9 +1,9 @@
-import pathlib
-from os.path import exists
+"""
+Provides some visualization functions
+"""
 
 import numpy as np
 import pandas as pd
-import plotly
 import plotly.express as px
 import plotly.graph_objs as go
 import swifter
@@ -11,10 +11,12 @@ from colour import Color
 from numpy.random import randint
 from plotly.subplots import make_subplots
 from scipy.spatial import SphericalVoronoi, geometric_slerp
+from spherical_geometry.polygon import SphericalPolygon
 
-from .data import *
-from .utils.tileset import *
-from .utils.tileset_voro import *
+from .data import Data
+from .utils.fov import fov_points
+from .utils.tileset import TILESET_DEFAULT, TileSet, tile_points
+from .utils.tileset_voro import TileSetVoro
 
 
 class VizSphere():
@@ -121,7 +123,7 @@ class VizSphere():
                           })
       self.data.append(edge)
 
-  def add_polygon(self, polygon: polygon.SphericalPolygon) -> None:
+  def add_polygon(self, polygon: SphericalPolygon) -> None:
     assert polygon.points.shape[1] == 3
     self._add_polygon_lines([point for point in polygon.points])
 

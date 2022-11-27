@@ -13,7 +13,6 @@ class Test(unittest.TestCase):
     sphere = VizSphere()
     sphere.add_trace_and_fov([1, 0, 0])
     sphere.add_polygon_from_tile_row_col(4, 6, 0, 0)
-
     sphere = VizSphere()
     sphere.add_trace_and_fov([1, 0, 0])
     sphere.add_polygon_from_points(tile_points(4, 6, 0, 0))

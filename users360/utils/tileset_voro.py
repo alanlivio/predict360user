@@ -1,10 +1,15 @@
+"""
+Provides some voronoi tileset functions
+"""
 import math
 
 import numpy as np
 from scipy.spatial import SphericalVoronoi
-from spherical_geometry import polygon
+from spherical_geometry.polygon import SphericalPolygon
 
-from .tileset import *
+from ..head_motion_prediction.Utils import compute_orthodromic_distance
+from .fov import HOR_DIST, HOR_MARGIN, fov_poly
+from .tileset import TileCover, TileSetIF
 
 _tsv_polys = dict()
 
@@ -28,10 +33,10 @@ _VORO_14P = voro_trinity(14)
 _VORO_24P = voro_trinity(24)
 
 
-def tsv_poly(voro: SphericalVoronoi, index) -> polygon.SphericalPolygon:
+def tsv_poly(voro: SphericalVoronoi, index) -> SphericalPolygon:
   if voro.points.size not in _tsv_polys:
     polys = {
-        i: polygon.SphericalPolygon(voro.vertices[voro.regions[i]])
+        i: SphericalPolygon(voro.vertices[voro.regions[i]])
         for i, _ in enumerate(voro.regions)
     }
     _tsv_polys[voro.points.size] = polys
@@ -69,12 +74,12 @@ class TileSetVoro(TileSetIF):
       dist = compute_orthodromic_distance(trace, self.voro.points[index])
       if dist <= HOR_MARGIN:
         heatmap[index] += 1
-        if (return_metrics):
+        if return_metrics:
           poly = tsv_poly(self.voro, index)
           view_ratio = poly.overlap(fov_poly_trace)
           areas_out.append(1 - view_ratio)
           vp_quality += fov_poly_trace.overlap(poly)
-    if (return_metrics):
+    if return_metrics:
       return heatmap, vp_quality, np.sum(areas_out)
     else:
       return heatmap
@@ -92,10 +97,10 @@ class TileSetVoro(TileSetIF):
       view_ratio = poly.overlap(fov_poly_trace)
       if view_ratio > required_cover:
         heatmap[index] += 1
-        if (return_metrics):
+        if return_metrics:
           areas_out.append(1 - view_ratio)
           vp_quality += fov_poly_trace.overlap(poly)
-    if (return_metrics):
+    if return_metrics:
       return heatmap, vp_quality, np.sum(areas_out)
     else:
       return heatmap

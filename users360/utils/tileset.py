@@ -1,10 +1,17 @@
+"""
+Provides some tileset functions
+"""
+import logging
 from abc import ABC, abstractmethod
 from enum import Enum, auto
 
 import numpy as np
 from spherical_geometry import polygon
 
-from .fov import *
+from ..head_motion_prediction.Utils import (compute_orthodromic_distance,
+                                            degrees_to_radian,
+                                            eulerian_to_cartesian)
+from .fov import HOR_DIST, HOR_MARGIN, fov_poly
 
 _ts_polys = dict()
 _ts_centers = dict()
@@ -124,7 +131,7 @@ class TileSet(TileSetIF):
               poly_rc = tile_poly(self.t_ver, self.t_hor, row, col)
               view_ratio = poly_rc.overlap(fov_poly_trace)
             except:
-              logging.error(f"request error for row,col,trace={row},{col},{repr(trace)}")
+              logging.error(f'request error for row,col,trace={row},{col},{repr(trace)}')
               continue
             areas_out.append(1 - view_ratio)
             vp_quality += fov_poly_trace.overlap(poly_rc)
@@ -154,7 +161,7 @@ class TileSet(TileSetIF):
           if (return_metrics):
             areas_out.append(1 - view_ratio)
             vp_quality += fov_poly_trace.overlap(poly_rc)
-    if (return_metrics):
+    if return_metrics:
       return heatmap, vp_quality, np.sum(areas_out)
     else:
       return heatmap

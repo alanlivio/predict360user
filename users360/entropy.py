@@ -1,26 +1,31 @@
-from os.path import exists
+"""
+Provides some entropy functions
+"""
+import logging
 
 import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objs as go
 import scipy.stats
-import swifter
+import swifter  # pylint: disable=unused-import
 from plotly.subplots import make_subplots
 
-from .data import *
-from .utils.tileset import *
+from .data import Data, get_df_trajects
+from .utils.tileset import TILESET_DEFAULT, TileSetIF
 
-ENTROPY_CLASS_COLORS = {"low": "blue", "medium": "green", "hight": "red"}
+ENTROPY_CLASS_COLORS = {'low': 'blue', 'medium': 'green', 'hight': 'red'}
 
 
 def calc_trajects_hmps(tileset=TILESET_DEFAULT) -> None:
   df_trajects = Data.instance().df_trajects
-  f_trace = lambda trace: tileset.request(trace)
-  f_traject = lambda traces: np.apply_along_axis(f_trace, 1, traces)
-  logging.info("calculating heatmaps ...")
+  def f_trace(trace):
+    return tileset.request(trace)
+  def f_traject(traces):
+    return np.apply_along_axis(f_trace, 1, traces)
+  logging.info('calculating heatmaps ...')
   df_trajects['traject_hmps'] = pd.Series(df_trajects['traject'].swifter.apply(f_traject))
-  assert not df_trajects['traject_hmps'].isna().any()
+  assert not df_trajects['traject_hmps'].isnull().values.any()
 
 
 def calc_trajects_entropy() -> None:
@@ -28,10 +33,11 @@ def calc_trajects_entropy() -> None:
   if 'traject_hmps' not in df_trajects.columns:
     calc_trajects_hmps()
   # calc df_trajects.entropy
-  f_entropy = lambda x: scipy.stats.entropy(np.sum(x, axis=0).reshape((-1)))
-  logging.info("calculating trajects entropy ...")
+  def f_entropy(x):
+    return scipy.stats.entropy(np.sum(x, axis=0).reshape((-1)))
+  logging.info('calculating trajects entropy ...')
   df_trajects['traject_entropy'] = df_trajects['traject_hmps'].swifter.apply(f_entropy)
-  assert not df_trajects['traject_entropy'].isna().any()
+  assert not df_trajects['traject_entropy'].isnull().values.any()
   # calc df_trajects.entropy_class
   idxs_sort = df_trajects['traject_entropy'].argsort()
   trajects_len = len(df_trajects['traject_entropy'])
@@ -39,10 +45,10 @@ def calc_trajects_entropy() -> None:
   idx_threshold_hight = idxs_sort[int(trajects_len * .90)]
   threshold_medium = df_trajects['traject_entropy'][idx_threshold_medium]
   threshold_hight = df_trajects['traject_entropy'][idx_threshold_hight]
-  f_threshold = lambda x: 'low' if x < threshold_medium else ('medium'
-                                                              if x < threshold_hight else 'hight')
+  def f_threshold(x):
+    return 'low' if x < threshold_medium else ('medium' if x < threshold_hight else 'hight')
   df_trajects['traject_entropy_class'] = df_trajects['traject_entropy'].apply(f_threshold)
-  assert not df_trajects['traject_entropy_class'].isna().any()
+  assert not df_trajects['traject_entropy_class'].isnull().values.any()
 
 
 def calc_trajects_entropy_users() -> None:
@@ -50,17 +56,15 @@ def calc_trajects_entropy_users() -> None:
   if 'traject_hmps' not in df_trajects.columns:
     calc_trajects_hmps()
   # calc user_entropy
-  logging.info("calculating users entropy ...")
-
+  logging.info('calculating users entropy ...')
   def f_entropy_user(same_user_rows) -> np.ndarray:
     same_user_rows_np = same_user_rows['traject_hmps'].to_numpy()
     hmps_sum = sum(np.sum(x, axis=0) for x in same_user_rows_np)
     entropy = scipy.stats.entropy(hmps_sum.reshape((-1)))
     return entropy
-
   tmpdf = df_trajects.groupby(['ds_user']).apply(f_entropy_user).reset_index()
   tmpdf.columns = ['ds_user', 'user_entropy']
-  assert not tmpdf['user_entropy'].isna().any()
+  assert not tmpdf['user_entropy'].isnull().values.any()
   # calc user_entropy_class
   idxs_sort = tmpdf['user_entropy'].argsort()
   trajects_len = len(tmpdf['user_entropy'])
@@ -68,8 +72,8 @@ def calc_trajects_entropy_users() -> None:
   idx_threshold_hight = idxs_sort[int(trajects_len * .90)]
   threshold_medium = tmpdf['user_entropy'][idx_threshold_medium]
   threshold_hight = tmpdf['user_entropy'][idx_threshold_hight]
-  f_threshold = lambda x: 'low' if x < threshold_medium else ('medium'
-                                                              if x < threshold_hight else 'hight')
+  def f_threshold(x):
+    return 'low' if x < threshold_medium else ('medium' if x < threshold_hight else 'hight')
   tmpdf['user_entropy_class'] = tmpdf['user_entropy'].apply(f_threshold)
   assert not tmpdf['user_entropy_class'].isna().any()
   Data.instance().df_trajects = pd.merge(df_trajects, tmpdf, on='ds_user')
@@ -77,7 +81,8 @@ def calc_trajects_entropy_users() -> None:
 
 def calc_trajects_poles_prc() -> None:
   df_trajects = Data.instance().df_trajects
-  f_traject = lambda traces: np.count_nonzero(abs(traces[:, 2]) > 0.7) / len(traces)
+  def f_traject(traces):
+    return np.count_nonzero(abs(traces[:, 2]) > 0.7) / len(traces)
   df_trajects['poles_prc'] = pd.Series(df_trajects['traject'].apply(f_traject))
   assert not df_trajects['poles_prc'].isna().any()
   idxs_sort = df_trajects['poles_prc'].argsort()
@@ -86,8 +91,8 @@ def calc_trajects_poles_prc() -> None:
   idx_threshold_hight = idxs_sort[int(trajects_len * .90)]
   threshold_medium = df_trajects['poles_prc'][idx_threshold_medium]
   threshold_hight = df_trajects['poles_prc'][idx_threshold_hight]
-  f_threshold = lambda x: 'low' if x < threshold_medium else ('medium'
-                                                              if x < threshold_hight else 'hight')
+  def f_threshold(x):
+    return 'low' if x < threshold_medium else ('medium' if x < threshold_hight else 'hight')
   df_trajects['poles_class'] = df_trajects['poles_prc'].apply(f_threshold)
   assert not df_trajects['poles_class'].isna().any()
 
@@ -129,7 +134,7 @@ def show_trajects_entropy(facet=None) -> None:
                facet_row=facet,
                color='traject_entropy_class',
                color_discrete_map=ENTROPY_CLASS_COLORS,
-               title=f'traject_entropy_class by ds',
+               title='traject_entropy_class by ds',
                width=700).show()
 
 
@@ -153,41 +158,40 @@ def show_trajects_entropy_users(facet=None) -> None:
                facet_row=facet,
                color='user_entropy_class',
                color_discrete_map=ENTROPY_CLASS_COLORS,
-               title=f'user_entropy_class by ds',
+               title='user_entropy_class by ds',
                width=700).show()
 
 
 def calc_tileset_reqs_metrics(tileset_l: list[TileSetIF], n_trajects=None) -> None:
-  assert (not get_df_trajects().empty)
+  assert not get_df_trajects().empty
   if n_trajects:
     df = get_df_trajects()[:n_trajects]
   else:
     df = get_df_trajects()
-
   def create_tsdf(ts_idx) -> pd.DataFrame:
     tileset = tileset_l[ts_idx]
-
     def f_trace(trace) -> tuple[int, float, float]:
       heatmap, vp_quality, area_out = tileset.request(trace, return_metrics=True)
       return (int(np.sum(heatmap)), vp_quality, area_out)
-
-    f_traject = lambda traces: np.apply_along_axis(f_trace, 1, traces)
+    def f_traject (traces):
+      return np.apply_along_axis(f_trace, 1, traces)
     tmpdf = pd.DataFrame(df['traject'].swifter.apply(f_traject))
     tmpdf.columns = [tileset.title]
     return tmpdf
-
   df_tileset_metrics = pd.concat(map(create_tsdf, range(len(tileset_l))), axis=1)
   Data.instance().df_tileset_metrics = df_tileset_metrics
 
 
 def show_tileset_reqs_metrics() -> None:
   df_tileset_metrics = Data.instance().df_tileset_metrics
-  assert (not df_tileset_metrics.empty)
-
+  assert not df_tileset_metrics.empty
   # calc tileset metrics
-  f_traject_reqs = lambda traces: np.sum(traces[:, 0])
-  f_traject_qlt = lambda traces: np.mean(traces[:, 1])
-  f_traject_lost = lambda traces: np.mean(traces[:, 2])
+  def f_traject_reqs(traces):
+    np.sum(traces[:, 0])
+  def f_traject_qlt(traces):
+    np.mean(traces[:, 1])
+  def f_traject_lost(traces):
+    np.mean(traces[:, 2])
   data = {'tileset': [], 'avg_reqs': [], 'avg_qlt': [], 'avg_lost': []}
   for name in df_tileset_metrics.columns:
     dfts = df_tileset_metrics[name]
@@ -197,10 +201,9 @@ def show_tileset_reqs_metrics() -> None:
     data['avg_lost'].append(dfts.apply(f_traject_lost).mean())
     data['score'] = data['avg_qlt'][-1] / data['avg_lost'][-1]
   df = pd.DataFrame(data)
-
   fig = make_subplots(rows=1,
                       cols=4,
-                      subplot_titles=("avg_reqs", "avg_lost", "avg_qlt", "score=avg_qlt/avg_lost"),
+                      subplot_titles=('avg_reqs', 'avg_lost', 'avg_qlt', 'score=avg_qlt/avg_lost'),
                       shared_yaxes=True)
   y = df_tileset_metrics.columns
   trace = go.Bar(y=y, x=df['avg_reqs'], orientation='h', width=0.3)
@@ -214,6 +217,6 @@ def show_tileset_reqs_metrics() -> None:
   fig.update_layout(
       width=1500,
       showlegend=False,
-      barmode="stack",
+      barmode='stack',
   )
   fig.show()
