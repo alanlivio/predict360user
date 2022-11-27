@@ -11,14 +11,15 @@ import scipy.stats
 import swifter  # pylint: disable=unused-import
 from plotly.subplots import make_subplots
 
-from .data import Data, get_df_trajects
+from .data import Data
 from .utils.tileset import TILESET_DEFAULT, TileSetIF
 
 ENTROPY_CLASS_COLORS = {'low': 'blue', 'medium': 'green', 'hight': 'red'}
 
 
-def calc_trajects_hmps(tileset=TILESET_DEFAULT) -> None:
+def calc_trajects_hmps(tileset=TILESET_DEFAULT, testing=None) -> None:
   df_trajects = Data.instance().df_trajects
+  df_trajects = df_trajects[:2] if testing else df_trajects
   def f_trace(trace):
     return tileset.request(trace)
   def f_traject(traces):
@@ -28,10 +29,11 @@ def calc_trajects_hmps(tileset=TILESET_DEFAULT) -> None:
   assert not df_trajects['traject_hmps'].isnull().values.any()
 
 
-def calc_trajects_entropy() -> None:
+def calc_trajects_entropy(testing=None) -> None:
   df_trajects = Data.instance().df_trajects
+  df_trajects = df_trajects[:2] if testing else df_trajects
   if 'traject_hmps' not in df_trajects.columns:
-    calc_trajects_hmps()
+    calc_trajects_hmps(testing)
   # calc df_trajects.entropy
   def f_entropy(x):
     return scipy.stats.entropy(np.sum(x, axis=0).reshape((-1)))
@@ -51,10 +53,11 @@ def calc_trajects_entropy() -> None:
   assert not df_trajects['traject_entropy_class'].isnull().values.any()
 
 
-def calc_trajects_entropy_users() -> None:
+def calc_trajects_entropy_users(testing=None) -> None:
   df_trajects = Data.instance().df_trajects
+  df_trajects = df_trajects[:2] if testing else df_trajects
   if 'traject_hmps' not in df_trajects.columns:
-    calc_trajects_hmps()
+    calc_trajects_hmps(testing)
   # calc user_entropy
   logging.info('calculating users entropy ...')
   def f_entropy_user(same_user_rows) -> np.ndarray:
@@ -79,8 +82,9 @@ def calc_trajects_entropy_users() -> None:
   Data.instance().df_trajects = pd.merge(df_trajects, tmpdf, on='ds_user')
 
 
-def calc_trajects_poles_prc() -> None:
+def calc_trajects_poles_prc(testing=None) -> None:
   df_trajects = Data.instance().df_trajects
+  df_trajects = df_trajects[:2] if testing else df_trajects
   def f_traject(traces):
     return np.count_nonzero(abs(traces[:, 2]) > 0.7) / len(traces)
   df_trajects['poles_prc'] = pd.Series(df_trajects['traject'].apply(f_traject))
@@ -162,12 +166,9 @@ def show_trajects_entropy_users(facet=None) -> None:
                width=700).show()
 
 
-def calc_tileset_reqs_metrics(tileset_l: list[TileSetIF], n_trajects=None) -> None:
-  assert not get_df_trajects().empty
-  if n_trajects:
-    df = get_df_trajects()[:n_trajects]
-  else:
-    df = get_df_trajects()
+def calc_tileset_reqs_metrics(tileset_l: list[TileSetIF], testing=None) -> None:
+  df_trajects = Data.instance().df_trajects
+  df_trajects = df_trajects[:2] if testing else df_trajects
   def create_tsdf(ts_idx) -> pd.DataFrame:
     tileset = tileset_l[ts_idx]
     def f_trace(trace) -> tuple[int, float, float]:
@@ -175,7 +176,7 @@ def calc_tileset_reqs_metrics(tileset_l: list[TileSetIF], n_trajects=None) -> No
       return (int(np.sum(heatmap)), vp_quality, area_out)
     def f_traject (traces):
       return np.apply_along_axis(f_trace, 1, traces)
-    tmpdf = pd.DataFrame(df['traject'].swifter.apply(f_traject))
+    tmpdf = pd.DataFrame(df_trajects['traject'].swifter.apply(f_traject))
     tmpdf.columns = [tileset.title]
     return tmpdf
   df_tileset_metrics = pd.concat(map(create_tsdf, range(len(tileset_l))), axis=1)

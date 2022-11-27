@@ -31,6 +31,7 @@ class Data():
 
   # centralized data
   df_trajects: pd.Dataframe
+  df_tileset_metrics: pd.Dataframe
 
   def __init__(self) -> None:
     raise RuntimeError('call instance() instead')
