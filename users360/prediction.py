@@ -6,8 +6,8 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 
 from . import config
-from .data import get_df_trajects
 from .entropy import show_trajects_entropy, show_trajects_entropy_users
+from .trajects import get_df_trajects
 
 
 def get_train_test_split(train_entropy, test_entropy,

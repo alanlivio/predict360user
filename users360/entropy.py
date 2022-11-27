@@ -6,14 +6,12 @@ import logging
 import numpy as np
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objs as go
 import scipy.stats
 import swifter  # pylint: disable=unused-import
-from plotly.subplots import make_subplots
 
 from . import config
-from .data import get_df_trajects
-from .utils.tileset import TILESET_DEFAULT, TileSet
+from .trajects import get_df_trajects
+from .utils.tileset import TILESET_DEFAULT
 
 ENTROPY_CLASS_COLORS = {'low': 'blue', 'medium': 'green', 'hight': 'red'}
 

@@ -9,7 +9,7 @@ import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 
 from . import config
-from .data import get_df_trajects
+from .trajects import get_df_trajects
 from .utils.tileset import TileSet
 
 

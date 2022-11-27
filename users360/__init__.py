@@ -1,5 +1,5 @@
 from .config import *
-from .data import *
+from .trajects import *
 from .entropy import *
 from .prediction import *
 from .tileset_metrics import *

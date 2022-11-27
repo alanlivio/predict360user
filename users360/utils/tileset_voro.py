@@ -50,7 +50,7 @@ class TileSetVoro(TileSet):
   def __init__(self, voro: SphericalVoronoi, cover: TileCover) -> None:
     super().__init__(2, -1, cover) # force shape (2,-1)
     self.voro = voro
-  
+
   @overload
   @property
   def prefix(self) -> str:

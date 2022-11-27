@@ -2,7 +2,6 @@
 Provides VizSphere class
 '''
 import numpy as np
-import pandas as pd
 import plotly.express as px
 import plotly.graph_objs as go
 from colour import Color
