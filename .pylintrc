@@ -51,6 +51,8 @@ confidence=
 # no Warning level messages displayed, use"--disable=all --enable=classes
 # --disable=W"
 disable=abstract-method,
+        import-outside-toplevel, # added alan
+        logging-fstring-interpolation, # added alan
         apply-builtin,
         arguments-differ,
         attribute-defined-outside-init,
@@ -259,7 +261,7 @@ generated-members=
 [FORMAT]
 
 # Maximum number of characters on a single line.
-max-line-length=80
+max-line-length=100 # add alan, orig: 80
 
 # TODO(https://github.com/PyCQA/pylint/issues/3352): Direct pylint to exempt
 # lines made too long by directives to pytype.
