@@ -11,14 +11,15 @@ import scipy.stats
 import swifter  # pylint: disable=unused-import
 from plotly.subplots import make_subplots
 
-from .data import Data
+from . import config
+from .data import get_df_trajects
 from .utils.tileset import TILESET_DEFAULT, TileSetIF
 
 ENTROPY_CLASS_COLORS = {'low': 'blue', 'medium': 'green', 'hight': 'red'}
 
 
 def calc_trajects_hmps(tileset=TILESET_DEFAULT, testing=None) -> None:
-  df_trajects = Data.instance().df_trajects
+  df_trajects = get_df_trajects()
   df_trajects = df_trajects[:2] if testing else df_trajects
   def f_trace(trace):
     return tileset.request(trace)
@@ -30,7 +31,7 @@ def calc_trajects_hmps(tileset=TILESET_DEFAULT, testing=None) -> None:
 
 
 def calc_trajects_entropy(testing=None) -> None:
-  df_trajects = Data.instance().df_trajects
+  df_trajects = get_df_trajects()
   df_trajects = df_trajects[:2] if testing else df_trajects
   if 'traject_hmps' not in df_trajects.columns:
     calc_trajects_hmps(testing)
@@ -51,10 +52,11 @@ def calc_trajects_entropy(testing=None) -> None:
     return 'low' if x < threshold_medium else ('medium' if x < threshold_hight else 'hight')
   df_trajects['traject_entropy_class'] = df_trajects['traject_entropy'].apply(f_threshold)
   assert not df_trajects['traject_entropy_class'].isnull().values.any()
+  config.df_trajects = df_trajects
 
 
 def calc_trajects_entropy_users(testing=None) -> None:
-  df_trajects = Data.instance().df_trajects
+  df_trajects = get_df_trajects()
   df_trajects = df_trajects[:2] if testing else df_trajects
   if 'traject_hmps' not in df_trajects.columns:
     calc_trajects_hmps(testing)
@@ -79,11 +81,11 @@ def calc_trajects_entropy_users(testing=None) -> None:
     return 'low' if x < threshold_medium else ('medium' if x < threshold_hight else 'hight')
   tmpdf['user_entropy_class'] = tmpdf['user_entropy'].apply(f_threshold)
   assert not tmpdf['user_entropy_class'].isna().any()
-  Data.instance().df_trajects = pd.merge(df_trajects, tmpdf, on='ds_user')
+  config.df_trajects = pd.merge(df_trajects, tmpdf, on='ds_user')
 
 
 def calc_trajects_poles_prc(testing=None) -> None:
-  df_trajects = Data.instance().df_trajects
+  df_trajects = get_df_trajects()
   df_trajects = df_trajects[:2] if testing else df_trajects
   def f_traject(traces):
     return np.count_nonzero(abs(traces[:, 2]) > 0.7) / len(traces)
@@ -102,9 +104,9 @@ def calc_trajects_poles_prc(testing=None) -> None:
 
 
 def show_trajects_poles_prc() -> None:
-  df_trajects = Data.instance().df_trajects
-  if not {'poles_prc', 'poles_class'}.issubset(df_trajects.columns):
+  if not {'poles_prc', 'poles_class'}.issubset(get_df_trajects().columns):
     calc_trajects_poles_prc()
+  df_trajects = get_df_trajects()
   fig = px.scatter(df_trajects,
                    y='ds_user',
                    x='poles_prc',
@@ -119,9 +121,9 @@ def show_trajects_poles_prc() -> None:
 
 
 def show_trajects_entropy(facet=None) -> None:
-  if not {'traject_entropy', 'traject_entropy_class'}.issubset(Data.instance().df_trajects.columns):
+  if not {'traject_entropy', 'traject_entropy_class'}.issubset(get_df_trajects().columns):
     calc_trajects_entropy()
-  df_trajects = Data.instance().df_trajects
+  df_trajects = get_df_trajects()
   px.box(df_trajects,
          x='ds',
          y='traject_entropy',
@@ -143,9 +145,10 @@ def show_trajects_entropy(facet=None) -> None:
 
 
 def show_trajects_entropy_users(facet=None) -> None:
-  if not {'traject_entropy', 'traject_entropy_class'}.issubset(Data.instance().df_trajects.columns):
+  if not {'traject_entropy', 'traject_entropy_class'
+    }.issubset(get_df_trajects().df_trajects.columns):
     calc_trajects_entropy_users()
-  df_trajects = Data.instance().df_trajects
+  df_trajects = get_df_trajects()
   px.box(df_trajects,
          x='ds',
          y='user_entropy',
@@ -167,7 +170,7 @@ def show_trajects_entropy_users(facet=None) -> None:
 
 
 def calc_tileset_reqs_metrics(tileset_l: list[TileSetIF], testing=None) -> None:
-  df_trajects = Data.instance().df_trajects
+  df_trajects = get_df_trajects()
   df_trajects = df_trajects[:2] if testing else df_trajects
   def create_tsdf(ts_idx) -> pd.DataFrame:
     tileset = tileset_l[ts_idx]
@@ -179,14 +182,11 @@ def calc_tileset_reqs_metrics(tileset_l: list[TileSetIF], testing=None) -> None:
     tmpdf = pd.DataFrame(df_trajects['traject'].swifter.apply(f_traject))
     tmpdf.columns = [tileset.title]
     return tmpdf
-  df_tileset_metrics = pd.concat(map(create_tsdf, range(len(tileset_l))), axis=1)
-  Data.instance().df_tileset_metrics = df_tileset_metrics
+  config.df_tileset_metrics = pd.concat(map(create_tsdf, range(len(tileset_l))), axis=1)
 
 
 def show_tileset_reqs_metrics() -> None:
-  df_tileset_metrics = Data.instance().df_tileset_metrics
-  assert not df_tileset_metrics.empty
-  # calc tileset metrics
+  df_tileset_metrics = config.df_tileset_metrics
   def f_traject_reqs(traces):
     np.sum(traces[:, 0])
   def f_traject_qlt(traces):

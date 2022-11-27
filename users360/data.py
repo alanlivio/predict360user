@@ -5,138 +5,119 @@ from __future__ import annotations
 
 import logging
 import os
-import pathlib
 import pickle
 from os.path import exists
 
 import numpy as np
 import pandas as pd
 
-DATADIR = f"{pathlib.Path(__file__).parent.parent / 'data/'}"
-HMDDIR = f"{pathlib.Path(__file__).parent / 'head_motion_prediction/'}"
-DS_NAMES = ['david', 'fan', 'nguyen', 'xucvpr', 'xupami']
-
-logging.basicConfig(level=logging.INFO, format='-- %(filename)s: %(message)s')
-
-# Singleton following https://python-patterns.guide/gang-of-four/singleton/
+from . import config
 
 
-class Data():
-  """
-  Data
-  """
-  # singleton and its pickle filename
-  _instance = None
-  _pickle_f = None
+def _load_trajects_from_hmp() -> None:
+  logging.info('loading trajects from head_motion_prediction project')
+  # save cwd and move to head_motion_prediction for invoking funcs
+  cwd = os.getcwd()
+  os.chdir(config.HMDDIR)
+  from .head_motion_prediction.David_MMSys_18 import Read_Dataset as david
+  from .head_motion_prediction.Fan_NOSSDAV_17 import Read_Dataset as fan
+  from .head_motion_prediction.Nguyen_MM_18 import Read_Dataset as nguyen
+  from .head_motion_prediction.Xu_CVPR_18 import Read_Dataset as xucvpr
+  from .head_motion_prediction.Xu_PAMI_18 import Read_Dataset as xupami
+  ds_pkgs = [david, fan, nguyen, xucvpr, xupami]  # [:1]
+  ds_idxs = range(len(ds_pkgs))
 
-  # centralized data
-  df_trajects: pd.Dataframe
-  df_tileset_metrics: pd.Dataframe
+  def _load_dataset_xyz(idx, n_traces=100) -> pd.DataFrame:
+    # create sampled
+    if len(os.listdir(ds_pkgs[idx].OUTPUT_FOLDER)) < 2:
+      ds_pkgs[idx].create_and_store_sampled_dataset()
+    # each load_sample_dateset return a dict with:
+    # {<video1>:{<user1>:[time-stamp, x, y, z], ...}, ...}"
+    dataset = ds_pkgs[idx].load_sampled_dataset()
 
-  def __init__(self) -> None:
-    raise RuntimeError('call instance() instead')
+    # df with (dataset, user, video, times, traces)
+    # times has only time-stamps
+    # traces has only x, y, z (in 3d coordinates)
+    data = [
+        (
+            config.DS_NAMES[idx],
+            config.DS_NAMES[idx] + '_' + user,
+            config.DS_NAMES[idx] + '_' + video,
+            # np.around(dataset[user][video][:n_traces, 0], decimals=2),
+            dataset[user][video][:n_traces, 1:]) for user in dataset.keys()
+        for video in dataset[user].keys()
+    ]
+    tmpdf = pd.DataFrame(
+        data,
+        columns=[
+            'ds',
+            'ds_user',
+            'ds_video',
+            # 'times',
+            'traject'
+        ])
+    # size check
+    assert tmpdf['ds'].value_counts()[config.DS_NAMES[idx]] == config.DS_SIZES[idx]
+    return tmpdf
 
-  @classmethod
-  def instance(cls, pickle_sufix='') -> Data:
-    if cls._instance is not None:
-      return cls._instance
-
-    filename = f'data_{pickle_sufix}.pickle' if pickle_sufix else 'data.pickle'
-    cls._pickle_f = os.path.join(DATADIR, filename)
-    if exists(cls._pickle_f):
-      with open(cls._pickle_f, 'rb') as f:
-        logging.info(f'loading data from {cls._pickle_f}')
-        cls._instance: Data = pickle.load(f)
-    else:
-      cls._instance = cls.__new__(cls)
-    if not hasattr(cls._instance, 'df_trajects'):
-      cls._instance.load_data()
-    return cls._instance
-
-  def save(self) -> None:
-    logging.info(f'saving data to {self._pickle_f}')
-    with open(self._pickle_f, 'wb') as f:
-      pickle.dump(self, f)
-
-  def load_data(self) -> None:
-    logging.info('loading trajects from head_motion_prediction project')
-
-    # save cwd and move to head_motion_prediction for invoking funcs
-    cwd = os.getcwd()
-    os.chdir(HMDDIR)
-    from .head_motion_prediction.David_MMSys_18 import Read_Dataset as david
-    from .head_motion_prediction.Fan_NOSSDAV_17 import Read_Dataset as fan
-    from .head_motion_prediction.Nguyen_MM_18 import Read_Dataset as nguyen
-    from .head_motion_prediction.Xu_CVPR_18 import Read_Dataset as xucvpr
-    from .head_motion_prediction.Xu_PAMI_18 import Read_Dataset as xupami
-    ds_pkgs = [david, fan, nguyen, xucvpr, xupami]  # [:1]
-    ds_sizes = [1083, 300, 432, 6654, 4408]
-    ds_idxs = range(len(ds_pkgs))
-
-    def _load_dataset_xyz(idx, n_traces=100) -> pd.DataFrame:
-      # create sampled
-      if len(os.listdir(ds_pkgs[idx].OUTPUT_FOLDER)) < 2:
-        ds_pkgs[idx].create_and_store_sampled_dataset()
-      # each load_sample_dateset return a dict with:
-      # {<video1>:{<user1>:[time-stamp, x, y, z], ...}, ...}"
-      dataset = ds_pkgs[idx].load_sampled_dataset()
-
-      # df with (dataset, user, video, times, traces)
-      # times has only time-stamps
-      # traces has only x, y, z (in 3d coordinates)
-      data = [
-          (
-              DS_NAMES[idx],
-              DS_NAMES[idx] + '_' + user,
-              DS_NAMES[idx] + '_' + video,
-              # np.around(dataset[user][video][:n_traces, 0], decimals=2),
-              dataset[user][video][:n_traces, 1:]) for user in dataset.keys()
-          for video in dataset[user].keys()
-      ]
-      tmpdf = pd.DataFrame(
-          data,
-          columns=[
-              'ds',
-              'ds_user',
-              'ds_video',
-              # 'times',
-              'traject'
-          ])
-      # size check
-      assert tmpdf['ds'].value_counts()[DS_NAMES[idx]] == ds_sizes[idx]
-      return tmpdf
-
-    # create df_trajects for each dataset
-    self.df_trajects = pd.concat(map(_load_dataset_xyz, ds_idxs), ignore_index=True)
-    assert not self.df_trajects.empty
-    # back to cwd
-    os.chdir(cwd)
+  # create df_trajects for each dataset
+  df_trajects = pd.concat(map(_load_dataset_xyz, ds_idxs), ignore_index=True)
+  assert not df_trajects.empty
+  # back to cwd
+  os.chdir(cwd)
+  return df_trajects
 
 
 def get_df_trajects() -> pd.DataFrame:
-  return Data.instance().df_trajects
+  if config.df_trajects is None:
+    if exists(config.df_trajects_f):
+      with open(config.df_trajects_f, 'rb') as f:
+        logging.info(f'loading df_trajects from {config.df_trajects_f}')
+        config.df_trajects = pickle.load(f)
+    else:
+      logging.info(f'no {config.df_trajects_f}')
+      config.df_trajects = _load_trajects_from_hmp()
+  return config.df_trajects
+
+
+def dump_df_trajects() -> None:
+  logging.info(f'saving df_trajects to {config.df_trajects_f}')
+  with open(config.df_trajects_f, 'wb') as f:
+    pickle.dump(config.df_trajects, f)
 
 
 def get_one_trace() -> np.array:
-  return Data.instance().df_trajects.iloc[0]['traject'][0]
+  return config.df_trajects.iloc[0]['traject'][0]
 
 
 def get_traces(video, user, ds='David_MMSys_18') -> np.array:
   # TODO: df indexed by (ds, ds_user, ds_video)
   if ds == 'all':
-    row = Data.instance().df_trajects.query(f"ds_user=='{user}' and ds_video=='{video}'")
+    row = config.df_trajects.query(f"ds_user=='{user}' and ds_video=='{video}'")
   else:
-    row = Data.instance().df_trajects.query(
+    row = config.df_trajects.query(
         f"ds=='{ds}' and ds_user=='{user}' and ds_video=='{video}'")
   assert not row.empty
   return row['traject'].iloc[0]
 
 
 def get_video_ids(ds='David_MMSys_18') -> np.array:
-  df = Data.instance().df_trajects
+  df = config.df_trajects
   return df.loc[df['ds'] == ds]['ds_video'].unique()
 
 
 def get_user_ids(ds='David_MMSys_18') -> np.array:
-  df = Data.instance().df_trajects
+  df = config.df_trajects
   return df.loc[df['ds'] == ds]['ds_user'].unique()
+
+
+def get_df_tileset_metrics() -> pd.DataFrame:
+  if config.df_tileset_metrics is None:
+    if exists(config.df_tileset_metrics_f):
+      with open(config.df_tileset_metrics_f, 'rb') as f:
+        logging.info(f'loading df_tileset_metrics from {config.df_tileset_metrics_f}')
+        config.df_tileset_metrics = pickle.load(f)
+    else:
+      logging.info(f'no {config.df_tileset_metrics_f}')
+      config.df_tileset_metrics = pd.DataFrame()
+  return config.df_tileset_metrics

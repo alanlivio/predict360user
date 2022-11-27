@@ -4,14 +4,18 @@ import argparse
 import logging
 import os
 from contextlib import redirect_stderr
-from os.path import basename, exists, isdir, join
+from os.path import exists, join
 from typing import Any, Generator
 
 import matplotlib.pyplot as plt
 import numpy as np
 from tqdm.auto import tqdm
 
-from users360 import *
+from users360 import (calc_trajects_entropy, config, dump_df_trajects,
+                      get_traces, get_train_test_split)
+from users360.head_motion_prediction.Utils import (all_metrics,
+                                                   cartesian_to_eulerian,
+                                                   eulerian_to_cartesian)
 
 logging.basicConfig(level=logging.INFO, format='-- %(filename)s: %(message)s')
 
@@ -193,10 +197,10 @@ def compare_results() -> None:
     suffix = '_avg_error_per_timestep.csv'
 
     # find files with suffix
-    dirs = [d for d in os.listdir(DATADIR) if d.startswith(MODEL_NAME)]
-    csv_file_l = [(dir, f) for dir in dirs for f in os.listdir(join(DATADIR, dir))
+    dirs = [d for d in os.listdir(config.DATADIR) if d.startswith(MODEL_NAME)]
+    csv_file_l = [(dir, f) for dir in dirs for f in os.listdir(join(config.DATADIR, dir))
                   if (f.endswith(suffix) and f.startswith(PERC_TEST_PREFIX))]
-    csv_data_l = [(dir, f, np.loadtxt(join(DATADIR, dir, f)))
+    csv_data_l = [(dir, f, np.loadtxt(join(config.DATADIR, dir, f)))
                   for (dir, f) in csv_file_l]
     assert csv_data_l, f"there is data/<model_name>/{PERC_TEST_PREFIX}_*, run -evaluate -entropy <all,low,medium,hight>"
 
@@ -214,7 +218,7 @@ def compare_results() -> None:
     plt.ylabel(met)
     plt.xlim(2.5)
     plt.xlabel('Prediction step s (sec.)')
-    result_file = join(DATADIR, f"compare_{MODEL_NAME}")
+    result_file = join(config.DATADIR, f"compare_{MODEL_NAME}")
     logging.info(f"saving {result_file}.png")
     plt.legend(bbox_to_anchor=(0, 1), loc='upper left', ncol=1)
     plt.savefig(result_file, bbox_inches='tight')
@@ -226,7 +230,7 @@ if __name__ == "__main__":
     parser.description = 'train or evaluate users360 models and datasets'
     model_names = ['pos_only', 'TRACK', 'CVPR18', 'MM18', 'most_salient_point']
     entropy_classes = ['all', 'low', 'medium', 'hight']
-    dataset_names = ['all', *DS_NAMES]
+    dataset_names = ['all', *config.DS_NAMES]
 
     # main actions params
     group = parser.add_mutually_exclusive_group()
@@ -271,11 +275,11 @@ if __name__ == "__main__":
     
     # dataset actions
     if args.load_raw_dataset:
-        Data.instance().save()
+        dump_df_trajects()
         exit()
     if args.calculate_entropy:
         calc_trajects_entropy()
-        Data.instance().save()
+        dump_df_trajects()
         exit()
     
     # used in next actions
@@ -292,7 +296,7 @@ if __name__ == "__main__":
     ds_sufix = '' if args.dataset_name == 'all' else f'_{DATASET_NAME}'
     logging.info(f"train_entropy_sufix is {train_entropy_sufix}")
     logging.info(f"ds_sufix is {ds_sufix}")
-    MODEL_FOLDER = join(DATADIR, f'{MODEL_NAME}{ds_sufix}{train_entropy_sufix}')
+    MODEL_FOLDER = join(config.DATADIR, f'{MODEL_NAME}{ds_sufix}{train_entropy_sufix}')
     if not exists(MODEL_FOLDER):
         os.makedirs(MODEL_FOLDER)
     logging.info(f"MODEL_FOLDER is {MODEL_FOLDER}")

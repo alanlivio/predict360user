@@ -6,14 +6,13 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objs as go
-import swifter
+import swifter  # pylint: disable=unused-import
 from colour import Color
 from numpy.random import randint
 from plotly.subplots import make_subplots
 from scipy.spatial import SphericalVoronoi, geometric_slerp
 from spherical_geometry.polygon import SphericalPolygon
 
-from .data import Data
 from .utils.fov import fov_points
 from .utils.tileset import TILESET_DEFAULT, TileSet, tile_points
 from .utils.tileset_voro import TileSetVoro

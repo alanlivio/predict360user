@@ -5,13 +5,14 @@ Provides some prediction functions
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
-from .data import Data
+from . import config
+from .data import get_df_trajects
 from .entropy import show_trajects_entropy, show_trajects_entropy_users
 
 
 def get_train_test_split(train_entropy, test_entropy,
                          perc_test) -> tuple[pd.DataFrame, pd.DataFrame]:
-  df = Data.instance().df_trajects
+  df = get_df_trajects()
   if (train_entropy != 'all') and (test_entropy != 'all'):
     assert not df[
         'traject_entropy_class'].empty, "no 'traject_entropy_class', run -calc_trajects_entropy"
@@ -36,6 +37,6 @@ def show_train_test_split(train_entropy, test_entropy, perc_test) -> None:
   x_train, x_test = get_train_test_split(train_entropy, test_entropy, perc_test)
   x_train['partition'] = 'train'
   x_test['partition'] = 'test'
-  Data.instance().df_trajects = pd.concat([x_train, x_test])
+  config.df_trajects = pd.concat([x_train, x_test])
   show_trajects_entropy(facet='partition')
   show_trajects_entropy_users(facet='partition')
