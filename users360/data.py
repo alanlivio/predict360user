@@ -3,6 +3,7 @@ Provides some data functions
 """
 from __future__ import annotations
 
+import io
 import logging
 import os
 import pickle
@@ -65,7 +66,7 @@ def _load_df_trajects_from_hmp() -> pd.DataFrame:
     return tmpdf
 
   # create df_trajects for each dataset
-  df_trajects = pd.concat(map(_load_dataset_xyz, ds_idxs), ignore_index=True)
+  df_trajects = pd.concat(map(_load_dataset_xyz, ds_idxs), ignore_index=True).convert_dtypes()
   assert not df_trajects.empty
   # back to cwd
   os.chdir(cwd)
@@ -88,6 +89,10 @@ def dump_df_trajects() -> None:
   logging.info(f'saving df_trajects to {config.df_trajects_f}')
   with open(config.df_trajects_f, 'wb') as f:
     pickle.dump(config.df_trajects, f)
+  with open(config.df_trajects_f+'.info.txt', 'w', encoding='utf-8') as f:
+    buffer = io.StringIO()
+    config.df_trajects.info(buf=buffer)
+    f.write(buffer.getvalue())
 
 
 def get_one_trace() -> np.array:
