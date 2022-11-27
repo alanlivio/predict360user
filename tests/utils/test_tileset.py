@@ -1,11 +1,12 @@
 import unittest
 
-from users360 import *
+from users360.utils.fov import fov_poly
+from users360.utils.tileset import tile_poly
 
 
 class Test(unittest.TestCase):
 
-    def test_tiles_poly(self) -> None:
+    def test_tileset_polys(self) -> None:
         # t_ver, t_hor = 6 , 4
         # traces = [ [1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1] ]
         # for trace in traces:
