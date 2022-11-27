@@ -116,7 +116,7 @@ class TileSet():
         dist = compute_orthodromic_distance(trace, tile_center(self.t_ver, self.t_hor, row, col))
         if dist <= HOR_MARGIN:
           heatmap[row][col] = 1
-          if (return_metrics):
+          if return_metrics:
             try:
               poly_rc = tile_poly(self.t_ver, self.t_hor, row, col)
               view_ratio = poly_rc.overlap(fov_poly_trace)
@@ -125,7 +125,7 @@ class TileSet():
               continue
             areas_out.append(1 - view_ratio)
             vp_quality += fov_poly_trace.overlap(poly_rc)
-    if (return_metrics):
+    if return_metrics:
       return heatmap, vp_quality, np.sum(areas_out)
     else:
       return heatmap
@@ -162,4 +162,4 @@ _4X6_ANY = TileSet(4, 6, TileCover.ANY)
 _4X6_20P = TileSet(4, 6, TileCover.ONLY20PERC)
 TILESET_DEFAULT = _4X6_CTR
 TILESET_VARIATIONS = [_4X6_CTR, _4X6_ANY,_4X6_20P]
-TILESET_VARIATIONS_FOR_TEST = [TileSet(3, 3, TileCover.CENTER), TileSet(3, 3, TileCover.ANY)] 
+TILESET_VARIATIONS_FOR_TEST = [TileSet(3, 3, TileCover.CENTER), TileSet(3, 3, TileCover.ANY)]
