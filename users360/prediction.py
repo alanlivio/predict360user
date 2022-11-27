@@ -13,23 +13,21 @@ from .trajects import get_df_trajects
 def get_train_test_split(train_entropy, test_entropy,
                          perc_test) -> tuple[pd.DataFrame, pd.DataFrame]:
   df = get_df_trajects()
-  if (train_entropy != 'all') and (test_entropy != 'all'):
-    assert not df[
-        'traject_entropy_class'].empty, "no 'traject_entropy_class', run -calc_trajects_entropy"
+  if train_entropy == 'all' and test_entropy == 'all':
     x_train, x_test = train_test_split(df, test_size=perc_test, random_state=1)
   else:
+    assert not df[
+        'traject_entropy_class'].empty, "no 'traject_entropy_class', run -calc_trajects_entropy"
     if train_entropy == 'all':
       x_train, _ = train_test_split(df, test_size=perc_test, random_state=1)
     else:
       x_train, _ = train_test_split(df[df['traject_entropy_class'] == train_entropy],
-                                    test_size=perc_test,
-                                    random_state=1)
+                                    test_size=perc_test, random_state=1)
     if test_entropy == 'all':
       _, x_test = train_test_split(df, test_size=perc_test, random_state=1)
     else:
       _, x_test = train_test_split(df[df['traject_entropy_class'] == test_entropy],
-                                   test_size=perc_test,
-                                   random_state=1)
+                                   test_size=perc_test, random_state=1)
   return x_train, x_test
 
 
