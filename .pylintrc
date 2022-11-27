@@ -54,6 +54,7 @@ disable=abstract-method,
         import-outside-toplevel, # added alan
         logging-fstring-interpolation, # added alan
         missing-module-docstring, # added alan
+        missing-final-newline, # added alan
         apply-builtin,
         arguments-differ,
         attribute-defined-outside-init,
