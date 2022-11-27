@@ -13,7 +13,7 @@ from plotly.subplots import make_subplots
 
 from . import config
 from .data import get_df_trajects
-from .utils.tileset import TILESET_DEFAULT, TileSetIF
+from .utils.tileset import TILESET_DEFAULT, TileSet
 
 ENTROPY_CLASS_COLORS = {'low': 'blue', 'medium': 'green', 'hight': 'red'}
 
@@ -169,9 +169,9 @@ def show_trajects_entropy_users(facet=None) -> None:
                width=700).show()
 
 
-def calc_tileset_reqs_metrics(tileset_l: list[TileSetIF], testing=None) -> None:
+def calc_tileset_reqs_metrics(tileset_l: list[TileSet], testing=None) -> None:
   df_trajects = get_df_trajects()
-  df_trajects = df_trajects[:2] if testing else df_trajects
+  df_trajects = df_trajects[:1] if testing else df_trajects
   def create_tsdf(ts_idx) -> pd.DataFrame:
     tileset = tileset_l[ts_idx]
     def f_trace(trace) -> tuple[int, float, float]:
@@ -188,11 +188,11 @@ def calc_tileset_reqs_metrics(tileset_l: list[TileSetIF], testing=None) -> None:
 def show_tileset_reqs_metrics() -> None:
   df_tileset_metrics = config.df_tileset_metrics
   def f_traject_reqs(traces):
-    np.sum(traces[:, 0])
+    return np.sum(traces[:, 0])
   def f_traject_qlt(traces):
-    np.mean(traces[:, 1])
+    return np.mean(traces[:, 1])
   def f_traject_lost(traces):
-    np.mean(traces[:, 2])
+    return np.mean(traces[:, 2])
   data = {'tileset': [], 'avg_reqs': [], 'avg_qlt': [], 'avg_lost': []}
   for name in df_tileset_metrics.columns:
     dfts = df_tileset_metrics[name]
@@ -202,21 +202,21 @@ def show_tileset_reqs_metrics() -> None:
     data['avg_lost'].append(dfts.apply(f_traject_lost).mean())
     data['score'] = data['avg_qlt'][-1] / data['avg_lost'][-1]
   df = pd.DataFrame(data)
-  fig = make_subplots(rows=1,
-                      cols=4,
+  fig = make_subplots(rows=4,
+                      cols=1,
                       subplot_titles=('avg_reqs', 'avg_lost', 'avg_qlt', 'score=avg_qlt/avg_lost'),
                       shared_yaxes=True)
   y = df_tileset_metrics.columns
   trace = go.Bar(y=y, x=df['avg_reqs'], orientation='h', width=0.3)
   fig.add_trace(trace, row=1, col=1)
   trace = go.Bar(y=y, x=df['avg_lost'], orientation='h', width=0.3)
-  fig.add_trace(trace, row=1, col=2)
+  fig.add_trace(trace, row=2, col=1)
   trace = go.Bar(y=y, x=df['avg_qlt'], orientation='h', width=0.3)
-  fig.add_trace(trace, row=1, col=3)
+  fig.add_trace(trace, row=3, col=1)
   trace = go.Bar(y=y, x=df['score'], orientation='h', width=0.3)
-  fig.add_trace(trace, row=1, col=4)
+  fig.add_trace(trace, row=4, col=1)
   fig.update_layout(
-      width=1500,
+      width=700,
       showlegend=False,
       barmode='stack',
   )

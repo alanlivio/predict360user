@@ -2,6 +2,7 @@
 Provides some voronoi tileset functions
 """
 import math
+from typing import overload
 
 import numpy as np
 from scipy.spatial import SphericalVoronoi
@@ -9,10 +10,9 @@ from spherical_geometry.polygon import SphericalPolygon
 
 from ..head_motion_prediction.Utils import compute_orthodromic_distance
 from .fov import HOR_DIST, HOR_MARGIN, fov_poly
-from .tileset import TileCover, TileSetIF
+from .tileset import TileCover, TileSet
 
-_tsv_polys = dict()
-
+_tsv_polys = {}
 
 def voro_trinity(npatchs) -> SphericalVoronoi:
   points = np.empty((0, 3))
@@ -43,18 +43,20 @@ def tsv_poly(voro: SphericalVoronoi, index) -> SphericalPolygon:
   return _tsv_polys[voro.points.size][index]
 
 
-class TileSetVoro(TileSetIF):
-
+class TileSetVoro(TileSet):
+  """
+  Class for Voroni TileSet
+  """
   def __init__(self, voro: SphericalVoronoi, cover: TileCover) -> None:
-    super().__init__()
+    super().__init__(2, -1, cover) # force shape (2,-1)
     self.voro = voro
-    self.cover = cover
-    self.shape = (2, -1)
-
+  
+  @overload
   @property
   def prefix(self) -> str:
     return f'voro{len(self.voro.points)}'
 
+  @overload
   def request(self, trace, return_metrics=False):
     if self.cover == TileCover.CENTER:
       return self._request_110radius_center(trace, return_metrics)
@@ -65,6 +67,7 @@ class TileSetVoro(TileSetIF):
     elif self.cover == TileCover.ONLY33PERC:
       return self._request_min_cover(trace, 0.33, return_metrics)
 
+  @overload
   def _request_110radius_center(self, trace, return_metrics):
     areas_out = []
     vp_quality = 0.0

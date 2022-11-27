@@ -2,7 +2,6 @@
 Provides some tileset functions
 """
 import logging
-from abc import ABC, abstractmethod
 from enum import Enum, auto
 
 import numpy as np
@@ -13,8 +12,8 @@ from ..head_motion_prediction.Utils import (compute_orthodromic_distance,
                                             eulerian_to_cartesian)
 from .fov import HOR_DIST, HOR_MARGIN, fov_poly
 
-_ts_polys = dict()
-_ts_centers = dict()
+_ts_polys = {}
+_ts_centers = {}
 
 
 def _init_tileset(t_ver, t_hor) -> None:
@@ -69,19 +68,22 @@ class TileCover(Enum):
   ONLY33PERC = auto()
 
 
-class TileSetIF(ABC):
-  # https://realpython.com/python-interface/
+class TileSet():
+  """
+  Class for rectangular TileSet
+  """
+
+  def __init__(self, t_ver, t_hor, cover: TileCover) -> None:
+    self.t_ver, self.t_hor = t_ver, t_hor
+    self.shape = (self.t_ver, self.t_hor)
+    self.cover = cover
 
   cover: TileCover
   shape: tuple[int, int]
 
-  @abstractmethod
-  def request(self, trace, return_metrics=False):
-    pass
-
   @property
   def title(self) -> str:
-    if (self.cover == TileCover.ANY):
+    if self.cover == TileCover.ANY:
       return f'{self.prefix}_cov_any'
     elif self.cover == TileCover.CENTER:
       return f'{self.prefix}_cov_ctr'
@@ -89,18 +91,6 @@ class TileSetIF(ABC):
       return f'{self.prefix}_cov_20p'
     elif self.cover == TileCover.ONLY33PERC:
       return f'{self.prefix}_cov_33p'
-
-  @property
-  def prefix(self) -> str:
-    pass
-
-
-class TileSet(TileSetIF):
-
-  def __init__(self, t_ver, t_hor, cover: TileCover) -> None:
-    self.t_ver, self.t_hor = t_ver, t_hor
-    self.shape = (self.t_ver, self.t_hor)
-    self.cover = cover
 
   @property
   def prefix(self) -> str:
@@ -130,7 +120,7 @@ class TileSet(TileSetIF):
             try:
               poly_rc = tile_poly(self.t_ver, self.t_hor, row, col)
               view_ratio = poly_rc.overlap(fov_poly_trace)
-            except:
+            except Exception:
               logging.error(f'request error for row,col,trace={row},{col},{repr(trace)}')
               continue
             areas_out.append(1 - view_ratio)
@@ -153,12 +143,12 @@ class TileSet(TileSetIF):
         try:
           poly_rc = tile_poly(self.t_ver, self.t_hor, row, col)
           view_ratio = poly_rc.overlap(fov_poly_trace)
-        except:
-          logging.error(f"request error for row,col,trace={row},{col},{repr(trace)}")
+        except Exception:
+          logging.error(f'request error for row,col,trace={row},{col},{repr(trace)}')
           continue
         if view_ratio > required_cover:
           heatmap[row][col] = 1
-          if (return_metrics):
+          if return_metrics:
             areas_out.append(1 - view_ratio)
             vp_quality += fov_poly_trace.overlap(poly_rc)
     if return_metrics:
@@ -170,5 +160,6 @@ class TileSet(TileSetIF):
 _4X6_CTR = TileSet(4, 6, TileCover.CENTER)
 _4X6_ANY = TileSet(4, 6, TileCover.ANY)
 _4X6_20P = TileSet(4, 6, TileCover.ONLY20PERC)
-TILESET_VARIATIONS = [_4X6_CTR, _4X6_ANY, _4X6_20P]
 TILESET_DEFAULT = _4X6_CTR
+TILESET_VARIATIONS = [_4X6_CTR, _4X6_ANY,_4X6_20P]
+TILESET_VARIATIONS_FOR_TEST = [TileSet(3, 3, TileCover.CENTER), TileSet(3, 3, TileCover.ANY)] 

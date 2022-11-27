@@ -15,4 +15,4 @@ class Test(unittest.TestCase):
     calc_trajects_poles_prc(testing=True)
 
   def test_calc_tileset_reqs_metrics(self) -> None:
-    calc_tileset_reqs_metrics([TILESET_DEFAULT], testing=True)
+    calc_tileset_reqs_metrics(TILESET_VARIATIONS_FOR_TEST, testing=True)
