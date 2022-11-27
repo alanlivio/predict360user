@@ -1,6 +1,6 @@
-"""
-Provides some voronoi tileset functions
-"""
+'''
+Provides some TileSetVoro class
+'''
 import math
 from typing import overload
 

@@ -1,8 +1,6 @@
 """
 Provides some data functions
 """
-from __future__ import annotations
-
 import io
 import logging
 import os
@@ -11,8 +9,13 @@ from os.path import exists
 
 import numpy as np
 import pandas as pd
+import plotly.express as px
+from plotly.subplots import make_subplots
 
 from . import config
+from .utils.tileset import TILESET_DEFAULT, TileSet
+from .utils.tileset_voro import TileSetVoro
+from .utils.viz_sphere import VizSphere
 
 
 def _load_df_trajects_from_hmp() -> pd.DataFrame:
@@ -120,13 +123,33 @@ def get_user_ids(ds='David_MMSys_18') -> np.array:
   return df.loc[df['ds'] == ds]['ds_user'].unique()
 
 
-def get_df_tileset_metrics() -> pd.DataFrame:
-  if config.df_tileset_metrics is None:
-    if exists(config.df_tileset_metrics_f):
-      with open(config.df_tileset_metrics_f, 'rb') as f:
-        logging.info(f'loading df_tileset_metrics from {config.df_tileset_metrics_f}')
-        config.df_tileset_metrics = pickle.load(f)
-    else:
-      logging.info(f'no {config.df_tileset_metrics_f}')
-      config.df_tileset_metrics = pd.DataFrame()
-  return config.df_tileset_metrics
+def show_trajects(df: pd.DataFrame, tileset=TILESET_DEFAULT) -> None:
+  assert not df.empty
+
+  # subplot two figures
+  fig = make_subplots(rows=1, cols=2, specs=[[{'type': 'surface'}, {'type': 'image'}]])
+
+  # sphere
+  sphere = VizSphere(tileset)
+  df['traject'].apply(sphere.add_trajectory)
+  for d in sphere.data:  # load all data from the sphere
+    fig.append_trace(d, row=1, col=1)
+  # heatmap
+  # TODO: calcuate if hmps is not in df
+  if 'traject_hmps' in df:
+    hmp_sums = df['traject_hmps'].apply(lambda traces: np.sum(traces, axis=0))
+    if isinstance(tileset, TileSetVoro):
+      hmp_sums = np.reshape(hmp_sums, tileset.shape)
+    heatmap = np.sum(hmp_sums, axis=0)
+    x = [str(x) for x in range(1, heatmap.shape[1] + 1)]
+    y = [str(y) for y in range(1, heatmap.shape[0] + 1)]
+    erp_heatmap = px.imshow(heatmap, text_auto=True, x=x, y=y)
+    erp_heatmap.update_layout(width=100, height=100)
+    fig.append_trace(erp_heatmap.data[0], row=1, col=2)
+    if isinstance(tileset, TileSet):
+      # fix given phi 0 being the north pole at Utils.cartesian_to_eulerian
+      fig.update_yaxes(autorange='reversed')
+
+  title = f'{str(df.shape[0])}_trajects_{tileset.prefix}'
+  fig.update_layout(width=800, showlegend=False, title_text=title)
+  fig.show()

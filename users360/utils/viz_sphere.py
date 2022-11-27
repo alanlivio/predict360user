@@ -1,21 +1,19 @@
 '''
-Provides some visualization functions
+Provides VizSphere class
 '''
-
 import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objs as go
-import swifter  # pylint: disable=unused-import
 from colour import Color
 from numpy.random import randint
 from plotly.subplots import make_subplots
 from scipy.spatial import SphericalVoronoi, geometric_slerp
 from spherical_geometry.polygon import SphericalPolygon
 
-from .utils.fov import fov_points
-from .utils.tileset import TILESET_DEFAULT, TileSet, tile_points
-from .utils.tileset_voro import TileSetVoro
+from .fov import fov_points
+from .tileset import TILESET_DEFAULT, TileSet, tile_points
+from .tileset_voro import TileSetVoro
 
 
 class VizSphere():
@@ -226,37 +224,5 @@ def show_fov(trace, tileset=TILESET_DEFAULT) -> None:
     fig.update_yaxes(autorange='reversed')
 
   title = f'trace_[{trace[0]:.2},{trace[1]:.2},{trace[2]:.2}]_{tileset.prefix}'
-  fig.update_layout(width=800, showlegend=False, title_text=title)
-  fig.show()
-
-
-def show_trajects(df: pd.DataFrame, tileset=TILESET_DEFAULT) -> None:
-  assert not df.empty
-
-  # subplot two figures
-  fig = make_subplots(rows=1, cols=2, specs=[[{'type': 'surface'}, {'type': 'image'}]])
-
-  # sphere
-  sphere = VizSphere(tileset)
-  df['traject'].apply(sphere.add_trajectory)
-  for d in sphere.data:  # load all data from the sphere
-    fig.append_trace(d, row=1, col=1)
-  # heatmap
-  # TODO: calcuate if hmps is not in df
-  if 'traject_hmps' in df:
-    hmp_sums = df['traject_hmps'].apply(lambda traces: np.sum(traces, axis=0))
-    if isinstance(tileset, TileSetVoro):
-      hmp_sums = np.reshape(hmp_sums, tileset.shape)
-    heatmap = np.sum(hmp_sums, axis=0)
-    x = [str(x) for x in range(1, heatmap.shape[1] + 1)]
-    y = [str(y) for y in range(1, heatmap.shape[0] + 1)]
-    erp_heatmap = px.imshow(heatmap, text_auto=True, x=x, y=y)
-    erp_heatmap.update_layout(width=100, height=100)
-    fig.append_trace(erp_heatmap.data[0], row=1, col=2)
-    if isinstance(tileset, TileSet):
-      # fix given phi 0 being the north pole at Utils.cartesian_to_eulerian
-      fig.update_yaxes(autorange='reversed')
-
-  title = f'{str(df.shape[0])}_trajects_{tileset.prefix}'
   fig.update_layout(width=800, showlegend=False, title_text=title)
   fig.show()

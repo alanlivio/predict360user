@@ -4,7 +4,10 @@ Provides some fov functions
 import numpy as np
 from spherical_geometry import polygon
 
-from ..head_motion_prediction.Utils import degrees_to_radian, eulerian_in_range, eulerian_to_cartesian, rotationBetweenVectors
+from ..head_motion_prediction.Utils import (degrees_to_radian,
+                                            eulerian_in_range,
+                                            eulerian_to_cartesian,
+                                            rotationBetweenVectors)
 
 X1Y0Z0 = np.array([1, 0, 0])
 HOR_DIST = degrees_to_radian(110)
