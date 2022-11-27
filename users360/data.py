@@ -14,7 +14,7 @@ import pandas as pd
 from . import config
 
 
-def _load_trajects_from_hmp() -> None:
+def _load_df_trajects_from_hmp() -> pd.DataFrame:
   logging.info('loading trajects from head_motion_prediction project')
   # save cwd and move to head_motion_prediction for invoking funcs
   cwd = os.getcwd()
@@ -28,16 +28,20 @@ def _load_trajects_from_hmp() -> None:
   ds_idxs = range(len(ds_pkgs))
 
   def _load_dataset_xyz(idx, n_traces=100) -> pd.DataFrame:
-    # create sampled
+    # create_and_store_sampled_dataset()
+    # stores csv at head_motion_prediction/<dataset>/sampled_dataset
     if len(os.listdir(ds_pkgs[idx].OUTPUT_FOLDER)) < 2:
       ds_pkgs[idx].create_and_store_sampled_dataset()
-    # each load_sample_dateset return a dict with:
-    # {<video1>:{<user1>:[time-stamp, x, y, z], ...}, ...}"
+    # load_sample_dateset() process head_motion_prediction/<dataset>/sampled_dataset
+    # and return a dict with:
+    # {<video1>:{
+    #   <user1>:[time-stamp, x, y, z],
+    #    ...
+    #  },
+    #  ...
+    # }"
     dataset = ds_pkgs[idx].load_sampled_dataset()
-
-    # df with (dataset, user, video, times, traces)
-    # times has only time-stamps
-    # traces has only x, y, z (in 3d coordinates)
+    # convert dict to DataFrame
     data = [
         (
             config.DS_NAMES[idx],
@@ -50,13 +54,13 @@ def _load_trajects_from_hmp() -> None:
     tmpdf = pd.DataFrame(
         data,
         columns=[
-            'ds',
-            'ds_user',
-            'ds_video',
+            'ds', # e.g., david
+            'ds_user', # e.g., david_0
+            'ds_video', # e.g., david_10_Cows
             # 'times',
-            'traject'
+            'traject' # [[x,y,z], ...]
         ])
-    # size check
+    # assert and check
     assert tmpdf['ds'].value_counts()[config.DS_NAMES[idx]] == config.DS_SIZES[idx]
     return tmpdf
 
@@ -76,7 +80,7 @@ def get_df_trajects() -> pd.DataFrame:
         config.df_trajects = pickle.load(f)
     else:
       logging.info(f'no {config.df_trajects_f}')
-      config.df_trajects = _load_trajects_from_hmp()
+      config.df_trajects = _load_df_trajects_from_hmp()
   return config.df_trajects
 
 
