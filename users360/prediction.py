@@ -13,21 +13,27 @@ from .trajects import get_df_trajects
 def get_train_test_split(train_entropy, test_entropy,
                          perc_test) -> tuple[pd.DataFrame, pd.DataFrame]:
   df = get_df_trajects()
-  if train_entropy == 'all' and test_entropy == 'all':
-    x_train, x_test = train_test_split(df, test_size=perc_test, random_state=1)
-  else:
-    assert not df[
-        'traject_entropy_class'].empty, "no 'traject_entropy_class', run -calc_trajects_entropy"
-    if train_entropy == 'all':
-      x_train, _ = train_test_split(df, test_size=perc_test, random_state=1)
-    else:
-      x_train, _ = train_test_split(df[df['traject_entropy_class'] == train_entropy],
-                                    test_size=perc_test, random_state=1)
-    if test_entropy == 'all':
-      _, x_test = train_test_split(df, test_size=perc_test, random_state=1)
-    else:
-      _, x_test = train_test_split(df[df['traject_entropy_class'] == test_entropy],
-                                   test_size=perc_test, random_state=1)
+  args = {'test_size': perc_test, 'random_state':1}
+  
+  # default get 'all' entropy
+  x_train, x_test = train_test_split(df, **args)
+  
+  # train
+  if train_entropy.endswith('_users') and train_entropy != 'all':
+    x_train, _ = train_test_split( 
+      df[df['user_entropy_class'] == train_entropy.removesuffix('_users')], **args)
+  elif train_entropy != 'all':
+    x_train, _ = train_test_split(
+      df[df['traject_entropy_class'] == train_entropy], **args)
+  
+  # test
+  if test_entropy.endswith('_users') and test_entropy != 'all':
+    _, test_entropy = train_test_split( 
+      df[df['user_entropy_class'] == test_entropy.removesuffix('_users')], **args)
+  elif test_entropy != 'all':
+    _, x_test = train_test_split(
+      df[df['traject_entropy_class'] == test_entropy], **args)
+  
   return x_train, x_test
 
 

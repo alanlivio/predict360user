@@ -244,7 +244,8 @@ if __name__ == '__main__':
   parser = argparse.ArgumentParser()
   parser.description = 'train or evaluate users360 models and datasets'
   model_names = ['pos_only', 'TRACK', 'CVPR18', 'MM18', 'most_salient_point']
-  entropy_classes = ['all', 'low', 'medium', 'hight']
+  entropy_classes = ['all', 'low', 'medium', 'hight', # traject_entropy_class
+     'low_users', 'medium_users','hight_users'] # user_entropy_class
   dataset_names = ['all', *config.DS_NAMES]
 
   # main actions params
