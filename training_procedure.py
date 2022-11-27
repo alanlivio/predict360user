@@ -308,18 +308,28 @@ if __name__ == '__main__':
   M_WINDOW = args.m_window
   H_WINDOW = args.h_window
   END_WINDOW = H_WINDOW
+
+  # MODEL_FOLDER
   args.test_entropy = args.train_entropy if args.test_entropy == 'same' else args.test_entropy
-  train_entropy_sufix = '' if args.train_entropy == 'all' else f'_{args.train_entropy}_entropy'
-  ds_sufix = '' if args.dataset_name == 'all' else f'_{DATASET_NAME}'
-  logging.info(f'train_entropy_sufix is {train_entropy_sufix}')
-  logging.info(f'ds_sufix is {ds_sufix}')
-  MODEL_FOLDER = join(config.DATADIR, f'{MODEL_NAME}{ds_sufix}{train_entropy_sufix}')
+  train_entropy_suffix = '' if args.train_entropy == 'all' else f'_{args.train_entropy}_entropy'
+  dataset_suffix = '' if args.dataset_name == 'all' else f'_{DATASET_NAME}'
+  MODEL_FOLDER = join(config.DATADIR, f'{MODEL_NAME}{dataset_suffix}{train_entropy_suffix}')
+  logging.info('MODEL_NAME={}, dataset_suffix={}, train_entropy_suffix={}'.format(
+    MODEL_NAME, dataset_suffix ,train_entropy_suffix))
+  logging.info(f'MODEL_FOLDER is {MODEL_FOLDER}')
   if not exists(MODEL_FOLDER):
     os.makedirs(MODEL_FOLDER)
-  logging.info(f'MODEL_FOLDER is {MODEL_FOLDER}')
+
+  # PERC_TEST_PREFIX
   logging.info(f'PERC_TEST is {PERC_TEST}')
   PERC_TEST_PREFIX = f"test_{str(PERC_TEST).replace('.',',')}"
   PERC_TEST_ENTROPY_PREFIX = f'{PERC_TEST_PREFIX}_{args.test_entropy}'
+
+  # MODEL_WEIGHTS
+  MODEL_WEIGHTS = join(MODEL_FOLDER, 'weights.hdf5')
+  logging.info(f'MODEL_WEIGHTS={MODEL_WEIGHTS}')
+  if args.evaluate:
+    assert exists(MODEL_WEIGHTS), f'{MODEL_WEIGHTS} does not exists'
 
   # compare_results action
   if args.compare_results:
@@ -356,10 +366,9 @@ if __name__ == '__main__':
   os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'
   if args.gpu_id:
     os.environ['CUDA_VISIBLE_DEVICES'] = str(args.gpu_id)
-  MODEL_WEIGHTS = join(MODEL_FOLDER, 'weights.hdf5')
-  logging.info(f'MODEL_WEIGHTS={MODEL_WEIGHTS}')
   MODEL = create_model()
 
+  # train, evaluate actions
   if args.train:
     logging.info('')
     logging.info('training ...')
@@ -368,6 +377,5 @@ if __name__ == '__main__':
   elif args.evaluate:
     logging.info('')
     logging.info('evaluating ...')
-    assert exists(MODEL_WEIGHTS), f'{MODEL_WEIGHTS} does not exists'
     logging.info(f'evaluate_entropy is {args.train_entropy}')
     evaluate()
