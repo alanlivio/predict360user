@@ -218,16 +218,14 @@ def compare_results() -> None:
 
   # sort by the last horizon hight
   # [2] is csv_data [-1] is last horizon
-  def last_horizon_avg(item):
+  def last_horizon_avg(item) -> int:
     return item[2][-1]
   csv_data_l.sort(reverse=True, key=last_horizon_avg)
 
   # plot as image
-  def add_plot(dir_name, file_name, csv_data):
-    return plt.plot(np.arange(H_WINDOW) + 1 * RATE, csv_data,
+  for (dir_name, file_name, csv_data) in csv_data_l:
+    plt.plot(np.arange(H_WINDOW) + 1 * RATE, csv_data,
       label=f'{dir_name}_{file_name.removesuffix(suffix)}')
-  for csv_data in csv_data_l:
-    add_plot(*csv_data)
   met = 'orthodromic'
   plt.title(f'avg {met} (y) by pred. horizon (x) for {PERC_TEST} of dataset {DATASET_NAME}')
   plt.ylabel(met)
