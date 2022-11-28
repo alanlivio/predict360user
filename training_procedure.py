@@ -23,7 +23,6 @@ METRIC = all_metrics['orthodromic']
 RATE = 0.2
 BATCH_SIZE = 128.0
 
-
 def create_model() -> Any:
   if MODEL_NAME == 'pos_only':
     from users360.head_motion_prediction.position_only_baseline import \
@@ -244,49 +243,51 @@ if __name__ == '__main__':
   parser = argparse.ArgumentParser()
   parser.description = 'train or evaluate users360 models and datasets'
   model_names = ['pos_only', 'TRACK', 'CVPR18', 'MM18', 'most_salient_point']
-  entropy_classes = ['all', 'low', 'medium', 'hight', # traject_entropy_class
+  train_entropy_l = ['all', 'low', 'medium', 'hight', # traject_entropy_class
      'low_users', 'medium_users','hight_users'] # user_entropy_class
+  test_entropy_l = ['same', 'adptative'] + train_entropy_l.copy()
   dataset_names = ['all', *config.DS_NAMES]
+  logging.info(f'test_entropy_l is {test_entropy_l}')
 
   # main actions params
   group = parser.add_mutually_exclusive_group()
   group.add_argument('-load_raw_dataset', action='store_true',
-             help='Load raw dataset and save it as pickle ')
+             help='load raw dataset and save it as pickle ')
   group.add_argument('-calculate_entropy', action='store_true',
-             help='Calculate trajectories entropy')
+             help='calculate trajectories entropy')
   group.add_argument('-compare_results', action='store_true',
-             help='Show a comparison of -evaluate results')
-  group.add_argument('-show_train_distribution',
-             action='store_true', help='Show train distribution')
+             help='show a comparison of -evaluate results')
+  group.add_argument('-show_train_distribution', action='store_true',
+            help='Show train distribution')
   group.add_argument('-train', action='store_true', help='Train model')
   group.add_argument('-evaluate', action='store_true', help='Evaluate model')
 
   # train only params
   parser.add_argument('-epochs', nargs='?', type=int, default=500,
             help='epochs numbers (default is 500)')
-  parser.add_argument('-train_entropy', nargs='?', default=entropy_classes[0],
-            choices=entropy_classes, help='Name of entropy_class to filter training/evalaute')
+  parser.add_argument('-train_entropy', nargs='?', type=str, default='all',
+            choices=train_entropy_l, help='entropy class to filter model used data  (default all)')
 
   # evaluate only params
-  parser.add_argument('-test_entropy', nargs='?', default='same',
-            choices=entropy_classes, help='Name of entropy_class to filter training/evalaute')
+  parser.add_argument('-test_entropy', nargs='?', type=str, default='same',
+            choices=test_entropy_l, help='entropy class to filter -evalaute data (default same)')
 
   # train/evaluate params
   parser.add_argument('-gpu_id', nargs='?', type=int, default=0,
             help='Used cuda gpu (default: 0)')
   parser.add_argument('-model_name', nargs='?', choices=model_names, default=model_names[0],
-            help='The name of the reference model to used (default: pos_only)')
+            help='reference model to used (default: pos_only)')
   parser.add_argument('-dataset_name', nargs='?', choices=dataset_names, default=dataset_names[0],
-            help='The name of the dataset used to train this network  (default: all)')
+            help='dataset used to train this network  (default: all)')
   parser.add_argument('-init_window', nargs='?', type=int, default=30,
-            help='Initial buffer to avoid stationary part (default: 30)')
+            help='initial buffer to avoid stationary part (default: 30)')
   parser.add_argument('-m_window', nargs='?', type=int, default=5,
-            help='Buffer window in timesteps (default: 5)')
+            help='buffer window in timesteps (default: 5)')
   parser.add_argument('-h_window', nargs='?', type=int, default=25,
-            help='''Forecast window in timesteps (5 timesteps = 1 second)
+            help='''forecast window in timesteps (5 timesteps = 1 second)
                     used to predict (default: 25)''')
   parser.add_argument('-perc_test', nargs='?', type=float, default=0.2,
-            help='Test percetage (default: 0.2)')
+            help='test percetage (default: 0.2)')
 
   args = parser.parse_args()
 
@@ -314,8 +315,8 @@ if __name__ == '__main__':
   train_entropy_suffix = '' if args.train_entropy == 'all' else f'_{args.train_entropy}_entropy'
   dataset_suffix = '' if args.dataset_name == 'all' else f'_{DATASET_NAME}'
   MODEL_FOLDER = join(config.DATADIR, f'{MODEL_NAME}{dataset_suffix}{train_entropy_suffix}')
-  logging.info('MODEL_NAME={}, dataset_suffix={}, train_entropy_suffix={}'.format(
-    MODEL_NAME, dataset_suffix ,train_entropy_suffix))
+  fmt_str = 'MODEL_NAME={}, dataset_suffix={}, train_entropy_suffix={}'
+  logging.info(fmt_str.format(MODEL_NAME, dataset_suffix, train_entropy_suffix))
   logging.info(f'MODEL_FOLDER is {MODEL_FOLDER}')
   if not exists(MODEL_FOLDER):
     os.makedirs(MODEL_FOLDER)
@@ -379,3 +380,4 @@ if __name__ == '__main__':
     logging.info('evaluating ...')
     logging.info(f'evaluate_entropy is {args.train_entropy}')
     evaluate()
+  exit()
