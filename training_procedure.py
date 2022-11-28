@@ -3,6 +3,7 @@
 import argparse
 import logging
 import os
+import sys
 from contextlib import redirect_stderr
 from os.path import exists, join
 from typing import Any, Generator
@@ -294,11 +295,11 @@ if __name__ == '__main__':
   # dataset actions
   if args.load_raw_dataset:
     dump_df_trajects()
-    exit()
+    sys.exit()
   if args.calculate_entropy:
     calc_trajects_entropy()
     dump_df_trajects()
-    exit()
+    sys.exit()
 
   # used in next actions
   MODEL_NAME = args.model_name
@@ -335,7 +336,7 @@ if __name__ == '__main__':
   # compare_results action
   if args.compare_results:
     compare_results()
-    exit()
+    sys.exit()
 
   # PARTITION_IDS for -train, -evaluation
   logging.info('')
@@ -380,4 +381,4 @@ if __name__ == '__main__':
     logging.info('evaluating ...')
     logging.info(f'evaluate_entropy is {args.train_entropy}')
     evaluate()
-  exit()
+  sys.exit()
