@@ -35,6 +35,16 @@
                 "hight",
             ],
             "justMyCode": true
-        }
+        },
+        {
+            "name": "-evaluate_adaptative",
+            "type": "python",
+            "request": "launch",
+            "module": "training_procedure",
+            "args": [
+                "-evaluate_adaptative"
+            ],
+            "justMyCode": true
+        },
     ]
 }
