@@ -168,7 +168,7 @@ def evaluate() -> None:
       errors_per_timestep[t].append(
         METRIC(groundtruth[t], model_prediction[t]))
 
-  result_basefilename = join(MODEL_FOLDER, PERC_TEST_ENTROPY_PREFIX)
+  result_basefilename = join(MODEL_FOLDER, TEST_PREFIX_PERC_ENTROPY)
 
   # avg_error_per_timestep
   avg_error_per_timestep = []
@@ -211,10 +211,10 @@ def compare_results() -> None:
   dirs = [d for d in os.listdir(config.DATADIR) if d.startswith(MODEL_NAME)]
   csv_file_l = [(dir_name, file_name)
           for dir_name in dirs for file_name in os.listdir(join(config.DATADIR, dir_name))
-          if (file_name.endswith(suffix) and file_name.startswith(PERC_TEST_PREFIX))]
+          if (file_name.endswith(suffix) and file_name.startswith(TEST_PREFIX_PERC))]
   csv_data_l = [(dir_name, file_name, np.loadtxt(join(config.DATADIR, dir_name, file_name)))
           for (dir_name, file_name) in csv_file_l]
-  assert csv_data_l, f'no data/<model>/{PERC_TEST_PREFIX}_*, run -evaluate'
+  assert csv_data_l, f'no data/<model>/{TEST_PREFIX_PERC}_*, run -evaluate'
 
   # sort by the last horizon hight
   # [2] is csv_data [-1] is last horizon
@@ -317,16 +317,16 @@ if __name__ == '__main__':
   if not exists(MODEL_FOLDER):
     os.makedirs(MODEL_FOLDER)
 
-  # PERC_TEST_PREFIX
-  logging.info(f'PERC_TEST is {PERC_TEST}')
-  PERC_TEST_PREFIX = f"test_{str(PERC_TEST).replace('.',',')}"
-  PERC_TEST_ENTROPY_PREFIX = f'{PERC_TEST_PREFIX}_{args.test_entropy}'
-
   # MODEL_WEIGHTS
   MODEL_WEIGHTS = join(MODEL_FOLDER, 'weights.hdf5')
   logging.info(f'MODEL_WEIGHTS={MODEL_WEIGHTS}')
   if args.evaluate:
     assert exists(MODEL_WEIGHTS), f'{MODEL_WEIGHTS} does not exists'
+
+  # TEST_PREFIX_PERC
+  logging.info(f'PERC_TEST is {PERC_TEST}')
+  TEST_PREFIX_PERC = f"test_{str(PERC_TEST).replace('.',',')}"
+  TEST_PREFIX_PERC_ENTROPY = f'{TEST_PREFIX_PERC}_{args.test_entropy}'
 
   # compare_results action
   if args.compare_results:
