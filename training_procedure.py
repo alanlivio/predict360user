@@ -242,11 +242,9 @@ if __name__ == '__main__':
   parser = argparse.ArgumentParser()
   parser.description = 'train or evaluate users360 models and datasets'
   model_names = ['pos_only', 'TRACK', 'CVPR18', 'MM18', 'most_salient_point']
-  train_entropy_l = ['all', 'low', 'medium', 'hight', # traject_entropy_class
+  entropy_l = ['all', 'low', 'medium', 'hight', # traject_entropy_class
      'low_users', 'medium_users','hight_users'] # user_entropy_class
-  test_entropy_l = ['same', 'adptative'] + train_entropy_l.copy()
   dataset_names = ['all', *config.DS_NAMES]
-  logging.info(f'test_entropy_l is {test_entropy_l}')
 
   # main actions params
   group = parser.add_mutually_exclusive_group()
@@ -265,11 +263,11 @@ if __name__ == '__main__':
   parser.add_argument('-epochs', nargs='?', type=int, default=500,
             help='epochs numbers (default is 500)')
   parser.add_argument('-train_entropy', nargs='?', type=str, default='all',
-            choices=train_entropy_l, help='entropy class to filter model used data  (default all)')
+            choices=entropy_l, help='entropy class to filter model used data  (default all)')
 
   # evaluate only params
-  parser.add_argument('-test_entropy', nargs='?', type=str, default='same',
-            choices=test_entropy_l, help='entropy class to filter -evalaute data (default same)')
+  parser.add_argument('-test_entropy', nargs='?', type=str, default='all',
+            choices=entropy_l, help='entropy class to filter -evalaute data (default all)')
 
   # train/evaluate params
   parser.add_argument('-gpu_id', nargs='?', type=int, default=0,
@@ -310,7 +308,6 @@ if __name__ == '__main__':
   END_WINDOW = H_WINDOW
 
   # MODEL_FOLDER
-  args.test_entropy = args.train_entropy if args.test_entropy == 'same' else args.test_entropy
   train_entropy_suffix = '' if args.train_entropy == 'all' else f'_{args.train_entropy}_entropy'
   dataset_suffix = '' if args.dataset_name == 'all' else f'_{DATASET_NAME}'
   MODEL_FOLDER = join(config.DATADIR, f'{MODEL_NAME}{dataset_suffix}{train_entropy_suffix}')
