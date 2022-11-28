@@ -107,7 +107,7 @@ def show_trajects_entropy(facet=None) -> None:
 
 def show_trajects_entropy_users(facet=None) -> None:
   if not {'traject_entropy', 'traject_entropy_class'
-    }.issubset(get_df_trajects().df_trajects.columns):
+    }.issubset(get_df_trajects().columns):
     calc_trajects_entropy_users()
   df_trajects = get_df_trajects()
   px.box(df_trajects,
