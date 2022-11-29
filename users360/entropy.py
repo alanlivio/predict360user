@@ -16,7 +16,7 @@ from .utils.tileset import TILESET_DEFAULT
 ENTROPY_CLASS_COLORS = {'low': 'blue', 'medium': 'green', 'hight': 'red'}
 
 
-def calc_trajects_hmps(tileset=TILESET_DEFAULT, testing=None) -> None:
+def calc_trajects_hmps(tileset=TILESET_DEFAULT, testing=False) -> None:
   df_trajects = get_df_trajects()
   df_trajects = df_trajects[:2] if testing else df_trajects
   def f_trace(trace):
@@ -25,20 +25,20 @@ def calc_trajects_hmps(tileset=TILESET_DEFAULT, testing=None) -> None:
     return np.apply_along_axis(f_trace, 1, traces)
   logging.info('calculating heatmaps ...')
   df_trajects['traject_hmps'] = pd.Series(df_trajects['traject'].swifter.apply(f_traject))
-  assert not df_trajects['traject_hmps'].isnull().values.any()
+  assert not df_trajects['traject_hmps'].isnull().any()
 
 
-def calc_trajects_entropy(testing=None) -> None:
+def calc_trajects_entropy(testing=False) -> None:
   df_trajects = get_df_trajects()
   df_trajects = df_trajects[:2] if testing else df_trajects
   if 'traject_hmps' not in df_trajects.columns:
-    calc_trajects_hmps(testing)
+    calc_trajects_hmps(testing=testing)
   # calc df_trajects.entropy
   def f_entropy(x):
     return scipy.stats.entropy(np.sum(x, axis=0).reshape((-1)))
   logging.info('calculating trajects entropy ...')
   df_trajects['traject_entropy'] = df_trajects['traject_hmps'].swifter.apply(f_entropy)
-  assert not df_trajects['traject_entropy'].isnull().values.any()
+  assert not df_trajects['traject_entropy'].isnull().any()
   # calc df_trajects.entropy_class
   idxs_sort = df_trajects['traject_entropy'].argsort()
   trajects_len = len(df_trajects['traject_entropy'])
@@ -49,25 +49,25 @@ def calc_trajects_entropy(testing=None) -> None:
   def f_threshold(x):
     return 'low' if x < threshold_medium else ('medium' if x < threshold_hight else 'hight')
   df_trajects['traject_entropy_class'] = df_trajects['traject_entropy'].apply(f_threshold)
-  assert not df_trajects['traject_entropy_class'].isnull().values.any()
+  assert not df_trajects['traject_entropy_class'].isnull().any()
   config.df_trajects = df_trajects
 
 
-def calc_trajects_entropy_users(testing=None) -> None:
+def calc_trajects_entropy_users(testing=False) -> None:
   df_trajects = get_df_trajects()
   df_trajects = df_trajects[:2] if testing else df_trajects
   if 'traject_hmps' not in df_trajects.columns:
-    calc_trajects_hmps(testing)
+    calc_trajects_hmps(testing=testing)
   # calc user_entropy
   logging.info('calculating users entropy ...')
   def f_entropy_user(same_user_rows) -> np.ndarray:
     same_user_rows_np = same_user_rows['traject_hmps'].to_numpy()
-    hmps_sum = sum(np.sum(x, axis=0) for x in same_user_rows_np)
+    hmps_sum: np.ndarray = sum(np.sum(x, axis=0) for x in same_user_rows_np)
     entropy = scipy.stats.entropy(hmps_sum.reshape((-1)))
     return entropy
   tmpdf = df_trajects.groupby(['ds_user']).apply(f_entropy_user).reset_index()
   tmpdf.columns = ['ds_user', 'user_entropy']
-  assert not tmpdf['user_entropy'].isnull().values.any()
+  assert not tmpdf['user_entropy'].isnull().any()
   # calc user_entropy_class
   idxs_sort = tmpdf['user_entropy'].argsort()
   trajects_len = len(tmpdf['user_entropy'])
@@ -89,7 +89,7 @@ def show_trajects_entropy(facet=None) -> None:
          x='ds',
          y='traject_entropy',
          color='traject_entropy_class',
-         points="all",
+         points='all',
          facet_row=facet,
          color_discrete_map=ENTROPY_CLASS_COLORS,
          title='traject_entropy by ds',
