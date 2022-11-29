@@ -91,6 +91,8 @@ class TileSet():
       return f'{self.prefix}_cov_20p'
     elif self.cover == TileCover.ONLY33PERC:
       return f'{self.prefix}_cov_33p'
+    else:
+      return self.prefix
 
   @property
   def prefix(self) -> str:
@@ -107,7 +109,7 @@ class TileSet():
       return self._request_min_cover(trace, 0.33, return_metrics)
 
   def _request_110radius_center(self, trace, return_metrics):
-    heatmap = np.zeros((self.t_ver, self.t_hor), dtype=np.int32)
+    heatmap = np.zeros((self.t_ver, self.t_hor), dtype=int)
     areas_out = []
     vp_quality = 0.0
     fov_poly_trace = fov_poly(trace)
@@ -131,7 +133,7 @@ class TileSet():
       return heatmap
 
   def _request_min_cover(self, trace: np.ndarray, required_cover: float, return_metrics):
-    heatmap = np.zeros((self.t_ver, self.t_hor), dtype=np.int32)
+    heatmap = np.zeros((self.t_ver, self.t_hor), dtype=int)
     areas_out = []
     vp_quality = 0.0
     fov_poly_trace = fov_poly(trace)

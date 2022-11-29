@@ -131,7 +131,8 @@ def show_trajects(df: pd.DataFrame, tileset=TILESET_DEFAULT) -> None:
 
   # sphere
   sphere = VizSphere(tileset)
-  df['traject'].apply(sphere.add_trajectory)
+  for index, row in df.iterrows():
+    sphere.add_trajectory(row['traject'])
   for d in sphere.data:  # load all data from the sphere
     fig.append_trace(d, row=1, col=1)
   # heatmap
