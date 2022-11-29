@@ -85,14 +85,17 @@ def show_trajects_entropy(facet=None) -> None:
   if not {'traject_entropy', 'traject_entropy_class'}.issubset(get_df_trajects().columns):
     calc_trajects_entropy()
   df_trajects = get_df_trajects()
-  px.box(df_trajects,
+  fig = px.box(df_trajects,
          x='ds',
          y='traject_entropy',
          color='traject_entropy_class',
+         points="all",
          facet_row=facet,
          color_discrete_map=ENTROPY_CLASS_COLORS,
          title='traject_entropy by ds',
-         width=700).show()
+         width=900)
+  fig.update_traces(marker=dict(size=1))
+  fig.show()
   px.histogram(df_trajects,
                x='ds',
                y='traject_entropy_class',
@@ -102,7 +105,7 @@ def show_trajects_entropy(facet=None) -> None:
                color='traject_entropy_class',
                color_discrete_map=ENTROPY_CLASS_COLORS,
                title='traject_entropy_class by ds',
-               width=700).show()
+               width=900).show()
 
 
 def show_trajects_entropy_users(facet=None) -> None:
@@ -110,14 +113,17 @@ def show_trajects_entropy_users(facet=None) -> None:
     }.issubset(get_df_trajects().columns):
     calc_trajects_entropy_users()
   df_trajects = get_df_trajects()
-  px.box(df_trajects,
+  fig = px.box(df_trajects,
          x='ds',
          y='user_entropy',
+         points='all',
          color='user_entropy_class',
          facet_row=facet,
          color_discrete_map=ENTROPY_CLASS_COLORS,
          title='user_entropy by ds',
-         width=700).show()
+         width=900)
+  fig.update_traces(marker=dict(size=1))
+  fig.show()
   px.histogram(df_trajects,
                x='ds',
                y='user_entropy_class',
@@ -127,4 +133,4 @@ def show_trajects_entropy_users(facet=None) -> None:
                color='user_entropy_class',
                color_discrete_map=ENTROPY_CLASS_COLORS,
                title='user_entropy_class by ds',
-               width=700).show()
+               width=900).show()
