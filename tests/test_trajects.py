@@ -18,7 +18,7 @@ class Test(unittest.TestCase):
 
   def setUp(self):
     # limit testing df to 2
-    self.df_trajects = get_df_trajects()[:2]
+    self.df_trajects = get_df_trajects()[:1]
     assert not self.df_trajects.empty
 
   def test_trajects_get(self) -> None:
@@ -37,7 +37,7 @@ class Test(unittest.TestCase):
   # entropy
 
   def test_entropy(self) -> None:
-   assert not calc_trajects_entropy(self.df_trajects).empty
+    assert not calc_trajects_entropy(self.df_trajects).empty
 
   def test_entropy_users(self) -> None:
     assert not calc_trajects_entropy_users(self.df_trajects).empty

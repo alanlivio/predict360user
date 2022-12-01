@@ -9,7 +9,6 @@ import plotly.express as px
 import scipy.stats
 import swifter  # pylint: disable=unused-import
 
-from .trajects import get_df_trajects
 from .utils.tileset import TILESET_DEFAULT
 
 ENTROPY_CLASS_COLORS = {'low': 'blue', 'medium': 'green', 'hight': 'red'}
@@ -32,6 +31,7 @@ def calc_trajects_hmps(df_trajects: pd.DataFrame, tileset=TILESET_DEFAULT) -> pd
 def calc_trajects_entropy(df_trajects: pd.DataFrame) -> pd.DataFrame:
   if 'traject_hmps' not in df_trajects.columns:
     calc_trajects_hmps(df_trajects)
+
   # calc df_trajects.entropy
   def f_entropy(x):
     return scipy.stats.entropy(np.sum(x, axis=0).reshape((-1)))
@@ -88,7 +88,7 @@ def calc_trajects_entropy_users(df_trajects: pd.DataFrame) -> pd.DataFrame:
 
 
 def show_trajects_entropy(df_trajects: pd.DataFrame, facet=None) -> None:
-  assert {'traject_entropy', 'traject_entropy_class'}.issubset(get_df_trajects().columns)
+  assert {'traject_entropy', 'traject_entropy_class'}.issubset(df_trajects.columns)
   fig = px.box(df_trajects,
                x='ds',
                y='traject_entropy',
@@ -113,7 +113,7 @@ def show_trajects_entropy(df_trajects: pd.DataFrame, facet=None) -> None:
 
 
 def show_trajects_entropy_users(df_trajects: pd.DataFrame, facet=None) -> None:
-  assert {'traject_entropy', 'traject_entropy_class'}.issubset(df_trajects).columns
+  assert {'traject_entropy', 'traject_entropy_class'}.issubset(df_trajects.columns)
   fig = px.box(df_trajects,
                x='ds',
                y='user_entropy',
