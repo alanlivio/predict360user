@@ -17,6 +17,7 @@ from .utils.tileset import TILESET_DEFAULT, TileSet
 from .utils.tileset_voro import TileSetVoro
 from .utils.viz_sphere import VizSphere
 
+DF_TRAJECTS_F = os.path.join(config.DATADIR, 'df_trajects.pickle')
 
 def _load_df_trajects_from_hmp() -> pd.DataFrame:
   logging.info('loading trajects from head_motion_prediction project')
@@ -76,69 +77,69 @@ def _load_df_trajects_from_hmp() -> pd.DataFrame:
   return df_trajects
 
 
-def get_df_trajects() -> pd.DataFrame:
-  if config.df_trajects is None:
-    if exists(config.df_trajects_f):
-      with open(config.df_trajects_f, 'rb') as f:
-        logging.info(f'loading df_trajects from {config.df_trajects_f}')
-        config.df_trajects = pickle.load(f)
-    else:
-      logging.info(f'no {config.df_trajects_f}')
-      config.df_trajects = _load_df_trajects_from_hmp()
-  return config.df_trajects
+def get_df_trajects(df_trajects_f=DF_TRAJECTS_F) -> pd.DataFrame:
+  if exists(df_trajects_f):
+    with open(df_trajects_f, 'rb') as f:
+      logging.info(f'loading df_trajects from {df_trajects_f}')
+      df_trajects = pickle.load(f)
+  else:
+    logging.info(f'no {df_trajects_f}')
+    df_trajects = _load_df_trajects_from_hmp()
+  return df_trajects
 
 
-def dump_df_trajects() -> None:
-  logging.info(f'saving df_trajects to {config.df_trajects_f}')
-  with open(config.df_trajects_f, 'wb') as f:
-    pickle.dump(config.df_trajects, f)
-  with open(config.df_trajects_f+'.info.txt', 'w', encoding='utf-8') as f:
+def dump_df_trajects(df_trajects: pd.DataFrame, df_trajects_f=DF_TRAJECTS_F) -> None:
+  logging.info(f'saving df_trajects to {df_trajects_f}')
+  with open(df_trajects_f, 'wb') as f:
+    pickle.dump(df_trajects, f)
+  with open(df_trajects_f+'.info.txt', 'w', encoding='utf-8') as f:
     buffer = io.StringIO()
-    config.df_trajects.info(buf=buffer)
+    df_trajects.info(buf=buffer)
     f.write(buffer.getvalue())
 
 
-def get_one_trace() -> np.array:
-  return config.df_trajects.iloc[0]['traject'][0]
+def get_one_trace(df_trajects: pd.DataFrame) -> np.array:
+  return df_trajects.iloc[0]['traject'][0]
 
 
-def get_traces(video, user, ds='David_MMSys_18') -> np.array:
+def get_traces(df_trajects: pd.DataFrame, video, user, ds) -> np.array:
   # TODO: df indexed by (ds, ds_user, ds_video)
   if ds == 'all':
-    row = config.df_trajects.query(f"ds_user=='{user}' and ds_video=='{video}'")
+    row = df_trajects.query(f"ds_user=='{user}' and ds_video=='{video}'")
   else:
-    row = config.df_trajects.query(
+    row = df_trajects.query(
         f"ds=='{ds}' and ds_user=='{user}' and ds_video=='{video}'")
   assert not row.empty
   return row['traject'].iloc[0]
 
 
-def get_video_ids(ds='David_MMSys_18') -> np.array:
-  df = config.df_trajects
-  return df.loc[df['ds'] == ds]['ds_video'].unique()
+def get_video_ids(df_trajects: pd.DataFrame) -> np.array:
+  return df_trajects['ds_video'].unique()
+
+def get_user_ids(df_trajects: pd.DataFrame) -> np.array:
+  return df_trajects['ds_user'].unique()
+
+def get_ds_ids(df_trajects: pd.DataFrame) -> np.array:
+  return df_trajects['ds'].unique()
 
 
-def get_user_ids(ds='David_MMSys_18') -> np.array:
-  df = config.df_trajects
-  return df.loc[df['ds'] == ds]['ds_user'].unique()
-
-
-def show_trajects(df: pd.DataFrame, tileset=TILESET_DEFAULT) -> None:
-  assert not df.empty
+def show_trajects(df_trajects: pd.DataFrame, tileset=TILESET_DEFAULT) -> None:
+  assert len(df_trajects) <=4, '>=4 traject does not get a good visualization'
+  assert not df_trajects.empty
 
   # subplot two figures
   fig = make_subplots(rows=1, cols=2, specs=[[{'type': 'surface'}, {'type': 'image'}]])
 
   # sphere
   sphere = VizSphere(tileset)
-  for _, row in df.iterrows():
+  for _, row in df_trajects.iterrows():
     sphere.add_trajectory(row['traject'])
   for d in sphere.data:  # load all data from the sphere
     fig.append_trace(d, row=1, col=1)
   # heatmap
   # TODO: calcuate if hmps is not in df
-  if 'traject_hmps' in df:
-    hmp_sums = df['traject_hmps'].apply(lambda traces: np.sum(traces, axis=0))
+  if 'traject_hmps' in df_trajects:
+    hmp_sums = df_trajects['traject_hmps'].apply(lambda traces: np.sum(traces, axis=0))
     if isinstance(tileset, TileSetVoro):
       hmp_sums = np.reshape(hmp_sums, tileset.shape)
     heatmap = np.sum(hmp_sums, axis=0)
@@ -151,6 +152,6 @@ def show_trajects(df: pd.DataFrame, tileset=TILESET_DEFAULT) -> None:
       # fix given phi 0 being the north pole at Utils.cartesian_to_eulerian
       fig.update_yaxes(autorange='reversed')
 
-  title = f'{str(df.shape[0])}_trajects_{tileset.prefix}'
+  title = f'{str(df_trajects.shape[0])}_trajects_{tileset.prefix}'
   fig.update_layout(width=800, showlegend=False, title_text=title)
   fig.show()
