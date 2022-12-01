@@ -26,6 +26,8 @@ def get_tileset_metrics(tileset_metrics_f=DF_TILESET_METRICS_F) -> pd.DataFrame:
 
 
 def calc_tileset_reqs_metrics(df_trajects: pd.DataFrame, tileset_l: list[TileSet]) -> pd.DataFrame:
+  if len(df_trajects) >= 4:
+    logging.info("df_trajects.size >= 4, it will take for some time")
   df_l = []
 
   def f_trace(trace, tileset) -> tuple[int, float, float]:
@@ -39,7 +41,7 @@ def calc_tileset_reqs_metrics(df_trajects: pd.DataFrame, tileset_l: list[TileSet
     tmpdf = pd.DataFrame(df_trajects['traject'].swifter.apply(f_traject, tileset=tileset))
     tmpdf.columns = [tileset.title]
     df_l.append(tmpdf)
-  tileset_reqs_metrics = pd.concat(df_l)
+  tileset_reqs_metrics = pd.concat(df_l, axis=1)
   assert not tileset_reqs_metrics.empty
   return tileset_reqs_metrics
 

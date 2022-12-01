@@ -1,8 +1,8 @@
 '''
 Provides some TileSet class
 '''
-import logging
 from enum import Enum, auto
+from functools import cache
 
 import numpy as np
 from spherical_geometry import polygon
@@ -12,10 +12,22 @@ from ..head_motion_prediction.Utils import (compute_orthodromic_distance,
                                             eulerian_to_cartesian)
 from .fov import HOR_DIST, HOR_MARGIN, fov_poly
 
-_ts_polys = {}
-_ts_centers = {}
+
+@cache
+def tile_points(t_ver, t_hor, row, col) -> np.ndarray:
+  d_ver = degrees_to_radian(180 / t_ver)
+  d_hor = degrees_to_radian(360 / t_hor)
+  assert (row < t_ver and col < t_hor)
+  points = np.array([
+      eulerian_to_cartesian(d_hor * col, d_ver * (row + 1)),
+      eulerian_to_cartesian(d_hor * (col + 1), d_ver * (row + 1)),
+      eulerian_to_cartesian(d_hor * (col + 1), d_ver * row),
+      eulerian_to_cartesian(d_hor * col, d_ver * row),
+  ])
+  return points
 
 
+@cache
 def _init_tileset(t_ver, t_hor) -> None:
   d_hor = degrees_to_radian(360 / t_hor)
   d_ver = degrees_to_radian(180 / t_ver)
@@ -32,33 +44,15 @@ def _init_tileset(t_ver, t_hor) -> None:
       phi_c = d_ver * (row + 0.5)
       # at eulerian_to_cartesian: theta is hor and phi is ver
       centers[row][col] = eulerian_to_cartesian(theta_c, phi_c)
-  _ts_polys[(t_ver, t_hor)] = polys
-  _ts_centers[(t_ver, t_hor)] = centers
-
-
-def tile_points(t_ver, t_hor, row, col) -> np.ndarray:
-  d_ver = degrees_to_radian(180 / t_ver)
-  d_hor = degrees_to_radian(360 / t_hor)
-  assert (row < t_ver and col < t_hor)
-  points = np.array([
-      eulerian_to_cartesian(d_hor * col, d_ver * (row + 1)),
-      eulerian_to_cartesian(d_hor * (col + 1), d_ver * (row + 1)),
-      eulerian_to_cartesian(d_hor * (col + 1), d_ver * row),
-      eulerian_to_cartesian(d_hor * col, d_ver * row),
-  ])
-  return points
-
+  return (polys, centers)
 
 def tile_poly(t_ver, t_hor, row, col) -> polygon.SphericalPolygon:
-  if (t_ver, t_hor) not in _ts_polys:
-    _init_tileset(t_ver, t_hor)
-  return _ts_polys[(t_ver, t_hor)][row][col]
-
+  polys, _ = _init_tileset(t_ver, t_hor)
+  return polys[row][col]
 
 def tile_center(t_ver, t_hor, row, col) -> np.array:
-  if (t_ver, t_hor) not in _ts_polys:
-    _init_tileset(t_ver, t_hor)
-  return _ts_centers[(t_ver, t_hor)][row][col]
+  _, centers = _init_tileset(t_ver, t_hor)
+  return centers[row][col]
 
 
 class TileCover(Enum):
@@ -112,7 +106,7 @@ class TileSet():
     heatmap = np.zeros((self.t_ver, self.t_hor), dtype=int)
     areas_out = []
     vp_quality = 0.0
-    fov_poly_trace = fov_poly(trace)
+    fov_poly_trace = fov_poly(trace[0], trace[1], trace[2])
     for row in range(self.t_ver):
       for col in range(self.t_hor):
         dist = compute_orthodromic_distance(trace, tile_center(self.t_ver, self.t_hor, row, col))
@@ -136,7 +130,7 @@ class TileSet():
     heatmap = np.zeros((self.t_ver, self.t_hor), dtype=int)
     areas_out = []
     vp_quality = 0.0
-    fov_poly_trace = fov_poly(trace)
+    fov_poly_trace = fov_poly(trace[0], trace[1], trace[2])
     for row in range(self.t_ver):
       for col in range(self.t_hor):
         dist = compute_orthodromic_distance(trace, tile_center(self.t_ver, self.t_hor, row, col))

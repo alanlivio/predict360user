@@ -419,7 +419,6 @@ if __name__ == '__main__':
     os.environ['CUDA_VISIBLE_DEVICES'] = str(args.gpu_id)
   MODEL = create_model()
   assert MODEL
-  logging.info(type(MODEL))
 
   # train, evaluate actions
   if args.train:
