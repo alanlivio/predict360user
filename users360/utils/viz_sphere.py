@@ -19,6 +19,7 @@ class VizSphere():
   """
   class for visualize trajects in a sphere
   """
+
   def __init__(self, tileset=TILESET_DEFAULT) -> None:
     if isinstance(tileset, TileSetVoro):
       self.data = self._data_sphere_voro(tileset.voro)

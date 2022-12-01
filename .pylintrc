@@ -57,6 +57,7 @@ disable=abstract-method,
         missing-final-newline, # added alan
         logging-format-interpolation, # added alan
         broad-except, # added alan
+        inconsistent-quotes, # added alan
         apply-builtin,
         arguments-differ,
         attribute-defined-outside-init,

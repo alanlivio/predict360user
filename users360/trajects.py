@@ -19,6 +19,7 @@ from .utils.viz_sphere import VizSphere
 
 DF_TRAJECTS_F = os.path.join(config.DATADIR, 'df_trajects.pickle')
 
+
 def _load_df_trajects_from_hmp() -> pd.DataFrame:
   logging.info('loading trajects from head_motion_prediction project')
   # save cwd and move to head_motion_prediction for invoking funcs
@@ -59,11 +60,11 @@ def _load_df_trajects_from_hmp() -> pd.DataFrame:
     tmpdf = pd.DataFrame(
         data,
         columns=[
-            'ds', # e.g., david
-            'ds_user', # e.g., david_0
-            'ds_video', # e.g., david_10_Cows
+            'ds',  # e.g., david
+            'ds_user',  # e.g., david_0
+            'ds_video',  # e.g., david_10_Cows
             # 'times',
-            'traject' # [[x,y,z], ...]
+            'traject'  # [[x,y,z], ...]
         ])
     # assert and check
     assert tmpdf['ds'].value_counts()[config.DS_NAMES[idx]] == config.DS_SIZES[idx]
@@ -92,7 +93,7 @@ def dump_df_trajects(df_trajects: pd.DataFrame, df_trajects_f=DF_TRAJECTS_F) -> 
   logging.info(f'saving df_trajects to {df_trajects_f}')
   with open(df_trajects_f, 'wb') as f:
     pickle.dump(df_trajects, f)
-  with open(df_trajects_f+'.info.txt', 'w', encoding='utf-8') as f:
+  with open(df_trajects_f + '.info.txt', 'w', encoding='utf-8') as f:
     buffer = io.StringIO()
     df_trajects.info(buf=buffer)
     f.write(buffer.getvalue())
@@ -107,8 +108,7 @@ def get_traces(df_trajects: pd.DataFrame, video, user, ds) -> np.array:
   if ds == 'all':
     row = df_trajects.query(f"ds_user=='{user}' and ds_video=='{video}'")
   else:
-    row = df_trajects.query(
-        f"ds=='{ds}' and ds_user=='{user}' and ds_video=='{video}'")
+    row = df_trajects.query(f"ds=='{ds}' and ds_user=='{user}' and ds_video=='{video}'")
   assert not row.empty
   return row['traject'].iloc[0]
 
@@ -116,15 +116,17 @@ def get_traces(df_trajects: pd.DataFrame, video, user, ds) -> np.array:
 def get_video_ids(df_trajects: pd.DataFrame) -> np.array:
   return df_trajects['ds_video'].unique()
 
+
 def get_user_ids(df_trajects: pd.DataFrame) -> np.array:
   return df_trajects['ds_user'].unique()
+
 
 def get_ds_ids(df_trajects: pd.DataFrame) -> np.array:
   return df_trajects['ds'].unique()
 
 
 def show_trajects(df_trajects: pd.DataFrame, tileset=TILESET_DEFAULT) -> None:
-  assert len(df_trajects) <=4, '>=4 traject does not get a good visualization'
+  assert len(df_trajects) <= 4, '>=4 traject does not get a good visualization'
   assert not df_trajects.empty
 
   # subplot two figures

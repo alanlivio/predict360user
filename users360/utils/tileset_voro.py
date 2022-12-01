@@ -14,6 +14,7 @@ from .tileset import TileCover, TileSet
 
 _tsv_polys = {}
 
+
 def voro_trinity(npatchs) -> SphericalVoronoi:
   points = np.empty((0, 3))
   for index in range(0, npatchs):
@@ -47,8 +48,9 @@ class TileSetVoro(TileSet):
   """
   Class for Voroni TileSet
   """
+
   def __init__(self, voro: SphericalVoronoi, cover: TileCover) -> None:
-    super().__init__(2, -1, cover) # force shape (2,-1)
+    super().__init__(2, -1, cover)  # force shape (2,-1)
     self.voro = voro
 
   @overload

@@ -1,5 +1,5 @@
+# Following tensorflow style https://www.tensorflow.org/community/contribute/code_style
 [style]
-based_on_style=pep8
-indent_width=2
-column_limit=100 # allowed in tensor flow https://www.tensorflow.org/community/contribute/code_style
-blank_line_before_nested_class_or_def=Frue # added alan
+based_on_style = pep8
+indent_width = 2
+column_limit = 100

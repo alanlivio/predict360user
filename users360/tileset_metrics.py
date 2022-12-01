@@ -13,6 +13,7 @@ from .utils.tileset import TileSet
 
 DF_TILESET_METRICS_F = os.path.join(config.DATADIR, 'df_tileset_metrics.pickle')
 
+
 def get_tileset_metrics(tileset_metrics_f=DF_TILESET_METRICS_F) -> pd.DataFrame:
   if exists(tileset_metrics_f):
     with open(tileset_metrics_f, 'rb') as f:
@@ -24,14 +25,16 @@ def get_tileset_metrics(tileset_metrics_f=DF_TILESET_METRICS_F) -> pd.DataFrame:
   return tileset_metrics
 
 
-def calc_tileset_reqs_metrics(df_trajects: pd.DataFrame,
-  tileset_l: list[TileSet]) -> pd.DataFrame:
+def calc_tileset_reqs_metrics(df_trajects: pd.DataFrame, tileset_l: list[TileSet]) -> pd.DataFrame:
   df_l = []
+
   def f_trace(trace, tileset) -> tuple[int, float, float]:
     heatmap, vp_quality, area_out = tileset.request(trace, return_metrics=True)
     return (int(np.sum(heatmap)), vp_quality, area_out)
-  def f_traject (traces, tileset):
+
+  def f_traject(traces, tileset):
     return np.apply_along_axis(f_trace, 1, traces, tileset=tileset)
+
   for tileset in tileset_l:
     tmpdf = pd.DataFrame(df_trajects['traject'].swifter.apply(f_traject, tileset=tileset))
     tmpdf.columns = [tileset.title]
@@ -42,12 +45,16 @@ def calc_tileset_reqs_metrics(df_trajects: pd.DataFrame,
 
 
 def show_tileset_reqs_metrics(tileset_reqs_metrics: pd.DataFrame) -> None:
+
   def f_traject_reqs(traces):
     return np.sum(traces[:, 0])
+
   def f_traject_qlt(traces):
     return np.mean(traces[:, 1])
+
   def f_traject_lost(traces):
     return np.mean(traces[:, 2])
+
   data = {'tileset': [], 'avg_reqs': [], 'avg_qlt': [], 'avg_lost': []}
   for name in tileset_reqs_metrics.columns:
     dfts = tileset_reqs_metrics[name]
