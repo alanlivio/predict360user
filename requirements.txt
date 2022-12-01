@@ -4,7 +4,6 @@ plotly
 scipy # entropy
 sklearn
 spherical_geometry # voronoi tiles
-swifter # parallell df processing
 psutil # swifter req
 colour
 tqdm # progress bar

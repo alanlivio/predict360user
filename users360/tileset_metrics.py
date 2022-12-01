@@ -7,12 +7,14 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
+from tqdm.auto import tqdm
 
 from . import config
 from .utils.tileset import TileSet
 
 DF_TILESET_METRICS_F = os.path.join(config.DATADIR, 'df_tileset_metrics.pickle')
 
+tqdm.pandas()
 
 def get_tileset_metrics(tileset_metrics_f=DF_TILESET_METRICS_F) -> pd.DataFrame:
   if exists(tileset_metrics_f):
@@ -38,7 +40,7 @@ def calc_tileset_reqs_metrics(df_trajects: pd.DataFrame, tileset_l: list[TileSet
     return np.apply_along_axis(f_trace, 1, traces, tileset=tileset)
 
   for tileset in tileset_l:
-    tmpdf = pd.DataFrame(df_trajects['traject'].swifter.apply(f_traject, tileset=tileset))
+    tmpdf = pd.DataFrame(df_trajects['traject'].progress_apply(f_traject, tileset=tileset))
     tmpdf.columns = [tileset.title]
     df_l.append(tmpdf)
   tileset_reqs_metrics = pd.concat(df_l, axis=1)
