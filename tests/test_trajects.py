@@ -2,9 +2,8 @@ import unittest
 
 import plotly.io as pio
 
-from users360.entropy import (calc_trajects_entropy,
-                              calc_trajects_entropy_users,
-                              calc_trajects_poles_prc)
+from users360.entropy import (calc_trajects_entropy, calc_trajects_poles_prc,
+                              calc_users_entropy)
 from users360.trajects import (get_df_trajects, get_ds_ids, get_one_trace,
                                get_traces, get_user_ids, get_video_ids,
                                show_trajects)
@@ -36,13 +35,14 @@ class Test(unittest.TestCase):
 
   # entropy
 
-  def test_entropy(self) -> None:
-    assert not calc_trajects_entropy(self.df_trajects).empty
+  def test_trajects_entropy(self) -> None:
+    calc_trajects_entropy(self.df_trajects)
+
 
   def test_entropy_users(self) -> None:
-    assert not calc_trajects_entropy_users(self.df_trajects).empty
+    assert not calc_users_entropy(self.df_trajects)
 
   # poles
 
   def test_tilset_metrics_poles(self) -> None:
-    assert not calc_trajects_poles_prc(self.df_trajects).empty
+    calc_trajects_poles_prc(self.df_trajects)

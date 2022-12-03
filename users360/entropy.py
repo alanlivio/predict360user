@@ -15,6 +15,7 @@ ENTROPY_CLASS_COLORS = {'low': 'blue', 'medium': 'green', 'hight': 'red'}
 
 tqdm.pandas()
 
+
 def calc_trajects_hmps(df_trajects: pd.DataFrame, tileset=TILESET_DEFAULT) -> pd.DataFrame:
 
   def f_trace(trace):
@@ -29,7 +30,7 @@ def calc_trajects_hmps(df_trajects: pd.DataFrame, tileset=TILESET_DEFAULT) -> pd
   return df_trajects
 
 
-def calc_trajects_entropy(df_trajects: pd.DataFrame) -> pd.DataFrame:
+def calc_trajects_entropy(df_trajects: pd.DataFrame) -> None:
   if 'traject_hmps' not in df_trajects.columns:
     calc_trajects_hmps(df_trajects)
 
@@ -53,12 +54,14 @@ def calc_trajects_entropy(df_trajects: pd.DataFrame) -> pd.DataFrame:
 
   df_trajects['traject_entropy_class'] = df_trajects['traject_entropy'].progress_apply(f_threshold)
   assert not df_trajects['traject_entropy_class'].isnull().any()
-  return df_trajects
 
 
-def calc_trajects_entropy_users(df_trajects: pd.DataFrame) -> pd.DataFrame:
+def calc_users_entropy(df_trajects: pd.DataFrame) -> pd.DataFrame:
   if 'traject_hmps' not in df_trajects.columns:
     calc_trajects_hmps(df_trajects)
+
+  df_trajects.drop(['user_entropy','user_entropy_class'], axis=1)
+
   # calc user_entropy
   logging.info('calculating users entropy ...')
 
@@ -68,24 +71,29 @@ def calc_trajects_entropy_users(df_trajects: pd.DataFrame) -> pd.DataFrame:
     entropy = scipy.stats.entropy(hmps_sum.reshape((-1)))
     return entropy
 
-  tmpdf = df_trajects.groupby(['ds_user']).progress_apply(f_entropy_user).reset_index()
-  tmpdf.columns = ['ds_user', 'user_entropy']
-  assert not tmpdf['user_entropy'].isnull().any()
+  df_users = df_trajects.groupby(['ds_user']).progress_apply(f_entropy_user).reset_index()
+  df_users.columns = ['ds_user', 'user_entropy']
+  assert not df_users['user_entropy'].isnull().any()
+
   # calc user_entropy_class
-  idxs_sort = tmpdf['user_entropy'].argsort()
-  trajects_len = len(tmpdf['user_entropy'])
+  idxs_sort = df_users['user_entropy'].argsort()
+  trajects_len = len(df_users['user_entropy'])
   idx_threshold_medium = idxs_sort[int(trajects_len * .60)]
   idx_threshold_hight = idxs_sort[int(trajects_len * .90)]
-  threshold_medium = tmpdf['user_entropy'][idx_threshold_medium]
-  threshold_hight = tmpdf['user_entropy'][idx_threshold_hight]
+  threshold_medium = df_users['user_entropy'][idx_threshold_medium]
+  threshold_hight = df_users['user_entropy'][idx_threshold_hight]
 
   def f_threshold(x):
     return 'low' if x < threshold_medium else ('medium' if x < threshold_hight else 'hight')
 
-  tmpdf['user_entropy_class'] = tmpdf['user_entropy'].progress_apply(f_threshold)
-  assert not tmpdf['user_entropy_class'].isna().any()
-  df_trajects = pd.merge(df_trajects, tmpdf, on='ds_user')
-  return df_trajects
+  df_users['user_entropy_class'] = df_users['user_entropy'].progress_apply(f_threshold)
+  assert not df_users['user_entropy_class'].isna().any()
+
+  # merge right inplace
+  # https://stackoverflow.com/questions/50849102/pandas-left-join-in-place
+  df_tmp = pd.merge(df_trajects[['ds_user']], df_users, on='ds_user')
+  df_trajects.assign(user_entropy=df_tmp['user_entropy'].values,
+                    user_entropy_class=df_tmp['user_entropy_class'].values)
 
 
 def show_trajects_entropy(df_trajects: pd.DataFrame, facet=None) -> None:
