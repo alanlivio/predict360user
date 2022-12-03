@@ -1,6 +1,7 @@
 '''
 Provides some TileSet class
 '''
+import logging
 from enum import Enum, auto
 from functools import cache
 
