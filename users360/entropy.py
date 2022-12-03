@@ -40,7 +40,7 @@ def calc_trajects_entropy(df_trajects: pd.DataFrame) -> None:
   if 'traject_hmps' not in df_trajects.columns:
     calc_trajects_hmps(df_trajects)
   # clean
-  df_trajects.drop(['traject_entropy', 'traject_entropy_class'], axis=1)
+  df_trajects.drop(['traject_entropy', 'traject_entropy_class'], axis=1, errors='ignore')
   # calc traject_entropy
   logging.info('calculating trajects entropy ...')
   df_trajects['traject_entropy'] = df_trajects['traject_hmps'].progress_apply(_entropy_traject)
@@ -68,7 +68,7 @@ def calc_users_entropy(df_trajects: pd.DataFrame) -> pd.DataFrame:
   if 'traject_hmps' not in df_trajects.columns:
     calc_trajects_hmps(df_trajects)
   # clean
-  df_trajects.drop(['user_entropy', 'user_entropy_class'], axis=1)
+  df_trajects.drop(['user_entropy', 'user_entropy_class'], axis=1, errors='ignore')
   # calc user_entropy
   logging.info('calculating users entropy ...')
   df_users = df_trajects.groupby(['ds_user']).progress_apply(_entropy_user).reset_index()
@@ -148,7 +148,7 @@ def _poles_prc(traces):
 
 def calc_trajects_poles_prc(df_trajects: pd.DataFrame) -> None:
   # clean
-  df_trajects.drop(['poles_prc', 'poles_class'], axis=1)
+  df_trajects.drop(['poles_prc', 'poles_class'], axis=1, errors='ignore')
   # calc poles_prc
   df_trajects['poles_prc'] = pd.Series(df_trajects['traject'].progress_apply(_poles_prc))
   assert not df_trajects['poles_prc'].isna().any()

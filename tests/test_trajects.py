@@ -13,14 +13,12 @@ pio.renderers.default = None
 
 class Test(unittest.TestCase):
 
-  # trajects
-
   def setUp(self):
     # limit testing df to 2
     self.df_trajects = get_df_trajects()[:2]
     assert not self.df_trajects.empty
     # force hmp recalc
-    self.df_trajects.drop(['traject_hmps'], axis=1)
+    self.df_trajects.drop(['traject_hmps'], axis=1, errors='ignore')
 
   def test_trajects_get(self) -> None:
     assert get_one_trace(self.df_trajects).size
@@ -36,13 +34,13 @@ class Test(unittest.TestCase):
     show_trajects(self.df_trajects)
 
   def test_trajects_entropy(self) -> None:
-    self.df_trajects.drop(['traject_entropy', 'traject_entropy_class'], axis=1)
+    self.df_trajects.drop(['traject_entropy', 'traject_entropy_class'], axis=1, errors='ignore')
     calc_trajects_entropy(self.df_trajects)
 
   def test_entropy_users(self) -> None:
-    self.df_trajects.drop(['user_entropy', 'user_entropy_class'], axis=1)
+    self.df_trajects.drop(['user_entropy', 'user_entropy_class'], axis=1, errors='ignore')
     assert not calc_users_entropy(self.df_trajects)
 
   def test_tilset_metrics_poles(self) -> None:
-    self.df_trajects.drop(['poles_prc', 'poles_prc_class'], axis=1)
+    self.df_trajects.drop(['poles_prc', 'poles_prc_class'], axis=1, errors='ignore')
     calc_trajects_poles_prc(self.df_trajects)
