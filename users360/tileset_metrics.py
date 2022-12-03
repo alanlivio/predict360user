@@ -2,7 +2,6 @@ import logging
 
 import numpy as np
 import pandas as pd
-import plotly.express as px
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 from tqdm.auto import tqdm
@@ -42,7 +41,7 @@ def show_tileset_reqs_metrics(df: pd.DataFrame) -> None:
     avg_lost = df[name].apply(lambda traces: np.sum(traces[:, 2])).mean()
     score = avg_qlt / avg_lost
     data.append((name.removeprefix('metrics_'), avg_reqs, avg_qlt, avg_lost, score))
-  assert len(data)
+  assert len(data) > 0
   columns=['tileset', 'avg_reqs', 'avg_qlt', 'avg_lost', 'score']
   dftmp = pd.DataFrame(data, columns=columns)
   # show dftmp

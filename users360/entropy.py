@@ -17,7 +17,7 @@ tqdm.pandas()
 
 
 def _calc_traject_hmp(traces, tileset) -> np.array:
-  return np.apply_along_axis(lambda trace: tileset.request(trace), 1, traces)
+  return np.apply_along_axis(tileset.request, 1, traces)
 
 
 def calc_trajects_hmps(df_trajects: pd.DataFrame, tileset=TILESET_DEFAULT) -> None:
