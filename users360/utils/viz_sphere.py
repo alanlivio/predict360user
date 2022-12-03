@@ -144,7 +144,7 @@ class VizSphere():
                          'size': 4,
                          'color': 'red'
                      }))
-    points = fov_points(trace)
+    points = fov_points(*trace)
     self._add_polygon_lines(points)
 
   def add_trajectory(self, trajectory) -> None:

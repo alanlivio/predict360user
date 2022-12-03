@@ -41,6 +41,6 @@ class Test(unittest.TestCase):
     self.df_trajects.drop(['user_entropy', 'user_entropy_class'], axis=1, errors='ignore')
     assert not calc_users_entropy(self.df_trajects)
 
-  def test_tilset_metrics_poles(self) -> None:
+  def test_poles_prc(self) -> None:
     self.df_trajects.drop(['poles_prc', 'poles_prc_class'], axis=1, errors='ignore')
     calc_trajects_poles_prc(self.df_trajects)
