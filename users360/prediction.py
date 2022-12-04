@@ -8,8 +8,11 @@ from sklearn.model_selection import train_test_split
 from .entropy import show_trajects_entropy, show_trajects_entropy_users
 
 
-def get_train_test_split(df_trajects: pd.DataFrame, train_entropy, test_entropy,
-                         perc_test) -> tuple[pd.DataFrame, pd.DataFrame]:
+def get_train_test_split(
+  df_trajects: pd.DataFrame,
+  train_entropy: str,
+  test_entropy: str,
+  perc_test: float) -> tuple[pd.DataFrame, pd.DataFrame]:
   args = {'test_size': perc_test, 'random_state':1}
 
   # default get 'all' entropy
@@ -36,8 +39,11 @@ def get_train_test_split(df_trajects: pd.DataFrame, train_entropy, test_entropy,
   return x_train, x_test
 
 
-def show_train_test_split(df_trajects: pd.DataFrame, train_entropy, test_entropy,
-                          perc_test) -> None:
+def show_train_test_split(
+  df_trajects: pd.DataFrame,
+  train_entropy: str,
+  test_entropy: str,
+  perc_test: float) -> None:
   x_train, x_test = get_train_test_split(df_trajects, train_entropy, test_entropy, perc_test)
   x_train['partition'] = 'train'
   x_test['partition'] = 'test'

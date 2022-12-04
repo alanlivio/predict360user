@@ -102,7 +102,7 @@ def get_one_trace(df_trajects: pd.DataFrame) -> np.array:
   return df_trajects.iloc[0]['traject'][0]
 
 
-def get_traces(df_trajects: pd.DataFrame, video, user, ds) -> np.array:
+def get_traces(df_trajects: pd.DataFrame, video: str, user: str, ds: str) -> np.array:
   # TODO: df indexed by (ds, ds_user, ds_video)
   if ds == 'all':
     row = df_trajects.query(f"ds_user=='{user}' and ds_video=='{video}'")
