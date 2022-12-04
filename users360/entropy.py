@@ -24,7 +24,7 @@ def _calc_traject_hmp(traces, tileset) -> np.array:
 
 def calc_trajects_hmps(df_trajects: pd.DataFrame,
                        tileset=TILESET_DEFAULT) -> None:
-  config.log('calculating heatmaps ...')
+  config.loginf('calculating heatmaps ...')
   np_hmps = df_trajects['traject'].progress_apply(_calc_traject_hmp,
                                                   args=(tileset))
   df_trajects['traject_hmps'] = pd.Series(np_hmps)
@@ -50,7 +50,7 @@ def calc_trajects_entropy(df_trajects: pd.DataFrame) -> None:
                    axis=1,
                    errors='ignore')
   # calc traject_entropy
-  config.log('calculating trajects entropy ...')
+  config.loginf('calculating trajects entropy ...')
   df_trajects['traject_entropy'] = df_trajects['traject_hmps'].progress_apply(
       _entropy_traject)
   assert not df_trajects['traject_entropy'].isnull().any()
@@ -83,7 +83,7 @@ def calc_users_entropy(df_trajects: pd.DataFrame) -> pd.DataFrame:
                    axis=1,
                    errors='ignore')
   # calc user_entropy
-  config.log('calculating users entropy ...')
+  config.loginf('calculating users entropy ...')
   df_users = df_trajects.groupby(
       ['ds_user']).progress_apply(_entropy_user).reset_index()
   df_users.columns = ['ds_user', 'user_entropy']

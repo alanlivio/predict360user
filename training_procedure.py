@@ -212,7 +212,7 @@ def evaluate() -> None:
     avg_error_per_timestep.append(avg)
   # avg_error_per_timestep.csv
   result_file = f'{result_basefilename}_avg_error_per_timestep'
-  config.log.info(f'saving {result_file}.csv')
+  config.loginf(f'saving {result_file}.csv')
   np.savetxt(f'{result_file}.csv', avg_error_per_timestep)
 
   # avg_error_per_timestep.png
@@ -222,7 +222,7 @@ def evaluate() -> None:
   plt.ylabel(met)
   plt.xlim(2.5)
   plt.xlabel('Prediction step s (sec.)')
-  config.log.info(f'saving {result_file}.png')
+  config.loginf(f'saving {result_file}.png')
   plt.savefig(result_file, bbox_inches='tight')
 
   # avg_error_per_video
@@ -230,13 +230,13 @@ def evaluate() -> None:
   for video_name in VIDEOS_TEST:
     for t in range(H_WINDOW):
       if not video_name in errors_per_video:
-        config.log.info.error(f'missing {video_name} in VIDEOS_TEST')
+        config.loginf.error(f'missing {video_name} in VIDEOS_TEST')
         continue
       avg = np.mean(errors_per_video[video_name][t])
       avg_error_per_video.append(f'video={video_name} {t} {avg}')
   result_file = f'{result_basefilename}_avg_error_per_video.csv'
   np.savetxt(result_file, avg_error_per_video, fmt='%s')
-  config.log.info(f'saving {result_file}')
+  config.loginf(f'saving {result_file}')
 
 
 def compare_results() -> None:
@@ -274,7 +274,7 @@ def compare_results() -> None:
   plt.xlim(2.5)
   plt.xlabel('Prediction step s (sec.)')
   result_file = join(config.DATADIR, f'compare_{MODEL_NAME}')
-  config.log.info(f'saving {result_file}.png')
+  config.loginf(f'saving {result_file}.png')
   plt.legend(bbox_to_anchor=(0, 1), loc='upper left', ncol=1)
   plt.savefig(result_file, bbox_inches='tight')
 
@@ -419,7 +419,7 @@ if __name__ == '__main__':
     assert exists(MODEL_WEIGHTS_LOW)
     assert exists(MODEL_WEIGHTS_MEDIUM)
     assert exists(MODEL_WEIGHTS_HIGHT)
-    config.log.info(
+    config.loginf(
         'MODEL_WEIGHTS={MODEL_WEIGHTS_LOW},{MODEL_WEIGHTS_MEDIUM},{MODEL_WEIGHTS_HIGHT}'
     )
   else:
@@ -430,12 +430,12 @@ if __name__ == '__main__':
     MODEL_FOLDER = join(config.DATADIR,
                         f'{MODEL_NAME}{dataset_suffix}{train_entropy_suffix}')
     fmt_str = 'MODEL_NAME={}, dataset_suffix={}, train_entropy_suffix={}'
-    config.log.info(
+    config.loginf(
         fmt_str.format(MODEL_NAME, dataset_suffix, train_entropy_suffix))
-    config.log.info(f'MODEL_FOLDER is {MODEL_FOLDER}')
+    config.loginf(f'MODEL_FOLDER is {MODEL_FOLDER}')
     # MODEL_WEIGHTS
     MODEL_WEIGHTS = join(MODEL_FOLDER, 'weights.hdf5')
-    config.log.info(f'MODEL_WEIGHTS={MODEL_WEIGHTS}')
+    config.loginf(f'MODEL_WEIGHTS={MODEL_WEIGHTS}')
     if args.evaluate:
       assert exists(MODEL_WEIGHTS)
 
@@ -443,7 +443,7 @@ if __name__ == '__main__':
     os.makedirs(MODEL_FOLDER)
 
   # TEST_PREFIX_PERC
-  config.log.info(f'PERC_TEST is {PERC_TEST}')
+  config.loginf(f'PERC_TEST is {PERC_TEST}')
   TEST_PREFIX_PERC = f"test_{str(PERC_TEST).replace('.',',')}"
   TEST_PREFIX_PERC_ENTROPY = f'{TEST_PREFIX_PERC}_{args.test_entropy}'
 
@@ -453,34 +453,34 @@ if __name__ == '__main__':
     sys.exit()
 
   # PARTITION_IDS for -train, -evaluation
-  config.log.info('')
-  config.log.info('partioning train/test ...')
+  config.loginf('')
+  config.loginf('partioning train/test ...')
   if args.evaluate_adaptative:
     args.train_entropy = 'all'
-    config.log.info(
+    config.loginf(
         'x_train entropy is all but dynamic choosed (-evaluate_adaptative enabled)'
     )
   else:
-    config.log.info(f'x_train entropy is {args.train_entropy}')
-  config.log.info(f'x_test entropy is {args.test_entropy}')
+    config.loginf(f'x_train entropy is {args.train_entropy}')
+  config.loginf(f'x_test entropy is {args.test_entropy}')
   x_train, x_test = get_train_test_split(args.train_entropy, args.test_entropy,
                                          PERC_TEST)
   assert (not x_train.empty and not x_test.empty)
 
-  config.log.info(f'x_train has {len(x_train)} trajectories')
+  config.loginf(f'x_train has {len(x_train)} trajectories')
   if args.evaluate_adaptative:
     fmt_str = 'x_test has {} {} trajectories (-evaluate_adaptative enabled)'
-    config.log.info(
+    config.loginf(
         fmt_str.format(len(x_test[x_test['traject_entropy_class'] == 'low']),
                        'low'))
-    config.log.info(
+    config.loginf(
         fmt_str.format(len(x_test[x_test['traject_entropy_class'] == 'medium']),
                        'medium'))
-    config.log.info(
+    config.loginf(
         fmt_str.format(len(x_test[x_test['traject_entropy_class'] == 'hight']),
                        'hight'))
   else:
-    config.log.info(f'x_test has {len(x_test)} trajectories')
+    config.loginf(f'x_test has {len(x_test)} trajectories')
   PARTITION_IDS = {}
   PARTITION_IDS['train'] = [
       {
@@ -501,16 +501,16 @@ if __name__ == '__main__':
   ]
   VIDEOS_TEST = x_test['ds_video'].unique()
   USERS_TEST = x_test['ds_user'].unique()
-  config.log.info(
+  config.loginf(
       f"PARTITION_IDS['train'] has {len(PARTITION_IDS['train'])} position predictions"
   )
-  config.log.info(
+  config.loginf(
       f"PARTITION_IDS['test'] has {len(PARTITION_IDS['test'])} position predictions"
   )
 
   # creating model
-  config.log.info('')
-  config.log.info('creating model ...')
+  config.loginf('')
+  config.loginf('creating model ...')
   os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'
   if args.gpu_id:
     os.environ['CUDA_VISIBLE_DEVICES'] = str(args.gpu_id)
@@ -519,12 +519,12 @@ if __name__ == '__main__':
 
   # train, evaluate actions
   if args.train:
-    config.log.info('')
-    config.log.info('training ...')
-    config.log.info(f'EPOCHS is {EPOCHS}')
+    config.loginf('')
+    config.loginf('training ...')
+    config.loginf(f'EPOCHS is {EPOCHS}')
     train()
   elif args.evaluate or args.evaluate_adaptative:
-    config.log.info('')
-    config.log.info('evaluating ...')
+    config.loginf('')
+    config.loginf('evaluating ...')
     evaluate()
   sys.exit()
