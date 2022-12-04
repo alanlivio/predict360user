@@ -12,7 +12,7 @@ class Test(unittest.TestCase):
 
   # trajects
 
-  def setUp(self):
+  def setUp(self) -> None:
     self.df_trajects = get_df_trajects()
     assert not self.df_trajects.empty
 

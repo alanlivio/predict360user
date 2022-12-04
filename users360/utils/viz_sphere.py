@@ -93,7 +93,8 @@ class VizSphere():
     n = len(points)
     t = np.linspace(0, 1, 100)
     colours = [
-        f'rgb({randint(0,256)}, {randint(0,256)}, {randint(0,256)})' for _ in range(len(points))
+        f'rgb({randint(0,256)}, {randint(0,256)}, {randint(0,256)})'
+        for _ in range(len(points))
     ]
     gens = go.Scatter3d(x=points[:, 0],
                         y=points[:, 1],
@@ -202,7 +203,13 @@ def show_fov(trace, tileset=TILESET_DEFAULT) -> None:
   assert len(trace) == 3  # cartesian
 
   # subplot two figures
-  fig = make_subplots(rows=1, cols=2, specs=[[{'type': 'surface'}, {'type': 'image'}]])
+  fig = make_subplots(rows=1,
+                      cols=2,
+                      specs=[[{
+                          'type': 'surface'
+                      }, {
+                          'type': 'image'
+                      }]])
 
   # sphere
   sphere = VizSphere(tileset)

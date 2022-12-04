@@ -29,6 +29,7 @@ _fov_x1y0z0_points = np.array([
     eulerian_to_cartesian(*_fov_x1y0z0_fov_points_euler[3])
 ])
 
+
 @cache
 def fov_points(x, y, z) -> np.ndarray:
   rotation = rotationBetweenVectors(X1Y0Z0, np.array([x, y, z]))
@@ -39,6 +40,7 @@ def fov_points(x, y, z) -> np.ndarray:
       rotation.rotate(_fov_x1y0z0_points[3]),
   ])
   return points
+
 
 @cache
 def fov_poly(x, y, z) -> polygon.SphericalPolygon:

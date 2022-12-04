@@ -47,9 +47,11 @@ def _init_tileset(t_ver, t_hor) -> None:
       centers[row][col] = eulerian_to_cartesian(theta_c, phi_c)
   return (polys, centers)
 
+
 def tile_poly(t_ver, t_hor, row, col) -> polygon.SphericalPolygon:
   polys, _ = _init_tileset(t_ver, t_hor)
   return polys[row][col]
+
 
 def tile_center(t_ver, t_hor, row, col) -> np.array:
   _, centers = _init_tileset(t_ver, t_hor)
@@ -110,7 +112,8 @@ class TileSet():
     fov_poly_trace = fov_poly(trace[0], trace[1], trace[2])
     for row in range(self.t_ver):
       for col in range(self.t_hor):
-        dist = compute_orthodromic_distance(trace, tile_center(self.t_ver, self.t_hor, row, col))
+        dist = compute_orthodromic_distance(
+            trace, tile_center(self.t_ver, self.t_hor, row, col))
         if dist <= HOR_MARGIN:
           heatmap[row][col] = 1
           if return_metrics:
@@ -118,7 +121,8 @@ class TileSet():
               poly_rc = tile_poly(self.t_ver, self.t_hor, row, col)
               view_ratio = poly_rc.overlap(fov_poly_trace)
             except Exception:
-              config.log.error(f'request error for row,col,trace={row},{col},{repr(trace)}')
+              config.log.error(
+                  f'request error for row,col,trace={row},{col},{repr(trace)}')
               continue
             areas_out.append(1 - view_ratio)
             vp_quality += fov_poly_trace.overlap(poly_rc)
@@ -127,21 +131,24 @@ class TileSet():
     else:
       return heatmap
 
-  def _request_min_cover(self, trace: np.ndarray, required_cover: float, return_metrics):
+  def _request_min_cover(self, trace: np.ndarray, required_cover: float,
+                         return_metrics):
     heatmap = np.zeros((self.t_ver, self.t_hor), dtype=int)
     areas_out = []
     vp_quality = 0.0
     fov_poly_trace = fov_poly(trace[0], trace[1], trace[2])
     for row in range(self.t_ver):
       for col in range(self.t_hor):
-        dist = compute_orthodromic_distance(trace, tile_center(self.t_ver, self.t_hor, row, col))
+        dist = compute_orthodromic_distance(
+            trace, tile_center(self.t_ver, self.t_hor, row, col))
         if dist >= HOR_DIST:
           continue
         try:
           poly_rc = tile_poly(self.t_ver, self.t_hor, row, col)
           view_ratio = poly_rc.overlap(fov_poly_trace)
         except Exception:
-          config.log.error(f'request error for row,col,trace={row},{col},{repr(trace)}')
+          config.log.error(
+              f'request error for row,col,trace={row},{col},{repr(trace)}')
           continue
         if view_ratio > required_cover:
           heatmap[row][col] = 1
@@ -158,4 +165,4 @@ _4X6_CTR = TileSet(4, 6, TileCover.CENTER)
 _4X6_ANY = TileSet(4, 6, TileCover.ANY)
 _4X6_20P = TileSet(4, 6, TileCover.ONLY20PERC)
 TILESET_DEFAULT = _4X6_ANY
-TILESET_VARIATIONS = [_4X6_CTR, _4X6_ANY,_4X6_20P]
+TILESET_VARIATIONS = [_4X6_CTR, _4X6_ANY, _4X6_20P]

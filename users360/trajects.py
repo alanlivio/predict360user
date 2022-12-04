@@ -66,11 +66,13 @@ def _load_df_trajects_from_hmp() -> pd.DataFrame:
             'traject'  # [[x,y,z], ...]
         ])
     # assert and check
-    assert tmpdf['ds'].value_counts()[config.DS_NAMES[idx]] == config.DS_SIZES[idx]
+    assert tmpdf['ds'].value_counts()[
+        config.DS_NAMES[idx]] == config.DS_SIZES[idx]
     return tmpdf
 
   # create df_trajects for each dataset
-  df_trajects = pd.concat(map(_load_dataset_xyz, ds_idxs), ignore_index=True).convert_dtypes()
+  df_trajects = pd.concat(map(_load_dataset_xyz, ds_idxs),
+                          ignore_index=True).convert_dtypes()
   assert not df_trajects.empty
   # back to cwd
   os.chdir(cwd)
@@ -88,7 +90,8 @@ def get_df_trajects(df_trajects_f=DF_TRAJECTS_F) -> pd.DataFrame:
   return df_trajects
 
 
-def dump_df_trajects(df_trajects: pd.DataFrame, df_trajects_f=DF_TRAJECTS_F) -> None:
+def dump_df_trajects(df_trajects: pd.DataFrame,
+                     df_trajects_f=DF_TRAJECTS_F) -> None:
   config.log(f'saving df_trajects to {df_trajects_f}')
   with open(df_trajects_f, 'wb') as f:
     pickle.dump(df_trajects, f)
@@ -102,12 +105,14 @@ def get_one_trace(df_trajects: pd.DataFrame) -> np.array:
   return df_trajects.iloc[0]['traject'][0]
 
 
-def get_traces(df_trajects: pd.DataFrame, video: str, user: str, ds: str) -> np.array:
+def get_traces(df_trajects: pd.DataFrame, video: str, user: str,
+               ds: str) -> np.array:
   # TODO: df indexed by (ds, ds_user, ds_video)
   if ds == 'all':
     row = df_trajects.query(f"ds_user=='{user}' and ds_video=='{video}'")
   else:
-    row = df_trajects.query(f"ds=='{ds}' and ds_user=='{user}' and ds_video=='{video}'")
+    row = df_trajects.query(
+        f"ds=='{ds}' and ds_user=='{user}' and ds_video=='{video}'")
   assert not row.empty
   return row['traject'].iloc[0]
 
@@ -129,7 +134,13 @@ def show_trajects(df_trajects: pd.DataFrame, tileset=TILESET_DEFAULT) -> None:
   assert not df_trajects.empty
 
   # subplot two figures
-  fig = make_subplots(rows=1, cols=2, specs=[[{'type': 'surface'}, {'type': 'image'}]])
+  fig = make_subplots(rows=1,
+                      cols=2,
+                      specs=[[{
+                          'type': 'surface'
+                      }, {
+                          'type': 'image'
+                      }]])
 
   # sphere
   sphere = VizSphere(tileset)
@@ -140,7 +151,8 @@ def show_trajects(df_trajects: pd.DataFrame, tileset=TILESET_DEFAULT) -> None:
 
   # heatmap
   if 'traject_hmps' in df_trajects:
-    hmp_sums = df_trajects['traject_hmps'].apply(lambda traces: np.sum(traces, axis=0))
+    hmp_sums = df_trajects['traject_hmps'].apply(
+        lambda traces: np.sum(traces, axis=0))
     if isinstance(tileset, TileSetVoro):
       hmp_sums = np.reshape(hmp_sums, tileset.shape)
     heatmap = np.sum(hmp_sums, axis=0)

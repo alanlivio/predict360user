@@ -13,7 +13,7 @@ pio.renderers.default = None
 
 class Test(unittest.TestCase):
 
-  def setUp(self):
+  def setUp(self) -> None:
     # limit testing df to 2
     self.df_trajects = get_df_trajects()[:2]
     assert not self.df_trajects.empty

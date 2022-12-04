@@ -28,10 +28,15 @@ def voro_trinity(n_patchs: int) -> SphericalVoronoi:
   sv.sort_vertices_of_regions()
   return sv
 
+
 @cache
 def _voro_polys(n_patchs: int) -> dict:
   voro = voro_trinity(n_patchs)
-  return {i: SphericalPolygon(voro.vertices[voro.regions[i]]) for i, _ in enumerate(voro.regions)}
+  return {
+      i: SphericalPolygon(voro.vertices[voro.regions[i]])
+      for i, _ in enumerate(voro.regions)
+  }
+
 
 @cache
 def voro_poly(n_patchs, index) -> SphericalPolygon:
