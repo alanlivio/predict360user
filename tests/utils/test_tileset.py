@@ -17,12 +17,10 @@ class Test(unittest.TestCase):
     # tile area at equator
     for row in [1, 4]:
       for col in range(4):
-        print(6, 4, row, col)
         self.assertAlmostEqual(tile_poly(6, 4, row, col).area(), tile_area_6x4_tropics, places=4)
     # tile area tropics
     for row in [2, 3]:
       for col in range(4):
-        print(6, 4, row, col)
         self.assertAlmostEqual(tile_poly(6, 4, row, col).area(), tile_area_6x4_equator, places=4)
 
     # trace area
