@@ -12,7 +12,7 @@ import numpy as np
 from tqdm.auto import tqdm
 
 from users360 import (calc_trajects_entropy, config, dump_df_trajects,
-                      get_traces, get_train_test_split)
+                      get_df_trajects, get_traces, get_train_test_split)
 from users360.head_motion_prediction.Utils import (all_metrics,
                                                    cartesian_to_eulerian,
                                                    eulerian_to_cartesian)
@@ -308,12 +308,10 @@ if __name__ == '__main__':
   args = parser.parse_args()
 
   # dataset actions
-  if args.load_raw_dataset:
-    dump_df_trajects()
-    sys.exit()
   if args.calculate_entropy:
-    calc_trajects_entropy()
-    dump_df_trajects()
+    df = get_df_trajects()
+    calc_trajects_entropy(df)
+    dump_df_trajects(df)
     sys.exit()
 
   # used in next actions
