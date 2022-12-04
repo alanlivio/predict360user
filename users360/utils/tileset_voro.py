@@ -1,7 +1,6 @@
 '''
 Provides some TileSetVoro class
 '''
-import logging
 import math
 from functools import cache
 

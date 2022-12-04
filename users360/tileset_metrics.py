@@ -1,4 +1,3 @@
-import logging
 
 import numpy as np
 import pandas as pd
@@ -6,6 +5,7 @@ import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 from tqdm.auto import tqdm
 
+from . import config
 from .utils.tileset import TileSet
 
 tqdm.pandas()
@@ -21,7 +21,7 @@ def _traject_metrics_np(traces, tileset) -> np.array:
 
 def calc_tileset_reqs_metrics(df_trajects: pd.DataFrame, tileset_l: list[TileSet]) -> None:
   if len(df_trajects) >= 4:
-    logging.info("df_trajects.size >= 4, it will take for some time")
+    config.log("df_trajects.size >= 4, it will take for some time")
   for tileset in tileset_l:
     column_name = f'metrics_{tileset.title}'
     metrics_np = df_trajects['traject'].progress_apply(_traject_metrics_np, tileset=tileset)

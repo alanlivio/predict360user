@@ -1,7 +1,6 @@
 """
 Provides some entropy functions
 """
-import logging
 
 import numpy as np
 import pandas as pd
@@ -9,19 +8,19 @@ import plotly.express as px
 import scipy.stats
 from tqdm.auto import tqdm
 
+from . import config
 from .utils.tileset import TILESET_DEFAULT
 
 ENTROPY_CLASS_COLORS = {'low': 'blue', 'medium': 'green', 'hight': 'red'}
 
 tqdm.pandas()
 
-
 def _calc_traject_hmp(traces, tileset) -> np.array:
   return np.apply_along_axis(tileset.request, 1, traces)
 
 
 def calc_trajects_hmps(df_trajects: pd.DataFrame, tileset=TILESET_DEFAULT) -> None:
-  logging.info('calculating heatmaps ...')
+  config.log('calculating heatmaps ...')
   np_hmps = df_trajects['traject'].progress_apply(_calc_traject_hmp, args=(tileset))
   df_trajects['traject_hmps'] = pd.Series(np_hmps)
   assert not df_trajects['traject_hmps'].isnull().any()
@@ -42,7 +41,7 @@ def calc_trajects_entropy(df_trajects: pd.DataFrame) -> None:
   # clean
   df_trajects.drop(['traject_entropy', 'traject_entropy_class'], axis=1, errors='ignore')
   # calc traject_entropy
-  logging.info('calculating trajects entropy ...')
+  config.log('calculating trajects entropy ...')
   df_trajects['traject_entropy'] = df_trajects['traject_hmps'].progress_apply(_entropy_traject)
   assert not df_trajects['traject_entropy'].isnull().any()
   # calc trajects_entropy_class
@@ -70,7 +69,7 @@ def calc_users_entropy(df_trajects: pd.DataFrame) -> pd.DataFrame:
   # clean
   df_trajects.drop(['user_entropy', 'user_entropy_class'], axis=1, errors='ignore')
   # calc user_entropy
-  logging.info('calculating users entropy ...')
+  config.log('calculating users entropy ...')
   df_users = df_trajects.groupby(['ds_user']).progress_apply(_entropy_user).reset_index()
   df_users.columns = ['ds_user', 'user_entropy']
   assert not df_users['user_entropy'].isnull().any()

@@ -2,7 +2,6 @@
 Provides some data functions
 """
 import io
-import logging
 import os
 import pickle
 from os.path import exists
@@ -21,7 +20,7 @@ DF_TRAJECTS_F = os.path.join(config.DATADIR, 'df_trajects.pickle')
 
 
 def _load_df_trajects_from_hmp() -> pd.DataFrame:
-  logging.info('loading trajects from head_motion_prediction project')
+  config.log('loading trajects from head_motion_prediction project')
   # save cwd and move to head_motion_prediction for invoking funcs
   cwd = os.getcwd()
   os.chdir(config.HMDDIR)
@@ -81,16 +80,16 @@ def _load_df_trajects_from_hmp() -> pd.DataFrame:
 def get_df_trajects(df_trajects_f=DF_TRAJECTS_F) -> pd.DataFrame:
   if exists(df_trajects_f):
     with open(df_trajects_f, 'rb') as f:
-      logging.info(f'loading df_trajects from {df_trajects_f}')
+      config.log(f'loading df_trajects from {df_trajects_f}')
       df_trajects = pickle.load(f)
   else:
-    logging.info(f'no {df_trajects_f}')
+    config.log(f'no {df_trajects_f}')
     df_trajects = _load_df_trajects_from_hmp()
   return df_trajects
 
 
 def dump_df_trajects(df_trajects: pd.DataFrame, df_trajects_f=DF_TRAJECTS_F) -> None:
-  logging.info(f'saving df_trajects to {df_trajects_f}')
+  config.log(f'saving df_trajects to {df_trajects_f}')
   with open(df_trajects_f, 'wb') as f:
     pickle.dump(df_trajects, f)
   with open(df_trajects_f + '.info.txt', 'w', encoding='utf-8') as f:
@@ -138,8 +137,8 @@ def show_trajects(df_trajects: pd.DataFrame, tileset=TILESET_DEFAULT) -> None:
     sphere.add_trajectory(row['traject'])
   for d in sphere.data:  # load all data from the sphere
     fig.append_trace(d, row=1, col=1)
+
   # heatmap
-  # TODO: calcuate if hmps is not in df
   if 'traject_hmps' in df_trajects:
     hmp_sums = df_trajects['traject_hmps'].apply(lambda traces: np.sum(traces, axis=0))
     if isinstance(tileset, TileSetVoro):
