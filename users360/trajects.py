@@ -101,9 +101,14 @@ def dump_df_trajects(df_trajects: pd.DataFrame,
     f.write(buffer.getvalue())
 
 
-def get_one_trace(df_trajects: pd.DataFrame) -> np.array:
-  return df_trajects.iloc[0]['traject'][0]
+def sample_traject_row(df_trajects: pd.DataFrame) -> pd.Series:
+  return df_trajects.sample(1)
 
+
+def sample_one_trace_from_traject_row(one_row: pd.Series) -> np.array:
+  traject_ar = one_row['traject'].iloc[0]
+  trace = traject_ar[np.random.randint(len(traject_ar - 1))]
+  return trace
 
 def get_traces(df_trajects: pd.DataFrame, video: str, user: str,
                ds: str) -> np.array:
