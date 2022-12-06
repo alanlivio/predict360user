@@ -65,11 +65,11 @@ def generate_arrays(ids_l, future_window) -> Generator:
       # Load the data
       if MODEL_NAME == 'pos_only':
         encoder_pos_inputs_for_batch.append(
-            get_traces(video, user, DATASET_NAME)[x_i - M_WINDOW:x_i])
+            get_traces(DF_TRAJECTS, video, user, DATASET_NAME)[x_i - M_WINDOW:x_i])
         decoder_pos_inputs_for_batch.append(
-            get_traces(video, user, DATASET_NAME)[x_i:x_i + 1])
+            get_traces(DF_TRAJECTS, video, user, DATASET_NAME)[x_i:x_i + 1])
         decoder_outputs_for_batch.append(
-            get_traces(video, user,
+            get_traces(DF_TRAJECTS, video, user,
                        DATASET_NAME)[x_i + 1:x_i + future_window + 1])
       else:
         raise NotImplementedError
@@ -463,7 +463,8 @@ if __name__ == '__main__':
   else:
     config.loginf(f'x_train entropy is {args.train_entropy}')
   config.loginf(f'x_test entropy is {args.test_entropy}')
-  x_train, x_test = get_train_test_split(args.train_entropy, args.test_entropy,
+  DF_TRAJECTS = get_df_trajects()
+  x_train, x_test = get_train_test_split(DF_TRAJECTS, args.train_entropy, args.test_entropy,
                                          PERC_TEST)
   assert (not x_train.empty and not x_test.empty)
 
