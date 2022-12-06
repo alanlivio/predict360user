@@ -119,17 +119,14 @@ def _entropy_traject(traject) -> float:
 
 
 def calc_trajects_entropy(df_trajects: pd.DataFrame) -> None:
-  # calc hmps
-  if 'traject_hmps' not in df_trajects.columns:
-    calc_trajects_hmps(df_trajects)
   # clean
   df_trajects.drop(['traject_entropy', 'traject_entropy_class'],
                    axis=1,
                    errors='ignore')
   # calc traject_entropy
   config.loginf('calculating trajects entropy ...')
-  df_trajects['traject_entropy'] = df_trajects['traject_hmps'].progress_apply(
-      _entropy_traject)
+  df_trajects['traject_entropy'] = df_trajects['traject'].progress_apply(
+      calc_actual_entropy)
   assert not df_trajects['traject_entropy'].isnull().any()
   # calc trajects_entropy_class
   idxs_sort = df_trajects['traject_entropy'].argsort()
