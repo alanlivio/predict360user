@@ -321,7 +321,7 @@ if __name__ == '__main__':
   parser.add_argument('-epochs',
                       nargs='?',
                       type=int,
-                      default=500,
+                      default=100,
                       help='epochs numbers (default is 500)')
   parser.add_argument(
       '-train_entropy',
