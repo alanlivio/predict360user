@@ -19,14 +19,14 @@ class Test(unittest.TestCase):
 
   def test_sample(self) -> None:
     # query traject row
-    one_row = self.df_trajects.query("ds=='david' and ds_user=='david_0' and ds_video=='david_10_Cows'")
+    one_row = self.df_trajects.query(
+        "ds=='david' and ds_user=='david_0' and ds_video=='david_10_Cows'")
     assert not one_row.empty
     # sample traject row
     one_row = sample_traject_row(self.df_trajects)
     assert not one_row.empty
     trace = sample_one_trace_from_traject_row(one_row)
-    assert trace.shape == (3,)
-
+    assert trace.shape == (3, )
 
   def test_trajects_get(self) -> None:
     videos_l = get_video_ids(self.df_trajects)
@@ -41,15 +41,3 @@ class Test(unittest.TestCase):
     one_row = sample_traject_row(self.df_trajects)
     assert not one_row.empty
     show_one_traject(one_row)
-
-  def test_trajects_entropy(self) -> None:
-    self.df_trajects.drop(['traject_entropy', 'traject_entropy_class'], axis=1, errors='ignore')
-    calc_trajects_entropy(self.df_trajects)
-
-  def test_entropy_users(self) -> None:
-    self.df_trajects.drop(['user_entropy', 'user_entropy_class'], axis=1, errors='ignore')
-    assert not calc_users_entropy(self.df_trajects)
-
-  def test_poles_prc(self) -> None:
-    self.df_trajects.drop(['poles_prc', 'poles_prc_class'], axis=1, errors='ignore')
-    calc_trajects_poles_prc(self.df_trajects)
