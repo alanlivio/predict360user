@@ -134,8 +134,53 @@ def get_ds_ids(df_trajects: pd.DataFrame) -> np.array:
   return df_trajects['ds'].unique()
 
 
-def show_trajects(df_trajects: pd.DataFrame, tileset=TILESET_DEFAULT) -> None:
-  assert len(df_trajects) <= 4, '>=4 traject does not get a good visualization'
+def get_imshow_from_trajects_hmps(df_trajects: pd.DataFrame,
+                                  tileset=TILESET_DEFAULT) -> px.imshow:
+  hmp_sums = df_trajects['traject_hmps'].apply(
+      lambda traces: np.sum(traces, axis=0))
+  if isinstance(tileset, TileSetVoro):
+    hmp_sums = np.reshape(hmp_sums, tileset.shape)
+  heatmap = np.sum(hmp_sums, axis=0)
+  x = [str(x) for x in range(1, heatmap.shape[1] + 1)]
+  y = [str(y) for y in range(1, heatmap.shape[0] + 1)]
+  return px.imshow(heatmap, text_auto=True, x=x, y=y)
+
+
+def show_one_traject(row: pd.Series, tileset=TILESET_DEFAULT) -> None:
+  assert row.shape[0] == 1
+  assert 'traject' in row.columns
+  # subplot two figures
+  fig = make_subplots(rows=1,
+                      cols=2,
+                      specs=[[{
+                          'type': 'surface'
+                      }, {
+                          'type': 'image'
+                      }]])
+  # sphere
+  sphere = VizSphere(tileset)
+  sphere.add_trajectory(row['traject'].iloc[0])
+  for d in sphere.data:  # load all data from the sphere
+    fig.append_trace(d, row=1, col=1)
+
+  # heatmap
+  if 'traject_hmps' in row:
+    erp_heatmap = get_imshow_from_trajects_hmps(row, tileset)
+    erp_heatmap.update_layout(width=100, height=100)
+    fig.append_trace(erp_heatmap.data[0], row=1, col=2)
+    if isinstance(tileset, TileSet):
+      # fix given phi 0 being the north pole at Utils.cartesian_to_eulerian
+      fig.update_yaxes(autorange='reversed')
+
+  title = f'{str(row.shape[0])}_trajects_{tileset.prefix}'
+  fig.update_layout(width=800, showlegend=False, title_text=title)
+  fig.show()
+
+
+def show_sum_trajects(df_trajects: pd.DataFrame,
+                      tileset=TILESET_DEFAULT) -> None:
+  assert len(
+      df_trajects) <= 4, 'df_trajects >=4 does not get a good visualization'
   assert not df_trajects.empty
 
   # subplot two figures
@@ -156,15 +201,7 @@ def show_trajects(df_trajects: pd.DataFrame, tileset=TILESET_DEFAULT) -> None:
 
   # heatmap
   if 'traject_hmps' in df_trajects:
-    hmp_sums = df_trajects['traject_hmps'].apply(
-        lambda traces: np.sum(traces, axis=0))
-    if isinstance(tileset, TileSetVoro):
-      hmp_sums = np.reshape(hmp_sums, tileset.shape)
-    heatmap = np.sum(hmp_sums, axis=0)
-    x = [str(x) for x in range(1, heatmap.shape[1] + 1)]
-    y = [str(y) for y in range(1, heatmap.shape[0] + 1)]
-    erp_heatmap = px.imshow(heatmap, text_auto=True, x=x, y=y)
-    erp_heatmap.update_layout(width=100, height=100)
+    erp_heatmap = get_imshow_from_trajects_hmps(df_trajects, tileset)
     fig.append_trace(erp_heatmap.data[0], row=1, col=2)
     if isinstance(tileset, TileSet):
       # fix given phi 0 being the north pole at Utils.cartesian_to_eulerian

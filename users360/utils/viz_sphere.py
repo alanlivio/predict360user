@@ -127,7 +127,7 @@ class VizSphere():
     assert polygon.points.shape[1] == 3
     self._add_polygon_lines([point for point in polygon.points])
 
-  def add_polygon_from_points(self, points) -> None:
+  def add_polygon_from_points(self, points: np.array) -> None:
     assert points.shape[1] == 3
     self._add_polygon_lines(points)
 
@@ -135,7 +135,7 @@ class VizSphere():
     points = tile_points(t_ver, t_hor, row, col)
     self._add_polygon_lines(points)
 
-  def add_trace_and_fov(self, trace) -> None:
+  def add_trace_and_fov(self, trace: np.array) -> None:
     self.data.append(
         go.Scatter3d(x=[trace[0]],
                      y=[trace[1]],
@@ -148,25 +148,25 @@ class VizSphere():
     points = fov_points(*trace)
     self._add_polygon_lines(points)
 
-  def add_trajectory(self, trajectory) -> None:
+  def add_trajectory(self, traces: np.array) -> None:
     # start, end colors
     start_c = '#b2d8ff'
     end_c = '#00264c'
 
     # start, end marks
     self.data.append(
-        go.Scatter3d(x=[trajectory[0][0]],
-                     y=[trajectory[0][1]],
-                     z=[trajectory[0][2]],
+        go.Scatter3d(x=[traces[0][0]],
+                     y=[traces[0][1]],
+                     z=[traces[0][2]],
                      mode='markers',
                      marker={
                          'size': 4,
                          'color': start_c
                      }))
     self.data.append(
-        go.Scatter3d(x=[trajectory[-1][0]],
-                     y=[trajectory[-1][1]],
-                     z=[trajectory[-1][2]],
+        go.Scatter3d(x=[traces[-1][0]],
+                     y=[traces[-1][1]],
+                     z=[traces[-1][2]],
                      mode='markers',
                      marker={
                          'size': 4,
@@ -174,12 +174,12 @@ class VizSphere():
                      }))
 
     # edges
-    n = len(trajectory)
+    n = len(traces)
     t = np.linspace(0, 1, 100)
     colors = [x.hex for x in list(Color(start_c).range_to(Color(end_c), n))]
     for index in range(n - 1):
-      start = trajectory[index]
-      end = trajectory[(index + 1)]
+      start = traces[index]
+      end = traces[(index + 1)]
       result = np.array(geometric_slerp(start, end, t))
       edge = go.Scatter3d(x=result[..., 0],
                           y=result[..., 1],

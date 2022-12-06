@@ -2,12 +2,8 @@ import unittest
 
 import plotly.io as pio
 
-from users360.entropy import (calc_trajects_entropy, calc_trajects_poles_prc,
-                              calc_users_entropy)
-from users360.trajects import (get_df_trajects, get_ds_ids, get_traces,
-                               get_user_ids, get_video_ids,
-                               sample_one_trace_from_traject_row,
-                               sample_traject_row, show_trajects)
+from users360.entropy import *
+from users360.trajects import *
 
 pio.renderers.default = None
 
@@ -41,8 +37,10 @@ class Test(unittest.TestCase):
     assert ds_l.size
     assert get_traces(self.df_trajects, videos_l[0], users_l[0], ds_l[0]).size
 
-  def test_trajects_show(self) -> None:
-    show_trajects(self.df_trajects)
+  def test_show_one_traject(self) -> None:
+    one_row = sample_traject_row(self.df_trajects)
+    assert not one_row.empty
+    show_one_traject(one_row)
 
   def test_trajects_entropy(self) -> None:
     self.df_trajects.drop(['traject_entropy', 'traject_entropy_class'], axis=1, errors='ignore')
