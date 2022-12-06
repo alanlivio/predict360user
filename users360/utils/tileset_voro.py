@@ -48,7 +48,7 @@ class TileSetVoro(TileSet):
   Class for Voroni TileSet
   """
 
-  def __init__(self, n_patchs: int, cover: TileCover) -> None:
+  def __init__(self, n_patchs: int, cover = TileCover.ANY) -> None:
     super().__init__(2, -1, cover)  # force shape (2,-1)
     self.n_patchs = n_patchs
     self.voro = voro_trinity(n_patchs)

@@ -70,7 +70,7 @@ class TileSet():
   Class for rectangular TileSet
   """
 
-  def __init__(self, t_ver, t_hor, cover: TileCover) -> None:
+  def __init__(self, t_ver, t_hor, cover=TileCover.ANY) -> None:
     self.t_ver, self.t_hor = t_ver, t_hor
     self.shape = (self.t_ver, self.t_hor)
     self.cover = cover

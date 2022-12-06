@@ -21,7 +21,7 @@ class Test(unittest.TestCase):
     # force hmp recalc
     self.df_trajects.drop(['traject_hmps'], axis=1, errors='ignore')
 
-  def test_trace(self) -> None:
+  def test_sample(self) -> None:
     # query traject row
     one_row = self.df_trajects.query("ds=='david' and ds_user=='david_0' and ds_video=='david_10_Cows'")
     assert not one_row.empty
