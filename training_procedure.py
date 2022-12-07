@@ -161,13 +161,13 @@ def evaluate() -> None:
     # MODEL.predict
     if MODEL_NAME == 'pos_only':
       encoder_pos_inputs_for_sample = np.array(
-          [get_traces(video, user, DATASET_NAME)[x_i - M_WINDOW:x_i]])
+          [get_traces(DF_TRAJECTS, video, user, DATASET_NAME)[x_i - M_WINDOW:x_i]])
       decoder_pos_inputs_for_sample = np.array(
-          [get_traces(video, user, DATASET_NAME)[x_i:x_i + 1]])
+          [get_traces(DF_TRAJECTS, video, user, DATASET_NAME)[x_i:x_i + 1]])
     else:
       raise NotImplementedError
 
-    groundtruth = get_traces(video, user,
+    groundtruth = get_traces(DF_TRAJECTS, video, user,
                              DATASET_NAME)[x_i + 1:x_i + H_WINDOW + 1]
 
     if MODEL_NAME == 'pos_only':
