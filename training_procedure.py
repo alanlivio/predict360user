@@ -65,7 +65,8 @@ def generate_arrays(ids_l, future_window) -> Generator:
       # Load the data
       if MODEL_NAME == 'pos_only':
         encoder_pos_inputs_for_batch.append(
-            get_traces(DF_TRAJECTS, video, user, DATASET_NAME)[x_i - M_WINDOW:x_i])
+            get_traces(DF_TRAJECTS, video, user,
+                       DATASET_NAME)[x_i - M_WINDOW:x_i])
         decoder_pos_inputs_for_batch.append(
             get_traces(DF_TRAJECTS, video, user, DATASET_NAME)[x_i:x_i + 1])
         decoder_outputs_for_batch.append(
@@ -160,8 +161,9 @@ def evaluate() -> None:
 
     # MODEL.predict
     if MODEL_NAME == 'pos_only':
-      encoder_pos_inputs_for_sample = np.array(
-          [get_traces(DF_TRAJECTS, video, user, DATASET_NAME)[x_i - M_WINDOW:x_i]])
+      encoder_pos_inputs_for_sample = np.array([
+          get_traces(DF_TRAJECTS, video, user, DATASET_NAME)[x_i - M_WINDOW:x_i]
+      ])
       decoder_pos_inputs_for_sample = np.array(
           [get_traces(DF_TRAJECTS, video, user, DATASET_NAME)[x_i:x_i + 1]])
     else:
@@ -288,29 +290,24 @@ if __name__ == '__main__':
       'all',
       'low',
       'medium',
-      'hight',  # traject_entropy_class
+      'hight',
       'low_users',
       'medium_users',
-      'hight_users'
-  ]  # user_entropy_class
+      'hight_users',
+  ]
   dataset_names = ['all', *config.DS_NAMES]
 
   # main actions params
   group = parser.add_mutually_exclusive_group()
-  group.add_argument('-load_raw_dataset',
-                     action='store_true',
-                     help='load raw dataset and save it as pickle ')
-  group.add_argument('-calculate_entropy',
-                     action='store_true',
-                     help='calculate trajectories entropy')
+  group.add_argument(
+      '-calculate_entropy',
+      action='store_true',
+      help='load raw dataset, calculate entropy and save it as pickle')
   group.add_argument('-compare_results',
                      action='store_true',
-                     help='show a comparison of -evaluate results')
-  group.add_argument('-show_train_distribution',
-                     action='store_true',
-                     help='Show train distribution')
-  group.add_argument('-train', action='store_true', help='Train model')
-  group.add_argument('-evaluate', action='store_true', help='Evaluate model')
+                     help='compare -evaluate results ')
+  group.add_argument('-train', action='store_true', help='train model')
+  group.add_argument('-evaluate', action='store_true', help='evaluate model')
   group.add_argument(
       '-evaluate_adaptative',
       action='store_true',
@@ -323,13 +320,13 @@ if __name__ == '__main__':
                       type=int,
                       default=100,
                       help='epochs numbers (default is 500)')
-  parser.add_argument(
-      '-train_entropy',
-      nargs='?',
-      type=str,
-      default='all',
-      choices=entropy_l,
-      help='entropy class to filter model used data  (default all)')
+
+  parser.add_argument('-train_entropy',
+                      nargs='?',
+                      type=str,
+                      default='all',
+                      choices=entropy_l,
+                      help='entropy to filter data model train  (default all)')
 
   # evaluate only params
   parser.add_argument(
@@ -338,7 +335,7 @@ if __name__ == '__main__':
       type=str,
       default='all',
       choices=entropy_l,
-      help='entropy class to filter -evalaute data (default all)')
+      help='entropy class to filter -evaluate data (default all)')
 
   # train/evaluate params
   parser.add_argument('-gpu_id',
@@ -464,8 +461,8 @@ if __name__ == '__main__':
     config.loginf(f'x_train entropy is {args.train_entropy}')
   config.loginf(f'x_test entropy is {args.test_entropy}')
   DF_TRAJECTS = get_df_trajects()
-  x_train, x_test = get_train_test_split(DF_TRAJECTS, args.train_entropy, args.test_entropy,
-                                         PERC_TEST)
+  x_train, x_test = get_train_test_split(DF_TRAJECTS, args.train_entropy,
+                                         args.test_entropy, PERC_TEST)
   assert (not x_train.empty and not x_test.empty)
 
   config.loginf(f'x_train has {len(x_train)} trajectories')
