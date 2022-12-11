@@ -140,7 +140,7 @@ def train() -> None:
 
 def evaluate() -> None:
   if MODEL_NAME == 'pos_only':
-    if EVALUATE_ADAPTATIVE:
+    if EVALUATE_AUTO:
       model_low = create_model()
       model_low.load_weights(MODEL_WEIGHTS_LOW)
       model_medium = create_model()
@@ -174,7 +174,7 @@ def evaluate() -> None:
 
     if MODEL_NAME == 'pos_only':
       current_model = MODEL
-      if EVALUATE_ADAPTATIVE:
+      if EVALUATE_AUTO:
         traject_entropy_class = ids['traject_entropy_class']
         if traject_entropy_class == 'low':
           current_model = model_low
@@ -329,6 +329,15 @@ if __name__ == '__main__':
                       help='entropy to filter data model train  (default all)')
 
   # evaluate only params
+  test_model_l = entropy_l + ['auto', 'auto_window']
+  parser.add_argument(
+      '-test_model_entropy',
+      nargs='?',
+      type=str,
+      default='all',
+      choices=test_model_l,
+      help='''entropy of the model to be used, auto selects from traject entropy,
+               and auto_window selects from last window''')
   parser.add_argument(
       '-test_entropy',
       nargs='?',
@@ -379,132 +388,123 @@ if __name__ == '__main__':
 
   args = parser.parse_args()
 
-  # dataset actions
-  if args.calculate_entropy:
-    df = get_df_trajects()
-    calc_trajects_entropy(df)
-    dump_df_trajects(df)
-    sys.exit()
-
-  # used in next actions
-  MODEL_NAME = args.model_name
+  # global vars
   DATASET_NAME = args.dataset_name
+  MODEL_NAME = args.model_name
   PERC_TEST = args.perc_test
   EPOCHS = args.epochs
   INIT_WINDOW = args.init_window
   M_WINDOW = args.m_window
   H_WINDOW = args.h_window
   END_WINDOW = H_WINDOW
-
-  # MODEL_FOLDER, MODEL_WEIGHTS
-  if args.evaluate_adaptative:
-    EVALUATE_ADAPTATIVE = True
-    dataset_suffix = ''
-    # MODEL_FOLDER
-    MODEL_FOLDER = join(config.DATADIR,
-                        f'{MODEL_NAME}{dataset_suffix}_adaptative')
-    # MODEL_WEIGHTS
-    MODEL_WEIGHTS_LOW = join(config.DATADIR,
-                             f'{MODEL_NAME}{dataset_suffix}_low_entropy',
-                             'weights.hdf5')
-    MODEL_WEIGHTS_MEDIUM = join(config.DATADIR,
-                                f'{MODEL_NAME}{dataset_suffix}_medium_entropy',
-                                'weights.hdf5')
-    MODEL_WEIGHTS_HIGHT = join(config.DATADIR,
-                               f'{MODEL_NAME}{dataset_suffix}_hight_entropy',
-                               'weights.hdf5')
-    assert exists(MODEL_WEIGHTS_LOW)
-    assert exists(MODEL_WEIGHTS_MEDIUM)
-    assert exists(MODEL_WEIGHTS_HIGHT)
-    config.loginf(
-        'MODEL_WEIGHTS={MODEL_WEIGHTS_LOW},{MODEL_WEIGHTS_MEDIUM},{MODEL_WEIGHTS_HIGHT}'
-    )
-  else:
-    EVALUATE_ADAPTATIVE = False
-    # MODEL_FOLDER
-    dataset_suffix = '' if args.dataset_name == 'all' else f'_{DATASET_NAME}'
-    train_entropy_suffix = '' if args.train_entropy == 'all' else f'_{args.train_entropy}_entropy'
-    MODEL_FOLDER = join(config.DATADIR,
-                        f'{MODEL_NAME}{dataset_suffix}{train_entropy_suffix}')
-    fmt_str = 'MODEL_NAME={}, dataset_suffix={}, train_entropy_suffix={}'
-    config.loginf(
-        fmt_str.format(MODEL_NAME, dataset_suffix, train_entropy_suffix))
-    config.loginf(f'MODEL_FOLDER is {MODEL_FOLDER}')
-    # MODEL_WEIGHTS
-    MODEL_WEIGHTS = join(MODEL_FOLDER, 'weights.hdf5')
-    config.loginf(f'MODEL_WEIGHTS={MODEL_WEIGHTS}')
-    if args.evaluate:
-      assert exists(MODEL_WEIGHTS)
-
-  if not exists(MODEL_FOLDER):
-    os.makedirs(MODEL_FOLDER)
-
-  # TEST_PREFIX_PERC
-  config.loginf(f'PERC_TEST is {PERC_TEST}')
   TEST_PREFIX_PERC = f"test_{str(PERC_TEST).replace('.',',')}"
-  TEST_PREFIX_PERC_ENTROPY = f'{TEST_PREFIX_PERC}_{args.test_entropy}'
 
-  # compare_results action
+  # -calculate_entropy
+  if args.calculate_entropy:
+    df = get_df_trajects()
+    calc_trajects_entropy(df)
+    dump_df_trajects(df)
+    sys.exit()
+
+  # -compare_results
   if args.compare_results:
     compare_results()
     sys.exit()
 
-  # PARTITION_IDS for -train, -evaluation
+  config.loginf('DATASET=' + (
+      +DATASET_NAME if DATASET_NAME != 'all' else repr(config.DS_NAMES)))
+  dataset_suffix = '' if args.dataset_name == 'all' else f'_{DATASET_NAME}'
+  model_folder_prefix = join(config.DATADIR, f'{MODEL_NAME}{dataset_suffix}')
+
+  # -train MODEL_FOLDER
+  if args.train:
+    MODEL_FOLDER = model_folder_prefix + ('' if args.train_entropy == 'all' else
+                                          f'_{args.train_entropy}_entropy')
+    config.loginf(f'MODEL_FOLDER={MODEL_FOLDER}')
+    if not exists(MODEL_FOLDER):
+      os.makedirs(MODEL_FOLDER)
+
+  # -evaluate MODEL_FOLDER, MODEL_WEIGHTS
+  if args.evaluate:
+    MODEL_FOLDER = model_folder_prefix + ('' if args.test_model_entropy == 'all'
+                                          else
+                                          f'_{args.test_model_entropy}_entropy')
+    config.loginf(f'MODEL_FOLDER={MODEL_FOLDER}')
+    if not args.test_model_entropy.startswith('auto'):
+      MODEL_WEIGHTS = join(MODEL_FOLDER, 'weights.hdf5')
+      config.loginf(f'MODEL_WEIGHTS={MODEL_WEIGHTS}')
+      assert exists(MODEL_WEIGHTS)
+    if args.test_model_entropy.startswith('auto'):
+      EVALUATE_AUTO = True
+      MODEL_WEIGHTS_LOW = join(model_folder_prefix + "_low_entropy",
+                               'weights.hdf5')
+      MODEL_WEIGHTS_MEDIUM = join(model_folder_prefix + "_medium_entropy",
+                                  'weights.hdf5')
+      MODEL_WEIGHTS_HIGHT = join(model_folder_prefix + "_hight_entropy",
+                                 'weights.hdf5')
+      assert exists(MODEL_WEIGHTS_LOW)
+      assert exists(MODEL_WEIGHTS_MEDIUM)
+      assert exists(MODEL_WEIGHTS_HIGHT)
+      config.loginf('MODEL_WEIGHTS='+ args.test_model_entropy)
+
+  # partioning
   config.loginf('')
   config.loginf('partioning train/test ...')
-  if args.evaluate_adaptative:
-    args.train_entropy = 'all'
-    config.loginf(
-        'x_train entropy is all but dynamic choosed (-evaluate_adaptative enabled)'
-    )
-  else:
-    config.loginf(f'x_train entropy is {args.train_entropy}')
-  config.loginf(f'x_test entropy is {args.test_entropy}')
   DF_TRAJECTS = get_df_trajects()
-  x_train, x_test = get_train_test_split(DF_TRAJECTS, args.train_entropy,
-                                         args.test_entropy, PERC_TEST)
-  assert (not x_train.empty and not x_test.empty)
-
-  config.loginf(f'x_train has {len(x_train)} trajectories')
-  if args.evaluate_adaptative:
-    fmt_str = 'x_test has {} {} trajectories (-evaluate_adaptative enabled)'
-    config.loginf(
-        fmt_str.format(len(x_test[x_test['traject_entropy_class'] == 'low']),
-                       'low'))
-    config.loginf(
-        fmt_str.format(len(x_test[x_test['traject_entropy_class'] == 'medium']),
-                       'medium'))
-    config.loginf(
-        fmt_str.format(len(x_test[x_test['traject_entropy_class'] == 'hight']),
-                       'hight'))
-  else:
-    config.loginf(f'x_test has {len(x_test)} trajectories')
+  config.loginf(f'PERC_TEST is {PERC_TEST}')
   PARTITION_IDS = {}
-  PARTITION_IDS['train'] = [
-      {
-          'video': row[1]['ds_video'],
-          'user': row[1]['ds_user'],
-          'time-stamp': tstap
-      } for row in x_train.iterrows()
-      for tstap in range(INIT_WINDOW, row[1]['traject'].shape[0] - END_WINDOW)
-  ]
-  PARTITION_IDS['test'] = [
-      {
-          'video': row[1]['ds_video'],
-          'user': row[1]['ds_user'],
-          'time-stamp': tstap,
-          'traject_entropy_class': row[1]['traject_entropy_class']
-      } for row in x_test.iterrows()
-      for tstap in range(INIT_WINDOW, row[1]['traject'].shape[0] - END_WINDOW)
-  ]
-  VIDEOS_TEST = x_test['ds_video'].unique()
-  USERS_TEST = x_test['ds_user'].unique()
-  config.loginf(
-      f"PARTITION_IDS['train'] has {len(PARTITION_IDS['train'])} position predictions"
-  )
-  config.loginf(
-      f"PARTITION_IDS['test'] has {len(PARTITION_IDS['test'])} position predictions"
-  )
+
+  # -train x_train
+  if args.train:
+    config.loginf(f'x_train entropy is {args.train_entropy}')
+    x_train, _ = get_train_test_split(DF_TRAJECTS, args.train_entropy, 'all',
+                                      PERC_TEST)
+    assert (not x_train.empty)
+    fmt = 'x_train has {} trajectories: {} low, {} medium, {} hight'
+    t_len = len(x_train)
+    l_len = len(x_train[x_train['traject_entropy_class'] == 'low'])
+    m_len = len(x_train[x_train['traject_entropy_class'] == 'medium'])
+    h_len = len(x_train[x_train['traject_entropy_class'] == 'hight'])
+    config.loginf(fmt.format(t_len, l_len, m_len, h_len))
+    PARTITION_IDS['train'] = [
+        {
+            'video': row[1]['ds_video'],
+            'user': row[1]['ds_user'],
+            'time-stamp': tstap
+        } for row in x_train.iterrows()
+        for tstap in range(INIT_WINDOW, row[1]['traject'].shape[0] - END_WINDOW)
+    ]
+    p_len = len(PARTITION_IDS['train'])
+    config.loginf("PARTITION_IDS['train'] has {} positions".format(p_len))
+
+  # -evaluate x_test, TEST_PREFIX_PERC_ENTROPY, VIDEOS_TEST, USERS_TEST
+  if args.evaluate:
+    config.loginf(f'results prefix in MODEL_FODLER={TEST_PREFIX_PERC_ENTROPY}')
+    config.loginf(f'x_test entropy={args.test_entropy}')
+    TEST_PREFIX_PERC_ENTROPY = f'{TEST_PREFIX_PERC}_{args.test_entropy}'
+    _, x_test = get_train_test_split(DF_TRAJECTS, 'all', args.test_entropy,
+                                     PERC_TEST)
+    assert (not x_test.empty)
+    fmt = 'x_test has {} trajectories: {} low, {} medium, {} hight'
+    t_len = len(x_test)
+    l_len = len(x_test[x_test['traject_entropy_class'] == 'low'])
+    m_len = len(x_test[x_test['traject_entropy_class'] == 'medium'])
+    h_len = len(x_test[x_test['traject_entropy_class'] == 'hight'])
+    config.loginf(fmt.format(t_len, l_len, m_len, h_len))
+    PARTITION_IDS['test'] = [
+        {
+            'video': row[1]['ds_video'],
+            'user': row[1]['ds_user'],
+            'time-stamp': tstap,
+            'traject_entropy_class': row[1]['traject_entropy_class']
+        } for row in x_test.iterrows()
+        for tstap in range(INIT_WINDOW, row[1]['traject'].shape[0] - END_WINDOW)
+    ]
+    VIDEOS_TEST = x_test['ds_video'].unique()
+    USERS_TEST = x_test['ds_user'].unique()
+    p_len = len(PARTITION_IDS['test'])
+    config.loginf("PARTITION_IDS['test'] has {} positions".format(p_len))
+
 
   # creating model
   config.loginf('')
@@ -521,7 +521,7 @@ if __name__ == '__main__':
     config.loginf('training ...')
     config.loginf(f'EPOCHS is {EPOCHS}')
     train()
-  elif args.evaluate or args.evaluate_adaptative:
+  elif args.evaluate:
     config.loginf('')
     config.loginf('evaluating ...')
     evaluate()
