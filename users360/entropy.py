@@ -108,7 +108,7 @@ def calc_trajects_hmps(df_trajects: pd.DataFrame,
   assert not df_trajects['traject_hmps'].isnull().any()
 
 
-def _class_by_threshold(x, threshold_medium,
+def get_class_by_threshold(x, threshold_medium,
                         threshold_hight) -> Literal['low', 'medium', 'hight']:
   return 'low' if x < threshold_medium else (
       'medium' if x < threshold_hight else 'hight')
@@ -117,6 +117,14 @@ def _class_by_threshold(x, threshold_medium,
 def _entropy_traject(traject) -> float:
   return scipy.stats.entropy(np.sum(traject, axis=0).reshape((-1)))
 
+def get_trajects_entropy_threshold(df_trajects: pd.DataFrame) -> tuple[float, float]:
+  idxs_sort = df_trajects['traject_entropy'].argsort()
+  trajects_len = len(df_trajects['traject_entropy'])
+  idx_threshold_medium = idxs_sort[int(trajects_len * .60)]
+  idx_threshold_hight = idxs_sort[int(trajects_len * .90)]
+  threshold_medium = df_trajects['traject_entropy'][idx_threshold_medium]
+  threshold_hight = df_trajects['traject_entropy'][idx_threshold_hight]
+  return threshold_medium, threshold_hight
 
 def calc_trajects_entropy(df_trajects: pd.DataFrame) -> None:
   # clean
@@ -129,14 +137,9 @@ def calc_trajects_entropy(df_trajects: pd.DataFrame) -> None:
       calc_actual_entropy)
   assert not df_trajects['traject_entropy'].isnull().any()
   # calc trajects_entropy_class
-  idxs_sort = df_trajects['traject_entropy'].argsort()
-  trajects_len = len(df_trajects['traject_entropy'])
-  idx_threshold_medium = idxs_sort[int(trajects_len * .60)]
-  idx_threshold_hight = idxs_sort[int(trajects_len * .90)]
-  threshold_medium = df_trajects['traject_entropy'][idx_threshold_medium]
-  threshold_hight = df_trajects['traject_entropy'][idx_threshold_hight]
+  threshold_medium, threshold_hight = get_trajects_entropy_threshold(df_trajects)
   df_trajects['traject_entropy_class'] = df_trajects[
-      'traject_entropy'].progress_apply(_class_by_threshold,
+      'traject_entropy'].progress_apply(get_class_by_threshold,
                                         args=(threshold_medium,
                                               threshold_hight))
   assert not df_trajects['traject_entropy_class'].isnull().any()
@@ -170,7 +173,7 @@ def calc_users_entropy(df_trajects: pd.DataFrame) -> pd.DataFrame:
   threshold_medium = df_users['user_entropy'][idx_threshold_medium]
   threshold_hight = df_users['user_entropy'][idx_threshold_hight]
   df_users['user_entropy_class'] = df_users['user_entropy'].progress_apply(
-      _class_by_threshold, args=(threshold_medium, threshold_hight))
+      get_class_by_threshold, args=(threshold_medium, threshold_hight))
   assert not df_users['user_entropy_class'].isna().any()
 
   # merge right inplace
@@ -251,7 +254,7 @@ def calc_trajects_poles_prc(df_trajects: pd.DataFrame) -> None:
   threshold_hight = df_trajects['poles_prc'][idx_threshold_hight]
   # calc poles_class
   df_trajects['poles_class'] = df_trajects['poles_prc'].progress_apply(
-      _class_by_threshold, args=(threshold_medium, threshold_hight))
+      get_class_by_threshold, args=(threshold_medium, threshold_hight))
   assert not df_trajects['poles_class'].isna().any()
 
 
