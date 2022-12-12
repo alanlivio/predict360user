@@ -11,8 +11,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 from tqdm.auto import tqdm
 
-from users360 import (calc_trajects_entropy, config, dump_df_trajects,
-                      get_df_trajects, get_traces, get_train_test_split)
+from users360 import (calc_actual_entropy, calc_trajects_entropy, config,
+                      dump_df_trajects, get_class_by_threshold,
+                      get_df_trajects, get_traces, get_train_test_split,
+                      get_trajects_entropy_threshold)
 from users360.head_motion_prediction.Utils import (all_metrics,
                                                    cartesian_to_eulerian,
                                                    eulerian_to_cartesian)
@@ -147,6 +149,7 @@ def evaluate() -> None:
       model_medium.load_weights(MODEL_WEIGHTS_MEDIUM)
       model_hight = create_model()
       model_hight.load_weights(MODEL_WEIGHTS_HIGHT)
+      threshold_medium, threshold_hight = get_trajects_entropy_threshold(DF_TRAJECTS)
     else:
       MODEL.load_weights(MODEL_WEIGHTS)
   else:
@@ -175,7 +178,18 @@ def evaluate() -> None:
     if MODEL_NAME == 'pos_only':
       current_model = MODEL
       if EVALUATE_AUTO:
-        traject_entropy_class = ids['traject_entropy_class']
+        if TEST_MODEL_ENTROPY == 'auto':
+          traject_entropy_class = ids['traject_entropy_class']
+        if TEST_MODEL_ENTROPY == 'auto_m_window':
+          window = get_traces(DF_TRAJECTS, video, user, DATASET_NAME)[x_i - M_WINDOW:x_i]
+          a_ent = calc_actual_entropy(window)
+          traject_entropy_class = get_class_by_threshold(a_ent, threshold_medium, threshold_hight)
+        elif TEST_MODEL_ENTROPY == 'auto_since_start':
+          window = get_traces(DF_TRAJECTS, video, user, DATASET_NAME)[0:x_i]
+          a_ent = calc_actual_entropy(window)
+          traject_entropy_class = get_class_by_threshold(a_ent, threshold_medium, threshold_hight)
+        else:
+          raise RuntimeError()
         if traject_entropy_class == 'low':
           current_model = model_low
         elif traject_entropy_class == 'medium':
@@ -329,7 +343,7 @@ if __name__ == '__main__':
                       help='entropy to filter data model train  (default all)')
 
   # evaluate only params
-  test_model_l = entropy_l + ['auto', 'auto_window']
+  test_model_l = entropy_l + ['auto', 'auto_m_window', 'auto_since_start']
   parser.add_argument(
       '-test_model_entropy',
       nargs='?',
@@ -429,6 +443,7 @@ if __name__ == '__main__':
     MODEL_FOLDER = model_folder_prefix + ('' if args.test_model_entropy == 'all'
                                           else
                                           f'_{args.test_model_entropy}_entropy')
+    TEST_MODEL_ENTROPY = args.test_model_entropy
     config.loginf(f'MODEL_FOLDER={MODEL_FOLDER}')
     if not args.test_model_entropy.startswith('auto'):
       MODEL_WEIGHTS = join(MODEL_FOLDER, 'weights.hdf5')
@@ -446,6 +461,7 @@ if __name__ == '__main__':
       assert exists(MODEL_WEIGHTS_MEDIUM)
       assert exists(MODEL_WEIGHTS_HIGHT)
       config.loginf('MODEL_WEIGHTS='+ args.test_model_entropy)
+
 
   # partioning
   config.loginf('')
@@ -479,9 +495,9 @@ if __name__ == '__main__':
 
   # -evaluate x_test, TEST_PREFIX_PERC_ENTROPY, VIDEOS_TEST, USERS_TEST
   if args.evaluate:
-    config.loginf(f'results prefix in MODEL_FODLER={TEST_PREFIX_PERC_ENTROPY}')
-    config.loginf(f'x_test entropy={args.test_entropy}')
     TEST_PREFIX_PERC_ENTROPY = f'{TEST_PREFIX_PERC}_{args.test_entropy}'
+    config.loginf(f'MODEL_FODLER results prefix={TEST_PREFIX_PERC_ENTROPY}')
+    config.loginf(f'x_test entropy={args.test_entropy}')
     _, x_test = get_train_test_split(DF_TRAJECTS, 'all', args.test_entropy,
                                      PERC_TEST)
     assert (not x_test.empty)

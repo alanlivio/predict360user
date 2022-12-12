@@ -37,12 +37,15 @@
             "justMyCode": true
         },
         {
-            "name": "-evaluate_adaptative",
+            "name": "-evaluate auto_m_window",
             "type": "python",
             "request": "launch",
             "module": "training_procedure",
             "args": [
-                "-evaluate_adaptative"
+                "-evaluate",
+                "-test_model_entropy",
+                "auto_m_window"
+                // "auto_since_start"
             ],
             "justMyCode": true
         },
