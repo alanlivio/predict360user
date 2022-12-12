@@ -466,60 +466,59 @@ if __name__ == '__main__':
   # partioning
   config.loginf('')
   config.loginf('partioning train/test ...')
-  DF_TRAJECTS = get_df_trajects()
   config.loginf(f'PERC_TEST is {PERC_TEST}')
   PARTITION_IDS = {}
-
-  # -train x_train
-  if args.train:
-    config.loginf(f'x_train entropy is {args.train_entropy}')
-    x_train, _ = get_train_test_split(DF_TRAJECTS, args.train_entropy, 'all',
-                                      PERC_TEST)
-    assert (not x_train.empty)
-    fmt = 'x_train has {} trajectories: {} low, {} medium, {} hight'
-    t_len = len(x_train)
-    l_len = len(x_train[x_train['traject_entropy_class'] == 'low'])
-    m_len = len(x_train[x_train['traject_entropy_class'] == 'medium'])
-    h_len = len(x_train[x_train['traject_entropy_class'] == 'hight'])
-    config.loginf(fmt.format(t_len, l_len, m_len, h_len))
-    PARTITION_IDS['train'] = [
-        {
-            'video': row[1]['ds_video'],
-            'user': row[1]['ds_user'],
-            'time-stamp': tstap
-        } for row in x_train.iterrows()
-        for tstap in range(INIT_WINDOW, row[1]['traject'].shape[0] - END_WINDOW)
-    ]
-    p_len = len(PARTITION_IDS['train'])
-    config.loginf("PARTITION_IDS['train'] has {} positions".format(p_len))
-
-  # -evaluate x_test, TEST_PREFIX_PERC_ENTROPY, VIDEOS_TEST, USERS_TEST
   if args.evaluate:
     TEST_PREFIX_PERC_ENTROPY = f'{TEST_PREFIX_PERC}_{args.test_entropy}'
     config.loginf(f'MODEL_FODLER results prefix={TEST_PREFIX_PERC_ENTROPY}')
-    config.loginf(f'x_test entropy={args.test_entropy}')
-    _, x_test = get_train_test_split(DF_TRAJECTS, 'all', args.test_entropy,
-                                     PERC_TEST)
-    assert (not x_test.empty)
-    fmt = 'x_test has {} trajectories: {} low, {} medium, {} hight'
-    t_len = len(x_test)
-    l_len = len(x_test[x_test['traject_entropy_class'] == 'low'])
-    m_len = len(x_test[x_test['traject_entropy_class'] == 'medium'])
-    h_len = len(x_test[x_test['traject_entropy_class'] == 'hight'])
-    config.loginf(fmt.format(t_len, l_len, m_len, h_len))
-    PARTITION_IDS['test'] = [
-        {
-            'video': row[1]['ds_video'],
-            'user': row[1]['ds_user'],
-            'time-stamp': tstap,
-            'traject_entropy_class': row[1]['traject_entropy_class']
-        } for row in x_test.iterrows()
-        for tstap in range(INIT_WINDOW, row[1]['traject'].shape[0] - END_WINDOW)
-    ]
-    VIDEOS_TEST = x_test['ds_video'].unique()
-    USERS_TEST = x_test['ds_user'].unique()
-    p_len = len(PARTITION_IDS['test'])
-    config.loginf("PARTITION_IDS['test'] has {} positions".format(p_len))
+  DF_TRAJECTS = get_df_trajects()
+
+  # -train x_train
+  config.loginf(f'x_train entropy is {args.train_entropy}')
+  x_train, _ = get_train_test_split(DF_TRAJECTS, args.train_entropy, 'all',
+                                    PERC_TEST)
+  assert (not x_train.empty)
+  fmt = 'x_train has {} trajectories: {} low, {} medium, {} hight'
+  t_len = len(x_train)
+  l_len = len(x_train[x_train['traject_entropy_class'] == 'low'])
+  m_len = len(x_train[x_train['traject_entropy_class'] == 'medium'])
+  h_len = len(x_train[x_train['traject_entropy_class'] == 'hight'])
+  config.loginf(fmt.format(t_len, l_len, m_len, h_len))
+  PARTITION_IDS['train'] = [
+      {
+          'video': row[1]['ds_video'],
+          'user': row[1]['ds_user'],
+          'time-stamp': tstap
+      } for row in x_train.iterrows()
+      for tstap in range(INIT_WINDOW, row[1]['traject'].shape[0] - END_WINDOW)
+  ]
+  p_len = len(PARTITION_IDS['train'])
+  config.loginf("PARTITION_IDS['train'] has {} positions".format(p_len))
+
+  # -evaluate x_test, TEST_PREFIX_PERC_ENTROPY, VIDEOS_TEST, USERS_TEST
+  config.loginf(f'x_test entropy={args.test_entropy}')
+  _, x_test = get_train_test_split(DF_TRAJECTS, 'all', args.test_entropy,
+                                    PERC_TEST)
+  assert (not x_test.empty)
+  fmt = 'x_test has {} trajectories: {} low, {} medium, {} hight'
+  t_len = len(x_test)
+  l_len = len(x_test[x_test['traject_entropy_class'] == 'low'])
+  m_len = len(x_test[x_test['traject_entropy_class'] == 'medium'])
+  h_len = len(x_test[x_test['traject_entropy_class'] == 'hight'])
+  config.loginf(fmt.format(t_len, l_len, m_len, h_len))
+  PARTITION_IDS['test'] = [
+      {
+          'video': row[1]['ds_video'],
+          'user': row[1]['ds_user'],
+          'time-stamp': tstap,
+          'traject_entropy_class': row[1]['traject_entropy_class']
+      } for row in x_test.iterrows()
+      for tstap in range(INIT_WINDOW, row[1]['traject'].shape[0] - END_WINDOW)
+  ]
+  VIDEOS_TEST = x_test['ds_video'].unique()
+  USERS_TEST = x_test['ds_user'].unique()
+  p_len = len(PARTITION_IDS['test'])
+  config.loginf("PARTITION_IDS['test'] has {} positions".format(p_len))
 
 
   # creating model
