@@ -412,6 +412,8 @@ if __name__ == '__main__':
   H_WINDOW = args.h_window
   END_WINDOW = H_WINDOW
   TEST_PREFIX_PERC = f"test_{str(PERC_TEST).replace('.',',')}"
+  TEST_MODEL_ENTROPY = args.test_model_entropy
+  EVALUATE_AUTO = args.test_model_entropy.startswith('auto')
 
   # -calculate_entropy
   if args.calculate_entropy:
@@ -430,38 +432,29 @@ if __name__ == '__main__':
   dataset_suffix = '' if args.dataset_name == 'all' else f'_{DATASET_NAME}'
   model_folder_prefix = join(config.DATADIR, f'{MODEL_NAME}{dataset_suffix}')
 
-  # -train MODEL_FOLDER
-  if args.train:
-    MODEL_FOLDER = model_folder_prefix + ('' if args.train_entropy == 'all' else
-                                          f'_{args.train_entropy}_entropy')
-    config.loginf(f'MODEL_FOLDER={MODEL_FOLDER}')
-    if not exists(MODEL_FOLDER):
-      os.makedirs(MODEL_FOLDER)
+  # MODEL_FOLDER, MODEL_WEIGHTS
+  MODEL_FOLDER = model_folder_prefix + ('' if args.train_entropy == 'all' else
+                                        f'_{args.train_entropy}_entropy')
+  config.loginf(f'MODEL_FOLDER={MODEL_FOLDER}')
+  if not exists(MODEL_FOLDER):
+    os.makedirs(MODEL_FOLDER)
+  MODEL_WEIGHTS = join(MODEL_FOLDER, 'weights.hdf5')
+  config.loginf(f'MODEL_WEIGHTS={MODEL_WEIGHTS}')
 
-  # -evaluate MODEL_FOLDER, MODEL_WEIGHTS
+  # -evaluate check MODEL_WEIGHTS exists
   if args.evaluate:
-    MODEL_FOLDER = model_folder_prefix + ('' if args.test_model_entropy == 'all'
-                                          else
-                                          f'_{args.test_model_entropy}_entropy')
-    TEST_MODEL_ENTROPY = args.test_model_entropy
-    config.loginf(f'MODEL_FOLDER={MODEL_FOLDER}')
-    if not args.test_model_entropy.startswith('auto'):
-      MODEL_WEIGHTS = join(MODEL_FOLDER, 'weights.hdf5')
-      config.loginf(f'MODEL_WEIGHTS={MODEL_WEIGHTS}')
-      assert exists(MODEL_WEIGHTS)
-    if args.test_model_entropy.startswith('auto'):
-      EVALUATE_AUTO = True
-      MODEL_WEIGHTS_LOW = join(model_folder_prefix + "_low_entropy",
-                               'weights.hdf5')
-      MODEL_WEIGHTS_MEDIUM = join(model_folder_prefix + "_medium_entropy",
-                                  'weights.hdf5')
-      MODEL_WEIGHTS_HIGHT = join(model_folder_prefix + "_hight_entropy",
-                                 'weights.hdf5')
-      assert exists(MODEL_WEIGHTS_LOW)
-      assert exists(MODEL_WEIGHTS_MEDIUM)
-      assert exists(MODEL_WEIGHTS_HIGHT)
-      config.loginf('MODEL_WEIGHTS='+ args.test_model_entropy)
-
+    assert exists(MODEL_WEIGHTS)
+  if args.evaluate and args.test_model_entropy.startswith('auto'):
+    MODEL_WEIGHTS_LOW = join(model_folder_prefix + "_low_entropy",
+                              'weights.hdf5')
+    MODEL_WEIGHTS_MEDIUM = join(model_folder_prefix + "_medium_entropy",
+                                'weights.hdf5')
+    MODEL_WEIGHTS_HIGHT = join(model_folder_prefix + "_hight_entropy",
+                                'weights.hdf5')
+    assert exists(MODEL_WEIGHTS_LOW)
+    assert exists(MODEL_WEIGHTS_MEDIUM)
+    assert exists(MODEL_WEIGHTS_HIGHT)
+    config.loginf('MODEL_WEIGHTS='+ args.test_model_entropy)
 
   # partioning
   config.loginf('')
