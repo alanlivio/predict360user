@@ -470,7 +470,7 @@ if __name__ == '__main__':
   config.loginf(f'x_train entropy is {args.train_entropy}')
   x_train, _ = get_train_test_split(DF_TRAJECTS, args.train_entropy, 'all',
                                     PERC_TEST)
-  assert (not x_train.empty)
+  assert not x_train.empty
   fmt = 'x_train has {} trajectories: {} low, {} medium, {} hight'
   t_len = len(x_train)
   l_len = len(x_train[x_train['traject_entropy_class'] == 'low'])
@@ -492,7 +492,7 @@ if __name__ == '__main__':
   config.loginf(f'x_test entropy={args.test_entropy}')
   _, x_test = get_train_test_split(DF_TRAJECTS, 'all', args.test_entropy,
                                     PERC_TEST)
-  assert (not x_test.empty)
+  assert not x_test.empty
   fmt = 'x_test has {} trajectories: {} low, {} medium, {} hight'
   t_len = len(x_test)
   l_len = len(x_test[x_test['traject_entropy_class'] == 'low'])
