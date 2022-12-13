@@ -477,11 +477,21 @@ if __name__ == '__main__':
   PARTITION_IDS = {}
   DF_TRAJECTS = get_df_trajects()
 
-  # -train x_train
+  # -train x_train, x_test
   if args.train:
     config.loginf(f'x_train entropy is {args.train_entropy}')
-    x_train, _ = get_train_test_split(DF_TRAJECTS, args.train_entropy, 'all',
-                                      PERC_TEST)
+    x_train, x_test = get_train_test_split(DF_TRAJECTS, args.train_entropy, PERC_TEST)
+  # -evaluate x_test, VIDEOS_TEST, USERS_TEST
+  elif args.evaluate:
+    config.loginf(f'x_test entropy={args.test_entropy}')
+    _, x_test = get_train_test_split(DF_TRAJECTS, args.test_entropy, PERC_TEST)
+    VIDEOS_TEST = x_test['ds_video'].unique()
+    USERS_TEST = x_test['ds_user'].unique()
+    p_len = len(PARTITION_IDS['test'])
+    config.loginf("PARTITION_IDS['test'] has {} positions".format(p_len))
+
+  # log x_train, xtest
+  if args.train:
     assert not x_train.empty
     fmt = 'x_train has {} trajectories: {} low, {} medium, {} hight'
     t_len = len(x_train)
@@ -499,11 +509,6 @@ if __name__ == '__main__':
     ]
     p_len = len(PARTITION_IDS['train'])
     config.loginf("PARTITION_IDS['train'] has {} positions".format(p_len))
-
-  # -evaluate x_test, VIDEOS_TEST, USERS_TEST
-  config.loginf(f'x_test entropy={args.test_entropy}')
-  _, x_test = get_train_test_split(DF_TRAJECTS, 'all', args.test_entropy,
-                                    PERC_TEST)
   assert not x_test.empty
   fmt = 'x_test has {} trajectories: {} low, {} medium, {} hight'
   t_len = len(x_test)
@@ -520,10 +525,6 @@ if __name__ == '__main__':
       } for row in x_test.iterrows()
       for tstap in range(INIT_WINDOW, row[1]['traject'].shape[0] - END_WINDOW)
   ]
-  VIDEOS_TEST = x_test['ds_video'].unique()
-  USERS_TEST = x_test['ds_user'].unique()
-  p_len = len(PARTITION_IDS['test'])
-  config.loginf("PARTITION_IDS['test'] has {} positions".format(p_len))
 
   # sys.exit()
   # creating model
