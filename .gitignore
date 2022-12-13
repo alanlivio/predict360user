@@ -167,6 +167,7 @@ cython_debug/
 typings
 
 ### Added ###
+output
 .tmp*
 data/*
 data-*
