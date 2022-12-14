@@ -487,8 +487,6 @@ if __name__ == '__main__':
     _, x_test = get_train_test_split(DF_TRAJECTS, args.test_entropy, PERC_TEST)
     VIDEOS_TEST = x_test['ds_video'].unique()
     USERS_TEST = x_test['ds_user'].unique()
-    p_len = len(PARTITION_IDS['test'])
-    config.loginf("PARTITION_IDS['test'] has {} positions".format(p_len))
 
   # log x_train, xtest
   if args.train:
@@ -525,6 +523,8 @@ if __name__ == '__main__':
       } for row in x_test.iterrows()
       for tstap in range(INIT_WINDOW, row[1]['traject'].shape[0] - END_WINDOW)
   ]
+  p_len = len(PARTITION_IDS['test'])
+  config.loginf("PARTITION_IDS['test'] has {} positions".format(p_len))
 
   # sys.exit()
   # creating model
