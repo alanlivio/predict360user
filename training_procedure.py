@@ -436,16 +436,18 @@ if __name__ == '__main__':
   if args.train:
     MODEL_FOLDER = model_ds_prefix + ('' if args.train_entropy == 'all' else
                                           f'_{args.train_entropy}_entropy')
-    if not exists(MODEL_FOLDER):
-      os.makedirs(MODEL_FOLDER)
     MODEL_WEIGHTS = join(MODEL_FOLDER, 'weights.hdf5')
     config.loginf(f'MODEL_FOLDER={MODEL_FOLDER}')
     config.loginf(f'MODEL_WEIGHTS={MODEL_WEIGHTS}')
+    if not exists(MODEL_FOLDER):
+      os.makedirs(MODEL_FOLDER)
 
   # -evaluate: MODEL_WEIGHTS
   if args.evaluate:
     MODEL_FOLDER = model_ds_prefix + ('' if args.test_model_entropy == 'all' else
                                           f'_{args.test_model_entropy}_entropy')
+    if not exists(MODEL_FOLDER):
+      os.makedirs(MODEL_FOLDER)
     config.loginf(f'MODEL_FOLDER={MODEL_FOLDER}')
     EVALUATE_NAME = f'{TEST_PREFIX_PERC}_{args.test_entropy}'
     config.loginf(f'EVALUATE_NAME at MODEL_FOLDER={EVALUATE_NAME}')
