@@ -15,6 +15,18 @@
             "justMyCode": true
         },
         {
+            "name": "-train david",
+            "type": "python",
+            "request": "launch",
+            "module": "training_procedure",
+            "args": [
+                "-train",
+                "-dataset_name",
+                 "david"
+            ],
+            "justMyCode": true
+        },
+        {
             "name": "-evaluate",
             "type": "python",
             "request": "launch",

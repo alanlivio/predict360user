@@ -427,8 +427,7 @@ if __name__ == '__main__':
     compare_results()
     sys.exit()
 
-  config.loginf('DATASET=' + (
-      + DATASET_NAME if DATASET_NAME != 'all' else repr(config.DS_NAMES)))
+  config.loginf('DATASET=' + (DATASET_NAME if DATASET_NAME != 'all' else repr(config.DS_NAMES)))
   dataset_suffix = '' if args.dataset_name == 'all' else f'_{DATASET_NAME}'
   model_ds_prefix = join(config.DATADIR, f'{MODEL_NAME}{dataset_suffix}')
 
@@ -478,10 +477,12 @@ if __name__ == '__main__':
   config.loginf(f'PERC_TEST is {PERC_TEST}')
   PARTITION_IDS = {}
   DF_TRAJECTS = get_df_trajects()
+  if args.dataset_name != 'all':
+    DF_TRAJECTS = DF_TRAJECTS[DF_TRAJECTS['ds'] == DATASET_NAME]
 
   # -train x_train, x_test
   if args.train:
-    config.loginf(f'x_train entropy is {args.train_entropy}')
+    config.loginf(f'x_train, x_test entropy is {args.train_entropy}')
     x_train, x_test = get_train_test_split(DF_TRAJECTS, args.train_entropy, PERC_TEST)
   # -evaluate x_test, VIDEOS_TEST, USERS_TEST
   elif args.evaluate:
