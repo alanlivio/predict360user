@@ -9,6 +9,8 @@ from typing import Any, Generator
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
+import plotly.express as px
 from tqdm.auto import tqdm
 
 from users360 import (calc_actual_entropy, calc_trajects_entropy, config,
@@ -265,34 +267,19 @@ def compare_results() -> None:
       for file_name in os.listdir(join(config.DATADIR, dir_name))
       if (file_name.endswith(suffix) and file_name.startswith(TEST_PREFIX_PERC))
   ]
-  csv_data_l = [(dir_name, file_name,
-                 np.loadtxt(join(config.DATADIR, dir_name, file_name)))
-                for (dir_name, file_name) in csv_file_l]
+  csv_data_l = [ (f'{dir_name}_{file_name.removesuffix(suffix)}', horizon, error)
+                for (dir_name, file_name) in csv_file_l
+                for horizon, error in enumerate(np.loadtxt(join(config.DATADIR, dir_name, file_name)))
+              ]
   assert csv_data_l, f'no data/<model>/{TEST_PREFIX_PERC}_*, run -evaluate'
 
-  # sort by the last horizon hight
-  # [2] is csv_data [-1] is last horizon
-  def last_horizon_avg(item) -> int:
-    return item[2][-1]
-
-  csv_data_l.sort(reverse=True, key=last_horizon_avg)
-
-  # plot as image
-  for (dir_name, file_name, csv_data) in csv_data_l:
-    plt.plot(np.arange(H_WINDOW) + 1 * RATE,
-             csv_data,
-             label=f'{dir_name}_{file_name.removesuffix(suffix)}')
-  met = 'orthodromic'
-  plt.title(
-      f'avg {met} (y) by pred. horizon (x) for {PERC_TEST} of dataset {DATASET_NAME}'
-  )
-  plt.ylabel(met)
-  plt.xlim(2.5)
-  plt.xlabel('Prediction step s (sec.)')
-  result_file = join(config.DATADIR, f'compare_{MODEL_NAME}')
-  config.loginf(f'saving {result_file}.png')
-  plt.legend(bbox_to_anchor=(0, 1), loc='upper left', ncol=1)
-  plt.savefig(result_file, bbox_inches='tight')
+  # plot image
+  df = pd.DataFrame(csv_data_l, columns=['name', 'horizon', 'vidoes_avg_error'])
+  df = df.sort_values(ascending=False, by="vidoes_avg_error")
+  fig = px.line(df, x='horizon', y="vidoes_avg_error", color='name', color_discrete_sequence=px.colors.qualitative.G10)
+  result_file = join(config.DATADIR, f'compare_{MODEL_NAME}.png')
+  config.loginf(f'saving {result_file}')
+  fig.write_image(result_file)
 
 
 if __name__ == '__main__':

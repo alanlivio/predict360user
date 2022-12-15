@@ -8,6 +8,7 @@ psutil # swifter req
 colour
 tqdm # progress bar
 keras-tqdm # progress bar
+kaleido # plotly save images
 
 # requirements from head_motion_prediction/README.md
 # the commented versions are the previous ones
