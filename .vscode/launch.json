@@ -5,24 +5,14 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "-compare_result",
-            "type": "python",
-            "request": "launch",
-            "module": "training_procedure",
-            "args": [
-                "-compare_results",
-            ],
-            "justMyCode": true
-        },
-        {
-            "name": "-train david",
+            "name": "-train",
             "type": "python",
             "request": "launch",
             "module": "training_procedure",
             "args": [
                 "-train",
-                "-dataset_name",
-                 "david"
+                // "-dataset_name",
+                //  "david"
             ],
             "justMyCode": true
         },
@@ -32,34 +22,24 @@
             "request": "launch",
             "module": "training_procedure",
             "args": [
-                "-evaluate"
-            ],
-            "justMyCode": true
-        },
-        {
-            "name": "evaluate -test_entropy hight",
-            "type": "python",
-            "request": "launch",
-            "module": "training_procedure",
-            "args": [
                 "-evaluate",
-                "-test_entropy",
-                "hight",
-            ],
-            "justMyCode": true
-        },
-        {
-            "name": "-evaluate auto_m_window",
-            "type": "python",
-            "request": "launch",
-            "module": "training_procedure",
-            "args": [
-                "-evaluate",
-                "-test_model_entropy",
-                "auto_m_window"
+                // "-test_model_entropy",
+                // "auto"
+                // "hight",
+                // "auto_m_window"
                 // "auto_since_start"
             ],
             "justMyCode": true
         },
+        {
+            "name": "-compare_result",
+            "type": "python",
+            "request": "launch",
+            "module": "training_procedure",
+            "args": [
+                "-compare_results",
+            ],
+            "justMyCode": true
+        }
     ]
 }
