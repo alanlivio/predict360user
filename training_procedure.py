@@ -274,9 +274,9 @@ def compare_results() -> None:
   assert csv_data_l, f'no data/<model>/{TEST_PREFIX_PERC}_*, run -evaluate'
 
   # plot image
-  df = pd.DataFrame(csv_data_l, columns=['name', 'horizon', 'vidoes_avg_error'])
-  df = df.sort_values(ascending=False, by="vidoes_avg_error")
-  fig = px.line(df, x='horizon', y="vidoes_avg_error", color='name', color_discrete_sequence=px.colors.qualitative.G10)
+  df_compare = pd.DataFrame(csv_data_l, columns=['name', 'horizon', 'vidoes_avg_error'])
+  df_compare = df.sort_values(ascending=False, by="vidoes_avg_error")
+  fig = px.line(df_compare, x='horizon', y="vidoes_avg_error", color='name', color_discrete_sequence=px.colors.qualitative.G10)
   result_file = join(config.DATADIR, f'compare_{MODEL_NAME}.png')
   config.loginf(f'saving {result_file}')
   fig.write_image(result_file)
@@ -478,7 +478,7 @@ if __name__ == '__main__':
     VIDEOS_TEST = x_test['ds_video'].unique()
     USERS_TEST = x_test['ds_user'].unique()
 
-  # log x_train, xtest
+  # PARTITION_IDS
   if args.train:
     assert not x_train.empty
     fmt = 'x_train has {} trajectories: {} low, {} medium, {} hight'
