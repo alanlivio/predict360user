@@ -59,7 +59,7 @@ class Test(unittest.TestCase):
     unique_s = set(x_test['user_entropy_class'].unique())
     assert unique_s == set(['medium'])
 
-    x_train, x_test = get_train_test_split(self.df_trajects, 'hight', 0.2)
+    x_train, x_test = get_train_test_split(self.df_trajects, 'hight_users', 0.2)
     unique_s = set(x_train['user_entropy_class'].unique())
     assert unique_s == set(['hight'])
     unique_s = set(x_test['user_entropy_class'].unique())
