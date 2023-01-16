@@ -1,2 +1,2 @@
-from .test_tileset import *
-from .test_viz_sphere import *
+from .tileset_test import *
+from .viz_sphere_test import *

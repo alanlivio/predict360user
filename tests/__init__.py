@@ -1,4 +1,4 @@
-from .test_prediction import *
-from .test_tileset_metrics import *
-from .test_trajects import *
+from .prediction_test import *
+from .tileset_metrics_test import *
+from .trajects_test import *
 from .utils import *
