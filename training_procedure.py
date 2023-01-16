@@ -65,7 +65,7 @@ def generate_arrays(ids_l, future_window) -> Generator:
     for ids in ids_l:
       user = ids['user']
       video = ids['video']
-      x_i = ids['time-stamp']
+      x_i = ids['trace_id']
       # Load the data
       if MODEL_NAME == 'pos_only':
         encoder_pos_inputs_for_batch.append(
@@ -162,7 +162,7 @@ def evaluate() -> None:
   for ids in tqdm(PARTITION_IDS['test'], desc='position predictions'):
     user = ids['user']
     video = ids['video']
-    x_i = ids['time-stamp']
+    x_i = ids['trace_id']
 
     # MODEL.predict
     if MODEL_NAME == 'pos_only':
@@ -491,9 +491,9 @@ if __name__ == '__main__':
         {
             'video': row[1]['ds_video'],
             'user': row[1]['ds_user'],
-            'time-stamp': tstap
+            'trace_id': trace_id
         } for row in x_train.iterrows()
-        for tstap in range(INIT_WINDOW, row[1]['traject'].shape[0] - END_WINDOW)
+        for trace_id in range(INIT_WINDOW, row[1]['traject'].shape[0] - END_WINDOW)
     ]
     p_len = len(PARTITION_IDS['train'])
     config.loginf("PARTITION_IDS['train'] has {} positions".format(p_len))
@@ -508,10 +508,10 @@ if __name__ == '__main__':
       {
           'video': row[1]['ds_video'],
           'user': row[1]['ds_user'],
-          'time-stamp': tstap,
+          'trace_id': trace_id,
           'traject_entropy_class': row[1]['traject_entropy_class']
       } for row in x_test.iterrows()
-      for tstap in range(INIT_WINDOW, row[1]['traject'].shape[0] - END_WINDOW)
+      for trace_id in range(INIT_WINDOW, row[1]['traject'].shape[0] - END_WINDOW)
   ]
   p_len = len(PARTITION_IDS['test'])
   config.loginf("PARTITION_IDS['test'] has {} positions".format(p_len))
