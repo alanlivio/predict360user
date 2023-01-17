@@ -275,7 +275,7 @@ def compare_results() -> None:
 
   # plot image
   df_compare = pd.DataFrame(csv_data_l, columns=['name', 'horizon', 'vidoes_avg_error'])
-  df_compare = df.sort_values(ascending=False, by="vidoes_avg_error")
+  df_compare = df_compare.sort_values(ascending=False, by="vidoes_avg_error")
   fig = px.line(df_compare, x='horizon', y="vidoes_avg_error", color='name', color_discrete_sequence=px.colors.qualitative.G10)
   result_file = join(config.DATADIR, f'compare_{MODEL_NAME}.png')
   config.loginf(f'saving {result_file}')
@@ -404,9 +404,9 @@ if __name__ == '__main__':
 
   # -calculate_entropy
   if args.calculate_entropy:
-    df = get_df_trajects()
-    calc_trajects_entropy(df)
-    dump_df_trajects(df)
+    df_trajects = get_df_trajects()
+    calc_trajects_entropy(df_trajects)
+    dump_df_trajects(df_trajects)
 
   # -compare_results
   elif args.compare_results:
