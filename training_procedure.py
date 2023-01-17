@@ -107,7 +107,7 @@ def train() -> None:
   if not exists(model_folder):
     os.makedirs(model_folder)
 
-  # x_train, x_test, pred_windows
+  # pred_windows
   config.info('partioning...')
   df_trajects = get_df_trajects()
   if DATASET_NAME != 'all':
@@ -169,22 +169,23 @@ def evaluate(oneuser = '', onevideo = '') -> None:
     evaluate_prefix = join(model_folder, f'{TEST_PREFIX_PERC}_{TEST_ENTROPY}')
   config.info(f'evaluate_prefix={evaluate_prefix}')
 
-  # x_test, pred_windows, videos_test
+  # pred_windows, videos_test
   config.info('partioning...')
-  df_trajects = get_df_trajects()
-  # threshold_medium, threshold_hight should be done before filter by dataset
-  threshold_medium, threshold_hight = get_trajects_entropy_threshold(df_trajects)
-  if DATASET_NAME != 'all':
-    df_trajects = df_trajects[df_trajects['ds'] == DATASET_NAME]
+  df = get_df_trajects()
+  threshold_medium, threshold_hight = get_trajects_entropy_threshold(df)
   if oneuser and onevideo:
-    df_trajects = get_rows(df_trajects, onevideo, oneuser, DATASET_NAME)
-    pred_windows = create_pred_windows(None, df_trajects, True)
-    videos_test = df_trajects['ds_video'].unique()
+    rows = get_rows(df, onevideo, oneuser, DATASET_NAME)
+    videos_test = rows['ds_video'].unique()
+    pred_windows = create_pred_windows(None, rows, True)
   else:
+    tmp_df = df[df['ds'] == DATASET_NAME] if DATASET_NAME != 'all' else df
     config.info(f'x_test entropy={TEST_ENTROPY}')
-    _, x_test = get_train_test_split(df_trajects, TEST_ENTROPY, PERC_TEST)
-    pred_windows = create_pred_windows(None, x_test, True)
+    _, x_test = get_train_test_split(tmp_df, TEST_ENTROPY, PERC_TEST)
     videos_test = x_test['ds_video'].unique()
+    pred_windows = create_pred_windows(None, x_test, True)
+
+  if not MODEL_DS in df.columns:
+    df[MODEL_DS] = pd.Series([ {} for _ in range(len(df))]).astype(object)
 
   # creating model
   config.info('creating model ...')
@@ -229,9 +230,9 @@ def evaluate(oneuser = '', onevideo = '') -> None:
 
     if MODEL_NAME == 'pos_only':
       encoder_pos_inputs_for_sample = np.array(
-          [get_traces(df_trajects, video, user, DATASET_NAME)[x_i - M_WINDOW:x_i]])
+          [get_traces(df, video, user, DATASET_NAME)[x_i - M_WINDOW:x_i]])
       decoder_pos_inputs_for_sample = np.array(
-          [get_traces(df_trajects, video, user, DATASET_NAME)[x_i:x_i + 1]])
+          [get_traces(df, video, user, DATASET_NAME)[x_i:x_i + 1]])
     else:
       raise NotImplementedError
 
@@ -241,11 +242,11 @@ def evaluate(oneuser = '', onevideo = '') -> None:
       if TEST_MODEL_ENTROPY == 'auto':
         traject_entropy_class = ids['traject_entropy_class']
       if TEST_MODEL_ENTROPY == 'auto_m_window':
-        window = get_traces(df_trajects, video, user, DATASET_NAME)[x_i - M_WINDOW:x_i]
+        window = get_traces(df, video, user, DATASET_NAME)[x_i - M_WINDOW:x_i]
         a_ent = calc_actual_entropy(window)
         traject_entropy_class = get_class_by_threshold(a_ent, threshold_medium, threshold_hight)
       elif TEST_MODEL_ENTROPY == 'auto_since_start':
-        window = get_traces(df_trajects, video, user, DATASET_NAME)[0:x_i]
+        window = get_traces(df, video, user, DATASET_NAME)[0:x_i]
         a_ent = calc_actual_entropy(window)
         traject_entropy_class = get_class_by_threshold(a_ent, threshold_medium, threshold_hight)
       else:
@@ -270,8 +271,12 @@ def evaluate(oneuser = '', onevideo = '') -> None:
     else:
       raise NotImplementedError
 
+    # save prediction
+    traject_row = df.loc[(df['ds_video'] == video) & (df['ds_user'] == user)]
+    traject_row.at[0,MODEL_DS][x_i] = model_prediction = model_prediction
+
     # save error
-    groundtruth = get_traces(df_trajects, video, user, DATASET_NAME)[x_i + 1:x_i + H_WINDOW + 1]
+    groundtruth = get_traces(df, video, user, DATASET_NAME)[x_i + 1:x_i + H_WINDOW + 1]
     if not video in errors_per_video:
       errors_per_video[video] = {}
     for t in range(len(groundtruth)):
@@ -281,6 +286,9 @@ def evaluate(oneuser = '', onevideo = '') -> None:
       if t not in errors_per_timestep:
         errors_per_timestep[t] = []
       errors_per_timestep[t].append(METRIC(groundtruth[t], model_prediction[t]))
+
+  # save on df
+  dump_df_trajects(df)
 
   # avg_error_per_timestep
   avg_error_per_timestep = []
@@ -488,7 +496,8 @@ if __name__ == '__main__':
   MODEL_NAME = args.model_name
   config.info('dataset=' + (DATASET_NAME if DATASET_NAME != 'all' else repr(config.DS_NAMES)))
   dataset_suffix = '' if args.dataset_name == 'all' else f'_{DATASET_NAME}'
-  MODEL_DS_PREFIX = join(config.DATADIR, f'{MODEL_NAME}{dataset_suffix}')
+  MODEL_DS = f'{MODEL_NAME}{dataset_suffix}'
+  MODEL_DS_PREFIX = join(config.DATADIR, MODEL_DS)
   PERC_TEST = args.perc_test
   EPOCHS = args.epochs
   INIT_WINDOW = args.init_window
