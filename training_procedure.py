@@ -98,25 +98,25 @@ def generate_arrays(df_trajects: pd.DataFrame, pred_windows: dict, future_window
 
 
 def train() -> None:
-  config.loginf(f'-- train() PERC_TEST={PERC_TEST}, EPOCHS={EPOCHS}')
+  config.info(f'-- train() PERC_TEST={PERC_TEST}, EPOCHS={EPOCHS}')
 
   # model_folder
   model_folder = MODEL_DS_PREFIX + ('' if TRAIN_ENTROPY == 'all' else
                                     f'_{TRAIN_ENTROPY}_entropy')
-  config.loginf(f'model_folder={model_folder}')
+  config.info(f'model_folder={model_folder}')
   if not exists(model_folder):
     os.makedirs(model_folder)
 
   # model_weights
   model_weights = join(model_folder, 'weights.hdf5')
-  config.loginf(f'model_weights={model_weights}')
+  config.info(f'model_weights={model_weights}')
 
   # x_train, x_test, pred_windows
-  config.loginf('partioning...')
+  config.info('partioning...')
   df_trajects = get_df_trajects()
   if DATASET_NAME != 'all':
     df_trajects = df_trajects[df_trajects['ds'] == DATASET_NAME]
-  config.loginf(f'x_train, x_test entropy is {TRAIN_ENTROPY}')
+  config.info(f'x_train, x_test entropy is {TRAIN_ENTROPY}')
   x_train, x_test = get_train_test_split(df_trajects, TRAIN_ENTROPY, PERC_TEST)
   pred_windows = create_pred_windows(x_train, x_test)
 
@@ -128,7 +128,7 @@ def train() -> None:
   steps_per_ep_validate = np.ceil(len(pred_windows['test']) / BATCH_SIZE)
 
   # creating model
-  config.loginf('creating model ...')
+  config.info('creating model ...')
   if DRY_RUN:
     sys.exit()
   model = create_model()
@@ -157,47 +157,47 @@ def train() -> None:
 
 
 def evaluate() -> None:
-  config.loginf(f'-- evaluate() PERC_TEST={PERC_TEST}')
+  config.info(f'-- evaluate() PERC_TEST={PERC_TEST}')
 
   # model_folder
   model_folder = MODEL_DS_PREFIX + ('' if TEST_MODEL_ENTROPY == 'all' else
                                         f'_{TEST_MODEL_ENTROPY}_entropy')
-  config.loginf(f'model_folder={model_folder}')
+  config.info(f'model_folder={model_folder}')
 
   # evaluate_prefix
   evaluate_prefix = join(model_folder, f'{TEST_PREFIX_PERC}_{args.test_entropy}')
-  config.loginf(f'evaluate_prefix={evaluate_prefix}')
+  config.info(f'evaluate_prefix={evaluate_prefix}')
 
   # model_weights
   # check existing if one model
   if not TEST_MODEL_ENTROPY.startswith('auto'):
     model_weights = join(model_folder, 'weights.hdf5')
-    config.loginf(f'model_weights={model_weights}')
+    config.info(f'model_weights={model_weights}')
     assert exists(model_weights)
   # check exists if using mutiple models
   if TEST_MODEL_ENTROPY.startswith('auto'):
     model_weights_low = join(MODEL_DS_PREFIX + "_low_entropy", 'weights.hdf5')
     model_weights_medium = join(MODEL_DS_PREFIX + "_medium_entropy", 'weights.hdf5')
     model_weights_hight = join(MODEL_DS_PREFIX + "_hight_entropy", 'weights.hdf5')
-    config.loginf('model_weights_low=' + model_weights_low)
-    config.loginf('model_weights_medium=' + model_weights_medium)
-    config.loginf('model_weights_hight=' + model_weights_hight)
+    config.info('model_weights_low=' + model_weights_low)
+    config.info('model_weights_medium=' + model_weights_medium)
+    config.info('model_weights_hight=' + model_weights_hight)
     assert exists(model_weights_low)
     assert exists(model_weights_medium)
     assert exists(model_weights_hight)
 
   # x_test, pred_windows, videos_test
-  config.loginf('partioning...')
+  config.info('partioning...')
   df_trajects = get_df_trajects()
   if DATASET_NAME != 'all':
     df_trajects = df_trajects[df_trajects['ds'] == DATASET_NAME]
-  config.loginf(f'x_test entropy={args.test_entropy}')
+  config.info(f'x_test entropy={args.test_entropy}')
   _, x_test = get_train_test_split(df_trajects, TEST_ENTROPY, PERC_TEST)
   pred_windows = create_pred_windows(None, x_test, True)
   videos_test = x_test['ds_video'].unique()
 
   # creating model
-  config.loginf('creating model ...')
+  config.info('creating model ...')
   if DRY_RUN:
     sys.exit()
   if EVALUATE_AUTO:
@@ -282,7 +282,7 @@ def evaluate() -> None:
     avg_error_per_timestep.append(avg)
   # avg_error_per_timestep.csv
   result_file = f'{evaluate_prefix}_avg_error_per_timestep'
-  config.loginf(f'saving {result_file}.csv')
+  config.info(f'saving {result_file}.csv')
   np.savetxt(f'{result_file}.csv', avg_error_per_timestep)
 
   # avg_error_per_timestep.png
@@ -292,7 +292,7 @@ def evaluate() -> None:
   plt.ylabel(met)
   plt.xlim(2.5)
   plt.xlabel('Prediction step s (sec.)')
-  config.loginf(f'saving {result_file}.png')
+  config.info(f'saving {result_file}.png')
   plt.savefig(result_file, bbox_inches='tight')
 
   # avg_error_per_video
@@ -300,13 +300,13 @@ def evaluate() -> None:
   for video_name in videos_test:
     for t in range(H_WINDOW):
       if not video_name in errors_per_video:
-        config.logerr(f'missing {video_name} in videos_test')
+        config.error(f'missing {video_name} in videos_test')
         continue
       avg = np.mean(errors_per_video[video_name][t])
       avg_error_per_video.append(f'video={video_name} {t} {avg}')
   result_file = f'{evaluate_prefix}_avg_error_per_video.csv'
   np.savetxt(result_file, avg_error_per_video, fmt='%s')
-  config.loginf(f'saving {result_file}')
+  config.info(f'saving {result_file}')
 
 def create_pred_windows(x_train: pd.DataFrame, x_test: pd.DataFrame, skip_train = False) -> dict:
   pred_windows = {}
@@ -316,7 +316,7 @@ def create_pred_windows(x_train: pd.DataFrame, x_test: pd.DataFrame, skip_train 
     l_len = len(x_train[x_train['traject_entropy_class'] == 'low'])
     m_len = len(x_train[x_train['traject_entropy_class'] == 'medium'])
     h_len = len(x_train[x_train['traject_entropy_class'] == 'hight'])
-    config.loginf(fmt.format(t_len, l_len, m_len, h_len))
+    config.info(fmt.format(t_len, l_len, m_len, h_len))
     pred_windows['train'] = [{
         'video': row[1]['ds_video'],
         'user': row[1]['ds_user'],
@@ -325,13 +325,13 @@ def create_pred_windows(x_train: pd.DataFrame, x_test: pd.DataFrame, skip_train 
       for trace_id in range(
         INIT_WINDOW, row[1]['traject'].shape[0] -END_WINDOW)]
     p_len = len(pred_windows['train'])
-    config.loginf("pred_windows['train'] has {} positions".format(p_len))
+    config.info("pred_windows['train'] has {} positions".format(p_len))
   fmt = 'x_test has {} trajectories: {} low, {} medium, {} hight'
   t_len = len(x_test)
   l_len = len(x_test[x_test['traject_entropy_class'] == 'low'])
   m_len = len(x_test[x_test['traject_entropy_class'] == 'medium'])
   h_len = len(x_test[x_test['traject_entropy_class'] == 'hight'])
-  config.loginf(fmt.format(t_len, l_len, m_len, h_len))
+  config.info(fmt.format(t_len, l_len, m_len, h_len))
   pred_windows['test'] = [{
       'video': row[1]['ds_video'],
       'user': row[1]['ds_user'],
@@ -341,7 +341,7 @@ def create_pred_windows(x_train: pd.DataFrame, x_test: pd.DataFrame, skip_train 
     for trace_id in range(
       INIT_WINDOW, row[1]['traject'].shape[0] -END_WINDOW)]
   p_len = len(pred_windows['test'])
-  config.loginf("pred_windows['test'] has {} positions".format(p_len))
+  config.info("pred_windows['test'] has {} positions".format(p_len))
   return pred_windows
 
 def compare_results() -> None:
@@ -368,7 +368,7 @@ def compare_results() -> None:
                 color='name',
                 color_discrete_sequence=px.colors.qualitative.G10)
   result_file = join(config.DATADIR, f'compare_{MODEL_NAME}.png')
-  config.loginf(f'saving {result_file}')
+  config.info(f'saving {result_file}')
   fig.write_image(result_file)
 
 
@@ -470,7 +470,7 @@ if __name__ == '__main__':
   # global vars
   DATASET_NAME = args.dataset_name
   MODEL_NAME = args.model_name
-  config.loginf('dataset=' + (DATASET_NAME if DATASET_NAME != 'all' else repr(config.DS_NAMES)))
+  config.info('dataset=' + (DATASET_NAME if DATASET_NAME != 'all' else repr(config.DS_NAMES)))
   dataset_suffix = '' if args.dataset_name == 'all' else f'_{DATASET_NAME}'
   MODEL_DS_PREFIX = join(config.DATADIR, f'{MODEL_NAME}{dataset_suffix}')
   PERC_TEST = args.perc_test

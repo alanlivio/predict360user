@@ -10,5 +10,5 @@ DS_NAMES = ['david', 'fan', 'nguyen', 'xucvpr', 'xupami']
 DS_SIZES = [1083, 300, 432, 6654, 4408]
 
 logging.basicConfig(level=logging.INFO, format='-- %(filename)s: %(message)s')
-loginf = logging.getLogger(__name__).info
-logerr = logging.getLogger(__name__).error
+info = logging.getLogger(__name__).info
+error = logging.getLogger(__name__).error

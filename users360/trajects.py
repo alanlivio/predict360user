@@ -20,7 +20,7 @@ DF_TRAJECTS_F = os.path.join(config.DATADIR, 'df_trajects.pickle')
 
 
 def _load_df_trajects_from_hmp() -> pd.DataFrame:
-  config.loginf('loading trajects from head_motion_prediction project')
+  config.info('loading trajects from head_motion_prediction project')
   # save cwd and move to head_motion_prediction for invoking funcs
   cwd = os.getcwd()
   os.chdir(config.HMDDIR)
@@ -82,17 +82,17 @@ def _load_df_trajects_from_hmp() -> pd.DataFrame:
 def get_df_trajects(df_trajects_f=DF_TRAJECTS_F) -> pd.DataFrame:
   if exists(df_trajects_f):
     with open(df_trajects_f, 'rb') as f:
-      config.loginf(f'loading df_trajects from {df_trajects_f}')
+      config.info(f'loading df_trajects from {df_trajects_f}')
       df_trajects = pickle.load(f)
   else:
-    config.loginf(f'no {df_trajects_f}')
+    config.info(f'no {df_trajects_f}')
     df_trajects = _load_df_trajects_from_hmp()
   return df_trajects
 
 
 def dump_df_trajects(df_trajects: pd.DataFrame,
                      df_trajects_f=DF_TRAJECTS_F) -> None:
-  config.loginf(f'saving df_trajects to {df_trajects_f}')
+  config.info(f'saving df_trajects to {df_trajects_f}')
   with open(df_trajects_f, 'wb') as f:
     pickle.dump(df_trajects, f)
   with open(df_trajects_f + '.info.txt', 'w', encoding='utf-8') as f:
