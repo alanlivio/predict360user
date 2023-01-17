@@ -1,6 +1,7 @@
 # Following tensorflow style https://www.tensorflow.org/community/contribute/code_style
+# but with 100 column_limit
 [style]
 based_on_style = pep8
 indent_width = 2
 # https://github.com/google/styleguide/blob/gh-pages/pyguide.md#32-line-length
-column_limit = 80
+column_limit = 100
