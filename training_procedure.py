@@ -13,10 +13,12 @@ import pandas as pd
 import plotly.express as px
 from tqdm.auto import tqdm
 
-from users360 import (calc_actual_entropy, calc_trajects_entropy, config, dump_df_trajects,
-                      get_class_by_threshold, get_df_trajects, get_traces, get_train_test_split,
+from users360 import (calc_actual_entropy, calc_trajects_entropy, config,
+                      dump_df_trajects, get_class_by_threshold,
+                      get_df_trajects, get_traces, get_train_test_split,
                       get_trajects_entropy_threshold)
-from users360.head_motion_prediction.Utils import (all_metrics, cartesian_to_eulerian,
+from users360.head_motion_prediction.Utils import (all_metrics,
+                                                   cartesian_to_eulerian,
                                                    eulerian_to_cartesian)
 
 METRIC = all_metrics['orthodromic']
@@ -100,8 +102,8 @@ def train() -> None:
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
     import tensorflow.keras as keras
 
-  steps_per_ep_train = np.ceil(len(PARTITION_IDS['train']) / BATCH_SIZE)
-  steps_per_ep_validate = np.ceil(len(PARTITION_IDS['test']) / BATCH_SIZE)
+  steps_per_ep_train = np.ceil(len(PRED_WINDOWS['train']) / BATCH_SIZE)
+  steps_per_ep_validate = np.ceil(len(PRED_WINDOWS['test']) / BATCH_SIZE)
 
   # train
   csv_logger_f = join(MODEL_FOLDER, 'train_results.csv')
@@ -113,12 +115,12 @@ def train() -> None:
                                                      mode='auto',
                                                      period=1)
   if MODEL_NAME == 'pos_only':
-    MODEL.fit_generator(generator=generate_arrays(PARTITION_IDS['train'], future_window=H_WINDOW),
+    MODEL.fit_generator(generator=generate_arrays(PRED_WINDOWS['train'], future_window=H_WINDOW),
                         verbose=1,
                         steps_per_epoch=steps_per_ep_train,
                         epochs=EPOCHS,
                         callbacks=[csv_logger, model_checkpoint, tb_callback],
-                        validation_data=generate_arrays(PARTITION_IDS['test'],
+                        validation_data=generate_arrays(PRED_WINDOWS['test'],
                                                         future_window=H_WINDOW),
                         validation_steps=steps_per_ep_validate)
   else:
@@ -142,7 +144,7 @@ def evaluate() -> None:
   errors_per_video = {}
   errors_per_timestep = {}
 
-  for ids in tqdm(PARTITION_IDS['test'], desc='position predictions'):
+  for ids in tqdm(PRED_WINDOWS['test'], desc='position predictions'):
     user = ids['user']
     video = ids['video']
     x_i = ids['trace_id']
@@ -425,7 +427,7 @@ if __name__ == '__main__':
     config.loginf('')
     config.loginf('partioning train/test ...')
     config.loginf(f'PERC_TEST is {PERC_TEST}')
-    PARTITION_IDS = {}
+    PRED_WINDOWS = {}
     DF_TRAJECTS = get_df_trajects()
     if args.dataset_name != 'all':
       DF_TRAJECTS = DF_TRAJECTS[DF_TRAJECTS['ds'] == DATASET_NAME]
@@ -441,7 +443,7 @@ if __name__ == '__main__':
       VIDEOS_TEST = x_test['ds_video'].unique()
       USERS_TEST = x_test['ds_user'].unique()
 
-    # PARTITION_IDS
+    # PRED_WINDOWS
     if args.train:
       assert not x_train.empty
       fmt = 'x_train has {} trajectories: {} low, {} medium, {} hight'
@@ -450,15 +452,15 @@ if __name__ == '__main__':
       m_len = len(x_train[x_train['traject_entropy_class'] == 'medium'])
       h_len = len(x_train[x_train['traject_entropy_class'] == 'hight'])
       config.loginf(fmt.format(t_len, l_len, m_len, h_len))
-      PARTITION_IDS['train'] = [{
+      PRED_WINDOWS['train'] = [{
           'video': row[1]['ds_video'],
           'user': row[1]['ds_user'],
           'trace_id': trace_id
       } for row in x_train.iterrows() \
         for trace_id in range(
           INIT_WINDOW, row[1]['traject'].shape[0] -END_WINDOW)]
-      p_len = len(PARTITION_IDS['train'])
-      config.loginf("PARTITION_IDS['train'] has {} positions".format(p_len))
+      p_len = len(PRED_WINDOWS['train'])
+      config.loginf("PRED_WINDOWS['train'] has {} positions".format(p_len))
     assert not x_test.empty
     fmt = 'x_test has {} trajectories: {} low, {} medium, {} hight'
     t_len = len(x_test)
@@ -466,7 +468,7 @@ if __name__ == '__main__':
     m_len = len(x_test[x_test['traject_entropy_class'] == 'medium'])
     h_len = len(x_test[x_test['traject_entropy_class'] == 'hight'])
     config.loginf(fmt.format(t_len, l_len, m_len, h_len))
-    PARTITION_IDS['test'] = [{
+    PRED_WINDOWS['test'] = [{
         'video': row[1]['ds_video'],
         'user': row[1]['ds_user'],
         'trace_id': trace_id,
@@ -474,8 +476,8 @@ if __name__ == '__main__':
     } for row in x_test.iterrows() \
       for trace_id in range(
         INIT_WINDOW, row[1]['traject'].shape[0] -END_WINDOW)]
-    p_len = len(PARTITION_IDS['test'])
-    config.loginf("PARTITION_IDS['test'] has {} positions".format(p_len))
+    p_len = len(PRED_WINDOWS['test'])
+    config.loginf("PRED_WINDOWS['test'] has {} positions".format(p_len))
 
     # creating model
     config.loginf('')
