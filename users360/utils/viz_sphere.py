@@ -150,13 +150,15 @@ class VizSphere():
 
   dft_start_c = Color('DarkBlue').hex
   dft_end_c = Color('SkyBlue').hex
-  def add_trajectory(self, traces: np.array, start_c = dft_start_c, end_c = dft_end_c) -> None:
+
+  def add_trajectory(self, traces: np.array, start_c = dft_start_c, end_c = dft_end_c, visible=True) -> None:
     # start, end marks
     self.data.append(
         go.Scatter3d(x=[traces[0][0]],
                      y=[traces[0][1]],
                      z=[traces[0][2]],
                      mode='markers',
+                     visible=visible,
                      marker={
                          'size': 7,
                          'color': start_c
@@ -166,6 +168,7 @@ class VizSphere():
                      y=[traces[-1][1]],
                      z=[traces[-1][2]],
                      mode='markers',
+                     visible=visible,
                      marker={
                          'size': 7,
                          'color': end_c
@@ -182,6 +185,7 @@ class VizSphere():
       edge = go.Scatter3d(x=result[..., 0],
                           y=result[..., 1],
                           z=result[..., 2],
+                          visible=visible,
                           hovertext=f'trajectory[{index}]',
                           hoverinfo='text',
                           mode='lines',
@@ -191,13 +195,40 @@ class VizSphere():
                           })
       self.data.append(edge)
 
+  prediction_start_c = Color('DarkGreen').hex
+  prediction_end_c = Color('LightGreen').hex
+
   def add_predictions(self, predictions: dict):
-    for idx, traces in predictions.items():
-      self.add_trajectory(traces)
+    steps = []
+    n_one_pred = 24 + 2
+    n_pre = len(self.data)
+    n_end = len(self.data)+len(predictions)*n_one_pred
+    # print(n_pre, n_end)
+    # argsclean=[{"visible": [True] * n_pre + [False] * (n_end-n_pre)}]
+
+    for i, (_, traces) in enumerate(predictions.items()):
+      self.add_trajectory(traces, self.prediction_start_c, self.prediction_end_c, visible=False)
+      step = dict(method="update",
+                  args=[{"visible": [True] * n_pre + [False] * (n_end-n_pre)}])
+      beg = n_pre + i * n_one_pred
+      end = n_pre + (i+1) * n_one_pred
+      # print (i, beg,end)
+      step["args"][0]["visible"][beg:end] = [True] * n_one_pred
+      # print(step["args"][0]["visible"][beg:])
+      steps.append(step)
+
+    self.sliders = [dict(
+        active=0,
+        currentvalue={"prefix": "Predition at: "},
+        steps=steps
+    )]
+
 
   def show(self) -> None:
     fig = go.Figure(data=self.data)
     fig.update_layout(width=800, showlegend=False, title_text=self.title)
+    if self.sliders:
+      fig.update_layout(sliders=self.sliders)
     fig.show()
 
 
