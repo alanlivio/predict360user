@@ -23,6 +23,7 @@
             "module": "training_procedure",
             "args": [
                 "-evaluate",
+                // "-oneuser", "david_0", "-onevideo", "david_10_Cows",
                 // "-test_model_entropy",
                 // "auto"
                 // "hight",

@@ -110,9 +110,18 @@ def sample_one_trace_from_traject_row(one_row: pd.Series) -> np.array:
   trace = traject_ar[np.random.randint(len(traject_ar - 1))]
   return trace
 
+def get_rows(df_trajects: pd.DataFrame, video: str, user: str,
+               ds: str) -> np.array:
+  if ds == 'all':
+    rows = df_trajects.query(f"ds_user=='{user}' and ds_video=='{video}'")
+  else:
+    rows = df_trajects.query(
+        f"ds=='{ds}' and ds_user=='{user}' and ds_video=='{video}'")
+  assert not rows.empty
+  return rows
+
 def get_traces(df_trajects: pd.DataFrame, video: str, user: str,
                ds: str) -> np.array:
-  # TODO: df indexed by (ds, ds_user, ds_video)
   if ds == 'all':
     row = df_trajects.query(f"ds_user=='{user}' and ds_video=='{video}'")
   else:

@@ -15,8 +15,8 @@ from tqdm.auto import tqdm
 
 from users360 import (calc_actual_entropy, calc_trajects_entropy, config,
                       dump_df_trajects, get_class_by_threshold,
-                      get_df_trajects, get_traces, get_train_test_split,
-                      get_trajects_entropy_threshold)
+                      get_df_trajects, get_rows, get_traces,
+                      get_train_test_split, get_trajects_entropy_threshold)
 from users360.head_motion_prediction.Utils import (all_metrics,
                                                    cartesian_to_eulerian,
                                                    eulerian_to_cartesian)
@@ -155,7 +155,7 @@ def train() -> None:
     raise NotImplementedError
 
 
-def evaluate() -> None:
+def evaluate(oneuser = '', onevideo = '') -> None:
   config.info(f'-- evaluate() PERC_TEST={PERC_TEST}')
 
   # model_folder
@@ -163,7 +163,10 @@ def evaluate() -> None:
                                         f'_{TEST_MODEL_ENTROPY}_entropy')
   config.info(f'model_folder={model_folder}')
   # evaluate_prefix
-  evaluate_prefix = join(model_folder, f'{TEST_PREFIX_PERC}_{TEST_ENTROPY}')
+  if oneuser and onevideo:
+    evaluate_prefix = join(model_folder, f'{TEST_PREFIX_PERC}_{TEST_ENTROPY}_{oneuser}_{onevideo}')
+  else:
+    evaluate_prefix = join(model_folder, f'{TEST_PREFIX_PERC}_{TEST_ENTROPY}')
   config.info(f'evaluate_prefix={evaluate_prefix}')
 
   # x_test, pred_windows, videos_test
@@ -173,10 +176,15 @@ def evaluate() -> None:
   threshold_medium, threshold_hight = get_trajects_entropy_threshold(df_trajects)
   if DATASET_NAME != 'all':
     df_trajects = df_trajects[df_trajects['ds'] == DATASET_NAME]
-  config.info(f'x_test entropy={TEST_ENTROPY}')
-  _, x_test = get_train_test_split(df_trajects, TEST_ENTROPY, PERC_TEST)
-  pred_windows = create_pred_windows(None, x_test, True)
-  videos_test = x_test['ds_video'].unique()
+  if oneuser and onevideo:
+    df_trajects = get_rows(df_trajects, onevideo, oneuser, DATASET_NAME)
+    pred_windows = create_pred_windows(None, df_trajects, True)
+    videos_test = df_trajects['ds_video'].unique()
+  else:
+    config.info(f'x_test entropy={TEST_ENTROPY}')
+    _, x_test = get_train_test_split(df_trajects, TEST_ENTROPY, PERC_TEST)
+    pred_windows = create_pred_windows(None, x_test, True)
+    videos_test = x_test['ds_video'].unique()
 
   # creating model
   config.info('creating model ...')
@@ -427,6 +435,14 @@ if __name__ == '__main__':
                    default='all',
                    choices=entropy_l,
                    help='entropy class to filter -evaluate data (default all)')
+  psr.add_argument('-oneuser',
+                   nargs='?',
+                   type=str,
+                   help='one user for evaluation')
+  psr.add_argument('-onevideo',
+                   nargs='?',
+                   type=str,
+                   help='one video for evaluation')
 
   # train/evaluate params
   psr.add_argument('-gpu_id', nargs='?', type=int, default=0, help='Used cuda gpu (default: 0)')
@@ -501,6 +517,8 @@ if __name__ == '__main__':
   elif args.train:
     train()
   # -evaluate
+  elif args.evaluate and args.oneuser and args.oneuser:
+    evaluate(args.oneuser, args.onevideo)
   elif args.evaluate:
     evaluate()
   sys.exit()
