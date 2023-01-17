@@ -189,6 +189,8 @@ def evaluate() -> None:
   # x_test, pred_windows, videos_test
   config.info('partioning...')
   df_trajects = get_df_trajects()
+  # threshold_medium, threshold_hight should be done before filter by dataset
+  threshold_medium, threshold_hight = get_trajects_entropy_threshold(df_trajects)
   if DATASET_NAME != 'all':
     df_trajects = df_trajects[df_trajects['ds'] == DATASET_NAME]
   config.info(f'x_test entropy={args.test_entropy}')
@@ -207,7 +209,6 @@ def evaluate() -> None:
     model_medium.load_weights(model_weights_medium)
     model_hight = create_model()
     model_hight.load_weights(model_weights_hight)
-    threshold_medium, threshold_hight = get_trajects_entropy_threshold(df_trajects)
   else:
     model = create_model()
     model.load_weights(model_weights)
@@ -228,8 +229,6 @@ def evaluate() -> None:
           [get_traces(df_trajects, video, user, DATASET_NAME)[x_i:x_i + 1]])
     else:
       raise NotImplementedError
-
-    groundtruth = get_traces(df_trajects, video, user, DATASET_NAME)[x_i + 1:x_i + H_WINDOW + 1]
 
     current_model = model
     if EVALUATE_AUTO:
@@ -265,6 +264,9 @@ def evaluate() -> None:
       model_prediction = transform_normalized_eulerian_to_cartesian(model_pred)
     else:
       raise NotImplementedError
+
+    # save error
+    groundtruth = get_traces(df_trajects, video, user, DATASET_NAME)[x_i + 1:x_i + H_WINDOW + 1]
     if not video in errors_per_video:
       errors_per_video[video] = {}
     for t in range(len(groundtruth)):
@@ -280,6 +282,7 @@ def evaluate() -> None:
   for t in range(H_WINDOW):
     avg = np.mean(errors_per_timestep[t])
     avg_error_per_timestep.append(avg)
+
   # avg_error_per_timestep.csv
   result_file = f'{evaluate_prefix}_avg_error_per_timestep'
   config.info(f'saving {result_file}.csv')
