@@ -102,7 +102,7 @@ class VizSphere():
                         hoverinfo='skip',
                         mode='markers',
                         marker={
-                            'size': 4,
+                            'size': 7,
                             'color': colours
                         })
     self.data.append(gens)
@@ -118,7 +118,7 @@ class VizSphere():
                           hoverinfo='skip',
                           mode='lines',
                           line={
-                              'width': 4,
+                              'width': 7,
                               'color': 'blue'
                           })
       self.data.append(edge)
@@ -142,17 +142,15 @@ class VizSphere():
                      z=[trace[2]],
                      mode='markers',
                      marker={
-                         'size': 4,
+                         'size': 7,
                          'color': 'red'
                      }))
     points = fov_points(*trace)
     self._add_polygon_lines(points)
 
-  def add_trajectory(self, traces: np.array) -> None:
-    # start, end colors
-    start_c = '#b2d8ff'
-    end_c = '#00264c'
-
+  dft_start_c = Color('DarkBlue').hex
+  dft_end_c = Color('SkyBlue').hex
+  def add_trajectory(self, traces: np.array, start_c = dft_start_c, end_c = dft_end_c) -> None:
     # start, end marks
     self.data.append(
         go.Scatter3d(x=[traces[0][0]],
@@ -160,7 +158,7 @@ class VizSphere():
                      z=[traces[0][2]],
                      mode='markers',
                      marker={
-                         'size': 4,
+                         'size': 7,
                          'color': start_c
                      }))
     self.data.append(
@@ -169,7 +167,7 @@ class VizSphere():
                      z=[traces[-1][2]],
                      mode='markers',
                      marker={
-                         'size': 4,
+                         'size': 7,
                          'color': end_c
                      }))
 
@@ -188,10 +186,14 @@ class VizSphere():
                           hoverinfo='text',
                           mode='lines',
                           line={
-                              'width': 5,
+                              'width': 7,
                               'color': colors[index]
                           })
       self.data.append(edge)
+
+  def add_predictions(self, predictions: dict):
+    for idx, traces in predictions.items():
+      self.add_trajectory(traces)
 
   def show(self) -> None:
     fig = go.Figure(data=self.data)
