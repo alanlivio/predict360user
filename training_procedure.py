@@ -129,7 +129,8 @@ def train() -> None:
 
   # creating model
   config.loginf('creating model ...')
-  # sys.exit()
+  if DRY_RUN:
+    sys.exit()
   model = create_model()
   assert model
 
@@ -197,7 +198,8 @@ def evaluate() -> None:
 
   # creating model
   config.loginf('creating model ...')
-  # sys.exit()
+  if DRY_RUN:
+    sys.exit()
   if EVALUATE_AUTO:
     model_low = create_model()
     model_low.load_weights(model_weights_low)
@@ -210,7 +212,7 @@ def evaluate() -> None:
     model = create_model()
     model.load_weights(model_weights)
 
-  # MODEL.predict
+  # predict by each pred_windows
   errors_per_video = {}
   errors_per_timestep = {}
 
@@ -229,29 +231,33 @@ def evaluate() -> None:
 
     groundtruth = get_traces(df_trajects, video, user, DATASET_NAME)[x_i + 1:x_i + H_WINDOW + 1]
 
+    current_model = model
+    if EVALUATE_AUTO:
+      # traject_entropy_class
+      if TEST_MODEL_ENTROPY == 'auto':
+        traject_entropy_class = ids['traject_entropy_class']
+      if TEST_MODEL_ENTROPY == 'auto_m_window':
+        window = get_traces(df_trajects, video, user, DATASET_NAME)[x_i - M_WINDOW:x_i]
+        a_ent = calc_actual_entropy(window)
+        traject_entropy_class = get_class_by_threshold(a_ent, threshold_medium, threshold_hight)
+      elif TEST_MODEL_ENTROPY == 'auto_since_start':
+        window = get_traces(df_trajects, video, user, DATASET_NAME)[0:x_i]
+        a_ent = calc_actual_entropy(window)
+        traject_entropy_class = get_class_by_threshold(a_ent, threshold_medium, threshold_hight)
+      else:
+        raise RuntimeError()
+      # current_model
+      if traject_entropy_class == 'low':
+        current_model = model_low
+      elif traject_entropy_class == 'medium':
+        current_model = model_medium
+      elif traject_entropy_class == 'hight':
+        current_model = model_hight
+      else:
+        raise NotImplementedError
+
+    # predict
     if MODEL_NAME == 'pos_only':
-      current_model = model
-      if EVALUATE_AUTO:
-        if TEST_MODEL_ENTROPY == 'auto':
-          traject_entropy_class = ids['traject_entropy_class']
-        if TEST_MODEL_ENTROPY == 'auto_m_window':
-          window = get_traces(df_trajects, video, user, DATASET_NAME)[x_i - M_WINDOW:x_i]
-          a_ent = calc_actual_entropy(window)
-          traject_entropy_class = get_class_by_threshold(a_ent, threshold_medium, threshold_hight)
-        elif TEST_MODEL_ENTROPY == 'auto_since_start':
-          window = get_traces(df_trajects, video, user, DATASET_NAME)[0:x_i]
-          a_ent = calc_actual_entropy(window)
-          traject_entropy_class = get_class_by_threshold(a_ent, threshold_medium, threshold_hight)
-        else:
-          raise RuntimeError()
-        if traject_entropy_class == 'low':
-          current_model = model_low
-        elif traject_entropy_class == 'medium':
-          current_model = model_medium
-        elif traject_entropy_class == 'hight':
-          current_model = model_hight
-        else:
-          raise NotImplementedError
       model_pred = current_model.predict([
           transform_batches_cartesian_to_normalized_eulerian(encoder_pos_inputs_for_sample),
           transform_batches_cartesian_to_normalized_eulerian(decoder_pos_inputs_for_sample)
@@ -259,7 +265,6 @@ def evaluate() -> None:
       model_prediction = transform_normalized_eulerian_to_cartesian(model_pred)
     else:
       raise NotImplementedError
-
     if not video in errors_per_video:
       errors_per_video[video] = {}
     for t in range(len(groundtruth)):
@@ -456,6 +461,10 @@ if __name__ == '__main__':
                    type=float,
                    default=0.2,
                    help='test percetage (default: 0.2)')
+  psr.add_argument('-dry_run',
+                   action='store_true',
+                   help='show train/test info but stop before perform')
+
   args = psr.parse_args()
 
   # global vars
@@ -475,6 +484,7 @@ if __name__ == '__main__':
   EVALUATE_AUTO = args.test_model_entropy.startswith('auto')
   TRAIN_ENTROPY = args.train_entropy
   TEST_ENTROPY = args.test_entropy
+  DRY_RUN = args.dry_run
   os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'
   if args.gpu_id:
     os.environ['CUDA_VISIBLE_DEVICES'] = str(args.gpu_id)
