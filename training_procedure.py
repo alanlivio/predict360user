@@ -107,10 +107,6 @@ def train() -> None:
   if not exists(model_folder):
     os.makedirs(model_folder)
 
-  # model_weights
-  model_weights = join(model_folder, 'weights.hdf5')
-  config.info(f'model_weights={model_weights}')
-
   # x_train, x_test, pred_windows
   config.info('partioning...')
   df_trajects = get_df_trajects()
@@ -129,6 +125,9 @@ def train() -> None:
 
   # creating model
   config.info('creating model ...')
+  # model_weights
+  model_weights = join(model_folder, 'weights.hdf5')
+  config.info(f'model_weights={model_weights}')
   if DRY_RUN:
     sys.exit()
   model = create_model()
@@ -163,11 +162,24 @@ def evaluate() -> None:
   model_folder = MODEL_DS_PREFIX + ('' if TEST_MODEL_ENTROPY == 'all' else
                                         f'_{TEST_MODEL_ENTROPY}_entropy')
   config.info(f'model_folder={model_folder}')
-
   # evaluate_prefix
-  evaluate_prefix = join(model_folder, f'{TEST_PREFIX_PERC}_{args.test_entropy}')
+  evaluate_prefix = join(model_folder, f'{TEST_PREFIX_PERC}_{TEST_ENTROPY}')
   config.info(f'evaluate_prefix={evaluate_prefix}')
 
+  # x_test, pred_windows, videos_test
+  config.info('partioning...')
+  df_trajects = get_df_trajects()
+  # threshold_medium, threshold_hight should be done before filter by dataset
+  threshold_medium, threshold_hight = get_trajects_entropy_threshold(df_trajects)
+  if DATASET_NAME != 'all':
+    df_trajects = df_trajects[df_trajects['ds'] == DATASET_NAME]
+  config.info(f'x_test entropy={TEST_ENTROPY}')
+  _, x_test = get_train_test_split(df_trajects, TEST_ENTROPY, PERC_TEST)
+  pred_windows = create_pred_windows(None, x_test, True)
+  videos_test = x_test['ds_video'].unique()
+
+  # creating model
+  config.info('creating model ...')
   # model_weights
   # check existing if one model
   if not TEST_MODEL_ENTROPY.startswith('auto'):
@@ -185,21 +197,6 @@ def evaluate() -> None:
     assert exists(model_weights_low)
     assert exists(model_weights_medium)
     assert exists(model_weights_hight)
-
-  # x_test, pred_windows, videos_test
-  config.info('partioning...')
-  df_trajects = get_df_trajects()
-  # threshold_medium, threshold_hight should be done before filter by dataset
-  threshold_medium, threshold_hight = get_trajects_entropy_threshold(df_trajects)
-  if DATASET_NAME != 'all':
-    df_trajects = df_trajects[df_trajects['ds'] == DATASET_NAME]
-  config.info(f'x_test entropy={args.test_entropy}')
-  _, x_test = get_train_test_split(df_trajects, TEST_ENTROPY, PERC_TEST)
-  pred_windows = create_pred_windows(None, x_test, True)
-  videos_test = x_test['ds_video'].unique()
-
-  # creating model
-  config.info('creating model ...')
   if DRY_RUN:
     sys.exit()
   if EVALUATE_AUTO:
