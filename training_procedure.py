@@ -407,133 +407,134 @@ if __name__ == '__main__':
     df = get_df_trajects()
     calc_trajects_entropy(df)
     dump_df_trajects(df)
-    sys.exit()
 
   # -compare_results
-  if args.compare_results:
+  elif args.compare_results:
     compare_results()
-    sys.exit()
 
-  config.loginf('DATASET=' + (DATASET_NAME if DATASET_NAME != 'all' else repr(config.DS_NAMES)))
-  dataset_suffix = '' if args.dataset_name == 'all' else f'_{DATASET_NAME}'
-  model_ds_prefix = join(config.DATADIR, f'{MODEL_NAME}{dataset_suffix}')
+  # -train or -evaluate
+  elif args.train or args.evaluate:
 
-  # -train: MODEL_FOLDER, MODEL_WEIGHTS
-  if args.train:
-    MODEL_FOLDER = model_ds_prefix + ('' if args.train_entropy == 'all' else
-                                          f'_{args.train_entropy}_entropy')
-    MODEL_WEIGHTS = join(MODEL_FOLDER, 'weights.hdf5')
-    config.loginf(f'MODEL_FOLDER={MODEL_FOLDER}')
-    config.loginf(f'MODEL_WEIGHTS={MODEL_WEIGHTS}')
-    if not exists(MODEL_FOLDER):
-      os.makedirs(MODEL_FOLDER)
+    config.loginf('DATASET=' + (DATASET_NAME if DATASET_NAME != 'all' else repr(config.DS_NAMES)))
+    dataset_suffix = '' if args.dataset_name == 'all' else f'_{DATASET_NAME}'
+    model_ds_prefix = join(config.DATADIR, f'{MODEL_NAME}{dataset_suffix}')
 
-  # -evaluate: MODEL_WEIGHTS
-  if args.evaluate:
-    MODEL_FOLDER = model_ds_prefix + ('' if args.test_model_entropy == 'all' else
-                                          f'_{args.test_model_entropy}_entropy')
-    if not exists(MODEL_FOLDER):
-      os.makedirs(MODEL_FOLDER)
-    config.loginf(f'MODEL_FOLDER={MODEL_FOLDER}')
-    EVALUATE_NAME = f'{TEST_PREFIX_PERC}_{args.test_entropy}'
-    config.loginf(f'EVALUATE_NAME at MODEL_FOLDER={EVALUATE_NAME}')
-
-    # check existing with using one model
-    if not args.test_model_entropy.startswith('auto'):
+    # -train: MODEL_FOLDER, MODEL_WEIGHTS
+    if args.train:
+      MODEL_FOLDER = model_ds_prefix + ('' if args.train_entropy == 'all' else
+                                            f'_{args.train_entropy}_entropy')
       MODEL_WEIGHTS = join(MODEL_FOLDER, 'weights.hdf5')
-      assert exists(MODEL_WEIGHTS)
+      config.loginf(f'MODEL_FOLDER={MODEL_FOLDER}')
       config.loginf(f'MODEL_WEIGHTS={MODEL_WEIGHTS}')
-    # check exists mutiple model when using auto select model
-    if args.evaluate and args.test_model_entropy.startswith('auto'):
-      MODEL_WEIGHTS_LOW = join(model_ds_prefix + "_low_entropy",
-                                'weights.hdf5')
-      MODEL_WEIGHTS_MEDIUM = join(model_ds_prefix + "_medium_entropy",
+      if not exists(MODEL_FOLDER):
+        os.makedirs(MODEL_FOLDER)
+
+    # -evaluate: MODEL_WEIGHTS
+    if args.evaluate:
+      MODEL_FOLDER = model_ds_prefix + ('' if args.test_model_entropy == 'all' else
+                                            f'_{args.test_model_entropy}_entropy')
+      if not exists(MODEL_FOLDER):
+        os.makedirs(MODEL_FOLDER)
+      config.loginf(f'MODEL_FOLDER={MODEL_FOLDER}')
+      EVALUATE_NAME = f'{TEST_PREFIX_PERC}_{args.test_entropy}'
+      config.loginf(f'EVALUATE_NAME at MODEL_FOLDER={EVALUATE_NAME}')
+
+      # check existing with using one model
+      if not args.test_model_entropy.startswith('auto'):
+        MODEL_WEIGHTS = join(MODEL_FOLDER, 'weights.hdf5')
+        assert exists(MODEL_WEIGHTS)
+        config.loginf(f'MODEL_WEIGHTS={MODEL_WEIGHTS}')
+      # check exists mutiple model when using auto select model
+      if args.evaluate and args.test_model_entropy.startswith('auto'):
+        MODEL_WEIGHTS_LOW = join(model_ds_prefix + "_low_entropy",
                                   'weights.hdf5')
-      MODEL_WEIGHTS_HIGHT = join(model_ds_prefix + "_hight_entropy",
-                                  'weights.hdf5')
-      assert exists(MODEL_WEIGHTS_LOW)
-      assert exists(MODEL_WEIGHTS_MEDIUM)
-      assert exists(MODEL_WEIGHTS_HIGHT)
-      config.loginf('MODEL_WEIGHTS_LOW='+ MODEL_WEIGHTS_LOW)
-      config.loginf('MODEL_WEIGHTS_MEDIUM='+ MODEL_WEIGHTS_MEDIUM)
-      config.loginf('MODEL_WEIGHTS_HIGHT='+ MODEL_WEIGHTS_HIGHT)
+        MODEL_WEIGHTS_MEDIUM = join(model_ds_prefix + "_medium_entropy",
+                                    'weights.hdf5')
+        MODEL_WEIGHTS_HIGHT = join(model_ds_prefix + "_hight_entropy",
+                                    'weights.hdf5')
+        assert exists(MODEL_WEIGHTS_LOW)
+        assert exists(MODEL_WEIGHTS_MEDIUM)
+        assert exists(MODEL_WEIGHTS_HIGHT)
+        config.loginf('MODEL_WEIGHTS_LOW='+ MODEL_WEIGHTS_LOW)
+        config.loginf('MODEL_WEIGHTS_MEDIUM='+ MODEL_WEIGHTS_MEDIUM)
+        config.loginf('MODEL_WEIGHTS_HIGHT='+ MODEL_WEIGHTS_HIGHT)
 
-  # partioning
-  config.loginf('')
-  config.loginf('partioning train/test ...')
-  config.loginf(f'PERC_TEST is {PERC_TEST}')
-  PARTITION_IDS = {}
-  DF_TRAJECTS = get_df_trajects()
-  if args.dataset_name != 'all':
-    DF_TRAJECTS = DF_TRAJECTS[DF_TRAJECTS['ds'] == DATASET_NAME]
+    # partioning
+    config.loginf('')
+    config.loginf('partioning train/test ...')
+    config.loginf(f'PERC_TEST is {PERC_TEST}')
+    PARTITION_IDS = {}
+    DF_TRAJECTS = get_df_trajects()
+    if args.dataset_name != 'all':
+      DF_TRAJECTS = DF_TRAJECTS[DF_TRAJECTS['ds'] == DATASET_NAME]
 
-  # -train x_train, x_test
-  if args.train:
-    config.loginf(f'x_train, x_test entropy is {args.train_entropy}')
-    x_train, x_test = get_train_test_split(DF_TRAJECTS, args.train_entropy, PERC_TEST)
-  # -evaluate x_test, VIDEOS_TEST, USERS_TEST
-  elif args.evaluate:
-    config.loginf(f'x_test entropy={args.test_entropy}')
-    _, x_test = get_train_test_split(DF_TRAJECTS, args.test_entropy, PERC_TEST)
-    VIDEOS_TEST = x_test['ds_video'].unique()
-    USERS_TEST = x_test['ds_user'].unique()
+    # -train x_train, x_test
+    if args.train:
+      config.loginf(f'x_train, x_test entropy is {args.train_entropy}')
+      x_train, x_test = get_train_test_split(DF_TRAJECTS, args.train_entropy, PERC_TEST)
+    # -evaluate x_test, VIDEOS_TEST, USERS_TEST
+    elif args.evaluate:
+      config.loginf(f'x_test entropy={args.test_entropy}')
+      _, x_test = get_train_test_split(DF_TRAJECTS, args.test_entropy, PERC_TEST)
+      VIDEOS_TEST = x_test['ds_video'].unique()
+      USERS_TEST = x_test['ds_user'].unique()
 
-  # PARTITION_IDS
-  if args.train:
-    assert not x_train.empty
-    fmt = 'x_train has {} trajectories: {} low, {} medium, {} hight'
-    t_len = len(x_train)
-    l_len = len(x_train[x_train['traject_entropy_class'] == 'low'])
-    m_len = len(x_train[x_train['traject_entropy_class'] == 'medium'])
-    h_len = len(x_train[x_train['traject_entropy_class'] == 'hight'])
+    # PARTITION_IDS
+    if args.train:
+      assert not x_train.empty
+      fmt = 'x_train has {} trajectories: {} low, {} medium, {} hight'
+      t_len = len(x_train)
+      l_len = len(x_train[x_train['traject_entropy_class'] == 'low'])
+      m_len = len(x_train[x_train['traject_entropy_class'] == 'medium'])
+      h_len = len(x_train[x_train['traject_entropy_class'] == 'hight'])
+      config.loginf(fmt.format(t_len, l_len, m_len, h_len))
+      PARTITION_IDS['train'] = [
+          {
+              'video': row[1]['ds_video'],
+              'user': row[1]['ds_user'],
+              'trace_id': trace_id
+          } for row in x_train.iterrows()
+          for trace_id in range(INIT_WINDOW, row[1]['traject'].shape[0] - END_WINDOW)
+      ]
+      p_len = len(PARTITION_IDS['train'])
+      config.loginf("PARTITION_IDS['train'] has {} positions".format(p_len))
+    assert not x_test.empty
+    fmt = 'x_test has {} trajectories: {} low, {} medium, {} hight'
+    t_len = len(x_test)
+    l_len = len(x_test[x_test['traject_entropy_class'] == 'low'])
+    m_len = len(x_test[x_test['traject_entropy_class'] == 'medium'])
+    h_len = len(x_test[x_test['traject_entropy_class'] == 'hight'])
     config.loginf(fmt.format(t_len, l_len, m_len, h_len))
-    PARTITION_IDS['train'] = [
+    PARTITION_IDS['test'] = [
         {
             'video': row[1]['ds_video'],
             'user': row[1]['ds_user'],
-            'trace_id': trace_id
-        } for row in x_train.iterrows()
+            'trace_id': trace_id,
+            'traject_entropy_class': row[1]['traject_entropy_class']
+        } for row in x_test.iterrows()
         for trace_id in range(INIT_WINDOW, row[1]['traject'].shape[0] - END_WINDOW)
     ]
-    p_len = len(PARTITION_IDS['train'])
-    config.loginf("PARTITION_IDS['train'] has {} positions".format(p_len))
-  assert not x_test.empty
-  fmt = 'x_test has {} trajectories: {} low, {} medium, {} hight'
-  t_len = len(x_test)
-  l_len = len(x_test[x_test['traject_entropy_class'] == 'low'])
-  m_len = len(x_test[x_test['traject_entropy_class'] == 'medium'])
-  h_len = len(x_test[x_test['traject_entropy_class'] == 'hight'])
-  config.loginf(fmt.format(t_len, l_len, m_len, h_len))
-  PARTITION_IDS['test'] = [
-      {
-          'video': row[1]['ds_video'],
-          'user': row[1]['ds_user'],
-          'trace_id': trace_id,
-          'traject_entropy_class': row[1]['traject_entropy_class']
-      } for row in x_test.iterrows()
-      for trace_id in range(INIT_WINDOW, row[1]['traject'].shape[0] - END_WINDOW)
-  ]
-  p_len = len(PARTITION_IDS['test'])
-  config.loginf("PARTITION_IDS['test'] has {} positions".format(p_len))
+    p_len = len(PARTITION_IDS['test'])
+    config.loginf("PARTITION_IDS['test'] has {} positions".format(p_len))
 
-  # sys.exit()
-  # creating model
-  config.loginf('')
-  config.loginf('creating model ...')
-  os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'
-  if args.gpu_id:
-    os.environ['CUDA_VISIBLE_DEVICES'] = str(args.gpu_id)
-  MODEL = create_model()
-  assert MODEL
+    # creating model
+    config.loginf('')
+    config.loginf('creating model ...')
+    os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'
+    if args.gpu_id:
+      os.environ['CUDA_VISIBLE_DEVICES'] = str(args.gpu_id)
+    MODEL = create_model()
+    assert MODEL
 
-  # train, evaluate actions
-  if args.train:
-    config.loginf('')
-    config.loginf('training ...')
-    config.loginf(f'EPOCHS is {EPOCHS}')
-    train()
-  elif args.evaluate:
-    config.loginf('')
-    config.loginf('evaluating ...')
-    evaluate()
+    # train, evaluate actions
+    if args.train:
+      config.loginf('')
+      config.loginf('training ...')
+      config.loginf(f'EPOCHS is {EPOCHS}')
+      train()
+    elif args.evaluate:
+      config.loginf('')
+      config.loginf('evaluating ...')
+      evaluate()
+
   sys.exit()
