@@ -49,7 +49,7 @@ def transform_normalized_eulerian_to_cartesian(positions) -> np.array:
   return np.array(eulerian_samples)
 
 
-def generate_arrays(ids_l, future_window) -> Generator:
+def generate_arrays(df_trajects: pd.DataFrame, pred_windows: dict, future_window) -> Generator:
   while True:
     encoder_pos_inputs_for_batch = []
     # encoder_sal_inputs_for_batch = []
@@ -57,19 +57,19 @@ def generate_arrays(ids_l, future_window) -> Generator:
     # decoder_sal_inputs_for_batch = []
     decoder_outputs_for_batch = []
     count = 0
-    np.random.shuffle(ids_l)
-    for ids in ids_l:
+    np.random.shuffle(pred_windows)
+    for ids in pred_windows:
       user = ids['user']
       video = ids['video']
       x_i = ids['trace_id']
       # Load the data
       if MODEL_NAME == 'pos_only':
         encoder_pos_inputs_for_batch.append(
-            get_traces(DF_TRAJECTS, video, user, DATASET_NAME)[x_i - M_WINDOW:x_i])
+            get_traces(df_trajects, video, user, DATASET_NAME)[x_i - M_WINDOW:x_i])
         decoder_pos_inputs_for_batch.append(
-            get_traces(DF_TRAJECTS, video, user, DATASET_NAME)[x_i:x_i + 1])
+            get_traces(df_trajects, video, user, DATASET_NAME)[x_i:x_i + 1])
         decoder_outputs_for_batch.append(
-            get_traces(DF_TRAJECTS, video, user, DATASET_NAME)[x_i + 1:x_i + future_window + 1])
+            get_traces(df_trajects, video, user, DATASET_NAME)[x_i + 1:x_i + future_window + 1])
       else:
         raise NotImplementedError
       count += 1
@@ -98,29 +98,57 @@ def generate_arrays(ids_l, future_window) -> Generator:
 
 
 def train() -> None:
+  config.loginf(f'-- train() PERC_TEST={PERC_TEST}, EPOCHS={EPOCHS}')
+
+  # model_folder
+  model_folder = MODEL_DS_PREFIX + ('' if TRAIN_ENTROPY == 'all' else
+                                    f'_{TRAIN_ENTROPY}_entropy')
+  config.loginf(f'model_folder={model_folder}')
+  if not exists(model_folder):
+    os.makedirs(model_folder)
+
+  # model_weights
+  model_weights = join(model_folder, 'weights.hdf5')
+  config.loginf(f'model_weights={model_weights}')
+
+  # x_train, x_test, pred_windows
+  config.loginf('partioning...')
+  df_trajects = get_df_trajects()
+  if DATASET_NAME != 'all':
+    df_trajects = df_trajects[df_trajects['ds'] == DATASET_NAME]
+  config.loginf(f'x_train, x_test entropy is {TRAIN_ENTROPY}')
+  x_train, x_test = get_train_test_split(df_trajects, TRAIN_ENTROPY, PERC_TEST)
+  pred_windows = create_pred_windows(x_train, x_test)
+
   with redirect_stderr(open(os.devnull, 'w')):  # pylint: disable=unspecified-encoding
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
     import tensorflow.keras as keras
 
-  steps_per_ep_train = np.ceil(len(PRED_WINDOWS['train']) / BATCH_SIZE)
-  steps_per_ep_validate = np.ceil(len(PRED_WINDOWS['test']) / BATCH_SIZE)
+  steps_per_ep_train = np.ceil(len(pred_windows['train']) / BATCH_SIZE)
+  steps_per_ep_validate = np.ceil(len(pred_windows['test']) / BATCH_SIZE)
+
+  # creating model
+  config.loginf('creating model ...')
+  # sys.exit()
+  model = create_model()
+  assert model
 
   # train
-  csv_logger_f = join(MODEL_FOLDER, 'train_results.csv')
+  csv_logger_f = join(model_folder, 'train_results.csv')
   csv_logger = keras.callbacks.CSVLogger(csv_logger_f)
-  tb_callback = keras.callbacks.TensorBoard(log_dir=f'{MODEL_FOLDER}/logs')
-  model_checkpoint = keras.callbacks.ModelCheckpoint(MODEL_WEIGHTS,
+  tb_callback = keras.callbacks.TensorBoard(log_dir=f'{model_folder}/logs')
+  model_checkpoint = keras.callbacks.ModelCheckpoint(model_weights,
                                                      save_best_only=True,
                                                      save_weights_only=True,
                                                      mode='auto',
                                                      period=1)
   if MODEL_NAME == 'pos_only':
-    MODEL.fit_generator(generator=generate_arrays(PRED_WINDOWS['train'], future_window=H_WINDOW),
+    model.fit_generator(generator=generate_arrays(df_trajects, pred_windows['train'], future_window=H_WINDOW),
                         verbose=1,
                         steps_per_epoch=steps_per_ep_train,
                         epochs=EPOCHS,
                         callbacks=[csv_logger, model_checkpoint, tb_callback],
-                        validation_data=generate_arrays(PRED_WINDOWS['test'],
+                        validation_data=generate_arrays(df_trajects, pred_windows['test'],
                                                         future_window=H_WINDOW),
                         validation_steps=steps_per_ep_validate)
   else:
@@ -128,49 +156,90 @@ def train() -> None:
 
 
 def evaluate() -> None:
-  if MODEL_NAME == 'pos_only':
-    if EVALUATE_AUTO:
-      model_low = create_model()
-      model_low.load_weights(MODEL_WEIGHTS_LOW)
-      model_medium = create_model()
-      model_medium.load_weights(MODEL_WEIGHTS_MEDIUM)
-      model_hight = create_model()
-      model_hight.load_weights(MODEL_WEIGHTS_HIGHT)
-      threshold_medium, threshold_hight = get_trajects_entropy_threshold(DF_TRAJECTS)
-    else:
-      MODEL.load_weights(MODEL_WEIGHTS)
+  config.loginf(f'-- evaluate() PERC_TEST={PERC_TEST}')
+
+  # model_folder
+  model_folder = MODEL_DS_PREFIX + ('' if TEST_MODEL_ENTROPY == 'all' else
+                                        f'_{TEST_MODEL_ENTROPY}_entropy')
+  config.loginf(f'model_folder={model_folder}')
+
+  # evaluate_prefix
+  evaluate_prefix = join(model_folder, f'{TEST_PREFIX_PERC}_{args.test_entropy}')
+  config.loginf(f'evaluate_prefix={evaluate_prefix}')
+
+  # model_weights
+  # check existing if one model
+  if not TEST_MODEL_ENTROPY.startswith('auto'):
+    model_weights = join(model_folder, 'weights.hdf5')
+    config.loginf(f'model_weights={model_weights}')
+    assert exists(model_weights)
+  # check exists if using mutiple models
+  if TEST_MODEL_ENTROPY.startswith('auto'):
+    model_weights_low = join(MODEL_DS_PREFIX + "_low_entropy", 'weights.hdf5')
+    model_weights_medium = join(MODEL_DS_PREFIX + "_medium_entropy", 'weights.hdf5')
+    model_weights_hight = join(MODEL_DS_PREFIX + "_hight_entropy", 'weights.hdf5')
+    config.loginf('model_weights_low=' + model_weights_low)
+    config.loginf('model_weights_medium=' + model_weights_medium)
+    config.loginf('model_weights_hight=' + model_weights_hight)
+    assert exists(model_weights_low)
+    assert exists(model_weights_medium)
+    assert exists(model_weights_hight)
+
+  # x_test, pred_windows, videos_test
+  config.loginf('partioning...')
+  df_trajects = get_df_trajects()
+  if DATASET_NAME != 'all':
+    df_trajects = df_trajects[df_trajects['ds'] == DATASET_NAME]
+  config.loginf(f'x_test entropy={args.test_entropy}')
+  _, x_test = get_train_test_split(df_trajects, TEST_ENTROPY, PERC_TEST)
+  pred_windows = create_pred_windows(None, x_test, True)
+  videos_test = x_test['ds_video'].unique()
+
+  # creating model
+  config.loginf('creating model ...')
+  # sys.exit()
+  if EVALUATE_AUTO:
+    model_low = create_model()
+    model_low.load_weights(model_weights_low)
+    model_medium = create_model()
+    model_medium.load_weights(model_weights_medium)
+    model_hight = create_model()
+    model_hight.load_weights(model_weights_hight)
+    threshold_medium, threshold_hight = get_trajects_entropy_threshold(df_trajects)
   else:
-    raise NotImplementedError
+    model = create_model()
+    model.load_weights(model_weights)
+
+  # MODEL.predict
   errors_per_video = {}
   errors_per_timestep = {}
 
-  for ids in tqdm(PRED_WINDOWS['test'], desc='position predictions'):
+  for ids in tqdm(pred_windows['test'], desc='position predictions'):
     user = ids['user']
     video = ids['video']
     x_i = ids['trace_id']
 
-    # MODEL.predict
     if MODEL_NAME == 'pos_only':
       encoder_pos_inputs_for_sample = np.array(
-          [get_traces(DF_TRAJECTS, video, user, DATASET_NAME)[x_i - M_WINDOW:x_i]])
+          [get_traces(df_trajects, video, user, DATASET_NAME)[x_i - M_WINDOW:x_i]])
       decoder_pos_inputs_for_sample = np.array(
-          [get_traces(DF_TRAJECTS, video, user, DATASET_NAME)[x_i:x_i + 1]])
+          [get_traces(df_trajects, video, user, DATASET_NAME)[x_i:x_i + 1]])
     else:
       raise NotImplementedError
 
-    groundtruth = get_traces(DF_TRAJECTS, video, user, DATASET_NAME)[x_i + 1:x_i + H_WINDOW + 1]
+    groundtruth = get_traces(df_trajects, video, user, DATASET_NAME)[x_i + 1:x_i + H_WINDOW + 1]
 
     if MODEL_NAME == 'pos_only':
-      current_model = MODEL
+      current_model = model
       if EVALUATE_AUTO:
         if TEST_MODEL_ENTROPY == 'auto':
           traject_entropy_class = ids['traject_entropy_class']
         if TEST_MODEL_ENTROPY == 'auto_m_window':
-          window = get_traces(DF_TRAJECTS, video, user, DATASET_NAME)[x_i - M_WINDOW:x_i]
+          window = get_traces(df_trajects, video, user, DATASET_NAME)[x_i - M_WINDOW:x_i]
           a_ent = calc_actual_entropy(window)
           traject_entropy_class = get_class_by_threshold(a_ent, threshold_medium, threshold_hight)
         elif TEST_MODEL_ENTROPY == 'auto_since_start':
-          window = get_traces(DF_TRAJECTS, video, user, DATASET_NAME)[0:x_i]
+          window = get_traces(df_trajects, video, user, DATASET_NAME)[0:x_i]
           a_ent = calc_actual_entropy(window)
           traject_entropy_class = get_class_by_threshold(a_ent, threshold_medium, threshold_hight)
         else:
@@ -201,15 +270,13 @@ def evaluate() -> None:
         errors_per_timestep[t] = []
       errors_per_timestep[t].append(METRIC(groundtruth[t], model_prediction[t]))
 
-  result_basefilename = join(MODEL_FOLDER, EVALUATE_NAME)
-
   # avg_error_per_timestep
   avg_error_per_timestep = []
   for t in range(H_WINDOW):
     avg = np.mean(errors_per_timestep[t])
     avg_error_per_timestep.append(avg)
   # avg_error_per_timestep.csv
-  result_file = f'{result_basefilename}_avg_error_per_timestep'
+  result_file = f'{evaluate_prefix}_avg_error_per_timestep'
   config.loginf(f'saving {result_file}.csv')
   np.savetxt(f'{result_file}.csv', avg_error_per_timestep)
 
@@ -225,17 +292,52 @@ def evaluate() -> None:
 
   # avg_error_per_video
   avg_error_per_video = []
-  for video_name in VIDEOS_TEST:
+  for video_name in videos_test:
     for t in range(H_WINDOW):
       if not video_name in errors_per_video:
-        config.logerr(f'missing {video_name} in VIDEOS_TEST')
+        config.logerr(f'missing {video_name} in videos_test')
         continue
       avg = np.mean(errors_per_video[video_name][t])
       avg_error_per_video.append(f'video={video_name} {t} {avg}')
-  result_file = f'{result_basefilename}_avg_error_per_video.csv'
+  result_file = f'{evaluate_prefix}_avg_error_per_video.csv'
   np.savetxt(result_file, avg_error_per_video, fmt='%s')
   config.loginf(f'saving {result_file}')
 
+def create_pred_windows(x_train: pd.DataFrame, x_test: pd.DataFrame, skip_train = False) -> dict:
+  pred_windows = {}
+  if not skip_train:
+    fmt = 'x_train has {} trajectories: {} low, {} medium, {} hight'
+    t_len = len(x_train)
+    l_len = len(x_train[x_train['traject_entropy_class'] == 'low'])
+    m_len = len(x_train[x_train['traject_entropy_class'] == 'medium'])
+    h_len = len(x_train[x_train['traject_entropy_class'] == 'hight'])
+    config.loginf(fmt.format(t_len, l_len, m_len, h_len))
+    pred_windows['train'] = [{
+        'video': row[1]['ds_video'],
+        'user': row[1]['ds_user'],
+        'trace_id': trace_id
+    } for row in x_train.iterrows() \
+      for trace_id in range(
+        INIT_WINDOW, row[1]['traject'].shape[0] -END_WINDOW)]
+    p_len = len(pred_windows['train'])
+    config.loginf("pred_windows['train'] has {} positions".format(p_len))
+  fmt = 'x_test has {} trajectories: {} low, {} medium, {} hight'
+  t_len = len(x_test)
+  l_len = len(x_test[x_test['traject_entropy_class'] == 'low'])
+  m_len = len(x_test[x_test['traject_entropy_class'] == 'medium'])
+  h_len = len(x_test[x_test['traject_entropy_class'] == 'hight'])
+  config.loginf(fmt.format(t_len, l_len, m_len, h_len))
+  pred_windows['test'] = [{
+      'video': row[1]['ds_video'],
+      'user': row[1]['ds_user'],
+      'trace_id': trace_id,
+      'traject_entropy_class': row[1]['traject_entropy_class']
+  } for row in x_test.iterrows() \
+    for trace_id in range(
+      INIT_WINDOW, row[1]['traject'].shape[0] -END_WINDOW)]
+  p_len = len(pred_windows['test'])
+  config.loginf("pred_windows['test'] has {} positions".format(p_len))
+  return pred_windows
 
 def compare_results() -> None:
   suffix = '_avg_error_per_timestep.csv'
@@ -359,6 +461,9 @@ if __name__ == '__main__':
   # global vars
   DATASET_NAME = args.dataset_name
   MODEL_NAME = args.model_name
+  config.loginf('dataset=' + (DATASET_NAME if DATASET_NAME != 'all' else repr(config.DS_NAMES)))
+  dataset_suffix = '' if args.dataset_name == 'all' else f'_{DATASET_NAME}'
+  MODEL_DS_PREFIX = join(config.DATADIR, f'{MODEL_NAME}{dataset_suffix}')
   PERC_TEST = args.perc_test
   EPOCHS = args.epochs
   INIT_WINDOW = args.init_window
@@ -368,135 +473,24 @@ if __name__ == '__main__':
   TEST_PREFIX_PERC = f"test_{str(PERC_TEST).replace('.',',')}"
   TEST_MODEL_ENTROPY = args.test_model_entropy
   EVALUATE_AUTO = args.test_model_entropy.startswith('auto')
+  TRAIN_ENTROPY = args.train_entropy
+  TEST_ENTROPY = args.test_entropy
+  os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'
+  if args.gpu_id:
+    os.environ['CUDA_VISIBLE_DEVICES'] = str(args.gpu_id)
 
   # -calculate_entropy
   if args.calculate_entropy:
-    df_trajects = get_df_trajects()
-    calc_trajects_entropy(df_trajects)
-    dump_df_trajects(df_trajects)
-
+    df_tmp = get_df_trajects()
+    calc_trajects_entropy(df_tmp)
+    dump_df_trajects(df_tmp)
   # -compare_results
   elif args.compare_results:
     compare_results()
-
-  # -train or -evaluate
-  elif args.train or args.evaluate:
-
-    config.loginf('DATASET=' + (DATASET_NAME if DATASET_NAME != 'all' else repr(config.DS_NAMES)))
-    dataset_suffix = '' if args.dataset_name == 'all' else f'_{DATASET_NAME}'
-    model_ds_prefix = join(config.DATADIR, f'{MODEL_NAME}{dataset_suffix}')
-
-    # -train: MODEL_FOLDER, MODEL_WEIGHTS
-    if args.train:
-      MODEL_FOLDER = model_ds_prefix + ('' if args.train_entropy == 'all' else
-                                        f'_{args.train_entropy}_entropy')
-      MODEL_WEIGHTS = join(MODEL_FOLDER, 'weights.hdf5')
-      config.loginf(f'MODEL_FOLDER={MODEL_FOLDER}')
-      config.loginf(f'MODEL_WEIGHTS={MODEL_WEIGHTS}')
-      if not exists(MODEL_FOLDER):
-        os.makedirs(MODEL_FOLDER)
-
-    # -evaluate: MODEL_WEIGHTS
-    if args.evaluate:
-      MODEL_FOLDER = model_ds_prefix + ('' if args.test_model_entropy == 'all' else
-                                        f'_{args.test_model_entropy}_entropy')
-      if not exists(MODEL_FOLDER):
-        os.makedirs(MODEL_FOLDER)
-      config.loginf(f'MODEL_FOLDER={MODEL_FOLDER}')
-      EVALUATE_NAME = f'{TEST_PREFIX_PERC}_{args.test_entropy}'
-      config.loginf(f'EVALUATE_NAME at MODEL_FOLDER={EVALUATE_NAME}')
-
-      # check existing with using one model
-      if not args.test_model_entropy.startswith('auto'):
-        MODEL_WEIGHTS = join(MODEL_FOLDER, 'weights.hdf5')
-        assert exists(MODEL_WEIGHTS)
-        config.loginf(f'MODEL_WEIGHTS={MODEL_WEIGHTS}')
-      # check exists mutiple model when using auto select model
-      if args.evaluate and args.test_model_entropy.startswith('auto'):
-        MODEL_WEIGHTS_LOW = join(model_ds_prefix + "_low_entropy", 'weights.hdf5')
-        MODEL_WEIGHTS_MEDIUM = join(model_ds_prefix + "_medium_entropy", 'weights.hdf5')
-        MODEL_WEIGHTS_HIGHT = join(model_ds_prefix + "_hight_entropy", 'weights.hdf5')
-        assert exists(MODEL_WEIGHTS_LOW)
-        assert exists(MODEL_WEIGHTS_MEDIUM)
-        assert exists(MODEL_WEIGHTS_HIGHT)
-        config.loginf('MODEL_WEIGHTS_LOW=' + MODEL_WEIGHTS_LOW)
-        config.loginf('MODEL_WEIGHTS_MEDIUM=' + MODEL_WEIGHTS_MEDIUM)
-        config.loginf('MODEL_WEIGHTS_HIGHT=' + MODEL_WEIGHTS_HIGHT)
-
-    # partioning
-    config.loginf('')
-    config.loginf('partioning train/test ...')
-    config.loginf(f'PERC_TEST is {PERC_TEST}')
-    PRED_WINDOWS = {}
-    DF_TRAJECTS = get_df_trajects()
-    if args.dataset_name != 'all':
-      DF_TRAJECTS = DF_TRAJECTS[DF_TRAJECTS['ds'] == DATASET_NAME]
-
-    # -train x_train, x_test
-    if args.train:
-      config.loginf(f'x_train, x_test entropy is {args.train_entropy}')
-      x_train, x_test = get_train_test_split(DF_TRAJECTS, args.train_entropy, PERC_TEST)
-    # -evaluate x_test, VIDEOS_TEST, USERS_TEST
-    elif args.evaluate:
-      config.loginf(f'x_test entropy={args.test_entropy}')
-      _, x_test = get_train_test_split(DF_TRAJECTS, args.test_entropy, PERC_TEST)
-      VIDEOS_TEST = x_test['ds_video'].unique()
-      USERS_TEST = x_test['ds_user'].unique()
-
-    # PRED_WINDOWS
-    if args.train:
-      assert not x_train.empty
-      fmt = 'x_train has {} trajectories: {} low, {} medium, {} hight'
-      t_len = len(x_train)
-      l_len = len(x_train[x_train['traject_entropy_class'] == 'low'])
-      m_len = len(x_train[x_train['traject_entropy_class'] == 'medium'])
-      h_len = len(x_train[x_train['traject_entropy_class'] == 'hight'])
-      config.loginf(fmt.format(t_len, l_len, m_len, h_len))
-      PRED_WINDOWS['train'] = [{
-          'video': row[1]['ds_video'],
-          'user': row[1]['ds_user'],
-          'trace_id': trace_id
-      } for row in x_train.iterrows() \
-        for trace_id in range(
-          INIT_WINDOW, row[1]['traject'].shape[0] -END_WINDOW)]
-      p_len = len(PRED_WINDOWS['train'])
-      config.loginf("PRED_WINDOWS['train'] has {} positions".format(p_len))
-    assert not x_test.empty
-    fmt = 'x_test has {} trajectories: {} low, {} medium, {} hight'
-    t_len = len(x_test)
-    l_len = len(x_test[x_test['traject_entropy_class'] == 'low'])
-    m_len = len(x_test[x_test['traject_entropy_class'] == 'medium'])
-    h_len = len(x_test[x_test['traject_entropy_class'] == 'hight'])
-    config.loginf(fmt.format(t_len, l_len, m_len, h_len))
-    PRED_WINDOWS['test'] = [{
-        'video': row[1]['ds_video'],
-        'user': row[1]['ds_user'],
-        'trace_id': trace_id,
-        'traject_entropy_class': row[1]['traject_entropy_class']
-    } for row in x_test.iterrows() \
-      for trace_id in range(
-        INIT_WINDOW, row[1]['traject'].shape[0] -END_WINDOW)]
-    p_len = len(PRED_WINDOWS['test'])
-    config.loginf("PRED_WINDOWS['test'] has {} positions".format(p_len))
-
-    # creating model
-    config.loginf('')
-    config.loginf('creating model ...')
-    os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'
-    if args.gpu_id:
-      os.environ['CUDA_VISIBLE_DEVICES'] = str(args.gpu_id)
-    MODEL = create_model()
-    assert MODEL
-
-    # train, evaluate actions
-    if args.train:
-      config.loginf('')
-      config.loginf('training ...')
-      config.loginf(f'EPOCHS is {EPOCHS}')
-      train()
-    elif args.evaluate:
-      config.loginf('')
-      config.loginf('evaluating ...')
-      evaluate()
-
+  # -train
+  elif args.train:
+    train()
+  # -evaluate
+  elif args.evaluate:
+    evaluate()
   sys.exit()
