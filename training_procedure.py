@@ -161,6 +161,8 @@ def evaluate(oneuser = '', onevideo = '') -> None:
   # model_dir
   model_dir = MODEL_DS_DIR + ('' if TEST_MODEL_ENTROPY == 'all' else
                                         f'_{TEST_MODEL_ENTROPY}_entropy')
+  model_column = MODEL_DS + ('' if TEST_MODEL_ENTROPY == 'all' else
+                                        f'_{TEST_MODEL_ENTROPY}_entropy')
   config.info(f'model_dir={model_dir}')
   # evaluate_prefix
   if oneuser and onevideo:
@@ -184,8 +186,8 @@ def evaluate(oneuser = '', onevideo = '') -> None:
     videos_test = x_test['ds_video'].unique()
     pred_windows = create_pred_windows(None, x_test, True)
 
-  if not MODEL_DS in df.columns:
-    df[MODEL_DS] = pd.Series([ {} for _ in range(len(df))]).astype(object)
+  if not model_column in df.columns:
+    df[model_column] = pd.Series([ {} for _ in range(len(df))]).astype(object)
 
   # creating model
   config.info('creating model ...')
@@ -275,7 +277,7 @@ def evaluate(oneuser = '', onevideo = '') -> None:
     traject_row = df.loc[(df['ds_video'] == video) & (df['ds_user'] == user)]
     assert not traject_row.empty
     index = traject_row.index[0]
-    traject_row[MODEL_DS][index][x_i] = model_prediction
+    traject_row[model_column][index][x_i] = model_prediction
 
     # save error
     groundtruth = get_traces(df, video, user, DATASET_NAME)[x_i + 1:x_i + H_WINDOW + 1]

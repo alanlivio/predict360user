@@ -24,7 +24,8 @@
             "args": [
                 "-evaluate",
                 // "-dataset_name", "david",
-                // "-oneuser", "david_0", "-onevideo", "david_10_Cows",
+                // "-oneuser", "david_1", "-onevideo", "david_6_DroneFlight", // medium
+                // "-oneuser", "david_0", "-onevideo", "david_10_Cows", // index 0
                 // "-test_model_entropy",
                 // "auto"
                 // "hight",
