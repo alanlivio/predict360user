@@ -100,12 +100,12 @@ def generate_arrays(df_trajects: pd.DataFrame, pred_windows: dict, future_window
 def train() -> None:
   config.info(f'-- train() PERC_TEST={PERC_TEST}, EPOCHS={EPOCHS}')
 
-  # model_folder
-  model_folder = MODEL_DS_PREFIX + ('' if TRAIN_ENTROPY == 'all' else
+  # model_dir
+  model_dir = MODEL_DS_DIR + ('' if TRAIN_ENTROPY == 'all' else
                                     f'_{TRAIN_ENTROPY}_entropy')
-  config.info(f'model_folder={model_folder}')
-  if not exists(model_folder):
-    os.makedirs(model_folder)
+  config.info(f'model_dir={model_dir}')
+  if not exists(model_dir):
+    os.makedirs(model_dir)
 
   # pred_windows
   config.info('partioning...')
@@ -126,7 +126,7 @@ def train() -> None:
   # creating model
   config.info('creating model ...')
   # model_weights
-  model_weights = join(model_folder, 'weights.hdf5')
+  model_weights = join(model_dir, 'weights.hdf5')
   config.info(f'model_weights={model_weights}')
   if DRY_RUN:
     sys.exit()
@@ -134,9 +134,9 @@ def train() -> None:
   assert model
 
   # train
-  csv_logger_f = join(model_folder, 'train_results.csv')
+  csv_logger_f = join(model_dir, 'train_results.csv')
   csv_logger = keras.callbacks.CSVLogger(csv_logger_f)
-  tb_callback = keras.callbacks.TensorBoard(log_dir=f'{model_folder}/logs')
+  tb_callback = keras.callbacks.TensorBoard(log_dir=f'{model_dir}/logs')
   model_checkpoint = keras.callbacks.ModelCheckpoint(model_weights,
                                                      save_best_only=True,
                                                      save_weights_only=True,
@@ -158,15 +158,15 @@ def train() -> None:
 def evaluate(oneuser = '', onevideo = '') -> None:
   config.info(f'-- evaluate() PERC_TEST={PERC_TEST}')
 
-  # model_folder
-  model_folder = MODEL_DS_PREFIX + ('' if TEST_MODEL_ENTROPY == 'all' else
+  # model_dir
+  model_dir = MODEL_DS_DIR + ('' if TEST_MODEL_ENTROPY == 'all' else
                                         f'_{TEST_MODEL_ENTROPY}_entropy')
-  config.info(f'model_folder={model_folder}')
+  config.info(f'model_dir={model_dir}')
   # evaluate_prefix
   if oneuser and onevideo:
-    evaluate_prefix = join(model_folder, f'{TEST_PREFIX_PERC}_{TEST_ENTROPY}_{oneuser}_{onevideo}')
+    evaluate_prefix = join(model_dir, f'{TEST_PREFIX_PERC}_{TEST_ENTROPY}_{oneuser}_{onevideo}')
   else:
-    evaluate_prefix = join(model_folder, f'{TEST_PREFIX_PERC}_{TEST_ENTROPY}')
+    evaluate_prefix = join(model_dir, f'{TEST_PREFIX_PERC}_{TEST_ENTROPY}')
   config.info(f'evaluate_prefix={evaluate_prefix}')
 
   # pred_windows, videos_test
@@ -192,14 +192,14 @@ def evaluate(oneuser = '', onevideo = '') -> None:
   # model_weights
   # check existing if one model
   if not TEST_MODEL_ENTROPY.startswith('auto'):
-    model_weights = join(model_folder, 'weights.hdf5')
+    model_weights = join(model_dir, 'weights.hdf5')
     config.info(f'model_weights={model_weights}')
     assert exists(model_weights)
   # check exists if using mutiple models
   if TEST_MODEL_ENTROPY.startswith('auto'):
-    model_weights_low = join(MODEL_DS_PREFIX + "_low_entropy", 'weights.hdf5')
-    model_weights_medium = join(MODEL_DS_PREFIX + "_medium_entropy", 'weights.hdf5')
-    model_weights_hight = join(MODEL_DS_PREFIX + "_hight_entropy", 'weights.hdf5')
+    model_weights_low = join(MODEL_DS_DIR + "_low_entropy", 'weights.hdf5')
+    model_weights_medium = join(MODEL_DS_DIR + "_medium_entropy", 'weights.hdf5')
+    model_weights_hight = join(MODEL_DS_DIR + "_hight_entropy", 'weights.hdf5')
     config.info('model_weights_low=' + model_weights_low)
     config.info('model_weights_medium=' + model_weights_medium)
     config.info('model_weights_hight=' + model_weights_hight)
@@ -499,7 +499,7 @@ if __name__ == '__main__':
   config.info('dataset=' + (DATASET_NAME if DATASET_NAME != 'all' else repr(config.DS_NAMES)))
   dataset_suffix = '' if args.dataset_name == 'all' else f'_{DATASET_NAME}'
   MODEL_DS = f'{MODEL_NAME}{dataset_suffix}'
-  MODEL_DS_PREFIX = join(config.DATADIR, MODEL_DS)
+  MODEL_DS_DIR = join(config.DATADIR, MODEL_DS)
   PERC_TEST = args.perc_test
   EPOCHS = args.epochs
   INIT_WINDOW = args.init_window
