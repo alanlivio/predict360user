@@ -2,7 +2,7 @@ import unittest
 
 import plotly.io as pio
 
-from users360.prediction import get_train_test_split
+from users360.trainer import get_train_test_split
 from users360.trajects import get_df_trajects
 
 pio.renderers.default = None

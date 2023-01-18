@@ -2,13 +2,13 @@
 
 This project extends [Rondon 360-videos models/dataset collection](https://gitlab.com/miguelfromeror/head-motion-prediction) with support to:
 
-* access users' trajectories at datasets as a panda.DataFrame 
+* access users' trajectories at datasets as a panda.DataFrame
 * view users' trajectories with a Plotly 3d visualization
 * perform user clustering by entropy
 * perform tileset analyses
 * perform prediction models filtred by users clustering
 
-## Requirements 
+## Requirements
 
 To install TensorFlow with Cuda, please follow https://www.tensorflow.org/install/.
 For instance, you can do the following command with conda.
@@ -31,7 +31,7 @@ git submodule update
 ./patch_submodule.sh
 ```
 
-## Train and evaluate 
+## Train and evaluate
 
 To comparison, the code bellow shows how to train/evaluate one dataset using [Rondon repo](https://gitlab.com/miguelfromeror/head-motion-prediction) and using this project.
 
@@ -39,16 +39,16 @@ Rondon:
 
 ```bash
 cd users360/head_motion_prediction
-python training_procedure.py -train -gpu_id 0 -dataset_name David_MMSys_18 -model_name pos_only -init_window 30 -m_window 5 -h_window 25
-python training_procedure.py -evaluate -gpu_id 0 -dataset_name David_MMSys_18 -model_name pos_only -init_window 30 -m_window 5 -h_window 25
+python -m user360.main -train -dataset_name David_MMSys_18 -model_name pos_only
+python -m user360.main -evaluate -dataset_name David_MMSys_18 -model_name pos_only
 ```
 
 user360:
 
 
 ```bash
-python training_procedure.py -train -gpu_id 0 -dataset_name David_MMSys_18 -model_name pos_only -init_window 30 -m_window 5 -h_window 25
-python training_procedure.py -evaluate -gpu_id 0 -dataset_name David_MMSys_18 -model_name pos_only -init_window 30 -m_window 5 -h_window 25
+python -m user360.main -train -dataset_name David_MMSys_18 -model_name pos_only
+python -m user360.main -evaluate -dataset_name David_MMSys_18 -model_name pos_only
 ```
 
 ## Notebooks
