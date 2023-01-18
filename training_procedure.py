@@ -273,7 +273,9 @@ def evaluate(oneuser = '', onevideo = '') -> None:
 
     # save prediction
     traject_row = df.loc[(df['ds_video'] == video) & (df['ds_user'] == user)]
-    traject_row.at[0,MODEL_DS][x_i] = model_prediction = model_prediction
+    assert not traject_row.empty
+    index = traject_row.index[0]
+    traject_row[MODEL_DS][index][x_i] = model_prediction
 
     # save error
     groundtruth = get_traces(df, video, user, DATASET_NAME)[x_i + 1:x_i + H_WINDOW + 1]
