@@ -5,7 +5,7 @@ import sys
 
 from . import config
 from .entropy import calc_trajects_entropy
-from .evaluator import Evaluator
+from .evaluator import Evaluator, compare_results
 from .trainer import Trainer
 from .trajects import *
 
@@ -128,7 +128,7 @@ if __name__ == '__main__':
     dump_df_trajects(df_tmp)
   # -compare_results
   elif args.compare_results:
-    Evaluator(cfg).compare_results()
+    compare_results(args.model_name, args.perc_test)
   # -train
   elif args.train:
     Trainer(cfg).train()

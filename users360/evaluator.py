@@ -220,29 +220,29 @@ class Evaluator():
     np.savetxt(result_file, avg_error_per_video, fmt='%s')
     config.info(f'saving {result_file}')
 
-  def compare_results(self) -> None:
-    suffix = '_avg_error_per_timestep.csv'
+def compare_results(model_name, test_prefix_perc) -> None:
+  suffix = '_avg_error_per_timestep.csv'
 
-    # find files with suffix
-    dirs = [d for d in os.listdir(config.DATADIR) if d.startswith(self.model_name)]
-    csv_file_l = [(dir_name, file_name) for dir_name in dirs
-                  for file_name in os.listdir(join(config.DATADIR, dir_name))
-                  if (file_name.endswith(suffix) and file_name.startswith(self.test_prefix_perc))]
-    csv_data_l = [
-        (f'{dir_name}_{file_name.removesuffix(suffix)}', horizon, error)
-        for (dir_name, file_name) in csv_file_l
-        for horizon, error in enumerate(np.loadtxt(join(config.DATADIR, dir_name, file_name)))
-    ]
-    assert csv_data_l, f'no data/<model>/{self.test_prefix_perc}_*, run -evaluate'
+  # find files with suffix
+  dirs = [d for d in os.listdir(config.DATADIR) if d.startswith(model_name)]
+  csv_file_l = [(dir_name, file_name) for dir_name in dirs
+                for file_name in os.listdir(join(config.DATADIR, dir_name))
+                if (file_name.endswith(suffix) and file_name.startswith(test_prefix_perc))]
+  csv_data_l = [
+      (f'{dir_name}_{file_name.removesuffix(suffix)}', horizon, error)
+      for (dir_name, file_name) in csv_file_l
+      for horizon, error in enumerate(np.loadtxt(join(config.DATADIR, dir_name, file_name)))
+  ]
+  assert csv_data_l, f'no data/<model>/{test_prefix_perc}_*, run -evaluate'
 
-    # plot image
-    df_compare = pd.DataFrame(csv_data_l, columns=['name', 'horizon', 'vidoes_avg_error'])
-    df_compare = df_compare.sort_values(ascending=False, by="vidoes_avg_error")
-    fig = px.line(df_compare,
-                  x='horizon',
-                  y="vidoes_avg_error",
-                  color='name',
-                  color_discrete_sequence=px.colors.qualitative.G10)
-    result_file = join(config.DATADIR, f'compare_{self.model_name}.png')
-    config.info(f'saving {result_file}')
-    fig.write_image(result_file)
+  # plot image
+  df_compare = pd.DataFrame(csv_data_l, columns=['name', 'horizon', 'vidoes_avg_error'])
+  df_compare = df_compare.sort_values(ascending=False, by="vidoes_avg_error")
+  fig = px.line(df_compare,
+                x='horizon',
+                y="vidoes_avg_error",
+                color='name',
+                color_discrete_sequence=px.colors.qualitative.G10)
+  result_file = join(config.DATADIR, f'compare_{model_name}.png')
+  config.info(f'saving {result_file}')
+  fig.write_image(result_file)
