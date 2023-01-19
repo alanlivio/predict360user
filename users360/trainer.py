@@ -1,7 +1,7 @@
 import os
 import sys
 from contextlib import redirect_stderr
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from os.path import exists, join
 from typing import Any, Generator
 
@@ -154,39 +154,40 @@ def generate_batchs(model_name: str, df_trajects: pd.DataFrame, pred_windows: di
       else:
         raise NotImplementedError
 
+
 @dataclass
 class Trainer():
 
   dataset_name: str = 'all'
-  dry_run: bool = False
+  model_name: str = 'pos_only'
+  train_entropy: str = 'all'
   epochs: int = 100
   h_window: int = 25
   init_window: int = 30
   m_window: int = 5
-  model_name: str = 'pos_only'
   perc_test: float = 0.2
+  dry_run: bool = False
+  model_dir: str = '' # path
+  model_weights: str = '' # path
 
   def __post_init__(self) -> None:
     dataset_suffix = '' if self.dataset_name == 'all' else f'_{self.dataset_name}'
-    model_ds = self.model_name + dataset_suffix
-    self.model_ds_dir = join(config.DATADIR, model_ds)
+    basedir = join(config.DATADIR, self.model_name + dataset_suffix)
+    self.model_dir = basedir + ('' if self.train_entropy == 'all' else
+                                f'_{self.train_entropy}_entropy')
+    self.model_weights = join(self.model_dir, 'weights.hdf5')
     self.end_window = self.h_window
-    config.info('dataset=' +
-                (self.dataset_name if self.dataset_name != 'all' else repr(config.DS_NAMES)))
+    if not exists(self.model_dir):
+      os.makedirs(self.model_dir)
 
   def train(self) -> None:
-    config.info(f'-- train() perc_test={self.perc_test}, epochs={self.epochs}')
+    config.info('train: ' + self.repr())
 
-    # model_dir
-    model_dir = self.model_ds_dir + ('' if self.train_entropy == 'all' else
-                                      f'_{self.train_entropy}_entropy')
-    config.info(f'model_dir={model_dir}')
-    if not exists(model_dir):
-      os.makedirs(model_dir)
 
     # pred_windows
     config.info('partioning...')
-    df_trajects = get_df_trajects()
+
+    self.df_trajects = get_df_trajects()
     if self.dataset_name != 'all':
       df_trajects = df_trajects[df_trajects['ds'] == self.dataset_name]
     config.info(f'x_train, x_test entropy is {self.train_entropy}')

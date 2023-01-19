@@ -16,37 +16,32 @@ from .trainer import *
 class Evaluator():
 
   dataset_name: str = 'all'
-  dry_run: bool = False
+  test_model_entropy :str = 'all'
+  test_entropy :str  = 'all'
   h_window: int = 25
   init_window: int = 30
   m_window: int = 5
   model_name: str = 'pos_only'
   perc_test: float = 0.2
-
+  dry_run: bool = False
   oneuser :str = ''
   onevideo :str  = ''
-  test_entropy :str  = 'all'
-  test_model_entropy :str = 'all'
+  model_column: str = ''
+  evaluate_prefix: str = '' # path
 
   def __post_init__(self) -> None:
     dataset_suffix = '' if self.dataset_name == 'all' else f'_{self.dataset_name}'
-    self.model_ds = self.model_name + dataset_suffix
-    self.model_ds_dir = join(config.DATADIR, self.model_ds)
+    basedir = join(config.DATADIR, self.model_name + dataset_suffix)
+    self.model_dir = basedir + ('' if self.test_model_entropy == 'all' else
+                                f'_{self.test_model_entropy}_entropy')
     self.end_window = self.h_window
     self.evaluate_auto = self.test_model_entropy.startswith('auto')
     self.test_prefix_perc = f"test_{str(self.perc_test).replace('.',',')}"
+    self.model_column = self.model_name + dataset_suffix + ('' if self.test_model_entropy == 'all' else f'_{self.test_model_entropy}_entropy')
 
   def evaluate(self) -> None:
-    config.info(f'evaluate() perc_test={self.perc_test}')
-    config.info('dataset=' +
-                (self.dataset_name if self.dataset_name != 'all' else repr(config.DS_NAMES)))
+    config.info('evaluate: ' + self.repr())
 
-    # model_dir
-    self.model_dir = self.model_ds_dir + ('' if self.test_model_entropy == 'all' else
-                                          f'_{self.test_model_entropy}_entropy')
-    model_column = self.model_ds + ('' if self.test_model_entropy == 'all' else
-                                    f'_{self.test_model_entropy}_entropy')
-    config.info(f'model_dir={self.model_dir}')
     # evaluate_prefix
     if self.oneuser and self.onevideo:
       evaluate_prefix = join(
@@ -102,15 +97,15 @@ class Evaluator():
     if self.dry_run:
       return
     if self.evaluate_auto:
-      model_low = create_model()
+      model_low =create_model(self.model_name, self.m_window, self.h_window)
       model_low.load_weights(model_weights_low)
-      model_medium = create_model()
+      model_medium =create_model(self.model_name, self.m_window, self.h_window)
       model_medium.load_weights(model_weights_medium)
-      model_hight = create_model()
+      model_hight =create_model(self.model_name, self.m_window, self.h_window)
       model_hight.load_weights(model_weights_hight)
     else:
-      model = create_model()
-      model.load_weights(model_weights)
+     model = create_model(self.model_name, self.m_window, self.h_window)
+    model.load_weights(model_weights)
 
     # predict by each pred_windows
     errors_per_video = {}
