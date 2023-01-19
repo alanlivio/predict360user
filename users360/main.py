@@ -53,14 +53,8 @@ if __name__ == '__main__':
                    default='all',
                    choices=config.ARGS_ENTROPY_NAMES,
                    help='entropy class to filter -evaluate data (default all)')
-  psr.add_argument('-oneuser',
-                   nargs='?',
-                   type=str,
-                   help='one user for evaluation')
-  psr.add_argument('-onevideo',
-                   nargs='?',
-                   type=str,
-                   help='one video for evaluation')
+  psr.add_argument('-oneuser', nargs='?', type=str, help='one user for evaluation')
+  psr.add_argument('-onevideo', nargs='?', type=str, help='one video for evaluation')
 
   # train/evaluate params
   psr.add_argument('-gpu_id', nargs='?', type=int, default=0, help='Used cuda gpu (default: 0)')
@@ -103,24 +97,15 @@ if __name__ == '__main__':
 
   # global vars
   cfg = {}
-  cfg['dataset_name'] = args.dataset_name
-  cfg['model_name'] = args.model_name
-  cfg['perc_test'] = args.perc_test
-  cfg['epochs'] = args.epochs
-  cfg['init_window'] = args.init_window
-  cfg['m_window'] = args.m_window
-  cfg['h_window'] = args.h_window
-  cfg['test_prefix_perc'] = f"test_{str(args.perc_test).replace('.',',')}"
-  cfg['test_model_entropy'] = args.test_model_entropy
-  cfg['evaluate_auto'] = args.test_model_entropy.startswith('auto')
-  cfg['train_entropy'] = args.train_entropy
-  cfg['test_entropy'] = args.test_entropy
-  cfg['oneuser'] = args.oneuser
-  cfg['onevideo'] = args.onevideo
-  cfg['dry_run'] = args.dry_run
-  if args.gpu_id:
-    cfg['gpu_id'] = str(args.gpu_id)
-
+  common_args = {
+      'dataset_name': args.dataset_name,
+      'model_name': args.model_name,
+      'perc_test': args.perc_test,
+      'init_window': args.init_window,
+      'm_window': args.m_window,
+      'h_window': args.h_window,
+      'dry_run': args.dry_run
+  }
   # -calculate_entropy
   if args.calculate_entropy:
     df_tmp = get_df_trajects()
@@ -131,8 +116,14 @@ if __name__ == '__main__':
     compare_results(args.model_name, args.perc_test)
   # -train
   elif args.train:
-    Trainer(cfg).train()
+    trn = Trainer(**common_args, train_entropy=args.train_entropy, epochs=args.epochs)
+    trn.train()
   # -evaluate
   elif args.evaluate:
-    Evaluator(cfg).evaluate()
+    etr = Evaluator(**common_args,
+                    test_model_entropy=args.test_model_entropy,
+                    test_entropy=args.test_entropy,
+                    oneuser=args.oneuser,
+                    onevideo=args.onevideo)
+    etr.evaluate()
   sys.exit()

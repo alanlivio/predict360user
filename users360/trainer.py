@@ -1,15 +1,13 @@
 import os
 import sys
 from contextlib import redirect_stderr
+from dataclasses import dataclass
 from os.path import exists, join
 from typing import Any, Generator
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import plotly.express as px
 from sklearn.model_selection import train_test_split
-from tqdm.auto import tqdm
 
 from users360.head_motion_prediction.Utils import (all_metrics,
                                                    cartesian_to_eulerian,
@@ -156,30 +154,25 @@ def generate_batchs(model_name: str, df_trajects: pd.DataFrame, pred_windows: di
       else:
         raise NotImplementedError
 
+@dataclass
 class Trainer():
 
-  def __init__(self, cfg: dict) -> None:
-    self.dataset_name = cfg['dataset_name']
-    self.model_name = cfg['model_name']
-    config.info('dataset=' + (self.dataset_name if self.dataset_name != 'all' else repr(config.DS_NAMES)))
-    dataset_suffix = '' if cfg['dataset_name'] == 'all' else f'_{self.dataset_name}'
-    self.model_ds = self.model_name + dataset_suffix
-    self.model_ds_dir = join(config.DATADIR, cfg['model_ds'])
-    self.perc_test = cfg['perc_test']
-    self.epochs = cfg['epochs']
-    self.init_window = cfg['init_window']
-    self.m_window = cfg['m_window']
-    self.h_window = cfg['h_window']
+  dataset_name: str = 'all'
+  dry_run: bool = False
+  epochs: int = 100
+  h_window: int = 25
+  init_window: int = 30
+  m_window: int = 5
+  model_name: str = 'pos_only'
+  perc_test: float = 0.2
+
+  def __post_init__(self) -> None:
+    dataset_suffix = '' if self.dataset_name == 'all' else f'_{self.dataset_name}'
+    model_ds = self.model_name + dataset_suffix
+    self.model_ds_dir = join(config.DATADIR, model_ds)
     self.end_window = self.h_window
-    self.test_prefix_perc = f"test_{str(self.perc_test).replace('.',',')}"
-    self.test_model_entropy = cfg['test_model_entropy']
-    self.evaluate_auto = cfg['test_model_entropy'].startswith('auto')
-    self.train_entropy = cfg['train_entropy']
-    self.test_entropy = cfg['test_entropy']
-    self.dry_run = cfg['dry_run']
-    os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'
-    if 'gpu_id' in cfg:
-      os.environ['CUDA_VISIBLE_DEVICES'] = cfg['gpu_id']
+    config.info('dataset=' +
+                (self.dataset_name if self.dataset_name != 'all' else repr(config.DS_NAMES)))
 
   def train(self) -> None:
     config.info(f'-- train() perc_test={self.perc_test}, epochs={self.epochs}')

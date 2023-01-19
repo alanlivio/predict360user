@@ -1,5 +1,6 @@
 import os
 import sys
+from dataclasses import dataclass
 from os.path import exists, join
 
 import matplotlib.pyplot as plt
@@ -11,36 +12,34 @@ from tqdm.auto import tqdm
 from .trainer import *
 
 
+@dataclass
 class Evaluator():
 
-  def __init__(self, cfg: dict) -> None:
-    self.dataset_name = cfg['dataset_name']
-    self.model_name = cfg['model_name']
-    config.info('dataset=' +
-                (self.dataset_name if self.dataset_name != 'all' else repr(config.DS_NAMES)))
-    dataset_suffix = '' if cfg['dataset_name'] == 'all' else f'_{self.dataset_name}'
+  dataset_name: str = 'all'
+  dry_run: bool = False
+  h_window: int = 25
+  init_window: int = 30
+  m_window: int = 5
+  model_name: str = 'pos_only'
+  perc_test: float = 0.2
+
+  oneuser :str = ''
+  onevideo :str  = ''
+  test_entropy :str  = 'all'
+  test_model_entropy :str = 'all'
+
+  def __post_init__(self) -> None:
+    dataset_suffix = '' if self.dataset_name == 'all' else f'_{self.dataset_name}'
     self.model_ds = self.model_name + dataset_suffix
     self.model_ds_dir = join(config.DATADIR, self.model_ds)
-    self.perc_test = cfg['perc_test']
-    self.epochs = cfg['epochs']
-    self.init_window = cfg['init_window']
-    self.m_window = cfg['m_window']
-    self.h_window = cfg['h_window']
     self.end_window = self.h_window
+    self.evaluate_auto = self.test_model_entropy.startswith('auto')
     self.test_prefix_perc = f"test_{str(self.perc_test).replace('.',',')}"
-    self.test_model_entropy = cfg['test_model_entropy']
-    self.evaluate_auto = cfg['test_model_entropy'].startswith('auto')
-    self.train_entropy = cfg['train_entropy']
-    self.test_entropy = cfg['test_entropy']
-    self.oneuser = cfg['oneuser'] if 'oneuser' in cfg else ''
-    self.onevideo = cfg['onevideo'] if 'onevideo' in cfg else ''
-    self.dry_run = cfg['dry_run']
-    os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'
-    if 'gpu_id' in cfg:
-      os.environ['CUDA_VISIBLE_DEVICES'] = cfg['gpu_id']
 
   def evaluate(self) -> None:
-    config.info(f'-- evaluate() perc_test={self.perc_test}')
+    config.info(f'evaluate() perc_test={self.perc_test}')
+    config.info('dataset=' +
+                (self.dataset_name if self.dataset_name != 'all' else repr(config.DS_NAMES)))
 
     # model_dir
     self.model_dir = self.model_ds_dir + ('' if self.test_model_entropy == 'all' else
