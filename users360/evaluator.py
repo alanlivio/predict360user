@@ -64,7 +64,8 @@ class Evaluator():
       for trace_id in range( self.init_window, row[1]['traject'].shape[0] -self.end_window)]
 
   def evaluate(self) -> None:
-    config.info('evaluate: ' + self.repr())
+    config.info('evaluate()')
+    config.info(self)
     self._partition()
 
     if not self.model_column in df.columns:

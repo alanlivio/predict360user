@@ -198,7 +198,7 @@ class VizSphere():
   prediction_start_c = Color('DarkGreen').hex
   prediction_end_c = Color('LightGreen').hex
 
-  def add_predictions(self, predictions: dict):
+  def add_predictions(self, predictions: dict) -> None:
     steps = []
     n_one_pred = 24 + 2
     n_pre = len(self.data)

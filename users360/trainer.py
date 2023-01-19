@@ -36,6 +36,14 @@ def get_train_test_split(df_trajects: pd.DataFrame, entropy: str,
   return x_train, x_test
 
 
+def count_traject_entropy_classes(df) -> tuple[int, int, int, int]:
+  a_len = len(df)
+  l_len = len(df[df['traject_entropy_class'] == 'low'])
+  m_len = len(df[df['traject_entropy_class'] == 'medium'])
+  h_len = len(df[df['traject_entropy_class'] == 'hight'])
+  return a_len, l_len, m_len, h_len
+
+
 def show_train_test_split(df_trajects: pd.DataFrame, entropy: str, perc_test: float) -> None:
   x_train, x_test = get_train_test_split(df_trajects, entropy, perc_test)
   x_train['partition'] = 'train'
@@ -160,7 +168,8 @@ class Trainer():
       for trace_id in range( self.init_window, row[1]['traject'].shape[0] -self.end_window)]
 
   def train(self) -> None:
-    config.info('train: ' + self.repr())
+    config.info('train()')
+    config.info(self)
     self._partition()
 
     with redirect_stderr(open(os.devnull, 'w')):
