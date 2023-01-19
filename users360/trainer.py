@@ -23,19 +23,15 @@ BATCH_SIZE = 128.0
 def get_train_test_split(df_trajects: pd.DataFrame, entropy: str,
                          perc_test: float) -> tuple[pd.DataFrame, pd.DataFrame]:
   args = {'test_size': perc_test, 'random_state': 1}
-
-  # default get 'all' entropy
-  x_train, x_test = train_test_split(df_trajects, **args)
-
-  # train
+  # _users
   if entropy.endswith('_users') and entropy != 'all':
     x_train, x_test = train_test_split(
-        df_trajects[df_trajects['user_entropy_class'] ==
-                    entropy.removesuffix('_users')], **args)
+        df_trajects[df_trajects['user_entropy_class'] == entropy.removesuffix('_users')], **args)
   elif entropy != 'all':
-    x_train, x_test = train_test_split(
-        df_trajects[df_trajects['traject_entropy_class'] == entropy],
-        **args)
+    x_train, x_test = train_test_split(df_trajects[df_trajects['traject_entropy_class'] == entropy],
+                                       **args)
+  else:
+    x_train, x_test = train_test_split(df_trajects, **args)
 
   return x_train, x_test
 
