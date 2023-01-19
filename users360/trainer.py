@@ -1,9 +1,8 @@
 import os
-import sys
 from contextlib import redirect_stderr
 from dataclasses import dataclass, field
 from os.path import exists, join
-from typing import Any, Generator
+from typing import Any, Generator, Iterable
 
 import numpy as np
 import pandas as pd
@@ -19,6 +18,7 @@ from .trajects import *
 METRIC = all_metrics['orthodromic']
 RATE = 0.2
 BATCH_SIZE = 128.0
+
 
 def get_train_test_split(df_trajects: pd.DataFrame, entropy: str,
                          perc_test: float) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -53,6 +53,7 @@ def create_model(model_name, m_window, h_window) -> Any:
   else:
     raise NotImplementedError
 
+
 def transform_batches_cartesian_to_normalized_eulerian(positions_in_batch) -> np.array:
   positions_in_batch = np.array(positions_in_batch)
   eulerian_batches = [[cartesian_to_eulerian(pos[0], pos[1], pos[2]) for pos in batch]
@@ -66,44 +67,8 @@ def transform_normalized_eulerian_to_cartesian(positions) -> np.array:
   eulerian_samples = [eulerian_to_cartesian(pos[0], pos[1]) for pos in positions]
   return np.array(eulerian_samples)
 
-def create_pred_windows(x_train: pd.DataFrame, x_test: pd.DataFrame, init_window: int, end_window:int, skip_train = False) -> dict:
-  pred_windows = {}
-  if not skip_train:
-    fmt = 'x_train has {} trajectories: {} low, {} medium, {} hight'
-    t_len = len(x_train)
-    l_len = len(x_train[x_train['traject_entropy_class'] == 'low'])
-    m_len = len(x_train[x_train['traject_entropy_class'] == 'medium'])
-    h_len = len(x_train[x_train['traject_entropy_class'] == 'hight'])
-    config.info(fmt.format(t_len, l_len, m_len, h_len))
-    pred_windows['train'] = [{
-        'video': row[1]['ds_video'],
-        'user': row[1]['ds_user'],
-        'trace_id': trace_id
-    } for row in x_train.iterrows() \
-      for trace_id in range(
-        init_window, row[1]['traject'].shape[0] -end_window)]
-    p_len = len(pred_windows['train'])
-    config.info("pred_windows['train'] has {} positions".format(p_len))
-  fmt = 'x_test has {} trajectories: {} low, {} medium, {} hight'
-  t_len = len(x_test)
-  l_len = len(x_test[x_test['traject_entropy_class'] == 'low'])
-  m_len = len(x_test[x_test['traject_entropy_class'] == 'medium'])
-  h_len = len(x_test[x_test['traject_entropy_class'] == 'hight'])
-  config.info(fmt.format(t_len, l_len, m_len, h_len))
-  pred_windows['test'] = [{
-      'video': row[1]['ds_video'],
-      'user': row[1]['ds_user'],
-      'trace_id': trace_id,
-      'traject_entropy_class': row[1]['traject_entropy_class']
-  } for row in x_test.iterrows() \
-    for trace_id in range(
-      init_window, row[1]['traject'].shape[0] -end_window)]
-  p_len = len(pred_windows['test'])
-  config.info("pred_windows['test'] has {} positions".format(p_len))
-  return pred_windows
 
-
-def generate_batchs(model_name: str, df_trajects: pd.DataFrame, pred_windows: dict, m_window: int, h_window: int) -> Generator:
+def generate_batchs(model_name, df: pd.DataFrame, wins: Iterable, m_window, h_window) -> Generator:
   while True:
     encoder_pos_inputs_for_batch = []
     # encoder_sal_inputs_for_batch = []
@@ -111,19 +76,17 @@ def generate_batchs(model_name: str, df_trajects: pd.DataFrame, pred_windows: di
     # decoder_sal_inputs_for_batch = []
     decoder_outputs_for_batch = []
     count = 0
-    np.random.shuffle(pred_windows)
-    for ids in pred_windows:
+    np.random.shuffle(wins)
+    for ids in wins:
       user = ids['user']
       video = ids['video']
       x_i = ids['trace_id']
-      # Load the data
+      # load the data
       if model_name == 'pos_only':
-        encoder_pos_inputs_for_batch.append(
-            get_traces(df_trajects, video, user, 'all')[x_i - m_window:x_i])
-        decoder_pos_inputs_for_batch.append(
-            get_traces(df_trajects, video, user, 'all')[x_i:x_i + 1])
+        encoder_pos_inputs_for_batch.append(get_traces(df, video, user, 'all')[x_i - m_window:x_i])
+        decoder_pos_inputs_for_batch.append(get_traces(df, video, user, 'all')[x_i:x_i + 1])
         decoder_outputs_for_batch.append(
-            get_traces(df_trajects, video, user, 'all')[x_i + 1:x_i + h_window + 1])
+            get_traces(df, video, user, 'all')[x_i + 1:x_i + h_window + 1])
       else:
         raise NotImplementedError
       count += 1
@@ -176,54 +139,57 @@ class Trainer():
     if not exists(self.model_dir):
       os.makedirs(self.model_dir)
 
-  def train(self) -> None:
-    config.info('train: ' + self.repr())
-
-
-    # pred_windows
+  def _partition(self) -> None:
     config.info('partioning...')
-
     self.df_trajects = get_df_trajects()
     if self.dataset_name != 'all':
-      df_trajects = df_trajects[df_trajects['ds'] == self.dataset_name]
-    config.info(f'x_train, x_test entropy is {self.train_entropy}')
-    x_train, x_test = get_train_test_split(df_trajects, self.train_entropy, self.perc_test)
-    pred_windows = create_pred_windows(x_train, x_test)
+      self.df_trajects = self.df_trajects[self.df_trajects['ds'] == self.dataset_name]
+    self.x_train, self.x_test = get_train_test_split(self.df_trajects, self.train_entropy, self.perc_test)
+    self.x_train_wins = [{
+        'video': row[1]['ds_video'],
+        'user': row[1]['ds_user'],
+        'trace_id': trace_id
+    } for row in self.x_train.iterrows()\
+      for trace_id in range( self.init_window, row[1]['traject'].shape[0] -self.end_window)]
+    self.x_test_wins = [{
+        'video': row[1]['ds_video'],
+        'user': row[1]['ds_user'],
+        'trace_id': trace_id,
+        'traject_entropy_class': row[1]['traject_entropy_class']
+    } for row in self.x_test.iterrows()\
+      for trace_id in range( self.init_window, row[1]['traject'].shape[0] -self.end_window)]
 
-    with redirect_stderr(open(os.devnull, 'w')):  # pylint: disable=unspecified-encoding
+  def train(self) -> None:
+    config.info('train: ' + self.repr())
+    self._partition()
+
+    with redirect_stderr(open(os.devnull, 'w')):
       os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
       import tensorflow.keras as keras
-
-    steps_per_ep_train = np.ceil(len(pred_windows['train']) / BATCH_SIZE)
-    steps_per_ep_validate = np.ceil(len(pred_windows['test']) / BATCH_SIZE)
-
-    # creating model
-    config.info('creating model ...')
-    # model_weights
-    model_weights = join(model_dir, 'weights.hdf5')
-    config.info(f'model_weights={model_weights}')
-    if self.dry_run:
-      return
-    model = create_model()
+      from keras.callbacks import CSVLogger, ModelCheckpoint, TensorBoard
+    model = create_model(self.model_name, self.m_window, self.h_window)
     assert model
-
-    # train
-    csv_logger_f = join(model_dir, 'train_results.csv')
-    csv_logger = keras.callbacks.CSVLogger(csv_logger_f)
-    tb_callback = keras.callbacks.TensorBoard(log_dir=f'{model_dir}/logs')
-    model_checkpoint = keras.callbacks.ModelCheckpoint(model_weights,
-                                                      save_best_only=True,
-                                                      save_weights_only=True,
-                                                      mode='auto',
-                                                      period=1)
+    steps_per_ep_train = np.ceil(len(self.x_train_wins) / BATCH_SIZE)
+    steps_per_ep_validate = np.ceil(len(self.x_test_wins) / BATCH_SIZE)
+    csv_logger_f = join(self.model_dir, 'train_results.csv')
+    csv_logger = CSVLogger(csv_logger_f)
+    tb_callback = TensorBoard(log_dir=f'{self.model_dir}/logs')
+    model_checkpoint = ModelCheckpoint(self.model_weights,
+                                       save_best_only=True,
+                                       save_weights_only=True,
+                                       mode='auto',
+                                       period=1)
     if self.model_name == 'pos_only':
-      model.fit_generator(generator=generate_batchs(df_trajects, pred_windows['train'], h_window=self.h_window),
+      generator = generate_batchs(self.model_name, self.df_trajects, self.x_train_wins,
+                                  self.m_window, self.h_window)
+      validation_data = generate_batchs(self.model_name, self.df_trajects, self.x_test_wins,
+                                        self.m_window, self.h_window)
+      model.fit_generator(generator=generator,
                           verbose=1,
                           steps_per_epoch=steps_per_ep_train,
                           epochs=self.epochs,
                           callbacks=[csv_logger, model_checkpoint, tb_callback],
-                          validation_data=generate_batchs(df_trajects, pred_windows['test'],
-                                                          h_window=self.h_window),
+                          validation_data=validation_data,
                           validation_steps=steps_per_ep_validate)
     else:
       raise NotImplementedError

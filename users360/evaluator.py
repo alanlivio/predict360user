@@ -38,52 +38,45 @@ class Evaluator():
     self.evaluate_auto = self.test_model_entropy.startswith('auto')
     self.test_prefix_perc = f"test_{str(self.perc_test).replace('.',',')}"
     self.model_column = self.model_name + dataset_suffix + ('' if self.test_model_entropy == 'all' else f'_{self.test_model_entropy}_entropy')
+    if self.oneuser and self.onevideo:
+      self.evaluate_prefix = join(self.model_dir,
+      f'{self.test_prefix_perc}_{self.test_entropy}_{self.oneuser}_{self.onevideo}')
+    else:
+      self.evaluate_prefix = join(self.model_dir, f'{self.test_prefix_perc}_{self.test_entropy}')
+
+  def _partition(self) -> None:
+    config.info('partioning...')
+    df = get_df_trajects()
+    if self.dataset_name != 'all':
+      self.df_trajects = self.df_trajects[self.df_trajects['ds'] == self.dataset_name]
+    if self.oneuser and self.onevideo:
+      self.x_test = get_rows(df, self.onevideo, self.oneuser, self.dataset_name)
+    else:
+      tmp_df = df[df['ds'] == self.dataset_name] if self.dataset_name != 'all' else df
+      _, self.x_test = get_train_test_split(tmp_df, self.test_entropy, self.perc_test)
+    self.videos_test = self.x_test['ds_video'].unique()
+    self.x_test_wins = [{
+        'video': row[1]['ds_video'],
+        'user': row[1]['ds_user'],
+        'trace_id': trace_id,
+        'traject_entropy_class': row[1]['traject_entropy_class']
+    } for row in self.x_test.iterrows()\
+      for trace_id in range( self.init_window, row[1]['traject'].shape[0] -self.end_window)]
 
   def evaluate(self) -> None:
     config.info('evaluate: ' + self.repr())
+    self._partition()
 
-    # evaluate_prefix
-    if self.oneuser and self.onevideo:
-      evaluate_prefix = join(
-          self.model_dir,
-          f'{self.test_prefix_perc}_{self.test_entropy}_{self.oneuser}_{self.onevideo}')
-    else:
-      evaluate_prefix = join(self.model_dir, f'{self.test_prefix_perc}_{self.test_entropy}')
-    config.info(f'evaluate_prefix={evaluate_prefix}')
-
-    # pred_windows, videos_test
-    config.info('partioning...')
-    df = get_df_trajects()
-    threshold_medium, threshold_hight = get_trajects_entropy_threshold(df)
-    if self.oneuser and self.onevideo:
-      rows = get_rows(df, self.onevideo, self.oneuser, self.dataset_name)
-      videos_test = rows['ds_video'].unique()
-      pred_windows = create_pred_windows(None, rows, True)
-    else:
-      tmp_df = df[df['ds'] == self.dataset_name] if self.dataset_name != 'all' else df
-      config.info(f'x_test entropy={self.test_entropy}')
-      _, x_test = get_train_test_split(tmp_df, self.test_entropy, self.perc_test)
-      videos_test = x_test['ds_video'].unique()
-      pred_windows = create_pred_windows(
-          x_train=None,
-          x_test=x_test,
-          init_window=self.init_window,
-          end_window=self.end_window,
-          skip_train=True,
-      )
-
-    if not model_column in df.columns:
-      df[model_column] = pd.Series([{} for _ in range(len(df))]).astype(object)
+    if not self.model_column in df.columns:
+      df[self.model_column] = pd.Series([{} for _ in range(len(df))]).astype(object)
 
     # creating model
     config.info('creating model ...')
     # model_weights
-    # check existing if one model
     if not self.test_model_entropy.startswith('auto'):
       model_weights = join(self.model_dir, 'weights.hdf5')
       config.info(f'model_weights={model_weights}')
       assert exists(model_weights)
-    # check exists if using mutiple models
     if self.test_model_entropy.startswith('auto'):
       model_weights_low = join(self.model_ds_dir + "_low_entropy", 'weights.hdf5')
       model_weights_medium = join(self.model_ds_dir + "_medium_entropy", 'weights.hdf5')
@@ -94,8 +87,10 @@ class Evaluator():
       assert exists(model_weights_low)
       assert exists(model_weights_medium)
       assert exists(model_weights_hight)
+
     if self.dry_run:
       return
+
     if self.evaluate_auto:
       model_low =create_model(self.model_name, self.m_window, self.h_window)
       model_low.load_weights(model_weights_low)
@@ -110,7 +105,7 @@ class Evaluator():
     # predict by each pred_windows
     errors_per_video = {}
     errors_per_timestep = {}
-
+    threshold_medium, threshold_hight = get_trajects_entropy_threshold(df)
     for ids in tqdm(pred_windows['test'], desc='position predictions'):
       user = ids['user']
       video = ids['video']
@@ -203,7 +198,7 @@ class Evaluator():
 
     # avg_error_per_video
     avg_error_per_video = []
-    for video_name in videos_test:
+    for video_name in self.videos_test:
       for t in range(self.h_window):
         if not video_name in errors_per_video:
           config.error(f'missing {video_name} in videos_test')
