@@ -206,7 +206,7 @@ class Trainer():
     model_weights = join(model_dir, 'weights.hdf5')
     config.info(f'model_weights={model_weights}')
     if self.dry_run:
-      sys.exit()
+      return
     model = create_model()
     assert model
 

@@ -100,7 +100,7 @@ class Evaluator():
       assert exists(model_weights_medium)
       assert exists(model_weights_hight)
     if self.dry_run:
-      sys.exit()
+      return
     if self.evaluate_auto:
       model_low = create_model()
       model_low.load_weights(model_weights_low)
