@@ -12,6 +12,6 @@ MODEL_NAMES = ['pos_only', 'TRACK', 'CVPR18', 'MM18', 'most_salient_point']
 ARGS_DS_NAMES = ['all', 'david', 'fan', 'nguyen', 'xucvpr', 'xupami']
 ARGS_ENTROPY_NAMES = ['all','low','medium','hight','low_users','medium_users','hight_users']
 
-logging.basicConfig(level=logging.INFO, format='-- %(filename)s: %(message)s')
+logging.basicConfig(level=logging.INFO, format='-- users360: %(message)s')
 info = logging.getLogger(__name__).info
 error = logging.getLogger(__name__).error
