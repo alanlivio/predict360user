@@ -150,9 +150,9 @@ class Trainer():
   def _partition(self) -> None:
     config.info('partioning...')
     self.df_trajects = get_df_trajects()
-    if self.dataset_name != 'all':
-      self.df_trajects = self.df_trajects[self.df_trajects['ds'] == self.dataset_name]
-    self.x_train, self.x_test = get_train_test_split(self.df_trajects, self.train_entropy, self.perc_test)
+    df_to_split = self.df_trajects[self.df_trajects['ds'] == self.dataset_name] \
+      if self.dataset_name != 'all' else self.df_trajects
+    self.x_train, self.x_test = get_train_test_split(df_to_split, self.train_entropy, self.perc_test)
     self.x_train_wins = [{
         'video': row[1]['ds_video'],
         'user': row[1]['ds_user'],

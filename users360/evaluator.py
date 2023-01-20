@@ -46,14 +46,13 @@ class Evaluator():
 
   def _partition(self) -> None:
     config.info('partioning...')
-    df = get_df_trajects()
-    if self.dataset_name != 'all':
-      self.df_trajects = self.df_trajects[self.df_trajects['ds'] == self.dataset_name]
+    self.df_trajects = get_df_trajects()
     if self.oneuser and self.onevideo:
-      self.x_test = get_rows(df, self.onevideo, self.oneuser, self.dataset_name)
+      self.x_test = get_rows(self.df_trajects, self.onevideo, self.oneuser, self.dataset_name)
     else:
-      tmp_df = df[df['ds'] == self.dataset_name] if self.dataset_name != 'all' else df
-      _, self.x_test = get_train_test_split(tmp_df, self.test_entropy, self.perc_test)
+      df_to_split = self.df_trajects[self.df_trajects['ds'] == self.dataset_name] \
+        if self.dataset_name != 'all' else self.df_trajects
+      _, self.x_test = get_train_test_split(df_to_split, self.test_entropy, self.perc_test)
     self.videos_test = self.x_test['ds_video'].unique()
     self.x_test_wins = [{
         'video': row[1]['ds_video'],
@@ -68,8 +67,9 @@ class Evaluator():
     config.info(self)
     self._partition()
 
-    if not self.model_column in df.columns:
-      df[self.model_column] = pd.Series([{} for _ in range(len(df))]).astype(object)
+    if not self.model_column in self.df_trajects.columns:
+      self.df_trajects[self.model_column] = pd.Series(
+        [{} for _ in range(len(self.df_trajects))]).astype(object)
 
     # creating model
     config.info('creating model ...')
@@ -100,23 +100,23 @@ class Evaluator():
       model_hight =create_model(self.model_name, self.m_window, self.h_window)
       model_hight.load_weights(model_weights_hight)
     else:
-     model = create_model(self.model_name, self.m_window, self.h_window)
-    model.load_weights(model_weights)
+      model = create_model(self.model_name, self.m_window, self.h_window)
+      model.load_weights(model_weights)
 
     # predict by each pred_windows
     errors_per_video = {}
     errors_per_timestep = {}
-    threshold_medium, threshold_hight = get_trajects_entropy_threshold(df)
-    for ids in tqdm(pred_windows['test'], desc='position predictions'):
+    threshold_medium, threshold_hight = get_trajects_entropy_threshold(self.df_trajects)
+    for ids in tqdm(self.x_test_wins, desc='position predictions'):
       user = ids['user']
       video = ids['video']
       x_i = ids['trace_id']
 
       if self.model_name == 'pos_only':
         encoder_pos_inputs_for_sample = np.array(
-            [get_traces(df, video, user, self.dataset_name)[x_i - self.m_window:x_i]])
+            [get_traces(self.df_trajects, video, user, self.dataset_name)[x_i - self.m_window:x_i]])
         decoder_pos_inputs_for_sample = np.array(
-            [get_traces(df, video, user, self.dataset_name)[x_i:x_i + 1]])
+            [get_traces(self.df_trajects, video, user, self.dataset_name)[x_i:x_i + 1]])
       else:
         raise NotImplementedError
 
@@ -126,11 +126,11 @@ class Evaluator():
         if self.test_model_entropy == 'auto':
           traject_entropy_class = ids['traject_entropy_class']
         if self.test_model_entropy == 'auto_m_window':
-          window = get_traces(df, video, user, self.dataset_name)[x_i - self.m_window:x_i]
+          window = get_traces(self.df_trajects, video, user, self.dataset_name)[x_i - self.m_window:x_i]
           a_ent = calc_actual_entropy(window)
           traject_entropy_class = get_class_by_threshold(a_ent, threshold_medium, threshold_hight)
         elif self.test_model_entropy == 'auto_since_start':
-          window = get_traces(df, video, user, self.dataset_name)[0:x_i]
+          window = get_traces(self.df_trajects, video, user, self.dataset_name)[0:x_i]
           a_ent = calc_actual_entropy(window)
           traject_entropy_class = get_class_by_threshold(a_ent, threshold_medium, threshold_hight)
         else:
@@ -156,13 +156,13 @@ class Evaluator():
         raise NotImplementedError
 
       # save prediction
-      traject_row = df.loc[(df['ds_video'] == video) & (df['ds_user'] == user)]
+      traject_row = self.df_trajects.loc[(self.df_trajects['ds_video'] == video) & (self.df_trajects['ds_user'] == user)]
       assert not traject_row.empty
       index = traject_row.index[0]
-      traject_row[model_column][index][x_i] = model_prediction
+      traject_row[self.model_column][index][x_i] = model_prediction
 
       # save error
-      groundtruth = get_traces(df, video, user, self.dataset_name)[x_i + 1:x_i + self.h_window + 1]
+      groundtruth = get_traces(self.df_trajects, video, user, self.dataset_name)[x_i + 1:x_i + self.h_window + 1]
       if not video in errors_per_video:
         errors_per_video[video] = {}
       for t in range(len(groundtruth)):
@@ -174,7 +174,7 @@ class Evaluator():
         errors_per_timestep[t].append(METRIC(groundtruth[t], model_prediction[t]))
 
     # save on df
-    dump_df_trajects(df)
+    dump_df_trajects(self.df_trajects)
 
     # avg_error_per_timestep
     avg_error_per_timestep = []
@@ -183,7 +183,7 @@ class Evaluator():
       avg_error_per_timestep.append(avg)
 
     # avg_error_per_timestep.csv
-    result_file = f'{evaluate_prefix}_avg_error_per_timestep'
+    result_file = f'{self.evaluate_prefix}_avg_error_per_timestep'
     config.info(f'saving {result_file}.csv')
     np.savetxt(f'{result_file}.csv', avg_error_per_timestep)
 
@@ -206,7 +206,7 @@ class Evaluator():
           continue
         avg = np.mean(errors_per_video[video_name][t])
         avg_error_per_video.append(f'video={video_name} {t} {avg}')
-    result_file = f'{evaluate_prefix}_avg_error_per_video.csv'
+    result_file = f'{self.evaluate_prefix}_avg_error_per_video.csv'
     np.savetxt(result_file, avg_error_per_video, fmt='%s')
     config.info(f'saving {result_file}')
 
