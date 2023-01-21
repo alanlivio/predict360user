@@ -82,6 +82,9 @@ class Test(unittest.TestCase):
     trn = Trainer(train_entropy='hight')
     trn.partition_train()
     assert (count_traject_entropy_classes(trn.x_train) == (1036, 0, 0, 1036))
+    trn = Trainer(train_entropy='nohight')
+    trn.partition_train()
+    assert (count_traject_entropy_classes(trn.x_train) == (9265, 6089, 3176, 0))
 
   def test_partition_evaluate(self) -> None:
     trn = Trainer(dry_run=True)

@@ -28,9 +28,15 @@ def get_train_test_split(df: pd.DataFrame, entropy: str,
   if entropy != 'all':
     if entropy.endswith('_hmp'):
       hmp_entropy = entropy.removesuffix('_hmp')
-      df = df[df['hmp_entropy_class'] == hmp_entropy]
+      if entropy == 'nohight':
+        df = df[df['hmp_entropy_class'] != 'hight']
+      else:
+        df = df[df['hmp_entropy_class'] == hmp_entropy]
     else:
-      df = df[df['traject_entropy_class'] == entropy]
+      if entropy == 'nohight':
+        df = df[df['traject_entropy_class'] != 'hight']
+      else:
+        df = df[df['traject_entropy_class'] == entropy]
   return train_test_split(df, **args)
 
 
