@@ -2,7 +2,10 @@ import unittest
 from os.path import join
 
 from users360 import config
-from users360.trainer import Trainer, count_traject_entropy_classes
+from users360.entropy import calc_actual_entropy
+from users360.trainer import (Trainer, count_traject_entropy_classes,
+                              get_train_test_split)
+from users360.trajects import get_df_trajects
 
 
 class Test(unittest.TestCase):
@@ -14,21 +17,74 @@ class Test(unittest.TestCase):
       trn = Trainer(train_entropy=name)
       assert trn.model_fullname == f'pos_only_{name}_entropy'
       assert trn.model_dir == join(config.DATADIR, f'pos_only_{name}_entropy')
-      assert trn.test_res_basename == join(trn.model_dir,f'test_0,2_all')
-      assert trn.evaluate_auto == False
+      assert trn.test_res_basename == join(trn.model_dir, 'test_0,2_all')
+      assert trn.evaluate_auto is False
       trn = Trainer(train_entropy=name, dataset_name='david')
       assert trn.model_fullname == f'pos_only_david_{name}_entropy'
       assert trn.model_dir == join(config.DATADIR, f'pos_only_david_{name}_entropy')
-      assert trn.test_res_basename == join(trn.model_dir,f'test_0,2_all')
-      assert trn.evaluate_auto == False
-    for name in ['low','medium','hight']:
+      assert trn.test_res_basename == join(trn.model_dir, 'test_0,2_all')
+      assert trn.evaluate_auto is False
+    for name in ['low', 'medium', 'hight']:
       trn = Trainer(test_entropy=name)
-      assert trn.test_res_basename == join(trn.model_dir,f'test_0,2_{name}')
-      assert trn.evaluate_auto == False
+      assert trn.test_res_basename == join(trn.model_dir, f'test_0,2_{name}')
+      assert trn.evaluate_auto is False
     for name in config.ARGS_ENTROPY_AUTO_NAMES:
       trn = Trainer(test_entropy=name)
-      assert trn.test_res_basename == join(trn.model_dir,f'test_0,2_{name}')
-      assert trn.evaluate_auto == True
+      assert trn.test_res_basename == join(trn.model_dir, f'test_0,2_{name}')
+      assert trn.evaluate_auto is True
+
+  def test_train_test_split(self) -> None:
+    self.df = get_df_trajects()
+    assert not self.df.empty
+
+    if not 'traject_entropy_class' in self.df.columns:
+      calc_actual_entropy(self.df)
+
+    # x_train all
+    x_train, x_test = get_train_test_split(self.df, 'all', 0.2)
+    unique_s = set(x_train['traject_entropy_class'].unique())
+    assert unique_s == set(['low', 'medium', 'hight'])
+    unique_s = set(x_test['traject_entropy_class'].unique())
+    assert unique_s == set(['low', 'medium', 'hight'])
+
+    # x_train low
+    x_train, x_test = get_train_test_split(self.df, 'low', 0.2)
+    unique_s = set(x_train['traject_entropy_class'].unique())
+    assert unique_s == set(['low'])
+    unique_s = set(x_test['traject_entropy_class'].unique())
+    assert unique_s == set(['low'])
+
+    # x_train medium
+    x_train, x_test = get_train_test_split(self.df, 'medium', 0.2)
+    unique_s = set(x_train['traject_entropy_class'].unique())
+    assert unique_s == set(['medium'])
+    unique_s = set(x_test['traject_entropy_class'].unique())
+    assert unique_s == set(['medium'])
+
+    # x_train hight
+    x_train, x_test = get_train_test_split(self.df, 'hight', 0.2)
+    unique_s = set(x_train['traject_entropy_class'].unique())
+    assert unique_s == set(['hight'])
+    unique_s = set(x_test['traject_entropy_class'].unique())
+    assert unique_s == set(['hight'])
+
+    x_train, x_test = get_train_test_split(self.df, 'low_users', 0.2)
+    unique_s = set(x_train['user_entropy_class'].unique())
+    assert unique_s == set(['low'])
+    unique_s = set(x_test['user_entropy_class'].unique())
+    assert unique_s == set(['low'])
+
+    x_train, x_test = get_train_test_split(self.df, 'medium_users', 0.2)
+    unique_s = set(x_train['user_entropy_class'].unique())
+    assert unique_s == set(['medium'])
+    unique_s = set(x_test['user_entropy_class'].unique())
+    assert unique_s == set(['medium'])
+
+    x_train, x_test = get_train_test_split(self.df, 'hight_users', 0.2)
+    unique_s = set(x_train['user_entropy_class'].unique())
+    assert unique_s == set(['hight'])
+    unique_s = set(x_test['user_entropy_class'].unique())
+    assert unique_s == set(['hight'])
 
   def test_partition_train(self) -> None:
     trn = Trainer(dry_run=True)
@@ -49,14 +105,14 @@ class Test(unittest.TestCase):
     trn.partition_evaluate()
     assert (count_traject_entropy_classes(trn.x_test) == (2576, 1510, 814, 252))
 
-    trn = Trainer( test_entropy='low')
+    trn = Trainer(test_entropy='low')
     trn.partition_evaluate()
     assert (count_traject_entropy_classes(trn.x_test) == (1527, 1527, 0, 0))
 
-    trn = Trainer( test_entropy='medium')
+    trn = Trainer(test_entropy='medium')
     trn.partition_evaluate()
     assert (count_traject_entropy_classes(trn.x_test) == (790, 0, 790, 0))
 
-    trn = Trainer( test_entropy='hight')
+    trn = Trainer(test_entropy='hight')
     trn.partition_evaluate()
     assert (count_traject_entropy_classes(trn.x_test) == (259, 0, 0, 259))
