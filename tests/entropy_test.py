@@ -11,22 +11,14 @@ pio.renderers.default = None
 class Test(unittest.TestCase):
 
   def setUp(self) -> None:
-    # limit testing df to 2
-    self.df = get_df_trajects()[:2]
+    self.df = get_df_trajects()
     assert not self.df.empty
-    # force hmp recalc
-    self.df.drop(['traject_hmps'], axis=1, errors='ignore')
 
   def test_trajects_entropy(self) -> None:
-    self.df.drop(['traject_entropy', 'traject_entropy_class'],
-                          axis=1,
-                          errors='ignore')
-    calc_trajects_entropy(self.df)
+    calc_trajects_entropy(self.df[:10]) # limitig given time
 
   def test_poles_prc(self) -> None:
-    self.df.drop(['poles_prc', 'poles_prc_class'],
-                          axis=1,
-                          errors='ignore')
+
     calc_trajects_poles_prc(self.df)
 
   def test_actual_entropy(self) -> None:
