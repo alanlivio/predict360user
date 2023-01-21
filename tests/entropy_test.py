@@ -23,12 +23,6 @@ class Test(unittest.TestCase):
                           errors='ignore')
     calc_trajects_entropy(self.df)
 
-  def test_entropy_users(self) -> None:
-    self.df.drop(['user_entropy', 'user_entropy_class'],
-                          axis=1,
-                          errors='ignore')
-    assert not calc_users_entropy(self.df)
-
   def test_poles_prc(self) -> None:
     self.df.drop(['poles_prc', 'poles_prc_class'],
                           axis=1,

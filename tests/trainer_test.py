@@ -68,24 +68,6 @@ class Test(unittest.TestCase):
     unique_s = set(x_test['traject_entropy_class'].unique())
     assert unique_s == set(['hight'])
 
-    x_train, x_test = get_train_test_split(self.df, 'low_users', 0.2)
-    unique_s = set(x_train['user_entropy_class'].unique())
-    assert unique_s == set(['low'])
-    unique_s = set(x_test['user_entropy_class'].unique())
-    assert unique_s == set(['low'])
-
-    x_train, x_test = get_train_test_split(self.df, 'medium_users', 0.2)
-    unique_s = set(x_train['user_entropy_class'].unique())
-    assert unique_s == set(['medium'])
-    unique_s = set(x_test['user_entropy_class'].unique())
-    assert unique_s == set(['medium'])
-
-    x_train, x_test = get_train_test_split(self.df, 'hight_users', 0.2)
-    unique_s = set(x_train['user_entropy_class'].unique())
-    assert unique_s == set(['hight'])
-    unique_s = set(x_test['user_entropy_class'].unique())
-    assert unique_s == set(['hight'])
-
   def test_partition_train(self) -> None:
     trn = Trainer(dry_run=True)
     trn.partition_train()

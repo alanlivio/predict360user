@@ -145,44 +145,6 @@ def calc_trajects_entropy(df: pd.DataFrame) -> None:
   assert not df['traject_entropy_class'].isnull().any()
 
 
-def _entropy_user(same_user_rows) -> np.ndarray:
-  same_user_rows_np = same_user_rows['traject_hmps'].to_numpy()
-  hmps_sum: np.ndarray = sum(np.sum(x, axis=0) for x in same_user_rows_np)
-  entropy = scipy.stats.entropy(hmps_sum.reshape((-1)))
-  return entropy
-
-
-def calc_users_entropy(df: pd.DataFrame) -> pd.DataFrame:
-  if 'traject_hmps' not in df.columns:
-    calc_trajects_hmps(df)
-  # clean
-  df.drop(['user_entropy', 'user_entropy_class'],
-                   axis=1,
-                   errors='ignore')
-  # calc user_entropy
-  config.info('calculating users entropy ...')
-  df_users = df.groupby(
-      ['ds_user']).progress_apply(_entropy_user).reset_index()
-  df_users.columns = ['ds_user', 'user_entropy']
-  assert not df_users['user_entropy'].isnull().any()
-  # calc user_entropy_class
-  idxs_sort = df_users['user_entropy'].argsort()
-  trajects_len = len(df_users['user_entropy'])
-  idx_threshold_medium = idxs_sort[int(trajects_len * .60)]
-  idx_threshold_hight = idxs_sort[int(trajects_len * .90)]
-  threshold_medium = df_users['user_entropy'][idx_threshold_medium]
-  threshold_hight = df_users['user_entropy'][idx_threshold_hight]
-  df_users['user_entropy_class'] = df_users['user_entropy'].progress_apply(
-      get_class_by_threshold, args=(threshold_medium, threshold_hight))
-  assert not df_users['user_entropy_class'].isna().any()
-
-  # merge right inplace
-  # https://stackoverflow.com/questions/50849102/pandas-left-join-in-place
-  df_tmp = pd.merge(df[['ds_user']], df_users, on='ds_user')
-  df.assign(user_entropy=df_tmp['user_entropy'].values,
-                     user_entropy_class=df_tmp['user_entropy_class'].values)
-
-
 def show_trajects_entropy(df: pd.DataFrame, facet=None) -> None:
   assert {'traject_entropy',
           'traject_entropy_class'}.issubset(df.columns)

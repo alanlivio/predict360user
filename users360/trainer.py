@@ -1,9 +1,8 @@
 import os
-import sys
 from contextlib import redirect_stderr
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from os.path import exists, join
-from typing import Any, Generator, Iterable
+from typing import Any, Generator
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -26,11 +25,7 @@ BATCH_SIZE = 128.0
 def get_train_test_split(df: pd.DataFrame, entropy: str,
                          perc_test: float) -> tuple[pd.DataFrame, pd.DataFrame]:
   args = {'test_size': perc_test, 'random_state': 1}
-  # _users
-  if entropy.endswith('_users') and entropy != 'all':
-    x_train, x_test = train_test_split(
-        df[df['user_entropy_class'] == entropy.removesuffix('_users')], **args)
-  elif entropy != 'all':
+  if entropy != 'all':
     x_train, x_test = train_test_split(df[df['traject_entropy_class'] == entropy], **args)
   else:
     x_train, x_test = train_test_split(df, **args)
