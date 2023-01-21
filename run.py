@@ -3,10 +3,10 @@
 import argparse
 import sys
 
-from . import config
-from .entropy import calc_trajects_entropy
-from .trainer import Trainer, compare_results
-from .trajects import *
+from users360 import config
+from users360.entropy import calc_trajects_entropy
+from users360.trainer import Trainer, compare_results
+from users360.trajects import *
 
 if __name__ == '__main__':
   # argparse
@@ -62,7 +62,7 @@ if __name__ == '__main__':
                    nargs='?',
                    type=str,
                    default='all',
-                   choices=config.ARGS_ENTROPY_NAMES + ARGS_ENTROPY_AUTO_NAMES,
+                   choices=config.ARGS_ENTROPY_NAMES + config.ARGS_ENTROPY_AUTO_NAMES,
                    help='''entropy to filter train data (default all).
                            -evaluate accepts auto, auto_m_window, auto_since_start''')
 

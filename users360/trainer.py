@@ -11,8 +11,7 @@ import pandas as pd
 import plotly.express as px
 from sklearn.model_selection import train_test_split
 
-from users360.head_motion_prediction.Utils import (all_metrics,
-                                                   cartesian_to_eulerian,
+from users360.head_motion_prediction.Utils import (all_metrics, cartesian_to_eulerian,
                                                    eulerian_to_cartesian)
 
 from .entropy import *
@@ -31,8 +30,7 @@ def get_train_test_split(df: pd.DataFrame, entropy: str,
     x_train, x_test = train_test_split(
         df[df['user_entropy_class'] == entropy.removesuffix('_users')], **args)
   elif entropy != 'all':
-    x_train, x_test = train_test_split(df[df['traject_entropy_class'] == entropy],
-                                       **args)
+    x_train, x_test = train_test_split(df[df['traject_entropy_class'] == entropy], **args)
   else:
     x_train, x_test = train_test_split(df, **args)
 
@@ -105,11 +103,9 @@ class Trainer():
     else:
       self.test_res_basename = join(self.model_dir, f'{self.test_res_basename}_{self.test_entropy}')
 
-
   def create_model(self) -> Any:
     if self.model_name == 'pos_only':
-      from users360.head_motion_prediction.position_only_baseline import \
-          create_pos_only_model
+      from users360.head_motion_prediction.position_only_baseline import create_pos_only_model
       return create_pos_only_model(self.m_window, self.h_window)
     else:
       raise NotImplementedError
@@ -131,8 +127,7 @@ class Trainer():
         if self.model_name == 'pos_only':
           encoder_pos_inputs_for_batch.append(
               get_traces(self.df, video, user, 'all')[x_i - self.m_window:x_i])
-          decoder_pos_inputs_for_batch.append(
-              get_traces(self.df, video, user, 'all')[x_i:x_i + 1])
+          decoder_pos_inputs_for_batch.append(get_traces(self.df, video, user, 'all')[x_i:x_i + 1])
           decoder_outputs_for_batch.append(
               get_traces(self.df, video, user, 'all')[x_i + 1:x_i + self.h_window + 1])
         else:
@@ -166,8 +161,7 @@ class Trainer():
     self.df = get_df_trajects()
     df_to_split = self.df[self.df['ds'] == self.dataset_name] \
       if self.dataset_name != 'all' else self.df
-    self.x_train, self.x_val = get_train_test_split(df_to_split, self.train_entropy,
-                                                     self.perc_test)
+    self.x_train, self.x_val = get_train_test_split(df_to_split, self.train_entropy, self.perc_test)
     self.x_train_wins = [{
         'video': row[1]['ds_video'],
         'user': row[1]['ds_user'],
@@ -261,7 +255,6 @@ class Trainer():
     if not self.train_entropy.startswith('auto'):
       model_weights = join(self.model_dir, 'weights.hdf5')
       config.info(f'model_weights={model_weights}')
-      assert exists(model_weights)
     if self.train_entropy.startswith('auto'):
       model_weights_low = join(self.model_ds_dir + "_low_entropy", 'weights.hdf5')
       model_weights_medium = join(self.model_ds_dir + "_medium_entropy", 'weights.hdf5')
@@ -269,15 +262,15 @@ class Trainer():
       config.info('model_weights_low=' + model_weights_low)
       config.info('model_weights_medium=' + model_weights_medium)
       config.info('model_weights_hight=' + model_weights_hight)
-      assert exists(model_weights_low)
-      assert exists(model_weights_medium)
-      assert exists(model_weights_hight)
     config.info('test_res_basename=' + self.test_res_basename)
 
     if self.dry_run:
       return
 
     if self.evaluate_auto:
+      assert exists(model_weights_low)
+      assert exists(model_weights_medium)
+      assert exists(model_weights_hight)
       model_low = self.create_model()
       model_low.load_weights(model_weights_low)
       model_medium = self.create_model()
@@ -286,6 +279,7 @@ class Trainer():
       model_hight.load_weights(model_weights_hight)
     else:
       model = self.create_model()
+      assert exists(model_weights)
       model.load_weights(model_weights)
 
     # predict by each pred_windows
@@ -341,15 +335,13 @@ class Trainer():
         raise NotImplementedError
 
       # save prediction
-      traject_row = self.df.loc[(self.df['ds_video'] == video)
-                                         & (self.df['ds_user'] == user)]
+      traject_row = self.df.loc[(self.df['ds_video'] == video) & (self.df['ds_user'] == user)]
       assert not traject_row.empty
       index = traject_row.index[0]
       traject_row[self.model_fullname][index][x_i] = model_prediction
 
       # save error
-      groundtruth = get_traces(self.df, video, user,
-                               self.dataset)[x_i + 1:x_i + self.h_window + 1]
+      groundtruth = get_traces(self.df, video, user, self.dataset)[x_i + 1:x_i + self.h_window + 1]
       if not video in errors_per_video:
         errors_per_video[video] = {}
       for t in range(len(groundtruth)):
