@@ -19,16 +19,16 @@ def _traject_metrics_np(traces, tileset) -> np.array:
   return np.apply_along_axis(_trace_mestrics_np, 1, traces, tileset=tileset)
 
 
-def calc_tileset_reqs_metrics(df_trajects: pd.DataFrame,
+def calc_tileset_reqs_metrics(df: pd.DataFrame,
                               tileset_l: list[TileSet]) -> None:
-  if len(df_trajects) >= 4:
-    config.log("df_trajects.size >= 4, it will take for some time")
+  if len(df) >= 4:
+    config.log("df.size >= 4, it will take for some time")
   for tileset in tileset_l:
     column_name = f'metrics_{tileset.title}'
-    metrics_np = df_trajects['traject'].progress_apply(_traject_metrics_np,
+    metrics_np = df['traject'].progress_apply(_traject_metrics_np,
                                                        tileset=tileset)
-    df_trajects[column_name] = metrics_np
-    assert not df_trajects[column_name].empty
+    df[column_name] = metrics_np
+    assert not df[column_name].empty
 
 
 def show_tileset_reqs_metrics(df: pd.DataFrame) -> None:

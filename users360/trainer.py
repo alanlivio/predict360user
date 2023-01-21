@@ -23,18 +23,18 @@ RATE = 0.2
 BATCH_SIZE = 128.0
 
 
-def get_train_test_split(df_trajects: pd.DataFrame, entropy: str,
+def get_train_test_split(df: pd.DataFrame, entropy: str,
                          perc_test: float) -> tuple[pd.DataFrame, pd.DataFrame]:
   args = {'test_size': perc_test, 'random_state': 1}
   # _users
   if entropy.endswith('_users') and entropy != 'all':
     x_train, x_test = train_test_split(
-        df_trajects[df_trajects['user_entropy_class'] == entropy.removesuffix('_users')], **args)
+        df[df['user_entropy_class'] == entropy.removesuffix('_users')], **args)
   elif entropy != 'all':
-    x_train, x_test = train_test_split(df_trajects[df_trajects['traject_entropy_class'] == entropy],
+    x_train, x_test = train_test_split(df[df['traject_entropy_class'] == entropy],
                                        **args)
   else:
-    x_train, x_test = train_test_split(df_trajects, **args)
+    x_train, x_test = train_test_split(df, **args)
 
   return x_train, x_test
 
@@ -47,13 +47,13 @@ def count_traject_entropy_classes(df) -> tuple[int, int, int, int]:
   return a_len, l_len, m_len, h_len
 
 
-def show_train_test_split(df_trajects: pd.DataFrame, entropy: str, perc_test: float) -> None:
-  x_train, x_test = get_train_test_split(df_trajects, entropy, perc_test)
+def show_train_test_split(df: pd.DataFrame, entropy: str, perc_test: float) -> None:
+  x_train, x_test = get_train_test_split(df, entropy, perc_test)
   x_train['partition'] = 'train'
   x_test['partition'] = 'test'
-  df_trajects = pd.concat([x_train, x_test])
-  show_trajects_entropy(df_trajects, facet='partition')
-  show_trajects_entropy_users(df_trajects, facet='partition')
+  df = pd.concat([x_train, x_test])
+  show_trajects_entropy(df, facet='partition')
+  show_trajects_entropy_users(df, facet='partition')
 
 
 def transform_batches_cartesian_to_normalized_eulerian(positions_in_batch) -> np.array:
@@ -130,11 +130,11 @@ class Trainer():
         # load the data
         if self.model_name == 'pos_only':
           encoder_pos_inputs_for_batch.append(
-              get_traces(self.df_trajects, video, user, 'all')[x_i - self.m_window:x_i])
+              get_traces(self.df, video, user, 'all')[x_i - self.m_window:x_i])
           decoder_pos_inputs_for_batch.append(
-              get_traces(self.df_trajects, video, user, 'all')[x_i:x_i + 1])
+              get_traces(self.df, video, user, 'all')[x_i:x_i + 1])
           decoder_outputs_for_batch.append(
-              get_traces(self.df_trajects, video, user, 'all')[x_i + 1:x_i + self.h_window + 1])
+              get_traces(self.df, video, user, 'all')[x_i + 1:x_i + self.h_window + 1])
         else:
           raise NotImplementedError
         count += 1
@@ -163,9 +163,9 @@ class Trainer():
 
   def partition_train(self) -> None:
     config.info('partioning...')
-    self.df_trajects = get_df_trajects()
-    df_to_split = self.df_trajects[self.df_trajects['ds'] == self.dataset_name] \
-      if self.dataset_name != 'all' else self.df_trajects
+    self.df = get_df_trajects()
+    df_to_split = self.df[self.df['ds'] == self.dataset_name] \
+      if self.dataset_name != 'all' else self.df
     self.x_train, self.x_val = get_train_test_split(df_to_split, self.train_entropy,
                                                      self.perc_test)
     self.x_train_wins = [{
@@ -227,12 +227,12 @@ class Trainer():
 
   def partition_evaluate(self) -> None:
     config.info('partioning...')
-    self.df_trajects = get_df_trajects()
+    self.df = get_df_trajects()
     if self.test_user and self.test_video:
-      self.x_test = get_rows(self.df_trajects, self.test_video, self.test_user, self.dataset_name)
+      self.x_test = get_rows(self.df, self.test_video, self.test_user, self.dataset_name)
     else:
-      df_to_split = self.df_trajects[self.df_trajects['ds'] == self.dataset_name] \
-        if self.dataset_name != 'all' else self.df_trajects
+      df_to_split = self.df[self.df['ds'] == self.dataset_name] \
+        if self.dataset_name != 'all' else self.df
       _, self.x_test = get_train_test_split(df_to_split, self.test_entropy, self.perc_test)
     self.videos_test = self.x_test['ds_video'].unique()
     self.x_test_wins = [{
@@ -250,9 +250,9 @@ class Trainer():
     fmt = 'x_test has {} trajectories: {} low, {} medium, {} hight'
     config.info(fmt.format(*count_traject_entropy_classes(self.x_test)))
 
-    if not self.model_fullname in self.df_trajects.columns:
-      empty = pd.Series([{} for _ in range(len(self.df_trajects))]).astype(object)
-      self.df_trajects[self.model_fullname] = empty
+    if not self.model_fullname in self.df.columns:
+      empty = pd.Series([{} for _ in range(len(self.df))]).astype(object)
+      self.df[self.model_fullname] = empty
 
     # creating model
     config.info('creating model ...')
@@ -291,7 +291,7 @@ class Trainer():
     # predict by each pred_windows
     errors_per_video = {}
     errors_per_timestep = {}
-    threshold_medium, threshold_hight = get_trajects_entropy_threshold(self.df_trajects)
+    threshold_medium, threshold_hight = get_trajects_entropy_threshold(self.df)
     for ids in tqdm(self.x_test_wins, desc='position predictions'):
       user = ids['user']
       video = ids['video']
@@ -299,9 +299,9 @@ class Trainer():
 
       if self.model_name == 'pos_only':
         encoder_pos_inputs_for_sample = np.array(
-            [get_traces(self.df_trajects, video, user, self.dataset)[x_i - self.m_window:x_i]])
+            [get_traces(self.df, video, user, self.dataset)[x_i - self.m_window:x_i]])
         decoder_pos_inputs_for_sample = np.array(
-            [get_traces(self.df_trajects, video, user, self.dataset)[x_i:x_i + 1]])
+            [get_traces(self.df, video, user, self.dataset)[x_i:x_i + 1]])
       else:
         raise NotImplementedError
 
@@ -311,11 +311,11 @@ class Trainer():
         if self.train_entropy == 'auto':
           traject_entropy_class = ids['traject_entropy_class']
         if self.train_entropy == 'auto_m_window':
-          window = get_traces(self.df_trajects, video, user, self.dataset)[x_i - self.m_window:x_i]
+          window = get_traces(self.df, video, user, self.dataset)[x_i - self.m_window:x_i]
           a_ent = calc_actual_entropy(window)
           traject_entropy_class = get_class_by_threshold(a_ent, threshold_medium, threshold_hight)
         elif self.train_entropy == 'auto_since_start':
-          window = get_traces(self.df_trajects, video, user, self.dataset)[0:x_i]
+          window = get_traces(self.df, video, user, self.dataset)[0:x_i]
           a_ent = calc_actual_entropy(window)
           traject_entropy_class = get_class_by_threshold(a_ent, threshold_medium, threshold_hight)
         else:
@@ -341,14 +341,14 @@ class Trainer():
         raise NotImplementedError
 
       # save prediction
-      traject_row = self.df_trajects.loc[(self.df_trajects['ds_video'] == video)
-                                         & (self.df_trajects['ds_user'] == user)]
+      traject_row = self.df.loc[(self.df['ds_video'] == video)
+                                         & (self.df['ds_user'] == user)]
       assert not traject_row.empty
       index = traject_row.index[0]
       traject_row[self.model_fullname][index][x_i] = model_prediction
 
       # save error
-      groundtruth = get_traces(self.df_trajects, video, user,
+      groundtruth = get_traces(self.df, video, user,
                                self.dataset)[x_i + 1:x_i + self.h_window + 1]
       if not video in errors_per_video:
         errors_per_video[video] = {}
@@ -361,7 +361,7 @@ class Trainer():
         errors_per_timestep[t].append(METRIC(groundtruth[t], model_prediction[t]))
 
     # save on df
-    dump_df_trajects(self.df_trajects)
+    dump_df_trajects(self.df)
 
     # avg_error_per_timestep
     avg_error_per_timestep = []

@@ -12,32 +12,32 @@ class Test(unittest.TestCase):
 
   def setUp(self) -> None:
     # limit testing df to 2
-    self.df_trajects = get_df_trajects()[:2]
-    assert not self.df_trajects.empty
+    self.df = get_df_trajects()[:2]
+    assert not self.df.empty
     # force hmp recalc
-    self.df_trajects.drop(['traject_hmps'], axis=1, errors='ignore')
+    self.df.drop(['traject_hmps'], axis=1, errors='ignore')
 
   def test_sample(self) -> None:
     # query traject row
-    one_row = self.df_trajects.query(
+    one_row = self.df.query(
         "ds=='david' and ds_user=='david_0' and ds_video=='david_10_Cows'")
     assert not one_row.empty
     # sample traject row
-    one_row = sample_traject_row(self.df_trajects)
+    one_row = sample_traject_row(self.df)
     assert not one_row.empty
     trace = sample_one_trace_from_traject_row(one_row)
     assert trace.shape == (3, )
 
   def test_trajects_get(self) -> None:
-    videos_l = get_video_ids(self.df_trajects)
+    videos_l = get_video_ids(self.df)
     assert videos_l.size
-    users_l = get_user_ids(self.df_trajects)
+    users_l = get_user_ids(self.df)
     assert users_l.size
-    ds_l = get_ds_ids(self.df_trajects)
+    ds_l = get_ds_ids(self.df)
     assert ds_l.size
-    assert get_traces(self.df_trajects, videos_l[0], users_l[0], ds_l[0]).size
+    assert get_traces(self.df, videos_l[0], users_l[0], ds_l[0]).size
 
   def test_show_one_traject(self) -> None:
-    one_row = sample_traject_row(self.df_trajects)
+    one_row = sample_traject_row(self.df)
     assert not one_row.empty
     show_one_traject(one_row)

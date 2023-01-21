@@ -16,7 +16,7 @@ from .utils.tileset import TILESET_DEFAULT, TileSet
 from .utils.tileset_voro import TileSetVoro
 from .utils.viz_sphere import VizSphere
 
-DF_TRAJECTS_F = os.path.join(config.DATADIR, 'df_trajects.pickle')
+DF_FILE = os.path.join(config.DATADIR, 'df_trajects.pickle')
 
 
 def _load_df_trajects_from_hmp() -> pd.DataFrame:
@@ -66,43 +66,40 @@ def _load_df_trajects_from_hmp() -> pd.DataFrame:
             'traject'  # [[x,y,z], ...]
         ])
     # assert and check
-    assert tmpdf['ds'].value_counts()[
-        config.DS_NAMES[idx]] == config.DS_SIZES[idx]
+    assert tmpdf['ds'].value_counts()[config.DS_NAMES[idx]] == config.DS_SIZES[idx]
     return tmpdf
 
-  # create df_trajects for each dataset
-  df_trajects = pd.concat(map(_load_dataset_xyz, ds_idxs),
-                          ignore_index=True).convert_dtypes()
-  assert not df_trajects.empty
+  # create df for each dataset
+  df = pd.concat(map(_load_dataset_xyz, ds_idxs), ignore_index=True).convert_dtypes()
+  assert not df.empty
   # back to cwd
   os.chdir(cwd)
-  return df_trajects
+  return df
 
 
-def get_df_trajects(df_trajects_f=DF_TRAJECTS_F) -> pd.DataFrame:
-  if exists(df_trajects_f):
-    with open(df_trajects_f, 'rb') as f:
-      config.info(f'loading df_trajects from {df_trajects_f}')
-      df_trajects = pickle.load(f)
+def get_df_trajects(df_file=DF_FILE) -> pd.DataFrame:
+  if exists(df_file):
+    with open(df_file, 'rb') as f:
+      config.info(f'loading df from {df_file}')
+      df = pickle.load(f)
   else:
-    config.info(f'no {df_trajects_f}')
-    df_trajects = _load_df_trajects_from_hmp()
-  return df_trajects
+    config.info(f'no {df_file}')
+    df = _load_df_trajects_from_hmp()
+  return df
 
 
-def dump_df_trajects(df_trajects: pd.DataFrame,
-                     df_trajects_f=DF_TRAJECTS_F) -> None:
-  config.info(f'saving df_trajects to {df_trajects_f}')
-  with open(df_trajects_f, 'wb') as f:
-    pickle.dump(df_trajects, f)
-  with open(df_trajects_f + '.info.txt', 'w', encoding='utf-8') as f:
+def dump_df_trajects(df: pd.DataFrame, df_file=DF_FILE) -> None:
+  config.info(f'saving df to {df_file}')
+  with open(df_file, 'wb') as f:
+    pickle.dump(df, f)
+  with open(df_file + '.info.txt', 'w', encoding='utf-8') as f:
     buffer = io.StringIO()
-    df_trajects.info(buf=buffer)
+    df.info(buf=buffer)
     f.write(buffer.getvalue())
 
 
-def sample_traject_row(df_trajects: pd.DataFrame) -> pd.Series:
-  return df_trajects.sample(1)
+def sample_traject_row(df: pd.DataFrame) -> pd.Series:
+  return df.sample(1)
 
 
 def sample_one_trace_from_traject_row(one_row: pd.Series) -> np.array:
@@ -110,43 +107,39 @@ def sample_one_trace_from_traject_row(one_row: pd.Series) -> np.array:
   trace = traject_ar[np.random.randint(len(traject_ar - 1))]
   return trace
 
-def get_rows(df_trajects: pd.DataFrame, video: str, user: str,
-               ds: str) -> np.array:
+
+def get_rows(df: pd.DataFrame, video: str, user: str, ds: str) -> np.array:
   if ds == 'all':
-    rows = df_trajects.query(f"ds_user=='{user}' and ds_video=='{video}'")
+    rows = df.query(f"ds_user=='{user}' and ds_video=='{video}'")
   else:
-    rows = df_trajects.query(
-        f"ds=='{ds}' and ds_user=='{user}' and ds_video=='{video}'")
+    rows = df.query(f"ds=='{ds}' and ds_user=='{user}' and ds_video=='{video}'")
   assert not rows.empty
   return rows
 
-def get_traces(df_trajects: pd.DataFrame, video: str, user: str,
-               ds: str) -> np.array:
+
+def get_traces(df: pd.DataFrame, video: str, user: str, ds: str) -> np.array:
   if ds == 'all':
-    row = df_trajects.query(f"ds_user=='{user}' and ds_video=='{video}'")
+    row = df.query(f"ds_user=='{user}' and ds_video=='{video}'")
   else:
-    row = df_trajects.query(
-        f"ds=='{ds}' and ds_user=='{user}' and ds_video=='{video}'")
+    row = df.query(f"ds=='{ds}' and ds_user=='{user}' and ds_video=='{video}'")
   assert not row.empty
   return row['traject'].iloc[0]
 
 
-def get_video_ids(df_trajects: pd.DataFrame) -> np.array:
-  return df_trajects['ds_video'].unique()
+def get_video_ids(df: pd.DataFrame) -> np.array:
+  return df['ds_video'].unique()
 
 
-def get_user_ids(df_trajects: pd.DataFrame) -> np.array:
-  return df_trajects['ds_user'].unique()
+def get_user_ids(df: pd.DataFrame) -> np.array:
+  return df['ds_user'].unique()
 
 
-def get_ds_ids(df_trajects: pd.DataFrame) -> np.array:
-  return df_trajects['ds'].unique()
+def get_ds_ids(df: pd.DataFrame) -> np.array:
+  return df['ds'].unique()
 
 
-def get_imshow_from_trajects_hmps(df_trajects: pd.DataFrame,
-                                  tileset=TILESET_DEFAULT) -> px.imshow:
-  hmp_sums = df_trajects['traject_hmps'].apply(
-      lambda traces: np.sum(traces, axis=0))
+def get_imshow_from_trajects_hmps(df: pd.DataFrame, tileset=TILESET_DEFAULT) -> px.imshow:
+  hmp_sums = df['traject_hmps'].apply(lambda traces: np.sum(traces, axis=0))
   if isinstance(tileset, TileSetVoro):
     hmp_sums = np.reshape(hmp_sums, tileset.shape)
   heatmap = np.sum(hmp_sums, axis=0)
@@ -159,13 +152,7 @@ def show_one_traject(row: pd.Series, tileset=TILESET_DEFAULT) -> None:
   assert row.shape[0] == 1
   assert 'traject' in row.columns
   # subplot two figures
-  fig = make_subplots(rows=1,
-                      cols=2,
-                      specs=[[{
-                          'type': 'surface'
-                      }, {
-                          'type': 'image'
-                      }]])
+  fig = make_subplots(rows=1, cols=2, specs=[[{'type': 'surface'}, {'type': 'image'}]])
   # sphere
   sphere = VizSphere(tileset)
   sphere.add_trajectory(row['traject'].iloc[0])
@@ -186,36 +173,28 @@ def show_one_traject(row: pd.Series, tileset=TILESET_DEFAULT) -> None:
   fig.show()
 
 
-def show_sum_trajects(df_trajects: pd.DataFrame,
-                      tileset=TILESET_DEFAULT) -> None:
-  assert len(
-      df_trajects) <= 4, 'df_trajects >=4 does not get a good visualization'
-  assert not df_trajects.empty
+def show_sum_trajects(df: pd.DataFrame, tileset=TILESET_DEFAULT) -> None:
+  assert len(df) <= 4, 'df >=4 does not get a good visualization'
+  assert not df.empty
 
   # subplot two figures
-  fig = make_subplots(rows=1,
-                      cols=2,
-                      specs=[[{
-                          'type': 'surface'
-                      }, {
-                          'type': 'image'
-                      }]])
+  fig = make_subplots(rows=1, cols=2, specs=[[{'type': 'surface'}, {'type': 'image'}]])
 
   # sphere
   sphere = VizSphere(tileset)
-  for _, row in df_trajects.iterrows():
+  for _, row in df.iterrows():
     sphere.add_trajectory(row['traject'])
   for d in sphere.data:  # load all data from the sphere
     fig.append_trace(d, row=1, col=1)
 
   # heatmap
-  if 'traject_hmps' in df_trajects:
-    erp_heatmap = get_imshow_from_trajects_hmps(df_trajects, tileset)
+  if 'traject_hmps' in df:
+    erp_heatmap = get_imshow_from_trajects_hmps(df, tileset)
     fig.append_trace(erp_heatmap.data[0], row=1, col=2)
     if isinstance(tileset, TileSet):
       # fix given phi 0 being the north pole at Utils.cartesian_to_eulerian
       fig.update_yaxes(autorange='reversed')
 
-  title = f'{str(df_trajects.shape[0])}_trajects_{tileset.prefix}'
+  title = f'{str(df.shape[0])}_trajects_{tileset.prefix}'
   fig.update_layout(width=800, showlegend=False, title_text=title)
   fig.show()

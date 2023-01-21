@@ -99,13 +99,13 @@ def _calc_traject_hmp(traces, tileset) -> np.array:
   return np.apply_along_axis(tileset.request, 1, traces)
 
 
-def calc_trajects_hmps(df_trajects: pd.DataFrame,
+def calc_trajects_hmps(df: pd.DataFrame,
                        tileset=TILESET_DEFAULT) -> None:
   config.info('calculating heatmaps ...')
-  np_hmps = df_trajects['traject'].progress_apply(_calc_traject_hmp,
+  np_hmps = df['traject'].progress_apply(_calc_traject_hmp,
                                                   args=(tileset))
-  df_trajects['traject_hmps'] = pd.Series(np_hmps)
-  assert not df_trajects['traject_hmps'].isnull().any()
+  df['traject_hmps'] = pd.Series(np_hmps)
+  assert not df['traject_hmps'].isnull().any()
 
 
 def get_class_by_threshold(x, threshold_medium,
@@ -117,32 +117,32 @@ def get_class_by_threshold(x, threshold_medium,
 def _entropy_traject(traject) -> float:
   return scipy.stats.entropy(np.sum(traject, axis=0).reshape((-1)))
 
-def get_trajects_entropy_threshold(df_trajects: pd.DataFrame) -> tuple[float, float]:
-  idxs_sort = df_trajects['traject_entropy'].argsort()
-  trajects_len = len(df_trajects['traject_entropy'])
+def get_trajects_entropy_threshold(df: pd.DataFrame) -> tuple[float, float]:
+  idxs_sort = df['traject_entropy'].argsort()
+  trajects_len = len(df['traject_entropy'])
   idx_threshold_medium = idxs_sort[int(trajects_len * .60)]
   idx_threshold_hight = idxs_sort[int(trajects_len * .90)]
-  threshold_medium = df_trajects['traject_entropy'][idx_threshold_medium]
-  threshold_hight = df_trajects['traject_entropy'][idx_threshold_hight]
+  threshold_medium = df['traject_entropy'][idx_threshold_medium]
+  threshold_hight = df['traject_entropy'][idx_threshold_hight]
   return threshold_medium, threshold_hight
 
-def calc_trajects_entropy(df_trajects: pd.DataFrame) -> None:
+def calc_trajects_entropy(df: pd.DataFrame) -> None:
   # clean
-  df_trajects.drop(['traject_entropy', 'traject_entropy_class'],
+  df.drop(['traject_entropy', 'traject_entropy_class'],
                    axis=1,
                    errors='ignore')
   # calc traject_entropy
   config.info('calculating trajects entropy ...')
-  df_trajects['traject_entropy'] = df_trajects['traject'].progress_apply(
+  df['traject_entropy'] = df['traject'].progress_apply(
       calc_actual_entropy)
-  assert not df_trajects['traject_entropy'].isnull().any()
+  assert not df['traject_entropy'].isnull().any()
   # calc trajects_entropy_class
-  threshold_medium, threshold_hight = get_trajects_entropy_threshold(df_trajects)
-  df_trajects['traject_entropy_class'] = df_trajects[
+  threshold_medium, threshold_hight = get_trajects_entropy_threshold(df)
+  df['traject_entropy_class'] = df[
       'traject_entropy'].progress_apply(get_class_by_threshold,
                                         args=(threshold_medium,
                                               threshold_hight))
-  assert not df_trajects['traject_entropy_class'].isnull().any()
+  assert not df['traject_entropy_class'].isnull().any()
 
 
 def _entropy_user(same_user_rows) -> np.ndarray:
@@ -152,16 +152,16 @@ def _entropy_user(same_user_rows) -> np.ndarray:
   return entropy
 
 
-def calc_users_entropy(df_trajects: pd.DataFrame) -> pd.DataFrame:
-  if 'traject_hmps' not in df_trajects.columns:
-    calc_trajects_hmps(df_trajects)
+def calc_users_entropy(df: pd.DataFrame) -> pd.DataFrame:
+  if 'traject_hmps' not in df.columns:
+    calc_trajects_hmps(df)
   # clean
-  df_trajects.drop(['user_entropy', 'user_entropy_class'],
+  df.drop(['user_entropy', 'user_entropy_class'],
                    axis=1,
                    errors='ignore')
   # calc user_entropy
   config.info('calculating users entropy ...')
-  df_users = df_trajects.groupby(
+  df_users = df.groupby(
       ['ds_user']).progress_apply(_entropy_user).reset_index()
   df_users.columns = ['ds_user', 'user_entropy']
   assert not df_users['user_entropy'].isnull().any()
@@ -178,15 +178,15 @@ def calc_users_entropy(df_trajects: pd.DataFrame) -> pd.DataFrame:
 
   # merge right inplace
   # https://stackoverflow.com/questions/50849102/pandas-left-join-in-place
-  df_tmp = pd.merge(df_trajects[['ds_user']], df_users, on='ds_user')
-  df_trajects.assign(user_entropy=df_tmp['user_entropy'].values,
+  df_tmp = pd.merge(df[['ds_user']], df_users, on='ds_user')
+  df.assign(user_entropy=df_tmp['user_entropy'].values,
                      user_entropy_class=df_tmp['user_entropy_class'].values)
 
 
-def show_trajects_entropy(df_trajects: pd.DataFrame, facet=None) -> None:
+def show_trajects_entropy(df: pd.DataFrame, facet=None) -> None:
   assert {'traject_entropy',
-          'traject_entropy_class'}.issubset(df_trajects.columns)
-  fig = px.box(df_trajects,
+          'traject_entropy_class'}.issubset(df.columns)
+  fig = px.box(df,
                x='ds',
                y='traject_entropy',
                color='traject_entropy_class',
@@ -197,7 +197,7 @@ def show_trajects_entropy(df_trajects: pd.DataFrame, facet=None) -> None:
                width=900)
   fig.update_traces(marker=dict(size=1))
   fig.show()
-  px.histogram(df_trajects,
+  px.histogram(df,
                x='ds',
                y='traject_entropy_class',
                histfunc='count',
@@ -209,10 +209,10 @@ def show_trajects_entropy(df_trajects: pd.DataFrame, facet=None) -> None:
                width=900).show()
 
 
-def show_trajects_entropy_users(df_trajects: pd.DataFrame, facet=None) -> None:
+def show_trajects_entropy_users(df: pd.DataFrame, facet=None) -> None:
   assert {'traject_entropy',
-          'traject_entropy_class'}.issubset(df_trajects.columns)
-  fig = px.box(df_trajects,
+          'traject_entropy_class'}.issubset(df.columns)
+  fig = px.box(df,
                x='ds',
                y='user_entropy',
                points='all',
@@ -223,7 +223,7 @@ def show_trajects_entropy_users(df_trajects: pd.DataFrame, facet=None) -> None:
                width=900)
   fig.update_traces(marker=dict(size=1))
   fig.show()
-  px.histogram(df_trajects,
+  px.histogram(df,
                x='ds',
                y='user_entropy_class',
                histfunc='count',
@@ -239,32 +239,32 @@ def _poles_prc(traces) -> float:
   return np.count_nonzero(abs(traces[:, 2]) > 0.7) / len(traces)
 
 
-def calc_trajects_poles_prc(df_trajects: pd.DataFrame) -> None:
+def calc_trajects_poles_prc(df: pd.DataFrame) -> None:
   # clean
-  df_trajects.drop(['poles_prc', 'poles_class'], axis=1, errors='ignore')
+  df.drop(['poles_prc', 'poles_class'], axis=1, errors='ignore')
   # calc poles_prc
-  df_trajects['poles_prc'] = pd.Series(
-      df_trajects['traject'].progress_apply(_poles_prc))
-  assert not df_trajects['poles_prc'].isna().any()
-  idxs_sort = df_trajects['poles_prc'].argsort()
-  trajects_len = len(df_trajects['poles_prc'])
+  df['poles_prc'] = pd.Series(
+      df['traject'].progress_apply(_poles_prc))
+  assert not df['poles_prc'].isna().any()
+  idxs_sort = df['poles_prc'].argsort()
+  trajects_len = len(df['poles_prc'])
   idx_threshold_medium = idxs_sort[int(trajects_len * .60)]
   idx_threshold_hight = idxs_sort[int(trajects_len * .90)]
-  threshold_medium = df_trajects['poles_prc'][idx_threshold_medium]
-  threshold_hight = df_trajects['poles_prc'][idx_threshold_hight]
+  threshold_medium = df['poles_prc'][idx_threshold_medium]
+  threshold_hight = df['poles_prc'][idx_threshold_hight]
   # calc poles_class
-  df_trajects['poles_class'] = df_trajects['poles_prc'].progress_apply(
+  df['poles_class'] = df['poles_prc'].progress_apply(
       get_class_by_threshold, args=(threshold_medium, threshold_hight))
-  assert not df_trajects['poles_class'].isna().any()
+  assert not df['poles_class'].isna().any()
 
 
-def show_trajects_poles_prc(df_trajects: pd.DataFrame) -> None:
-  assert {'poles_prc', 'poles_class'}.issubset(df_trajects.columns)
-  fig = px.scatter(df_trajects,
+def show_trajects_poles_prc(df: pd.DataFrame) -> None:
+  assert {'poles_prc', 'poles_class'}.issubset(df.columns)
+  fig = px.scatter(df,
                    y='ds_user',
                    x='poles_prc',
                    color='poles_class',
-                   hover_data=[df_trajects.index],
+                   hover_data=[df.index],
                    title='trajects poles_perc',
                    width=700)
   fig.update_yaxes(showticklabels=False)
