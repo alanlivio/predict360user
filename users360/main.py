@@ -5,8 +5,7 @@ import sys
 
 from . import config
 from .entropy import calc_trajects_entropy
-from .evaluator import Evaluator, compare_results
-from .trainer import Trainer
+from .trainer import Trainer, compare_results
 from .trajects import *
 
 if __name__ == '__main__':
@@ -14,7 +13,7 @@ if __name__ == '__main__':
   psr = argparse.ArgumentParser()
   psr.description = 'train or evaluate users360 models and datasets'
 
-  # main actions params
+  # actions params
   grp = psr.add_mutually_exclusive_group()
   grp.add_argument('-calculate_entropy',
                    action='store_true',
@@ -23,40 +22,7 @@ if __name__ == '__main__':
   grp.add_argument('-train', action='store_true', help='train model')
   grp.add_argument('-evaluate', action='store_true', help='evaluate model')
 
-  # train only params
-  psr.add_argument('-epochs',
-                   nargs='?',
-                   type=int,
-                   default=100,
-                   help='epochs numbers (default is 500)')
-
-  psr.add_argument('-train_entropy',
-                   nargs='?',
-                   type=str,
-                   default='all',
-                   choices=config.ARGS_ENTROPY_NAMES,
-                   help='entropy to filter data model train  (default all)')
-
-  # evaluate only params
-  test_model_l = config.ARGS_ENTROPY_NAMES + ['auto', 'auto_m_window', 'auto_since_start']
-  psr.add_argument('-test_model_entropy',
-                   nargs='?',
-                   type=str,
-                   default='all',
-                   choices=test_model_l,
-                   help='''entropy of the model to be used.
-                          auto selects from traject entropy.
-                          auto_window selects from last window''')
-  psr.add_argument('-test_entropy',
-                   nargs='?',
-                   type=str,
-                   default='all',
-                   choices=config.ARGS_ENTROPY_NAMES,
-                   help='entropy class to filter -evaluate data (default all)')
-  psr.add_argument('-oneuser', nargs='?', type=str, help='one user for evaluation')
-  psr.add_argument('-onevideo', nargs='?', type=str, help='one video for evaluation')
-
-  # train/evaluate params
+  # Trainer params
   psr.add_argument('-gpu_id', nargs='?', type=int, default=0, help='Used cuda gpu (default: 0)')
   psr.add_argument('-model_name',
                    nargs='?',
@@ -92,20 +58,34 @@ if __name__ == '__main__':
   psr.add_argument('-dry_run',
                    action='store_true',
                    help='show train/test info but stop before perform')
+  psr.add_argument('-train_entropy',
+                   nargs='?',
+                   type=str,
+                   default='all',
+                   choices=config.ARGS_ENTROPY_NAMES +
+                   ['auto', 'auto_m_window', 'auto_since_start'],
+                   help='''entropy to filter train data (default all).
+                           -evaluate accepts auto, auto_m_window, auto_since_start''')
+
+  # Trainer.train() only params
+  psr.add_argument('-epochs',
+                   nargs='?',
+                   type=int,
+                   default=100,
+                   help='epochs numbers (default is 500)')
+
+  # Trainer.evaluate() only params
+  psr.add_argument('-test_entropy',
+                   nargs='?',
+                   type=str,
+                   default='all',
+                   choices=config.ARGS_ENTROPY_NAMES,
+                   help='entropy to filter test data (default all)')
+  psr.add_argument('-test_user', nargs='?', default='', type=str, help='user to filter test data')
+  psr.add_argument('-test_video', nargs='?', default='', type=str, help='video to filter test data')
 
   args = psr.parse_args()
 
-  # global vars
-  cfg = {}
-  common_args = {
-      'dataset_name': args.dataset_name,
-      'model_name': args.model_name,
-      'perc_test': args.perc_test,
-      'init_window': args.init_window,
-      'm_window': args.m_window,
-      'h_window': args.h_window,
-      'dry_run': args.dry_run
-  }
   # -calculate_entropy
   if args.calculate_entropy:
     df_tmp = get_df_trajects()
@@ -114,16 +94,24 @@ if __name__ == '__main__':
   # -compare_results
   elif args.compare_results:
     compare_results(args.model_name, args.perc_test)
-  # -train
-  elif args.train:
-    trn = Trainer(**common_args, train_entropy=args.train_entropy, epochs=args.epochs)
-    trn.train()
-  # -evaluate
-  elif args.evaluate:
-    etr = Evaluator(**common_args,
-                    test_model_entropy=args.test_model_entropy,
-                    test_entropy=args.test_entropy,
-                    oneuser=args.oneuser,
-                    onevideo=args.onevideo)
-    etr.evaluate()
+  else:
+    trn_args = {
+        'dataset_name': args.dataset_name,
+        'model_name': args.model_name,
+        'perc_test': args.perc_test,
+        'init_window': args.init_window,
+        'm_window': args.m_window,
+        'h_window': args.h_window,
+        'dry_run': args.dry_run,
+        'epochs': args.epochs,
+        'train_entropy': args.train_entropy,
+        'test_entropy': args.test_entropy,
+        'test_user': args.test_user,
+        'test_video': args.test_video
+    }
+    trn = Trainer(**trn_args)
+    if args.train:
+      trn.train()
+    elif args.evaluate:
+      trn.evaluate()
   sys.exit()
