@@ -84,7 +84,7 @@ class Trainer():
   dry_run: bool = False
 
   def __post_init__(self) -> None:
-    assert self.model_name in config.MODEL_NAMES
+    assert self.model_name in config.ARGS_MODEL_NAMES
     assert self.dataset_name in config.ARGS_DS_NAMES
     assert self.train_entropy in config.ARGS_ENTROPY_NAMES + config.ARGS_ENTROPY_AUTO_NAMES
     assert not (self.train_entropy in config.ARGS_ENTROPY_AUTO_NAMES and

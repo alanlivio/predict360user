@@ -26,8 +26,8 @@ if __name__ == '__main__':
   psr.add_argument('-gpu_id', nargs='?', type=int, default=0, help='Used cuda gpu (default: 0)')
   psr.add_argument('-model_name',
                    nargs='?',
-                   choices=config.MODEL_NAMES,
-                   default=config.MODEL_NAMES[0],
+                   choices=config.ARGS_MODEL_NAMES,
+                   default=config.ARGS_MODEL_NAMES[0],
                    help='reference model to used (default: pos_only)')
   psr.add_argument('-dataset_name',
                    nargs='?',
