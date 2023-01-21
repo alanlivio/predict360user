@@ -26,11 +26,12 @@ def get_train_test_split(df: pd.DataFrame, entropy: str,
                          perc_test: float) -> tuple[pd.DataFrame, pd.DataFrame]:
   args = {'test_size': perc_test, 'random_state': 1}
   if entropy != 'all':
-    x_train, x_test = train_test_split(df[df['traject_entropy_class'] == entropy], **args)
-  else:
-    x_train, x_test = train_test_split(df, **args)
-
-  return x_train, x_test
+    if entropy.endswith('_hmp'):
+      hmp_entropy = entropy.removesuffix('_hmp')
+      df = df[df['hmp_entropy_class'] == hmp_entropy]
+    else:
+      df = df[df['traject_entropy_class'] == entropy]
+  return train_test_split(df, **args)
 
 
 def count_traject_entropy_classes(df) -> tuple[int, int, int, int]:
@@ -83,6 +84,10 @@ class Trainer():
   dry_run: bool = False
 
   def __post_init__(self) -> None:
+    assert self.model_name in config.MODEL_NAMES
+    assert self.dataset_name in config.ARGS_DS_NAMES
+    assert self.train_entropy in config.ARGS_ENTROPY_NAMES + config.ARGS_ENTROPY_AUTO_NAMES
+    assert self.test_entropy in config.ARGS_ENTROPY_NAMES
     dataset_suffix = '' if self.dataset_name == 'all' else f'_{self.dataset_name}'
     entropy_suffix = '' if self.train_entropy == 'all' else f'_{self.train_entropy}_entropy'
     self.model_fullname = self.model_name + dataset_suffix + entropy_suffix
@@ -282,7 +287,7 @@ class Trainer():
     # predict by each pred_windows
     errors_per_video = {}
     errors_per_timestep = {}
-    threshold_medium, threshold_hight = get_trajects_entropy_threshold(self.df)
+    threshold_medium, threshold_hight = calc_column_thresholds(self.df, 'traject_entropy')
     for ids in tqdm(self.x_test_wins, desc='position predictions'):
       user = ids['user']
       video = ids['video']

@@ -12,26 +12,23 @@ class Test(unittest.TestCase):
 
   def test_init(self) -> None:
     trn = Trainer()
+    assert trn.model_fullname == f'pos_only'
     assert trn.model_dir == join(config.DATADIR, 'pos_only')
-    for name in config.ARGS_ENTROPY_NAMES[1:]:
-      trn = Trainer(train_entropy=name)
-      assert trn.model_fullname == f'pos_only_{name}_entropy'
-      assert trn.model_dir == join(config.DATADIR, f'pos_only_{name}_entropy')
-      assert trn.test_res_basename == join(trn.model_dir, 'test_0,2_all')
-      assert trn.evaluate_auto is False
-      trn = Trainer(train_entropy=name, dataset_name='david')
-      assert trn.model_fullname == f'pos_only_david_{name}_entropy'
-      assert trn.model_dir == join(config.DATADIR, f'pos_only_david_{name}_entropy')
-      assert trn.test_res_basename == join(trn.model_dir, 'test_0,2_all')
-      assert trn.evaluate_auto is False
-    for name in ['low', 'medium', 'hight']:
-      trn = Trainer(test_entropy=name)
-      assert trn.test_res_basename == join(trn.model_dir, f'test_0,2_{name}')
-      assert trn.evaluate_auto is False
-    for name in config.ARGS_ENTROPY_AUTO_NAMES:
-      trn = Trainer(test_entropy=name)
-      assert trn.test_res_basename == join(trn.model_dir, f'test_0,2_{name}')
-      assert trn.evaluate_auto is True
+    assert trn.test_res_basename == join(trn.model_dir, 'test_0,2_all')
+    assert trn.evaluate_auto is False
+    trn = Trainer(dataset_name='david')
+    assert trn.model_fullname == f'pos_only_david'
+    assert trn.evaluate_auto is False
+    for train_name in config.ARGS_ENTROPY_NAMES[1:]+config.ARGS_ENTROPY_AUTO_NAMES:
+      for test_entropy in config.ARGS_ENTROPY_NAMES[1:]:
+        trn = Trainer(train_entropy=train_name, test_entropy=test_entropy)
+        assert trn.model_fullname == f'pos_only_{train_name}_entropy'
+        assert trn.model_dir == join(config.DATADIR, f'pos_only_{train_name}_entropy')
+        assert trn.test_res_basename == join(trn.model_dir, f'test_0,2_{test_entropy}')
+        if test_entropy in config.ARGS_ENTROPY_AUTO_NAMES:
+          assert trn.evaluate_auto is True
+        else:
+          assert trn.evaluate_auto is False
 
   def test_train_test_split(self) -> None:
     self.df = get_df_trajects()
