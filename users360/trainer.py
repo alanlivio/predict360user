@@ -11,7 +11,8 @@ import pandas as pd
 import plotly.express as px
 from sklearn.model_selection import train_test_split
 
-from users360.head_motion_prediction.Utils import (all_metrics, cartesian_to_eulerian,
+from users360.head_motion_prediction.Utils import (all_metrics,
+                                                   cartesian_to_eulerian,
                                                    eulerian_to_cartesian)
 
 from .entropy import *
@@ -105,7 +106,8 @@ class Trainer():
 
   def create_model(self) -> Any:
     if self.model_name == 'pos_only':
-      from users360.head_motion_prediction.position_only_baseline import create_pos_only_model
+      from users360.head_motion_prediction.position_only_baseline import \
+          create_pos_only_model
       return create_pos_only_model(self.m_window, self.h_window)
     else:
       raise NotImplementedError
@@ -256,9 +258,11 @@ class Trainer():
       model_weights = join(self.model_dir, 'weights.hdf5')
       config.info(f'model_weights={model_weights}')
     if self.train_entropy.startswith('auto'):
-      model_weights_low = join(self.model_ds_dir + "_low_entropy", 'weights.hdf5')
-      model_weights_medium = join(self.model_ds_dir + "_medium_entropy", 'weights.hdf5')
-      model_weights_hight = join(self.model_ds_dir + "_hight_entropy", 'weights.hdf5')
+      dataset_suffix = '' if self.dataset_name == 'all' else f'_{self.dataset_name}'
+      model_ds_dir = self.model_name + dataset_suffix
+      model_weights_low = join(model_ds_dir + "_low_entropy", 'weights.hdf5')
+      model_weights_medium = join(model_ds_dir + "_medium_entropy", 'weights.hdf5')
+      model_weights_hight = join(model_ds_dir + "_hight_entropy", 'weights.hdf5')
       config.info('model_weights_low=' + model_weights_low)
       config.info('model_weights_medium=' + model_weights_medium)
       config.info('model_weights_hight=' + model_weights_hight)
