@@ -170,33 +170,6 @@ def show_trajects_entropy(df: pd.DataFrame, facet=None) -> None:
                title='traject_entropy_class by ds',
                width=900).show()
 
-
-def show_trajects_entropy_users(df: pd.DataFrame, facet=None) -> None:
-  assert {'traject_entropy',
-          'traject_entropy_class'}.issubset(df.columns)
-  fig = px.box(df,
-               x='ds',
-               y='user_entropy',
-               points='all',
-               color='user_entropy_class',
-               facet_row=facet,
-               color_discrete_map=ENTROPY_CLASS_COLORS,
-               title='user_entropy by ds',
-               width=900)
-  fig.update_traces(marker=dict(size=1))
-  fig.show()
-  px.histogram(df,
-               x='ds',
-               y='user_entropy_class',
-               histfunc='count',
-               barmode='group',
-               facet_row=facet,
-               color='user_entropy_class',
-               color_discrete_map=ENTROPY_CLASS_COLORS,
-               title='user_entropy_class by ds',
-               width=900).show()
-
-
 def _poles_prc(traces) -> float:
   return np.count_nonzero(abs(traces[:, 2]) > 0.7) / len(traces)
 

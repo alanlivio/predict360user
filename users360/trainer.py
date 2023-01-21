@@ -47,7 +47,6 @@ def show_train_test_split(df: pd.DataFrame, entropy: str, perc_test: float) -> N
   x_test['partition'] = 'test'
   df = pd.concat([x_train, x_test])
   show_trajects_entropy(df, facet='partition')
-  show_trajects_entropy_users(df, facet='partition')
 
 
 def transform_batches_cartesian_to_normalized_eulerian(positions_in_batch) -> np.array:
