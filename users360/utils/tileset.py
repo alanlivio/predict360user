@@ -1,6 +1,3 @@
-'''
-Provides some TileSet class
-'''
 from enum import Enum, auto
 from functools import cache
 

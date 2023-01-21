@@ -1,6 +1,3 @@
-"""
-Provides some data functions
-"""
 import io
 import os
 import pickle

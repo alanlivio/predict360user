@@ -1,6 +1,3 @@
-"""
-Provides shared data
-"""
 import logging
 import pathlib
 

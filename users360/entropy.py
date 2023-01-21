@@ -1,7 +1,3 @@
-"""
-Provides some entropy functions
-"""
-
 from typing import Literal
 
 import numpy as np

@@ -1,6 +1,3 @@
-"""
-Provides some fov functions
-"""
 from functools import cache
 
 import numpy as np
