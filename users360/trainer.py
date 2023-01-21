@@ -97,6 +97,7 @@ class Trainer():
           f'{self.test_res_basename}_{self.test_entropy}_{self.test_user}_{self.test_video}')
     else:
       self.test_res_basename = join(self.model_dir, f'{self.test_res_basename}_{self.test_entropy}')
+    config.info(self)
 
   def create_model(self) -> Any:
     if self.model_name == 'pos_only':
@@ -174,7 +175,6 @@ class Trainer():
 
   def train(self) -> None:
     config.info('train()')
-    config.info(self)
     self.partition_train()
     fmt = 'x_train has {} trajectories: {} low, {} medium, {} hight'
     config.info(fmt.format(*count_traject_entropy_classes(self.x_train)))
@@ -235,7 +235,6 @@ class Trainer():
 
   def evaluate(self) -> None:
     config.info('evaluate()')
-    config.info(self)
     self.partition_evaluate()
     fmt = 'x_test has {} trajectories: {} low, {} medium, {} hight'
     config.info(fmt.format(*count_traject_entropy_classes(self.x_test)))
