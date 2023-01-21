@@ -96,7 +96,7 @@ class Trainer():
     self.model_dir = join(config.DATADIR, self.model_fullname)
     self.model_weights = join(self.model_dir, 'weights.hdf5')
     self.end_window = self.h_window
-    self.evaluate_auto = self.test_entropy.startswith('auto')
+    self.evaluate_auto = self.train_entropy.startswith('auto')
     self.test_res_basename = f"test_{str(self.perc_test).replace('.',',')}"
     if self.test_user and self.test_video:
       self.test_res_basename = join(
