@@ -87,6 +87,8 @@ class Trainer():
     assert self.model_name in config.MODEL_NAMES
     assert self.dataset_name in config.ARGS_DS_NAMES
     assert self.train_entropy in config.ARGS_ENTROPY_NAMES + config.ARGS_ENTROPY_AUTO_NAMES
+    assert not (self.train_entropy in config.ARGS_ENTROPY_AUTO_NAMES and
+                self.test_entropy.endswith('_hmp')), 'test _hmp entropy is not supoported for auto model'
     assert self.test_entropy in config.ARGS_ENTROPY_NAMES
     dataset_suffix = '' if self.dataset_name == 'all' else f'_{self.dataset_name}'
     entropy_suffix = '' if self.train_entropy == 'all' else f'_{self.train_entropy}_entropy'
