@@ -304,9 +304,9 @@ class Trainer():
 
       if self.model_name == 'pos_only':
         encoder_pos_inputs_for_sample = np.array(
-            [get_traces(self.df, video, user, self.dataset)[x_i - self.m_window:x_i]])
+            [get_traces(self.df, video, user, self.dataset_name)[x_i - self.m_window:x_i]])
         decoder_pos_inputs_for_sample = np.array(
-            [get_traces(self.df, video, user, self.dataset)[x_i:x_i + 1]])
+            [get_traces(self.df, video, user, self.dataset_name)[x_i:x_i + 1]])
       else:
         raise NotImplementedError
 
@@ -316,11 +316,11 @@ class Trainer():
         if self.train_entropy == 'auto':
           traject_entropy_class = ids['traject_entropy_class']
         if self.train_entropy == 'auto_m_window':
-          window = get_traces(self.df, video, user, self.dataset)[x_i - self.m_window:x_i]
+          window = get_traces(self.df, video, user, self.dataset_name)[x_i - self.m_window:x_i]
           a_ent = calc_actual_entropy(window)
           traject_entropy_class = get_class_by_threshold(a_ent, threshold_medium, threshold_hight)
         elif self.train_entropy == 'auto_since_start':
-          window = get_traces(self.df, video, user, self.dataset)[0:x_i]
+          window = get_traces(self.df, video, user, self.dataset_name)[0:x_i]
           a_ent = calc_actual_entropy(window)
           traject_entropy_class = get_class_by_threshold(a_ent, threshold_medium, threshold_hight)
         else:
@@ -352,7 +352,7 @@ class Trainer():
       traject_row[self.model_fullname][index][x_i] = model_prediction
 
       # save error
-      groundtruth = get_traces(self.df, video, user, self.dataset)[x_i + 1:x_i + self.h_window + 1]
+      groundtruth = get_traces(self.df, video, user, self.dataset_name)[x_i + 1:x_i + self.h_window + 1]
       if not video in errors_per_video:
         errors_per_video[video] = {}
       for t in range(len(groundtruth)):
@@ -380,7 +380,7 @@ class Trainer():
     # avg_error_per_timestep.png
     plt.plot(np.arange(self.h_window) + 1 * RATE, avg_error_per_timestep)
     met = 'orthodromic'
-    plt.title(f'Average {met} in {self.dataset} dataset using {self.model} model')
+    plt.title(f'Average {met} in {self.dataset_name} dataset using {self.model} model')
     plt.ylabel(met)
     plt.xlim(2.5)
     plt.xlabel('Prediction step s (sec.)')
