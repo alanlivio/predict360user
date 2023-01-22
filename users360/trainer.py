@@ -102,7 +102,7 @@ class Trainer():
     self.model_dir = join(config.DATADIR, self.model_fullname)
     self.model_weights = join(self.model_dir, 'weights.hdf5')
     self.end_window = self.h_window
-    self.evaluate_auto = self.train_entropy.startswith('auto')
+    self.using_auto = self.train_entropy.startswith('auto')
     self.test_res_basename = f"test_{str(self.perc_test).replace('.',',')}"
     if self.test_user and self.test_video:
       self.test_res_basename = join(
@@ -187,6 +187,7 @@ class Trainer():
       for trace_id in range( self.init_window, row[1]['traject'].shape[0] -self.end_window)]
 
   def train(self) -> None:
+    assert not self.using_auto, "train(): train_entropy should not be auto"
     config.info('train()')
     self.partition_train()
     fmt = 'x_train has {} trajectories: {} low, {} medium, {} hight'
@@ -277,7 +278,7 @@ class Trainer():
     if self.dry_run:
       return
 
-    if self.evaluate_auto:
+    if self.using_auto:
       assert exists(model_weights_low)
       assert exists(model_weights_medium)
       assert exists(model_weights_hight)
@@ -310,7 +311,7 @@ class Trainer():
         raise NotImplementedError
 
       current_model = model
-      if self.evaluate_auto:
+      if self.using_auto:
         # traject_entropy_class
         if self.train_entropy == 'auto':
           traject_entropy_class = ids['traject_entropy_class']
