@@ -27,11 +27,11 @@ def get_train_test_split(df: pd.DataFrame, entropy: str,
   args = {'test_size': perc_test, 'random_state': 1}
   if entropy != 'all':
     if entropy.endswith('_hmp'):
-      hmp_entropy = entropy.removesuffix('_hmp')
+      entropy = entropy.removesuffix('_hmp')
       if entropy == 'nohight':
         df = df[df['hmp_entropy_class'] != 'hight']
       else:
-        df = df[df['hmp_entropy_class'] == hmp_entropy]
+        df = df[df['hmp_entropy_class'] == entropy]
     else:
       if entropy == 'nohight':
         df = df[df['traject_entropy_class'] != 'hight']
