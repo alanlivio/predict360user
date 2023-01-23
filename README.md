@@ -23,12 +23,12 @@ Then install requirements,
 pip install -r requeriments.txt
 ```
 
-Ensure users360/head_motion_prediction submodule.
+Ensure users360/head_motion_prediction submodule and patch it.
 
 ```bash
 git submodule init
 git submodule update
-./patch_submodule.sh
+sed -i -e 's/import keras/import tensorflow.keras/g' -e 's/from keras/from tensorflow.keras/g'  ./users360/head_motion_prediction/*.py
 ```
 
 ## Train and evaluate
