@@ -266,7 +266,7 @@ class Trainer():
       config.info(f'model_weights={model_weights}')
     if self.train_entropy.startswith('auto'):
       dataset_suffix = '' if self.dataset_name == 'all' else f'_{self.dataset_name}'
-      model_ds_dir = self.model_name + dataset_suffix
+      model_ds_dir = join(config.DATADIR, self.model_name + dataset_suffix)
       model_weights_low = join(model_ds_dir + "_low_entropy", 'weights.hdf5')
       model_weights_medium = join(model_ds_dir + "_medium_entropy", 'weights.hdf5')
       model_weights_hight = join(model_ds_dir + "_hight_entropy", 'weights.hdf5')
@@ -380,7 +380,7 @@ class Trainer():
     # avg_error_per_timestep.png
     plt.plot(np.arange(self.h_window) + 1 * RATE, avg_error_per_timestep)
     met = 'orthodromic'
-    plt.title(f'Average {met} in {self.dataset_name} dataset using {self.model} model')
+    plt.title(f'Average {met} in {self.dataset_name} dataset using {self.model_name} model')
     plt.ylabel(met)
     plt.xlim(2.5)
     plt.xlabel('Prediction step s (sec.)')
