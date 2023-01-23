@@ -3,6 +3,11 @@
 This project extends [Rondon 360-videos models/dataset collection](https://gitlab.com/miguelfromeror/head-motion-prediction) with support to:
 
 * access users' trajectories at datasets as a panda.DataFrame
+
+| ds    | ds_user | ds_video      | traject | traject_hmps |
+| ----- | ------- | ------------- | ------- | ------------ |
+| david | david_0 | david_10_Cows | [[...   | [[[...       |
+
 * view users' trajectories with a Plotly 3d visualization
 * perform user clustering by entropy
 * perform tileset analyses
