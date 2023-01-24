@@ -310,7 +310,6 @@ class Trainer():
       else:
         raise NotImplementedError
 
-      current_model = model
       if self.using_auto:
         # traject_entropy_class
         if self.train_entropy == 'auto':
@@ -325,19 +324,18 @@ class Trainer():
           traject_entropy_class = get_class_by_threshold(a_ent, threshold_medium, threshold_hight)
         else:
           raise RuntimeError()
-        # current_model
         if traject_entropy_class == 'low':
-          current_model = model_low
+          model = model_low
         elif traject_entropy_class == 'medium':
-          current_model = model_medium
+          model = model_medium
         elif traject_entropy_class == 'hight':
-          current_model = model_hight
+          model = model_hight
         else:
           raise NotImplementedError
 
       # predict
       if self.model_name == 'pos_only':
-        model_pred = current_model.predict([
+        model_pred = model.predict([
             transform_batches_cartesian_to_normalized_eulerian(encoder_pos_inputs_for_sample),
             transform_batches_cartesian_to_normalized_eulerian(decoder_pos_inputs_for_sample)
         ])[0]
