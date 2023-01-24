@@ -314,7 +314,7 @@ class Trainer():
         # traject_entropy_class
         if self.train_entropy == 'auto':
           traject_entropy_class = ids['traject_entropy_class']
-        if self.train_entropy == 'auto_m_window':
+        elif self.train_entropy == 'auto_m_window':
           window = get_traces(self.df, video, user, self.dataset_name)[x_i - self.m_window:x_i]
           a_ent = calc_actual_entropy(window)
           traject_entropy_class = get_class_by_threshold(a_ent, threshold_medium, threshold_hight)
