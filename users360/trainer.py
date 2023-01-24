@@ -195,15 +195,17 @@ class Trainer():
     fmt = 'x_val has {} trajectories: {} low, {} medium, {} hight'
     config.info(fmt.format(*count_traject_entropy_classes(self.x_val)))
 
-    if not exists(self.model_dir):
-      os.makedirs(self.model_dir)
     with redirect_stderr(open(os.devnull, 'w')):
       os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
       import tensorflow.keras as keras
       from keras.callbacks import CSVLogger, ModelCheckpoint, TensorBoard
 
+    config.info('creating model ...')
     if self.dry_run:
       return
+    config.info('model_dir=' + self.model_dir)
+    if not exists(self.model_dir):
+      os.makedirs(self.model_dir)
     model = self.create_model()
     assert model
     steps_per_ep_train = np.ceil(len(self.x_train_wins) / BATCH_SIZE)
@@ -260,7 +262,6 @@ class Trainer():
     # creating model
     config.info('creating model ...')
     config.info('model_dir=' + self.model_dir)
-    # model_weights
     if not self.train_entropy.startswith('auto'):
       model_weights = join(self.model_dir, 'weights.hdf5')
       config.info(f'model_weights={model_weights}')
@@ -277,6 +278,8 @@ class Trainer():
 
     if self.dry_run:
       return
+    if not exists(self.model_dir):
+      os.makedirs(self.model_dir)
 
     if self.using_auto:
       assert exists(model_weights_low)
