@@ -191,7 +191,8 @@ class Trainer():
     config.info('train()')
     config.info('model_dir=' + self.model_dir)
     if exists (self.model_weights):
-      raise RuntimeError(f"{self.model_weights} already exist")
+      config.info('train() previous done')
+      sys.exit()
     self.partition_train()
     fmt = 'x_train has {} trajectories: {} low, {} medium, {} hight'
     config.info(fmt.format(*count_traject_entropy_classes(self.x_train)))
@@ -255,7 +256,8 @@ class Trainer():
     config.info('evaluate()')
     config.info('model_dir=' + self.model_dir)
     if exists (f'{self.test_res_basename}_avg_error_per_timestep.csv'):
-      raise RuntimeError(f"{self.test_res_basename} already exist")
+      config.info('evalute() previous done')
+      sys.exit()
     self.partition_evaluate()
     fmt = 'x_test has {} trajectories: {} low, {} medium, {} hight'
     config.info(fmt.format(*count_traject_entropy_classes(self.x_test)))
