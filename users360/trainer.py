@@ -204,6 +204,8 @@ class Trainer():
     if self.dry_run:
       return
     config.info('model_dir=' + self.model_dir)
+    if exists (self.model_weights):
+      raise RuntimeError(f"{self.model_weights} already exist")
     if not exists(self.model_dir):
       os.makedirs(self.model_dir)
     model = self.create_model()
@@ -278,9 +280,10 @@ class Trainer():
 
     if self.dry_run:
       return
+    if exists (f'{self.test_res_basename}_avg_error_per_timestep.csv'):
+      raise RuntimeError(f"{self.model_weights} already exist")
     if not exists(self.model_dir):
       os.makedirs(self.model_dir)
-
     if self.using_auto:
       assert exists(model_weights_low)
       assert exists(model_weights_medium)
