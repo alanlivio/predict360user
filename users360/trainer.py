@@ -8,6 +8,7 @@ from typing import Any, Generator
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import plotly
 import plotly.express as px
 from sklearn.model_selection import train_test_split
 
@@ -408,29 +409,30 @@ class Trainer():
     config.info(f'saving {result_file}')
 
 
-def compare_results(model_name, test_res_basename) -> None:
+def compare_results(model_name, dataset_name) -> None:
+  dir_prefix = model_name + (f'_{dataset_name}' if dataset_name != 'all' else '')
+  config.info(f'dir_prefix={dir_prefix}')
   suffix = '_avg_error_per_timestep.csv'
-
-  # find files with suffix
-  dirs = [d for d in os.listdir(config.DATADIR) if d.startswith(model_name)]
+  # find files test_ files
+  dirs = [d for d in os.listdir(config.DATADIR) if os.path.isdir(join(config.DATADIR, d)) and d.startswith(dir_prefix)]
   csv_file_l = [(dir_name, file_name) for dir_name in dirs
                 for file_name in os.listdir(join(config.DATADIR, dir_name))
-                if (file_name.endswith(suffix) and file_name.startswith(test_res_basename))]
+                if file_name.startswith('test_') and file_name.endswith(suffix)]
   csv_data_l = [
       (f'{dir_name}_{file_name.removesuffix(suffix)}', horizon, error)
       for (dir_name, file_name) in csv_file_l
       for horizon, error in enumerate(np.loadtxt(join(config.DATADIR, dir_name, file_name)))
   ]
-  assert csv_data_l, f'no data/<model>/{test_res_basename}_*, run -evaluate'
+  assert csv_data_l, 'no data/<method>/test_*, run -evaluate'
 
   # plot image
-  df_compare = pd.DataFrame(csv_data_l, columns=['name', 'horizon', 'vidoes_avg_error'])
-  df_compare = df_compare.sort_values(ascending=False, by="vidoes_avg_error")
+  df_compare = pd.DataFrame(csv_data_l, columns=['name', 'horizon', 'avg_error_per_timestep'])
+  df_compare = df_compare.sort_values(ascending=False, by="avg_error_per_timestep")
   fig = px.line(df_compare,
                 x='horizon',
-                y="vidoes_avg_error",
+                y="avg_error_per_timestep",
                 color='name',
                 color_discrete_sequence=px.colors.qualitative.G10)
-  result_file = join(config.DATADIR, f'compare_{model_name}.png')
+  result_file = join(config.DATADIR, f'compare_{model_name}.html')
   config.info(f'saving {result_file}')
-  fig.write_image(result_file)
+  plotly.offline.plot(fig, filename=result_file)

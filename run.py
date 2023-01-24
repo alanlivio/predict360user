@@ -92,7 +92,7 @@ if __name__ == '__main__':
     dump_df_trajects(df_tmp)
   # -compare_results
   elif args.compare_results:
-    compare_results(args.model_name, args.perc_test)
+    compare_results(args.model_name, args.dataset_name)
   else:
     trn_args = {
         'dataset_name': args.dataset_name,
