@@ -189,6 +189,9 @@ class Trainer():
   def train(self) -> None:
     assert not self.using_auto, "train(): train_entropy should not be auto"
     config.info('train()')
+    config.info('model_dir=' + self.model_dir)
+    if exists (self.model_weights):
+      raise RuntimeError(f"{self.model_weights} already exist")
     self.partition_train()
     fmt = 'x_train has {} trajectories: {} low, {} medium, {} hight'
     config.info(fmt.format(*count_traject_entropy_classes(self.x_train)))
@@ -203,9 +206,6 @@ class Trainer():
     config.info('creating model ...')
     if self.dry_run:
       return
-    config.info('model_dir=' + self.model_dir)
-    if exists (self.model_weights):
-      raise RuntimeError(f"{self.model_weights} already exist")
     if not exists(self.model_dir):
       os.makedirs(self.model_dir)
     model = self.create_model()
@@ -253,6 +253,9 @@ class Trainer():
 
   def evaluate(self) -> None:
     config.info('evaluate()')
+    config.info('model_dir=' + self.model_dir)
+    if exists (f'{self.test_res_basename}_avg_error_per_timestep.csv'):
+      raise RuntimeError(f"{self.test_res_basename} already exist")
     self.partition_evaluate()
     fmt = 'x_test has {} trajectories: {} low, {} medium, {} hight'
     config.info(fmt.format(*count_traject_entropy_classes(self.x_test)))
@@ -263,7 +266,6 @@ class Trainer():
 
     # creating model
     config.info('creating model ...')
-    config.info('model_dir=' + self.model_dir)
     if not self.train_entropy.startswith('auto'):
       model_weights = join(self.model_dir, 'weights.hdf5')
       config.info(f'model_weights={model_weights}')
@@ -280,8 +282,6 @@ class Trainer():
 
     if self.dry_run:
       return
-    if exists (f'{self.test_res_basename}_avg_error_per_timestep.csv'):
-      raise RuntimeError(f"{self.model_weights} already exist")
     if not exists(self.model_dir):
       os.makedirs(self.model_dir)
     if self.using_auto:
