@@ -44,16 +44,16 @@ Rondon:
 
 ```bash
 cd users360/head_motion_prediction
-python -m user360.main -train -dataset_name David_MMSys_18 -model_name pos_only
-python -m user360.main -evaluate -dataset_name David_MMSys_18 -model_name pos_only
+python run.py -train -dataset_name david -model_name pos_only
+python run.py -evaluate -dataset_name david -model_name pos_only
 ```
 
 user360:
 
 
 ```bash
-python -m user360.main -train -dataset_name David_MMSys_18 -model_name pos_only
-python -m user360.main -evaluate -dataset_name David_MMSys_18 -model_name pos_only
+python run.py -train -dataset_name david -model_name pos_only
+python run.py -evaluate -dataset_name david -model_name pos_only
 ```
 
 ## Notebooks
