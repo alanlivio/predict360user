@@ -23,7 +23,6 @@ METRIC = all_metrics['orthodromic']
 RATE = 0.2
 BATCH_SIZE = 128.0
 
-
 def get_train_test_split(df: pd.DataFrame, entropy: str,
                          perc_test: float) -> tuple[pd.DataFrame, pd.DataFrame]:
   args = {'test_size': perc_test, 'random_state': 1}
@@ -84,7 +83,7 @@ class Trainer():
   perc_test: float = 0.2
   train_entropy: str = 'all'
   # dataclass attrs: train()
-  epochs: int = 100
+  epochs: int = config.DEFAULT_EPOCHS
   # dataclass attrs: evaluate()
   test_entropy: str = 'all'
   test_user: str = ''

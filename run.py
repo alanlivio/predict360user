@@ -3,10 +3,7 @@
 import argparse
 import sys
 
-from users360 import config
-from users360.entropy import calc_trajects_entropy
-from users360.trainer import Trainer, compare_results
-from users360.trajects import *
+from users360 import *
 
 if __name__ == '__main__':
   # argparse
@@ -70,8 +67,8 @@ if __name__ == '__main__':
   psr.add_argument('-epochs',
                    nargs='?',
                    type=int,
-                   default=100,
-                   help='epochs numbers (default is 500)')
+                   default=config.DEFAULT_EPOCHS,
+                   help=f'epochs numbers (default is {config.DEFAULT_EPOCHS})')
 
   # Trainer.evaluate() only params
   psr.add_argument('-test_entropy',

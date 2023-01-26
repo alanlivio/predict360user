@@ -9,6 +9,7 @@ ARGS_MODEL_NAMES = ['pos_only', 'TRACK', 'CVPR18', 'MM18', 'most_salient_point']
 ARGS_DS_NAMES = ['all', 'david', 'fan', 'nguyen', 'xucvpr', 'xupami']
 ARGS_ENTROPY_NAMES = ['all','low','medium','hight', 'nohight', 'low_hmp','medium_hmp','hight_hmp', 'nohight_hmp']
 ARGS_ENTROPY_AUTO_NAMES = ['auto', 'auto_m_window', 'auto_since_start']
+DEFAULT_EPOCHS = 50
 
 logging.basicConfig(level=logging.INFO, format='-- users360: %(message)s')
 info = logging.getLogger(__name__).info
