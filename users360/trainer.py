@@ -167,25 +167,29 @@ class Trainer():
         else:
           raise NotImplementedError
 
-  def partition_train(self) -> None:
+  def partition(self) -> None:
     config.info('partioning...')
     self.df = get_df_trajects()
     df_to_split = self.df[self.df['ds'] == self.dataset_name] \
       if self.dataset_name != 'all' else self.df
-    self.x_train, self.x_val = get_train_test_split(df_to_split, self.train_entropy, self.perc_test)
+    self.x_train, self.x_test = get_train_test_split(df_to_split, self.train_entropy, self.perc_test)
+    if self.test_user and self.test_video:
+      self.x_test = get_rows(self.df, self.test_video, self.test_user, self.dataset_name)
     self.x_train_wins = [{
         'video': row[1]['video'],
         'user': row[1]['user'],
         'trace_id': trace_id
     } for row in self.x_train.iterrows()\
       for trace_id in range( self.init_window, row[1]['traject'].shape[0] -self.end_window)]
-    self.x_val_wins = [{
+    self.x_test_wins = [{
         'video': row[1]['video'],
         'user': row[1]['user'],
         'trace_id': trace_id,
         'traject_entropy_class': row[1]['traject_entropy_class']
-    } for row in self.x_val.iterrows()\
-      for trace_id in range( self.init_window, row[1]['traject'].shape[0] -self.end_window)]
+    } for row in self.x_test.iterrows()\
+      for trace_id in range(self.init_window, row[1]['traject'].shape[0] -self.end_window)]
+    self.x_val = self.x_test
+    self.x_val_wins = self.x_test_wins
 
   def train(self) -> None:
     assert not self.using_auto, "train(): train_entropy should not be auto"
@@ -235,31 +239,13 @@ class Trainer():
     else:
       raise NotImplementedError
 
-  def partition_evaluate(self) -> None:
-    config.info('partioning...')
-    self.df = get_df_trajects()
-    if self.test_user and self.test_video:
-      self.x_test = get_rows(self.df, self.test_video, self.test_user, self.dataset_name)
-    else:
-      df_to_split = self.df[self.df['ds'] == self.dataset_name] \
-        if self.dataset_name != 'all' else self.df
-      _, self.x_test = get_train_test_split(df_to_split, self.test_entropy, self.perc_test)
-    self.videos_test = self.x_test['video'].unique()
-    self.x_test_wins = [{
-        'video': row[1]['video'],
-        'user': row[1]['user'],
-        'trace_id': trace_id,
-        'traject_entropy_class': row[1]['traject_entropy_class']
-    } for row in self.x_test.iterrows()\
-      for trace_id in range( self.init_window, row[1]['traject'].shape[0] -self.end_window)]
-
   def evaluate(self) -> None:
     config.info('evaluate()')
     config.info('model_dir=' + self.model_dir)
     if exists (f'{self.test_res_basename}_avg_error_per_timestep.csv'):
       config.info('evalute() previous done')
       sys.exit()
-    self.partition_evaluate()
+    self.partition()
     fmt = 'x_test has {} trajectories: {} low, {} medium, {} hight'
     config.info(fmt.format(*count_traject_entropy_classes(self.x_test)))
 
