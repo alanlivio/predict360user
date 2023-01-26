@@ -57,8 +57,8 @@ def _load_df_trajects_from_hmp() -> pd.DataFrame:
         data,
         columns=[
             'ds',  # e.g., david
-            'ds_user',  # e.g., david_0
-            'ds_video',  # e.g., david_10_Cows
+            'user',  # e.g., david_0
+            'video',  # e.g., david_10_Cows
             # 'times',
             'traject'  # [[x,y,z], ...]
         ])
@@ -107,28 +107,28 @@ def sample_one_trace_from_traject_row(one_row: pd.Series) -> np.array:
 
 def get_rows(df: pd.DataFrame, video: str, user: str, ds: str) -> np.array:
   if ds == 'all':
-    rows = df.query(f"ds_user=='{user}' and ds_video=='{video}'")
+    rows = df.query(f"user=='{user}' and video=='{video}'")
   else:
-    rows = df.query(f"ds=='{ds}' and ds_user=='{user}' and ds_video=='{video}'")
+    rows = df.query(f"ds=='{ds}' and user=='{user}' and video=='{video}'")
   assert not rows.empty
   return rows
 
 
 def get_traces(df: pd.DataFrame, video: str, user: str, ds: str) -> np.array:
   if ds == 'all':
-    row = df.query(f"ds_user=='{user}' and ds_video=='{video}'")
+    row = df.query(f"user=='{user}' and video=='{video}'")
   else:
-    row = df.query(f"ds=='{ds}' and ds_user=='{user}' and ds_video=='{video}'")
+    row = df.query(f"ds=='{ds}' and user=='{user}' and video=='{video}'")
   assert not row.empty
   return row['traject'].iloc[0]
 
 
 def get_video_ids(df: pd.DataFrame) -> np.array:
-  return df['ds_video'].unique()
+  return df['video'].unique()
 
 
 def get_user_ids(df: pd.DataFrame) -> np.array:
-  return df['ds_user'].unique()
+  return df['user'].unique()
 
 
 def get_ds_ids(df: pd.DataFrame) -> np.array:

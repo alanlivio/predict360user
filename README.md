@@ -4,7 +4,7 @@ This project extends [Rondon 360-videos models/dataset collection](https://gitla
 
 * access users' trajectories at datasets as a panda.DataFrame
 
-| ds    | ds_user | ds_video      | traject | traject_hmps |
+| ds    | user    | video         | traject | traject_hmps |
 | ----- | ------- | ------------- | ------- | ------------ |
 | david | david_0 | david_10_Cows | [[...   | [[[...       |
 

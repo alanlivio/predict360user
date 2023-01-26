@@ -20,7 +20,7 @@ class Test(unittest.TestCase):
   def test_sample(self) -> None:
     # query traject row
     one_row = self.df.query(
-        "ds=='david' and ds_user=='david_0' and ds_video=='david_10_Cows'")
+        "ds=='david' and user=='david_0' and video=='david_10_Cows'")
     assert not one_row.empty
     # sample traject row
     one_row = sample_traject_row(self.df)

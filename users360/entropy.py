@@ -153,7 +153,7 @@ def calc_trajects_poles_prc(df: pd.DataFrame) -> None:
 def show_trajects_poles_prc(df: pd.DataFrame) -> None:
   assert {'poles_prc', 'poles_class'}.issubset(df.columns)
   fig = px.scatter(df,
-                   x='ds_user',
+                   x='user',
                    y='poles_prc',
                    color='poles_class',
                    hover_data=[df.index],

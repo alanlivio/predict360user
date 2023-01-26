@@ -174,14 +174,14 @@ class Trainer():
       if self.dataset_name != 'all' else self.df
     self.x_train, self.x_val = get_train_test_split(df_to_split, self.train_entropy, self.perc_test)
     self.x_train_wins = [{
-        'video': row[1]['ds_video'],
-        'user': row[1]['ds_user'],
+        'video': row[1]['video'],
+        'user': row[1]['user'],
         'trace_id': trace_id
     } for row in self.x_train.iterrows()\
       for trace_id in range( self.init_window, row[1]['traject'].shape[0] -self.end_window)]
     self.x_val_wins = [{
-        'video': row[1]['ds_video'],
-        'user': row[1]['ds_user'],
+        'video': row[1]['video'],
+        'user': row[1]['user'],
         'trace_id': trace_id,
         'traject_entropy_class': row[1]['traject_entropy_class']
     } for row in self.x_val.iterrows()\
@@ -244,10 +244,10 @@ class Trainer():
       df_to_split = self.df[self.df['ds'] == self.dataset_name] \
         if self.dataset_name != 'all' else self.df
       _, self.x_test = get_train_test_split(df_to_split, self.test_entropy, self.perc_test)
-    self.videos_test = self.x_test['ds_video'].unique()
+    self.videos_test = self.x_test['video'].unique()
     self.x_test_wins = [{
-        'video': row[1]['ds_video'],
-        'user': row[1]['ds_user'],
+        'video': row[1]['video'],
+        'user': row[1]['user'],
         'trace_id': trace_id,
         'traject_entropy_class': row[1]['traject_entropy_class']
     } for row in self.x_test.iterrows()\
@@ -353,7 +353,7 @@ class Trainer():
         raise NotImplementedError
 
       # save prediction
-      traject_row = self.df.loc[(self.df['ds_video'] == video) & (self.df['ds_user'] == user)]
+      traject_row = self.df.loc[(self.df['video'] == video) & (self.df['user'] == user)]
       assert not traject_row.empty
       index = traject_row.index[0]
       traject_row[self.model_fullname][index][x_i] = model_prediction
