@@ -394,30 +394,30 @@ class Trainer():
     config.info(f'saving {result_file}')
 
 
-def compare_results(model_name, dataset_name) -> None:
-  dir_prefix = model_name + (f'_{dataset_name}' if dataset_name != 'all' else '')
-  config.info(f'dir_prefix={dir_prefix}')
-  suffix = '_avg_error_per_timestep.csv'
-  # find files test_ files
-  dirs = [d for d in os.listdir(config.DATADIR) if os.path.isdir(join(config.DATADIR, d)) and d.startswith(dir_prefix)]
-  csv_file_l = [(dir_name, file_name) for dir_name in dirs
-                for file_name in os.listdir(join(config.DATADIR, dir_name))
-                if file_name.startswith('test_') and file_name.endswith(suffix)]
-  csv_data_l = [
-      (f'{dir_name}_{file_name.removesuffix(suffix)}', horizon, error)
-      for (dir_name, file_name) in csv_file_l
-      for horizon, error in enumerate(np.loadtxt(join(config.DATADIR, dir_name, file_name)))
-  ]
-  assert csv_data_l, 'no data/<method>/test_*, run -evaluate'
+  def compare_results(self) -> None:
+    dir_prefix = self.model_name + (f'_{self.dataset_name}' if dataset_name != 'all' else '')
+    config.info(f'dir_prefix={dir_prefix}')
+    suffix = '_avg_error_per_timestep.csv'
+    # find files test_ files
+    dirs = [d for d in os.listdir(config.DATADIR) if os.path.isdir(join(config.DATADIR, d)) and d.startswith(dir_prefix)]
+    csv_file_l = [(dir_name, file_name) for dir_name in dirs
+                  for file_name in os.listdir(join(config.DATADIR, dir_name))
+                  if file_name.startswith('test_') and file_name.endswith(suffix)]
+    csv_data_l = [
+        (f'{dir_name}_{file_name.removesuffix(suffix)}', horizon, error)
+        for (dir_name, file_name) in csv_file_l
+        for horizon, error in enumerate(np.loadtxt(join(config.DATADIR, dir_name, file_name)))
+    ]
+    assert csv_data_l, 'no data/<method>/test_*, run -evaluate'
 
-  # plot image
-  df_compare = pd.DataFrame(csv_data_l, columns=['name', 'horizon', 'avg_error_per_timestep'])
-  df_compare = df_compare.sort_values(ascending=False, by="avg_error_per_timestep")
-  fig = px.line(df_compare,
-                x='horizon',
-                y="avg_error_per_timestep",
-                color='name',
-                color_discrete_sequence=px.colors.qualitative.G10)
-  result_file = join(config.DATADIR, f'compare_{model_name}.html')
-  config.info(f'saving {result_file}')
-  plotly.offline.plot(fig, filename=result_file)
+    # plot image
+    df_compare = pd.DataFrame(csv_data_l, columns=['name', 'horizon', 'avg_error_per_timestep'])
+    df_compare = df_compare.sort_values(ascending=False, by="avg_error_per_timestep")
+    fig = px.line(df_compare,
+                  x='horizon',
+                  y="avg_error_per_timestep",
+                  color='name',
+                  color_discrete_sequence=px.colors.qualitative.G10)
+    result_file = join(config.DATADIR, f'compare_{model_name}.html')
+    config.info(f'saving {result_file}')
+    plotly.offline.plot(fig, filename=result_file)
