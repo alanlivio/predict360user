@@ -240,7 +240,7 @@ class Trainer():
     config.info(fmt.format(*count_traject_entropy_classes(self.x_test)))
 
     if not self.model_fullname in self.df.columns:
-      empty = pd.Series([{} for _ in range(len(self.df))]).astype(object)
+      empty = pd.Series([np.nan for _ in range(len(self.df))]).astype(object)
       self.df[self.model_fullname] = empty
 
     # creating model
