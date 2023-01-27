@@ -85,7 +85,6 @@ class Trainer():
   # dataclass attrs: train()
   epochs: int = config.DEFAULT_EPOCHS
   # dataclass attrs: evaluate()
-  test_entropy: str = 'all'
   test_user: str = ''
   test_video: str = ''
   dry_run: bool = False
@@ -94,9 +93,6 @@ class Trainer():
     assert self.model_name in config.ARGS_MODEL_NAMES
     assert self.dataset_name in config.ARGS_DS_NAMES
     assert self.train_entropy in config.ARGS_ENTROPY_NAMES + config.ARGS_ENTROPY_AUTO_NAMES
-    assert not (self.train_entropy in config.ARGS_ENTROPY_AUTO_NAMES and
-                self.test_entropy.endswith('_hmp')), 'test _hmp entropy is not supoported for auto model'
-    assert self.test_entropy in config.ARGS_ENTROPY_NAMES
     dataset_suffix = '' if self.dataset_name == 'all' else f'_{self.dataset_name}'
     entropy_suffix = '' if self.train_entropy == 'all' else f'_{self.train_entropy}_entropy'
     self.model_fullname = self.model_name + dataset_suffix + entropy_suffix
@@ -104,13 +100,6 @@ class Trainer():
     self.model_weights = join(self.model_dir, 'weights.hdf5')
     self.end_window = self.h_window
     self.using_auto = self.train_entropy.startswith('auto')
-    self.test_res_basename = f"test_{str(self.perc_test).replace('.',',')}"
-    if self.test_user and self.test_video:
-      self.test_res_basename = join(
-          self.model_dir,
-          f'{self.test_res_basename}_{self.test_entropy}_{self.test_user}_{self.test_video}')
-    else:
-      self.test_res_basename = join(self.model_dir, f'{self.test_res_basename}_{self.test_entropy}')
     config.info(self)
 
   def create_model(self) -> Any:
@@ -242,9 +231,6 @@ class Trainer():
   def evaluate(self) -> None:
     config.info('evaluate()')
     config.info('model_dir=' + self.model_dir)
-    if exists (f'{self.test_res_basename}_avg_error_per_timestep.csv'):
-      config.info('evalute() previous done')
-      sys.exit()
     self.partition()
     fmt = 'x_test has {} trajectories: {} low, {} medium, {} hight'
     config.info(fmt.format(*count_traject_entropy_classes(self.x_test)))
@@ -267,7 +253,6 @@ class Trainer():
       config.info('model_weights_low=' + model_weights_low)
       config.info('model_weights_medium=' + model_weights_medium)
       config.info('model_weights_hight=' + model_weights_hight)
-    config.info('test_res_basename=' + self.test_res_basename)
 
     if self.dry_run:
       return
@@ -344,80 +329,9 @@ class Trainer():
       index = traject_row.index[0]
       traject_row[self.model_fullname][index][x_i] = model_prediction
 
-      # save error
-      groundtruth = get_traces(self.df, video, user, self.dataset_name)[x_i + 1:x_i + self.h_window + 1]
-      if not video in errors_per_video:
-        errors_per_video[video] = {}
-      for t in range(len(groundtruth)):
-        if t not in errors_per_video[video]:
-          errors_per_video[video][t] = []
-        errors_per_video[video][t].append(METRIC(groundtruth[t], model_prediction[t]))
-        if t not in errors_per_timestep:
-          errors_per_timestep[t] = []
-        errors_per_timestep[t].append(METRIC(groundtruth[t], model_prediction[t]))
-
     # save on df
     dump_df_trajects(self.df)
 
-    # avg_error_per_timestep
-    avg_error_per_timestep = []
-    for t in range(self.h_window):
-      avg = np.mean(errors_per_timestep[t])
-      avg_error_per_timestep.append(avg)
-
-    # avg_error_per_timestep.csv
-    result_file = f'{self.test_res_basename}_avg_error_per_timestep'
-    config.info(f'saving {result_file}.csv')
-    np.savetxt(f'{result_file}.csv', avg_error_per_timestep)
-
-    # avg_error_per_timestep.png
-    plt.plot(np.arange(self.h_window) + 1 * RATE, avg_error_per_timestep)
-    met = 'orthodromic'
-    plt.title(f'Average {met} in {self.dataset_name} dataset using {self.model_name} model')
-    plt.ylabel(met)
-    plt.xlim(2.5)
-    plt.xlabel('Prediction step s (sec.)')
-    config.info(f'saving {result_file}.png')
-    plt.savefig(result_file, bbox_inches='tight')
-
-    # avg_error_per_video
-    avg_error_per_video = []
-    for video_name in self.videos_test:
-      for t in range(self.h_window):
-        if not video_name in errors_per_video:
-          config.error(f'missing {video_name} in videos_test')
-          continue
-        avg = np.mean(errors_per_video[video_name][t])
-        avg_error_per_video.append(f'video={video_name} {t} {avg}')
-    result_file = f'{self.test_res_basename}_avg_error_per_video.csv'
-    np.savetxt(result_file, avg_error_per_video, fmt='%s')
-    config.info(f'saving {result_file}')
-
 
   def compare_results(self) -> None:
-    dir_prefix = self.model_name + (f'_{self.dataset_name}' if dataset_name != 'all' else '')
-    config.info(f'dir_prefix={dir_prefix}')
-    suffix = '_avg_error_per_timestep.csv'
-    # find files test_ files
-    dirs = [d for d in os.listdir(config.DATADIR) if os.path.isdir(join(config.DATADIR, d)) and d.startswith(dir_prefix)]
-    csv_file_l = [(dir_name, file_name) for dir_name in dirs
-                  for file_name in os.listdir(join(config.DATADIR, dir_name))
-                  if file_name.startswith('test_') and file_name.endswith(suffix)]
-    csv_data_l = [
-        (f'{dir_name}_{file_name.removesuffix(suffix)}', horizon, error)
-        for (dir_name, file_name) in csv_file_l
-        for horizon, error in enumerate(np.loadtxt(join(config.DATADIR, dir_name, file_name)))
-    ]
-    assert csv_data_l, 'no data/<method>/test_*, run -evaluate'
-
-    # plot image
-    df_compare = pd.DataFrame(csv_data_l, columns=['name', 'horizon', 'avg_error_per_timestep'])
-    df_compare = df_compare.sort_values(ascending=False, by="avg_error_per_timestep")
-    fig = px.line(df_compare,
-                  x='horizon',
-                  y="avg_error_per_timestep",
-                  color='name',
-                  color_discrete_sequence=px.colors.qualitative.G10)
-    result_file = join(config.DATADIR, f'compare_{model_name}.html')
-    config.info(f'saving {result_file}')
-    plotly.offline.plot(fig, filename=result_file)
+    return

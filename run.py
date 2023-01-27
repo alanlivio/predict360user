@@ -71,12 +71,6 @@ if __name__ == '__main__':
                    help=f'epochs numbers (default is {config.DEFAULT_EPOCHS})')
 
   # Trainer.evaluate() only params
-  psr.add_argument('-test_entropy',
-                   nargs='?',
-                   type=str,
-                   default='all',
-                   choices=config.ARGS_ENTROPY_NAMES,
-                   help='entropy to filter test data (default all)')
   psr.add_argument('-test_user', nargs='?', default='', type=str, help='user to filter test data')
   psr.add_argument('-test_video', nargs='?', default='', type=str, help='video to filter test data')
 
@@ -98,7 +92,6 @@ if __name__ == '__main__':
         'dry_run': args.dry_run,
         'epochs': args.epochs,
         'train_entropy': args.train_entropy,
-        'test_entropy': args.test_entropy,
         'test_user': args.test_user,
         'test_video': args.test_video
     }
