@@ -12,28 +12,21 @@ class Test(unittest.TestCase):
 
   def test_init(self) -> None:
     trn = Trainer()
-    assert trn.model_fullname == 'pos_only'
-    assert trn.model_dir == join(config.DATADIR, 'pos_only')
-    assert trn.test_res_basename == join(trn.model_dir, 'test_0,2_all')
+    assert trn.model_fullname == 'pos_only,all,,'
+    assert trn.model_dir == join(config.DATADIR, trn.model_fullname)
     assert trn.using_auto is False
     trn = Trainer(dataset_name='david')
-    assert trn.model_fullname == 'pos_only_david'
-    assert trn.test_res_basename == join(trn.model_dir, 'test_0,2_all')
+    assert trn.model_fullname == 'pos_only,david,,'
     assert trn.using_auto is False
-    for train_name in config.ARGS_ENTROPY_NAMES[1:]:
-      for test_entropy in config.ARGS_ENTROPY_NAMES[1:]:
-        trn = Trainer(train_entropy=train_name, test_entropy=test_entropy)
-        assert trn.model_fullname == f'pos_only_{train_name}_entropy'
-        assert trn.model_dir == join(config.DATADIR, f'pos_only_{train_name}_entropy')
-        assert trn.test_res_basename == join(trn.model_dir, f'test_0,2_{test_entropy}')
-        assert trn.using_auto is False
-    for train_name in config.ARGS_ENTROPY_AUTO_NAMES:
-      for test_entropy in ['low', 'medium', 'hight']: # only supported for auto train
-        trn = Trainer(train_entropy=train_name, test_entropy=test_entropy)
-        assert trn.model_fullname == f'pos_only_{train_name}_entropy'
-        assert trn.model_dir == join(config.DATADIR, f'pos_only_{train_name}_entropy')
-        assert trn.test_res_basename == join(trn.model_dir, f'test_0,2_{test_entropy}')
-        assert trn.using_auto is True
+    for train_entropy in config.ARGS_ENTROPY_NAMES[1:] + config.ARGS_ENTROPY_AUTO_NAMES:
+        trn = Trainer(train_entropy=train_entropy)
+        entropy_type = 'hmpS' if train_entropy.endswith('hmp') else 'actS'
+        train_entropy = train_entropy.removesuffix('hmp')
+        model_fullname = f'pos_only,all,{entropy_type},{train_entropy}'
+        assert trn.model_fullname == model_fullname
+        assert trn.model_dir == join(config.DATADIR, model_fullname)
+        using_auto = train_entropy.startswith('auto')
+        assert trn.using_auto is using_auto
 
   def test_train_test_split(self) -> None:
     self.df = get_df_trajects()

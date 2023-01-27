@@ -93,9 +93,13 @@ class Trainer():
     assert self.model_name in config.ARGS_MODEL_NAMES
     assert self.dataset_name in config.ARGS_DS_NAMES
     assert self.train_entropy in config.ARGS_ENTROPY_NAMES + config.ARGS_ENTROPY_AUTO_NAMES
-    dataset_suffix = '' if self.dataset_name == 'all' else f'_{self.dataset_name}'
-    entropy_suffix = '' if self.train_entropy == 'all' else f'_{self.train_entropy}_entropy'
-    self.model_fullname = self.model_name + dataset_suffix + entropy_suffix
+    if self.train_entropy == 'all':
+      self.entropy_type = ''
+      self.train_entropy = ''
+    else:
+      self.entropy_type = 'hmpS' if self.train_entropy.endswith('hmp') else 'actS'
+      self.train_entropy = self.train_entropy.removesuffix('hmp')
+    self.model_fullname = f'{self.model_name},{self.dataset_name},{self.entropy_type},{self.train_entropy}'
     self.model_dir = join(config.DATADIR, self.model_fullname)
     self.model_weights = join(self.model_dir, 'weights.hdf5')
     self.end_window = self.h_window
@@ -274,8 +278,6 @@ class Trainer():
       model.load_weights(model_weights)
 
     # predict by each pred_windows
-    errors_per_video = {}
-    errors_per_timestep = {}
     threshold_medium, threshold_hight = calc_column_thresholds(self.df, 'actS')
     for ids in tqdm(self.x_test_wins, desc='position predictions'):
       user = ids['user']
