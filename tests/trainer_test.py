@@ -39,35 +39,35 @@ class Test(unittest.TestCase):
     self.df = get_df_trajects()
     assert not self.df.empty
 
-    if not 'traject_entropy_class' in self.df.columns:
+    if not 'actS_c' in self.df.columns:
       calc_actual_entropy(self.df)
 
     # x_train all
     x_train, x_test = get_train_test_split(self.df, 'all', 0.2)
-    unique_s = set(x_train['traject_entropy_class'].unique())
+    unique_s = set(x_train['actS_c'].unique())
     assert unique_s == set(['low', 'medium', 'hight'])
-    unique_s = set(x_test['traject_entropy_class'].unique())
+    unique_s = set(x_test['actS_c'].unique())
     assert unique_s == set(['low', 'medium', 'hight'])
 
     # x_train low
     x_train, x_test = get_train_test_split(self.df, 'low', 0.2)
-    unique_s = set(x_train['traject_entropy_class'].unique())
+    unique_s = set(x_train['actS_c'].unique())
     assert unique_s == set(['low'])
-    unique_s = set(x_test['traject_entropy_class'].unique())
+    unique_s = set(x_test['actS_c'].unique())
     assert unique_s == set(['low'])
 
     # x_train medium
     x_train, x_test = get_train_test_split(self.df, 'medium', 0.2)
-    unique_s = set(x_train['traject_entropy_class'].unique())
+    unique_s = set(x_train['actS_c'].unique())
     assert unique_s == set(['medium'])
-    unique_s = set(x_test['traject_entropy_class'].unique())
+    unique_s = set(x_test['actS_c'].unique())
     assert unique_s == set(['medium'])
 
     # x_train hight
     x_train, x_test = get_train_test_split(self.df, 'hight', 0.2)
-    unique_s = set(x_train['traject_entropy_class'].unique())
+    unique_s = set(x_train['actS_c'].unique())
     assert unique_s == set(['hight'])
-    unique_s = set(x_test['traject_entropy_class'].unique())
+    unique_s = set(x_test['actS_c'].unique())
     assert unique_s == set(['hight'])
 
   def test_partition(self) -> None:

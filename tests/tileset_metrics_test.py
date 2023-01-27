@@ -13,7 +13,7 @@ class Test(unittest.TestCase):
     self.df = get_df_trajects()[:2]
     assert not self.df.empty
     # force hmp recalc
-    self.df.drop(['traject_hmps'], axis=1, errors='ignore')
+    self.df.drop(['traject_hmp'], axis=1, errors='ignore')
 
   def test_tileset_metrics_reqs(self) -> None:
     tileset_variations = [TileSet(3, 3, TileCover.ANY), TileSetVoro(14, TileCover.ANY)]

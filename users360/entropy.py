@@ -105,31 +105,31 @@ def calc_actual_entropy(traces: np.array) -> float:
 
 def calc_trajects_entropy(df: pd.DataFrame) -> None:
   # clean
-  df.drop(['traject_entropy', 'traject_entropy_class'], axis=1, errors='ignore')
-  # calc traject_entropy
+  df.drop(['actS', 'actS_c'], axis=1, errors='ignore')
+  # calc actS
   config.info('calculating trajects entropy ...')
-  df['traject_entropy'] = df['traject'].progress_apply(calc_actual_entropy)
-  assert not df['traject_entropy'].isnull().any()
+  df['actS'] = df['traject'].progress_apply(calc_actual_entropy)
+  assert not df['actS'].isnull().any()
   # calc trajects_entropy_class
-  threshold_medium, threshold_hight = calc_column_thresholds(df, 'traject_entropy')
-  df['traject_entropy_class'] = df['traject_entropy'].progress_apply(get_class_by_threshold,
+  threshold_medium, threshold_hight = calc_column_thresholds(df, 'actS')
+  df['actS_c'] = df['actS'].progress_apply(get_class_by_threshold,
                                                                      args=(threshold_medium,
                                                                            threshold_hight))
-  assert not df['traject_entropy_class'].isnull().any()
+  assert not df['actS_c'].isnull().any()
 
 
 def show_trajects_entropy(df: pd.DataFrame, facet=None) -> None:
-  assert {'traject_entropy', 'traject_entropy_class'}.issubset(df.columns)
+  assert {'actS', 'actS_c'}.issubset(df.columns)
   px.histogram(df,
-                x='traject_entropy',
-                color='traject_entropy_class',
+                x='actS',
+                color='actS_c',
                 facet_col=facet,
                 color_discrete_map=ENTROPY_CLASS_COLORS,
                 width=900).show()
   px.histogram(df,
-                x='hmp_entropy',
+                x='hmpS',
                 facet_col=facet,
-                color='hmp_entropy_class',
+                color='hmpS_c',
                 color_discrete_map=ENTROPY_CLASS_COLORS,
                 width=900).show()
 
@@ -173,20 +173,20 @@ def _hmp_entropy(traject) -> float:
 
 
 def calc_trajects_hmp_entropy(df: pd.DataFrame) -> None:
-  if not 'traject_hmps' in df.columns:
+  if not 'traject_hmp' in df.columns:
     config.info('calculating heatmaps ...')
     np_hmps = df['traject'].progress_apply(_calc_traject_hmp)
-    df['traject_hmps'] = pd.Series(np_hmps)
-    assert not df['traject_hmps'].isnull().any()
-  # calc hmp_entropy
+    df['traject_hmp'] = pd.Series(np_hmps)
+    assert not df['traject_hmp'].isnull().any()
+  # calc hmpS
   config.info('calculating heatmaps entropy ...')
-  df['hmp_entropy'] = df['traject_hmps'].progress_apply(_hmp_entropy)
-  assert not df['hmp_entropy'].isnull().any()
+  df['hmpS'] = df['traject_hmp'].progress_apply(_hmp_entropy)
+  assert not df['hmpS'].isnull().any()
   # calc trajects_entropy_class
   # clean
-  df.drop(['hmp_entropy', 'hmp_entropy_class'], axis=1, errors='ignore')
-  threshold_medium, threshold_hight = calc_column_thresholds(df, 'hmp_entropy')
-  df['hmp_entropy_class'] = df['hmp_entropy'].progress_apply(get_class_by_threshold,
+  df.drop(['hmpS', 'hmpS_c'], axis=1, errors='ignore')
+  threshold_medium, threshold_hight = calc_column_thresholds(df, 'hmpS')
+  df['hmpS_c'] = df['hmpS'].progress_apply(get_class_by_threshold,
                                                              args=(threshold_medium,
                                                                    threshold_hight))
-  assert not df['traject_entropy_class'].isnull().any()
+  assert not df['actS_c'].isnull().any()

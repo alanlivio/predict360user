@@ -30,22 +30,22 @@ def get_train_test_split(df: pd.DataFrame, entropy: str,
     if entropy.endswith('_hmp'):
       entropy = entropy.removesuffix('_hmp')
       if entropy == 'nohight':
-        df = df[df['hmp_entropy_class'] != 'hight']
+        df = df[df['hmpS_c'] != 'hight']
       else:
-        df = df[df['hmp_entropy_class'] == entropy]
+        df = df[df['hmpS_c'] == entropy]
     else:
       if entropy == 'nohight':
-        df = df[df['traject_entropy_class'] != 'hight']
+        df = df[df['actS_c'] != 'hight']
       else:
-        df = df[df['traject_entropy_class'] == entropy]
+        df = df[df['actS_c'] == entropy]
   return train_test_split(df, **args)
 
 
 def count_traject_entropy_classes(df) -> tuple[int, int, int, int]:
   a_len = len(df)
-  l_len = len(df[df['traject_entropy_class'] == 'low'])
-  m_len = len(df[df['traject_entropy_class'] == 'medium'])
-  h_len = len(df[df['traject_entropy_class'] == 'hight'])
+  l_len = len(df[df['actS_c'] == 'low'])
+  m_len = len(df[df['actS_c'] == 'medium'])
+  h_len = len(df[df['actS_c'] == 'hight'])
   return a_len, l_len, m_len, h_len
 
 
@@ -185,7 +185,7 @@ class Trainer():
         'video': row[1]['video'],
         'user': row[1]['user'],
         'trace_id': trace_id,
-        'traject_entropy_class': row[1]['traject_entropy_class']
+        'actS_c': row[1]['actS_c']
     } for row in self.x_test.iterrows()\
       for trace_id in range(self.init_window, row[1]['traject'].shape[0] -self.end_window)]
     self.x_val = self.x_test
@@ -291,7 +291,7 @@ class Trainer():
     # predict by each pred_windows
     errors_per_video = {}
     errors_per_timestep = {}
-    threshold_medium, threshold_hight = calc_column_thresholds(self.df, 'traject_entropy')
+    threshold_medium, threshold_hight = calc_column_thresholds(self.df, 'actS')
     for ids in tqdm(self.x_test_wins, desc='position predictions'):
       user = ids['user']
       video = ids['video']
@@ -306,24 +306,24 @@ class Trainer():
         raise NotImplementedError
 
       if self.using_auto:
-        # traject_entropy_class
+        # actS_c
         if self.train_entropy == 'auto':
-          traject_entropy_class = ids['traject_entropy_class']
+          actS_c = ids['actS_c']
         elif self.train_entropy == 'auto_m_window':
           window = get_traces(self.df, video, user, self.dataset_name)[x_i - self.m_window:x_i]
           a_ent = calc_actual_entropy(window)
-          traject_entropy_class = get_class_by_threshold(a_ent, threshold_medium, threshold_hight)
+          actS_c = get_class_by_threshold(a_ent, threshold_medium, threshold_hight)
         elif self.train_entropy == 'auto_since_start':
           window = get_traces(self.df, video, user, self.dataset_name)[0:x_i]
           a_ent = calc_actual_entropy(window)
-          traject_entropy_class = get_class_by_threshold(a_ent, threshold_medium, threshold_hight)
+          actS_c = get_class_by_threshold(a_ent, threshold_medium, threshold_hight)
         else:
           raise RuntimeError()
-        if traject_entropy_class == 'low':
+        if actS_c == 'low':
           model = model_low
-        elif traject_entropy_class == 'medium':
+        elif actS_c == 'medium':
           model = model_medium
-        elif traject_entropy_class == 'hight':
+        elif actS_c == 'hight':
           model = model_hight
         else:
           raise NotImplementedError
