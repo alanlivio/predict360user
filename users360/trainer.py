@@ -10,6 +10,11 @@ import numpy as np
 import pandas as pd
 import plotly
 import plotly.express as px
+
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+import tensorflow.keras as keras
+from keras.callbacks import CSVLogger, ModelCheckpoint, TensorBoard
 from sklearn.model_selection import train_test_split
 
 from users360.head_motion_prediction.Utils import (all_metrics,
@@ -204,8 +209,6 @@ class Trainer():
     with redirect_stderr(open(os.devnull, 'w')):
       os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
       os.environ['CUDA_VISIBLE_DEVICES'] = 0
-      import tensorflow.keras as keras
-      from keras.callbacks import CSVLogger, ModelCheckpoint, TensorBoard
 
     config.info('creating model ...')
     if self.dry_run:
