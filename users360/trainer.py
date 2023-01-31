@@ -26,6 +26,8 @@ BATCH_SIZE = 128.0
 def get_train_test_split(df: pd.DataFrame, entropy: str,
                          perc_test: float) -> tuple[pd.DataFrame, pd.DataFrame]:
   args = {'test_size': perc_test, 'random_state': 1}
+  if entropy.startswith('auto'):
+    raise RuntimeError()
   if entropy != 'all':
     if entropy.endswith('_hmp'):
       entropy = entropy.removesuffix('_hmp')
@@ -95,11 +97,8 @@ class Trainer():
     assert self.train_entropy in config.ARGS_ENTROPY_NAMES + config.ARGS_ENTROPY_AUTO_NAMES
     self.using_auto = self.train_entropy.startswith('auto')
     if self.train_entropy != 'all':
-      if self.using_auto:
-        self.train_entropy = 'all'
-      else:
-        self.entropy_type = 'hmpS' if self.train_entropy.endswith('hmp') else 'actS'
-        self.train_entropy = self.train_entropy.removesuffix('_hmp')
+      self.entropy_type = 'hmpS' if self.train_entropy.endswith('hmp') else 'actS'
+      self.train_entropy = self.train_entropy.removesuffix('_hmp')
     # if any filter, use model_fullname with ','
     if self.dataset_name != 'all' or self.train_entropy != 'all':
       self.model_fullname = f'{self.model_name},{self.dataset_name},{self.entropy_type},{self.train_entropy}'
@@ -169,7 +168,8 @@ class Trainer():
     self.df = get_df_trajects()
     df_to_split = self.df[self.df['ds'] == self.dataset_name] \
       if self.dataset_name != 'all' else self.df
-    self.x_train, self.x_test = get_train_test_split(df_to_split, self.train_entropy, self.perc_test)
+    entropy = 'all' if self.using_auto else self.train_entropy
+    self.x_train, self.x_test = get_train_test_split(df_to_split, entropy, self.perc_test)
     if self.test_user and self.test_video:
       self.x_test = get_rows(self.df, self.test_video, self.test_user, self.dataset_name)
     self.x_train_wins = [{
@@ -249,21 +249,21 @@ class Trainer():
 
     # creating model
     config.info('creating model ...')
-    if not self.train_entropy.startswith('auto'):
-      model_weights = join(self.model_dir, 'weights.hdf5')
-      config.info(f'model_weights={model_weights}')
-    if self.train_entropy.startswith('auto'):
-      dataset_suffix = '' if self.dataset_name == 'all' else f'_{self.dataset_name}'
-      model_ds_dir = join(config.DATADIR, self.model_name + dataset_suffix)
-      model_weights_low = join(model_ds_dir + "_low_entropy", 'weights.hdf5')
-      model_weights_medium = join(model_ds_dir + "_medium_entropy", 'weights.hdf5')
-      model_weights_hight = join(model_ds_dir + "_hight_entropy", 'weights.hdf5')
+    if self.using_auto:
+      prefix = join(config.DATADIR, f'{self.model_name},{self.dataset_name},actS,')
+      model_weights_low = join(prefix + 'low', 'weights.hdf5')
+      model_weights_medium = join(prefix + 'medium', 'weights.hdf5')
+      model_weights_hight = join(prefix + 'hight', 'weights.hdf5')
       config.info('model_weights_low=' + model_weights_low)
       config.info('model_weights_medium=' + model_weights_medium)
       config.info('model_weights_hight=' + model_weights_hight)
+    else:
+      model_weights = join(self.model_dir, 'weights.hdf5')
+      config.info(f'model_weights={model_weights}')
 
     if self.dry_run:
       return
+
     if not exists(self.model_dir):
       os.makedirs(self.model_dir)
     if self.using_auto:
