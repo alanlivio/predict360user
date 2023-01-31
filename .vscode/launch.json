@@ -8,7 +8,7 @@
             "name": "-train",
             "type": "python",
             "request": "launch",
-            "module": "training_procedure",
+            "module": "run",
             "args": [
                 "-train",
                 // "-dataset_name",
@@ -20,13 +20,13 @@
             "name": "-evaluate",
             "type": "python",
             "request": "launch",
-            "module": "training_procedure",
+            "module": "run",
             "args": [
                 "-evaluate",
                 // "-dataset_name", "david",
                 // "-oneuser", "david_1", "-onevideo", "david_6_DroneFlight", // medium
                 // "-oneuser", "david_0", "-onevideo", "david_10_Cows", // index 0
-                // "-test_model_entropy",
+                // "-train_entropy",
                 // "auto"
                 // "hight",
                 // "auto_m_window"
@@ -38,7 +38,7 @@
             "name": "-compare_result",
             "type": "python",
             "request": "launch",
-            "module": "training_procedure",
+            "module": "run",
             "args": [
                 "-compare_results",
             ],

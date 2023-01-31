@@ -93,17 +93,21 @@ class Trainer():
     assert self.model_name in config.ARGS_MODEL_NAMES
     assert self.dataset_name in config.ARGS_DS_NAMES
     assert self.train_entropy in config.ARGS_ENTROPY_NAMES + config.ARGS_ENTROPY_AUTO_NAMES
-    if self.train_entropy == 'all':
-      self.entropy_type = ''
-      self.train_entropy = ''
+    self.using_auto = self.train_entropy.startswith('auto')
+    if self.train_entropy != 'all':
+      if self.using_auto:
+        self.train_entropy = 'all'
+      else:
+        self.entropy_type = 'hmpS' if self.train_entropy.endswith('hmp') else 'actS'
+        self.train_entropy = self.train_entropy.removesuffix('_hmp')
+    # if any filter, use model_fullname with ','
+    if self.dataset_name != 'all' or self.train_entropy != 'all':
+      self.model_fullname = f'{self.model_name},{self.dataset_name},{self.entropy_type},{self.train_entropy}'
     else:
-      self.entropy_type = 'hmpS' if self.train_entropy.endswith('hmp') else 'actS'
-      self.train_entropy = self.train_entropy.removesuffix('_hmp')
-    self.model_fullname = f'{self.model_name},{self.dataset_name},{self.entropy_type},{self.train_entropy}'
+      self.model_fullname = self.model_name
     self.model_dir = join(config.DATADIR, self.model_fullname)
     self.model_weights = join(self.model_dir, 'weights.hdf5')
     self.end_window = self.h_window
-    self.using_auto = self.train_entropy.startswith('auto')
     config.info(self)
 
   def create_model(self) -> Any:
