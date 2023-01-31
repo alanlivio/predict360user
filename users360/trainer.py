@@ -329,6 +329,8 @@ class Trainer():
       traject_row = self.df.loc[(self.df['video'] == video) & (self.df['user'] == user)]
       assert not traject_row.empty
       index = traject_row.index[0]
+      if traject_row[self.model_fullname][index] == np.nan:
+        traject_row[self.model_fullname][index] = {}
       traject_row[self.model_fullname][index][x_i] = model_prediction
 
     # save on df
