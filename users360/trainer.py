@@ -195,7 +195,7 @@ class Trainer():
     if exists (self.model_weights):
       config.info('train() previous done')
       sys.exit()
-    self.partition_train()
+    self.partition()
     fmt = 'x_train has {} trajectories: {} low, {} medium, {} hight'
     config.info(fmt.format(*count_traject_entropy_classes(self.x_train)))
     fmt = 'x_val has {} trajectories: {} low, {} medium, {} hight'
