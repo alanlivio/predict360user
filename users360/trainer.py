@@ -245,7 +245,7 @@ class Trainer():
     config.info(fmt.format(*count_traject_entropy_classes(self.x_test)))
 
     if not self.model_fullname in self.df.columns:
-      empty = pd.Series([np.nan for _ in range(len(self.df))]).astype(object)
+      empty = pd.Series([{} for _ in range(len(self.df))]).astype(object)
       self.df[self.model_fullname] = empty
 
     # creating model
@@ -334,9 +334,7 @@ class Trainer():
       traject_row = self.df.loc[(self.df['video'] == video) & (self.df['user'] == user)]
       assert not traject_row.empty
       index = traject_row.index[0]
-      if np.isnan(traject_row[self.model_fullname][index]):
-        traject_row[self.model_fullname][index] = {}
-      traject_row[self.model_fullname][index][x_i] = model_prediction
+      traject_row.loc[index,self.model_fullname][x_i] = model_prediction
 
     # save on df
     dump_df_trajects(self.df)
