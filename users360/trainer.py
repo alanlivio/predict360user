@@ -98,7 +98,7 @@ class Trainer():
       self.train_entropy = ''
     else:
       self.entropy_type = 'hmpS' if self.train_entropy.endswith('hmp') else 'actS'
-      self.train_entropy = self.train_entropy.removesuffix('hmp')
+      self.train_entropy = self.train_entropy.removesuffix('_hmp')
     self.model_fullname = f'{self.model_name},{self.dataset_name},{self.entropy_type},{self.train_entropy}'
     self.model_dir = join(config.DATADIR, self.model_fullname)
     self.model_weights = join(self.model_dir, 'weights.hdf5')
