@@ -203,6 +203,7 @@ class Trainer():
 
     with redirect_stderr(open(os.devnull, 'w')):
       os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+      os.environ['CUDA_VISIBLE_DEVICES'] = 0
       import tensorflow.keras as keras
       from keras.callbacks import CSVLogger, ModelCheckpoint, TensorBoard
 
