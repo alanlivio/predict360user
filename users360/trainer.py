@@ -16,8 +16,7 @@ import tensorflow.keras as keras
 from keras.callbacks import CSVLogger, ModelCheckpoint, TensorBoard
 from sklearn.model_selection import train_test_split
 
-from users360.head_motion_prediction.Utils import (all_metrics,
-                                                   cartesian_to_eulerian,
+from users360.head_motion_prediction.Utils import (all_metrics, cartesian_to_eulerian,
                                                    eulerian_to_cartesian)
 
 from .entropy import *
@@ -28,6 +27,7 @@ RATE = 0.2
 BATCH_SIZE = 128.0
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+
 
 def get_train_test_split(df: pd.DataFrame, entropy: str,
                          perc_test: float) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -198,7 +198,7 @@ class Trainer():
     assert not self.using_auto, "train(): train_entropy should not be auto"
     config.info('train()')
     config.info('model_dir=' + self.model_dir)
-    if exists (self.model_weights):
+    if exists(self.model_weights):
       config.info('train() previous done')
       sys.exit()
     self.partition()
@@ -338,19 +338,19 @@ class Trainer():
       traject_row = self.df.loc[(self.df['video'] == video) & (self.df['user'] == user)]
       assert not traject_row.empty
       index = traject_row.index[0]
-      traject_row.loc[index,self.model_fullname][x_i] = model_prediction
+      traject_row.loc[index, self.model_fullname][x_i] = model_prediction
 
     # save on df
     dump_df_trajects(self.df)
 
   def compare_results(self) -> None:
-    range_win=range(self.h_window)
-    columns=['model_name', 'S_type', 'S_class']
-    s_types =  ['actS_c', 'hmpS_c']
+    range_win = range(self.h_window)
+    columns = ['model_name', 'S_type', 'S_class']
+    s_types = ['actS_c', 'hmpS_c']
     s_classes = ['low', 'medium', 'nohight', 'hight']
 
     # create df_res
-    self.df_res = pd.DataFrame(columns=columns+list(range_win), dtype=np.float32)
+    self.df_res = pd.DataFrame(columns=columns + list(range_win), dtype=np.float32)
 
     # create df_res for debug with random data
     # models = ['pos_only,all,actS_c,low', 'pos_only,all,actS_c,medium', 'pos_only,all,actS_c,hight', 'pos_only,david,actS_c,medium', 'pos_only,david,actS_c,hight', 'pos_only,david,actS_c,nohight', 'pos_only,david,hmpS_c,nohight', 'pos_only,all,hmpS_c,medium', 'pos_only,david,,']
@@ -366,24 +366,23 @@ class Trainer():
       self.df = get_df_trajects()
 
     # create test_targets
-    all_ds = ('all','all', pd.Series(True,index=self.df.index))
-    test_targets = [all_ds] # s_type, s_class, mask
+    all_ds = ('all', 'all', pd.Series(True, index=self.df.index))
+    test_targets = [all_ds]  # s_type, s_class, mask
     for s_type, s_class in product(s_types, s_classes):
       if s_class == 'nohight':
         test_targets.append((s_type, s_class, self.df[s_type] != 'hight'))
       else:
         test_targets.append((s_type, s_class, self.df[s_type] == s_class))
 
-
     # fill df_res from moldel results column at df
     def _calc_wins_error(df_wins_cols, errors_per_timestamp) -> None:
       traject_index = df_wins_cols.name
-      traject = self.df.loc[traject_index,'traject']
+      traject = self.df.loc[traject_index, 'traject']
       wins_per_timestamp = df_wins_cols.index
       for win_pos in wins_per_timestamp:
         pred_win = df_wins_cols[win_pos]
-        assert not isinstance(df_wins_cols[win_pos], float) # check if is dict
-        truth_win = traject[win_pos+1:win_pos+self.h_window+1]
+        assert not isinstance(df_wins_cols[win_pos], float)  # check if is dict
+        truth_win = traject[win_pos + 1:win_pos + self.h_window + 1]
         for t in range_win:
           if t not in errors_per_timestamp:
             errors_per_timestamp[t] = []
@@ -399,25 +398,27 @@ class Trainer():
         model_df_wins.index = model_srs.index
 
         # df_wins.apply by column and add errors_per_timestamp
-        errors_per_timestamp = {idx:[] for idx in range_win}
-        model_df_wins.apply(_calc_wins_error, axis=1, args=(errors_per_timestamp,))
+        errors_per_timestamp = {idx: [] for idx in range_win}
+        model_df_wins.apply(_calc_wins_error, axis=1, args=(errors_per_timestamp, ))
         # model_df_wins[:2].apply(_calc_wins_error, axis=1, args=(errors_per_timestamp,))
         newid = len(self.df_res)
         # print('setting', s_type, s_class, newid)
 
         # save df_res for s_type, s_class
         avg_error_per_timestamp = [np.mean(errors_per_timestamp[t]) for t in range_win]
-        self.df_res.loc[newid, ['model_name','S_type','S_class']] = [model, s_type, s_class]
+        self.df_res.loc[newid, ['model_name', 'S_type', 'S_class']] = [model, s_type, s_class]
         self.df_res.loc[newid, range_win] = avg_error_per_timestamp
 
     # create vis table
     if len(self.df_res):
-      props_blue='color:white;background-color:darkblue'
-      props_dark='color:white;background-color:darkred'
-      output = self.df_res.dropna().style.highlight_min(subset=list(range_win), props=props_blue).highlight_max(subset=list(range_win), props=props_dark)
+      props_blue = 'color:white;background-color:darkblue'
+      props_dark = 'color:white;background-color:darkred'
+      output = self.df_res.dropna().style.highlight_min(
+          subset=list(range_win), props=props_blue).highlight_max(subset=list(range_win),
+                                                                  props=props_dark)
     if 'ipykernel' in sys.modules:
       IPython.display.display(output)
     else:
-      html_file = join(config.DATADIR,'compare_results.html')
+      html_file = join(config.DATADIR, 'compare_results.html')
       output.to_html(html_file)
       print(pathlib.Path(html_file).as_uri())

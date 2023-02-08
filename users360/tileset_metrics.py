@@ -9,7 +9,6 @@ from .utils.tileset import TileSet
 
 tqdm.pandas()
 
-
 def _trace_mestrics_np(trace, tileset) -> np.array:
   heatmap, vp_quality, area_out = tileset.request(trace, return_metrics=True)
   return np.array([np.sum(heatmap), vp_quality, area_out])

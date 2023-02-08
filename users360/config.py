@@ -10,6 +10,9 @@ ARGS_DS_NAMES = ['all', 'david', 'fan', 'nguyen', 'xucvpr', 'xupami']
 ARGS_ENTROPY_NAMES = ['all','low','medium','hight', 'nohight', 'low_hmp','medium_hmp','hight_hmp', 'nohight_hmp']
 ARGS_ENTROPY_AUTO_NAMES = ['auto', 'auto_m_window', 'auto_since_start']
 DEFAULT_EPOCHS = 50
+ENTROPY_CLASS_COLORS = {'low': 'blue', 'medium': 'green', 'hight': 'red'}
+RES_WIDTH = 3840
+RES_HIGHT = 2160
 
 logging.basicConfig(level=logging.INFO, format='-- users360: %(message)s')
 info = logging.getLogger(__name__).info

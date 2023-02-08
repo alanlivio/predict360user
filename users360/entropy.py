@@ -7,15 +7,10 @@ import scipy.stats
 from tqdm.auto import tqdm
 
 from . import config
-from .head_motion_prediction.Utils import (cartesian_to_eulerian,
-                                           eulerian_to_cartesian)
+from .head_motion_prediction.Utils import cartesian_to_eulerian
 from .utils.tileset import TILESET_DEFAULT
 
-ENTROPY_CLASS_COLORS = {'low': 'blue', 'medium': 'green', 'hight': 'red'}
-RES_WIDTH = 3840
-RES_HIGHT = 2160
 tqdm.pandas()
-
 
 def calc_column_thresholds(df: pd.DataFrame, column) -> tuple[float, float]:
   idxs_sort = df[column].argsort()
@@ -35,8 +30,8 @@ def get_class_by_threshold(x, threshold_medium,
 def calc_fixmps_ids(traces: np.array) -> np.array:
   # calc fixation_ids
   scale = 0.025
-  n_height = int(scale * RES_HIGHT)
-  n_width = int(scale * RES_WIDTH)
+  n_height = int(scale * config.RES_HIGHT)
+  n_width = int(scale * config.RES_WIDTH)
   im_theta = np.linspace(0, 2 * np.pi - 2 * np.pi / n_width, n_width, endpoint=True)
   im_phi = np.linspace(0 + np.pi / (2 * n_height),
                        np.pi - np.pi / (2 * n_height),
@@ -124,13 +119,13 @@ def show_trajects_entropy(df: pd.DataFrame, facet=None) -> None:
                 x='actS',
                 color='actS_c',
                 facet_col=facet,
-                color_discrete_map=ENTROPY_CLASS_COLORS,
+                color_discrete_map=config.ENTROPY_CLASS_COLORS,
                 width=900).show()
   px.histogram(df,
                 x='hmpS',
                 facet_col=facet,
                 color='hmpS_c',
-                color_discrete_map=ENTROPY_CLASS_COLORS,
+                color_discrete_map=config.ENTROPY_CLASS_COLORS,
                 width=900).show()
 
 
