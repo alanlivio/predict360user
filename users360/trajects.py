@@ -135,7 +135,7 @@ def get_ds_ids(df: pd.DataFrame) -> np.array:
   return df['ds'].unique()
 
 
-def get_imshow_from_trajects_hmps(df: pd.DataFrame, tileset=TILESET_DEFAULT) -> px.imshow:
+def _get_imshow_from_trajects_hmps(df: pd.DataFrame, tileset=TILESET_DEFAULT) -> px.imshow:
   hmp_sums = df['traject_hmp'].apply(lambda traces: np.sum(traces, axis=0))
   if isinstance(tileset, TileSetVoro):
     hmp_sums = np.reshape(hmp_sums, tileset.shape)
@@ -158,7 +158,7 @@ def show_one_traject(row: pd.Series, tileset=TILESET_DEFAULT) -> None:
 
   # heatmap
   if 'traject_hmp' in row:
-    erp_heatmap = get_imshow_from_trajects_hmps(row, tileset)
+    erp_heatmap = _get_imshow_from_trajects_hmps(row, tileset)
     erp_heatmap.update_layout(width=100, height=100)
     fig.append_trace(erp_heatmap.data[0], row=1, col=2)
     if isinstance(tileset, TileSet):
@@ -186,7 +186,7 @@ def show_sum_trajects(df: pd.DataFrame, tileset=TILESET_DEFAULT) -> None:
 
   # heatmap
   if 'traject_hmp' in df:
-    erp_heatmap = get_imshow_from_trajects_hmps(df, tileset)
+    erp_heatmap = _get_imshow_from_trajects_hmps(df, tileset)
     fig.append_trace(erp_heatmap.data[0], row=1, col=2)
     if isinstance(tileset, TileSet):
       # fix given phi 0 being the north pole at Utils.cartesian_to_eulerian

@@ -379,44 +379,45 @@ class Trainer():
     def _calc_wins_error(df_wins_cols, errors_per_timestamp) -> None:
       traject_index = df_wins_cols.name
       traject = self.df.loc[traject_index, 'traject']
-      wins_per_timestamp = df_wins_cols.index
-      for win_pos in wins_per_timestamp:
+      win_pos_l = df_wins_cols.index
+      for win_pos in win_pos_l:
         pred_win = df_wins_cols[win_pos]
-        assert not isinstance(df_wins_cols[win_pos], float)  # check if is dict
-        truth_win = traject[win_pos + 1:win_pos + self.h_window + 1]
+        true_win = traject[win_pos + 1:win_pos + self.h_window + 1]
         for t in range_win:
           if t not in errors_per_timestamp:
             errors_per_timestamp[t] = []
-          errors_per_timestamp[t].append(METRIC(truth_win[t], pred_win[t]))
+          errors_per_timestamp[t].append(METRIC(true_win[t], pred_win[t]))
 
     models_cols = [col for col in self.df.columns if col.startswith(self.model_name)]
-    for model in models_cols[:1]:
+    for model in models_cols:
       for s_type, s_class, mask in test_targets:
         # create df_win by expading all model predictions
         not_empty = self.df[model].apply(lambda x: len(x) != 0)
         model_srs = self.df.loc[not_empty & mask, model]
+        if not len(model_srs):
+          config.error(f"skipping {model=} {s_type=} {s_class=}")
+          continue
         model_df_wins = pd.DataFrame.from_dict(model_srs.values.tolist())
         model_df_wins.index = model_srs.index
 
         # df_wins.apply by column and add errors_per_timestamp
         errors_per_timestamp = {idx: [] for idx in range_win}
-        model_df_wins.apply(_calc_wins_error, axis=1, args=(errors_per_timestamp, ))
-        # model_df_wins[:2].apply(_calc_wins_error, axis=1, args=(errors_per_timestamp,))
+        # model_df_wins.apply(_calc_wins_error, axis=1, args=(errors_per_timestamp, ))
+        model_df_wins[:2].apply(_calc_wins_error, axis=1, args=(errors_per_timestamp,))
         newid = len(self.df_res)
-        # print('setting', s_type, s_class, newid)
-
         # save df_res for s_type, s_class
-        avg_error_per_timestamp = [np.mean(errors_per_timestamp[t]) for t in range_win]
+        # avg_error_per_timestamp = [np.mean(errors_per_timestamp[t]) for t in range_win ]
+        avg_error_per_timestamp = [np.mean(errors_per_timestamp[t]) if len(errors_per_timestamp[t]) else np.nan for t in range_win ]
         self.df_res.loc[newid, ['model_name', 'S_type', 'S_class']] = [model, s_type, s_class]
         self.df_res.loc[newid, range_win] = avg_error_per_timestamp
 
     # create vis table
     if len(self.df_res):
-      props_blue = 'color:white;background-color:darkblue'
-      props_dark = 'color:white;background-color:darkred'
-      output = self.df_res.dropna().style.highlight_min(
-          subset=list(range_win), props=props_blue).highlight_max(subset=list(range_win),
-                                                                  props=props_dark)
+      props = 'text-decoration: underline'
+      output = self.df_res.dropna()\
+        .background_gradient(axis=0, cmap='coolwarm')\
+        .highlight_min(subset=list(range_win), props=props)\
+        .highlight_max(subset=list(range_win), props=props)
     if 'ipykernel' in sys.modules:
       IPython.display.display(output)
     else:
