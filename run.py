@@ -11,7 +11,7 @@ if __name__ == '__main__':
   psr.description = 'train or evaluate users360 models and datasets'
 
   # actions params
-  grp = psr.add_mutually_exclusive_group()
+  grp = psr.add_mutually_exclusive_group(required=True)
   grp.add_argument('-calculate_entropy',
                    action='store_true',
                    help='load dataset, calculate entropy and save it ')

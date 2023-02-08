@@ -16,7 +16,8 @@ import tensorflow.keras as keras
 from keras.callbacks import CSVLogger, ModelCheckpoint, TensorBoard
 from sklearn.model_selection import train_test_split
 
-from users360.head_motion_prediction.Utils import (all_metrics, cartesian_to_eulerian,
+from users360.head_motion_prediction.Utils import (all_metrics,
+                                                   cartesian_to_eulerian,
                                                    eulerian_to_cartesian)
 
 from .entropy import *
@@ -183,7 +184,7 @@ class Trainer():
         'user': row[1]['user'],
         'trace_id': trace_id
     } for row in self.x_train.iterrows()\
-      for trace_id in range( self.init_window, row[1]['traject'].shape[0] -self.end_window)]
+      for trace_id in range(self.init_window, row[1]['traject'].shape[0] -self.end_window)]
     self.x_test_wins = [{
         'video': row[1]['video'],
         'user': row[1]['user'],
