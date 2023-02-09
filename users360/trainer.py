@@ -79,12 +79,12 @@ class Trainer():
     assert self.dataset_name in config.ARGS_DS_NAMES
     assert self.train_entropy in config.ARGS_ENTROPY_NAMES + config.ARGS_ENTROPY_AUTO_NAMES
     self.using_auto = self.train_entropy.startswith('auto')
+    self.entropy_type = 'hmpS' if self.train_entropy.endswith('hmp') else 'actS'
     if self.dataset_name == 'all' and self.train_entropy == 'all':
       self.model_fullname = self.model_name
     elif self.train_entropy == 'all':
       self.model_fullname = f'{self.model_name},{self.dataset_name},,'
     else:
-      self.entropy_type = 'hmpS' if self.train_entropy.endswith('hmp') else 'actS'
       self.train_entropy = self.train_entropy.removesuffix('_hmp')
       self.model_fullname = f'{self.model_name},{self.dataset_name},{self.entropy_type},{self.train_entropy}'
     self.model_dir = join(config.DATADIR, self.model_fullname)
@@ -158,7 +158,7 @@ class Trainer():
     if self.test_user and self.test_video:
       _, self.x_test = self.ds.get_rows(self.test_video, self.test_user, self.dataset_name)
       return
-    elif self.train_entropy != 'all':
+    elif self.train_entropy != 'all' and not self.using_auto:
       self.x_train, self.x_test = train_test_split_entropy(self.ds.df, self.entropy_type, self.train_entropy, self.perc_test)
     else:
       self.x_train, self.x_test = train_test_split(self.ds.df, random_state=1, test_size=self.perc_test)
@@ -231,8 +231,8 @@ class Trainer():
     config.info('evaluate()')
     config.info('model_dir=' + self.model_dir)
     self.partition()
-    fmt = 'x_test has {} trajectories: {} low, {} medium, {} hight'
-    config.info(fmt.format(*count_entropy(self.x_test)))
+    fmt = 'x_test has {} trajectories: {} low, {} medium, {} hight of entropy {}'
+    config.info(fmt.format(*count_entropy(self.x_test, self.entropy_type), self.entropy_type))
 
     if not self.model_fullname in self.ds.df.columns:
       empty = pd.Series([{} for _ in range(len(self.ds.df))]).astype(object)
@@ -267,13 +267,13 @@ class Trainer():
       model_medium.load_weights(model_weights_medium)
       model_hight = self.create_model()
       model_hight.load_weights(model_weights_hight)
+      self.threshold_medium, self.threshold_hight = get_class_thresholds(self.df, 'actS')
     else:
       model = self.create_model()
       assert exists(model_weights)
       model.load_weights(model_weights)
 
     # predict by each pred_windows
-    threshold_medium, threshold_hight = calc_column_thresholds(self.ds.df, 'actS')
     for ids in tqdm(self.x_test_wins, desc='position predictions'):
       user = ids['user']
       video = ids['video']
@@ -294,11 +294,11 @@ class Trainer():
         elif self.train_entropy == 'auto_m_window':
           window = self.ds.get_traces(video, user, self.dataset_name)[x_i - self.m_window:x_i]
           a_ent = calc_actual_entropy(window)
-          actS_c = get_class_by_threshold(a_ent, threshold_medium, threshold_hight)
+          actS_c = get_class_name(a_ent, self.threshold_medium, self.threshold_hight)
         elif self.train_entropy == 'auto_since_start':
           window = self.ds.get_traces(video, user, self.dataset_name)[0:x_i]
           a_ent = calc_actual_entropy(window)
-          actS_c = get_class_by_threshold(a_ent, threshold_medium, threshold_hight)
+          actS_c = get_class_name(a_ent, self.threshold_medium, self.threshold_hight)
         else:
           raise RuntimeError()
         if actS_c == 'low':

@@ -14,17 +14,17 @@ from .utils.fov import calc_actual_entropy
 from .utils.tileset import TILESET_DEFAULT
 
 
-def calc_column_thresholds(df: pd.DataFrame, column) -> tuple[float, float]:
-  idxs_sort = df[column].argsort()
-  trajects_len = len(df[column])
+def get_class_thresholds(df, col: str) -> tuple[float, float]:
+  idxs_sort = df[col].argsort()
+  trajects_len = len(df[col])
   idx_threshold_medium = idxs_sort[int(trajects_len * .60)]
   idx_threshold_hight = idxs_sort[int(trajects_len * .90)]
-  threshold_medium = df[column][idx_threshold_medium]
-  threshold_hight = df[column][idx_threshold_hight]
+  threshold_medium = df[col][idx_threshold_medium]
+  threshold_hight = df[col][idx_threshold_hight]
   return threshold_medium, threshold_hight
 
 
-def get_class_by_threshold(x, threshold_medium, threshold_hight) -> Literal['low', 'medium', 'hight']:
+def get_class_name(x: float, threshold_medium: float, threshold_hight: float) -> Literal['low', 'medium', 'hight']:
   return 'low' if x < threshold_medium else ('medium' if x < threshold_hight else 'hight')
 
 
@@ -146,8 +146,8 @@ class Dataset:
     self.df['actS'] = self.df['traject'].progress_apply(calc_actual_entropy)
     assert not self.df['actS'].isnull().any()
     # calc trajects_entropy_class
-    threshold_medium, threshold_hight = calc_column_thresholds(self.df, 'actS')
-    self.df['actS_c'] = self.df['actS'].progress_apply(get_class_by_threshold,
+    threshold_medium, threshold_hight = get_class_thresholds(self.df, 'actS')
+    self.df['actS_c'] = self.df['actS'].progress_apply(get_class_name,
                                                        args=(threshold_medium, threshold_hight))
     assert not self.df['actS_c'].isnull().any()
 
@@ -176,8 +176,8 @@ class Dataset:
 
     self.df['poles_prc'] = pd.Series(self.df['traject'].progress_apply(_poles_prc))
     # calc poles_class
-    threshold_medium, threshold_hight = calc_column_thresholds(self.df, 'poles_prc')
-    self.df['poles_class'] = self.df['poles_prc'].progress_apply(get_class_by_threshold,
+    threshold_medium, threshold_hight = get_class_thresholds(self.df, 'poles_prc')
+    self.df['poles_class'] = self.df['poles_prc'].progress_apply(get_class_name,
                                                                  args=(threshold_medium,
                                                                        threshold_hight))
     assert not self.df['poles_class'].isna().any()
@@ -216,7 +216,7 @@ class Dataset:
     # calc trajects_entropy_class
     # clean
     self.df.drop(['hmpS', 'hmpS_c'], axis=1, errors='ignore')
-    threshold_medium, threshold_hight = calc_column_thresholds(self.df, 'hmpS')
-    self.df['hmpS_c'] = self.df['hmpS'].progress_apply(get_class_by_threshold,
+    threshold_medium, threshold_hight = get_class_thresholds(self.df, 'hmpS')
+    self.df['hmpS_c'] = self.df['hmpS'].progress_apply(get_class_name,
                                                        args=(threshold_medium, threshold_hight))
     assert not self.df['actS_c'].isnull().any()
