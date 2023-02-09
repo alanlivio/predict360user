@@ -1,11 +1,7 @@
 import unittest
 
-import plotly.io as pio
-
 from users360.dataset import *
 from users360.utils.entropy import *
-
-pio.renderers.default = None
 
 
 class Test(unittest.TestCase):

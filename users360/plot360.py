@@ -8,24 +8,22 @@ from plotly.subplots import make_subplots
 from scipy.spatial import SphericalVoronoi, geometric_slerp
 from spherical_geometry.polygon import SphericalPolygon
 
-from .fov import fov_points
-from .tileset import TILESET_DEFAULT, TileSet, tile_points
-from .tileset_voro import TileSetVoro
+from .utils.fov import fov_points
+from .utils.tileset import TILESET_DEFAULT, TileSet, tile_points
+from .utils.tileset_voro import TileSetVoro
 
 
-class VizSphere():
-  """
-  class for visualize trajects in a sphere
-  """
+class Plot360():
 
   def __init__(self, tileset=TILESET_DEFAULT) -> None:
-    if isinstance(tileset, TileSetVoro):
-      self.data = self._data_sphere_voro(tileset.voro)
+    self.tileset = tileset
+    if isinstance(self.tileset, TileSetVoro):
+      self.data = self._data_self_voro(self.tileset.voro)
     else:
-      self.data = self._data_sphere_tiled(tileset.t_ver, tileset.t_hor)
+      self.data = self._data_self_tiled(self.tileset.t_ver, self.tileset.t_hor)
     self.title = 'trajectory'
 
-  def _data_sphere_surface(self) -> list:
+  def _data_self_surface(self) -> list:
     # https://community.plotly.com/t/3d-surface-bug-a-custom-colorscale-defined-with-rgba-values-ignores-the-alpha-specification/30809
     theta = np.linspace(0, 2 * np.pi, 100)
     phi = np.linspace(0, np.pi, 100)
@@ -39,15 +37,15 @@ class VizSphere():
                          showscale=False)
     return [surface]
 
-  def _data_sphere_voro(self, sphere_voro: SphericalVoronoi) -> list:
-    data = self._data_sphere_surface()
+  def _data_self_voro(self, self_voro: SphericalVoronoi) -> list:
+    data = self._data_self_surface()
     # tile edges
-    for region in sphere_voro.regions:
+    for region in self_voro.regions:
       n = len(region)
       t = np.linspace(0, 1, 100)
       for index in range(n):
-        start = sphere_voro.vertices[region][index]
-        end = sphere_voro.vertices[region][(index + 1) % n]
+        start = self_voro.vertices[region][index]
+        end = self_voro.vertices[region][(index + 1) % n]
         result = np.array(geometric_slerp(start, end, t))
         edge = go.Scatter3d(x=result[..., 0],
                             y=result[..., 1],
@@ -62,8 +60,8 @@ class VizSphere():
         data.append(edge)
     return data
 
-  def _data_sphere_tiled(self, t_ver, t_hor) -> list:
-    data = self._data_sphere_surface()
+  def _data_self_tiled(self, t_ver, t_hor) -> list:
+    data = self._data_self_surface()
     # tiles edges
     for row in range(t_ver):
       for col in range(t_hor):
@@ -225,104 +223,94 @@ class VizSphere():
   def show(self) -> None:
     fig = go.Figure(data=self.data)
     fig.update_layout(width=800, showlegend=False, title_text=self.title)
-    if self.sliders:
+    if hasattr(self, 'sliders'):
       fig.update_layout(sliders=self.sliders)
     fig.show()
 
 
-def show_fov(trace, tileset=TILESET_DEFAULT) -> None:
-  assert len(trace) == 3  # cartesian
+  def show_fov(self, trace) -> None:
+    assert len(trace) == 3  # cartesian
 
-  # subplot two figures
-  fig = make_subplots(rows=1,
-                      cols=2,
-                      specs=[[{
-                          'type': 'surface'
-                      }, {
-                          'type': 'image'
-                      }]])
+    # subplot two figures
+    fig = make_subplots(rows=1,
+                        cols=2,
+                        specs=[[{
+                            'type': 'surface'
+                        }, {
+                            'type': 'image'
+                        }]])
 
-  # sphere
-  sphere = VizSphere(tileset)
-  sphere.add_trace_and_fov(trace)
-  for t in sphere.data:
-    fig.append_trace(t, row=1, col=1)
+    self.add_trace_and_fov(trace)
+    for t in self.data:
+      fig.append_trace(t, row=1, col=1)
 
-  # heatmap
-  heatmap: np.array = tileset.request(trace)
-  if isinstance(tileset, TileSetVoro):
-    heatmap = np.reshape(heatmap, tileset.shape)
-  x = [str(x) for x in range(1, heatmap.shape[1] + 1)]
-  y = [str(y) for y in range(1, heatmap.shape[0] + 1)]
-  erp_heatmap = px.imshow(heatmap, text_auto=True, x=x, y=y)
-  for t in erp_heatmap['data']:
-    fig.append_trace(t, row=1, col=2)
-  if isinstance(tileset, TileSet):
-    # fix given phi 0 being the north pole at Utils.cartesian_to_eulerian
-    fig.update_yaxes(autorange='reversed')
-
-  title = f'trace_[{trace[0]:.2},{trace[1]:.2},{trace[2]:.2}]_{tileset.prefix}'
-  fig.update_layout(width=800, showlegend=False, title_text=title)
-  fig.show()
-
-
-def _get_imshow_from_trajects_hmps(df: pd.DataFrame, tileset=TILESET_DEFAULT) -> px.imshow:
-  hmp_sums = df['traject_hmp'].apply(lambda traces: np.sum(traces, axis=0))
-  if isinstance(tileset, TileSetVoro):
-    hmp_sums = np.reshape(hmp_sums, tileset.shape)
-  heatmap = np.sum(hmp_sums, axis=0)
-  x = [str(x) for x in range(1, heatmap.shape[1] + 1)]
-  y = [str(y) for y in range(1, heatmap.shape[0] + 1)]
-  return px.imshow(heatmap, text_auto=True, x=x, y=y)
-
-
-def show_one_traject(row: pd.Series, tileset=TILESET_DEFAULT) -> None:
-  assert row.shape[0] == 1
-  assert 'traject' in row.columns
-  # subplot two figures
-  fig = make_subplots(rows=1, cols=2, specs=[[{'type': 'surface'}, {'type': 'image'}]])
-  # sphere
-  sphere = VizSphere(tileset)
-  sphere.add_trajectory(row['traject'].iloc[0])
-  for d in sphere.data:  # load all data from the sphere
-    fig.append_trace(d, row=1, col=1)
-
-  # heatmap
-  if 'traject_hmp' in row:
-    erp_heatmap = _get_imshow_from_trajects_hmps(row, tileset)
-    erp_heatmap.update_layout(width=100, height=100)
-    fig.append_trace(erp_heatmap.data[0], row=1, col=2)
-    if isinstance(tileset, TileSet):
+    # heatmap
+    heatmap: np.array = self.tileset.request(trace)
+    if isinstance(self.tileset, TileSetVoro):
+      heatmap = np.reshape(heatmap, self.tileset.shape)
+    x = [str(x) for x in range(1, heatmap.shape[1] + 1)]
+    y = [str(y) for y in range(1, heatmap.shape[0] + 1)]
+    erp_heatmap = px.imshow(heatmap, text_auto=True, x=x, y=y)
+    for t in erp_heatmap['data']:
+      fig.append_trace(t, row=1, col=2)
+    if isinstance(self.tileset, TileSet):
       # fix given phi 0 being the north pole at Utils.cartesian_to_eulerian
       fig.update_yaxes(autorange='reversed')
 
-  title = f'{str(row.shape[0])}_trajects_{tileset.prefix}'
-  fig.update_layout(width=800, showlegend=False, title_text=title)
-  fig.show()
+    title = f'trace_[{trace[0]:.2},{trace[1]:.2},{trace[2]:.2}]_{self.tileset.prefix}'
+    fig.update_layout(width=800, showlegend=False, title_text=title)
+    fig.show()
+
+  def _get_imshow_from_trajects_hmps(self, df: pd.DataFrame) -> px.imshow:
+    hmp_sums = df['traject_hmp'].apply(lambda traces: np.sum(traces, axis=0))
+    if isinstance(self.tileset, TileSetVoro):
+      hmp_sums = np.reshape(hmp_sums, self.tileset.shape)
+    heatmap = np.sum(hmp_sums, axis=0)
+    x = [str(x) for x in range(1, heatmap.shape[1] + 1)]
+    y = [str(y) for y in range(1, heatmap.shape[0] + 1)]
+    return px.imshow(heatmap, text_auto=True, x=x, y=y)
 
 
-def show_sum_trajects(df: pd.DataFrame, tileset=TILESET_DEFAULT) -> None:
-  assert len(df) <= 4, 'df >=4 does not get a good visualization'
-  assert not df.empty
+  def show_traject(self, row: pd.Series) -> None:
+    assert row.shape[0] == 1
+    assert 'traject' in row.columns
+    fig = make_subplots(rows=1, cols=2, specs=[[{'type': 'surface'}, {'type': 'image'}]])
+    self.add_trajectory(row['traject'].iloc[0])
+    for d in self.data:  # load all data from the self
+      fig.append_trace(d, row=1, col=1)
 
-  # subplot two figures
-  fig = make_subplots(rows=1, cols=2, specs=[[{'type': 'surface'}, {'type': 'image'}]])
+    # heatmap
+    if 'traject_hmp' in row:
+      erp_heatmap = self._get_imshow_from_trajects_hmps(row)
+      erp_heatmap.update_layout(width=100, height=100)
+      fig.append_trace(erp_heatmap.data[0], row=1, col=2)
+      if isinstance(self.tileset, TileSet):
+        # fix given phi 0 being the north pole at Utils.cartesian_to_eulerian
+        fig.update_yaxes(autorange='reversed')
 
-  # sphere
-  sphere = VizSphere(tileset)
-  for _, row in df.iterrows():
-    sphere.add_trajectory(row['traject'])
-  for d in sphere.data:  # load all data from the sphere
-    fig.append_trace(d, row=1, col=1)
+    title = f'{str(row.shape[0])}_trajects_{self.tileset.prefix}'
+    fig.update_layout(width=800, showlegend=False, title_text=title)
+    fig.show()
 
-  # heatmap
-  if 'traject_hmp' in df:
-    erp_heatmap = _get_imshow_from_trajects_hmps(df, tileset)
-    fig.append_trace(erp_heatmap.data[0], row=1, col=2)
-    if isinstance(tileset, TileSet):
-      # fix given phi 0 being the north pole at Utils.cartesian_to_eulerian
-      fig.update_yaxes(autorange='reversed')
 
-  title = f'{str(df.shape[0])}_trajects_{tileset.prefix}'
-  fig.update_layout(width=800, showlegend=False, title_text=title)
-  fig.show()
+  def show_sum_trajects(self, df: pd.DataFrame) -> None:
+    assert len(df) <= 4, 'df >=4 does not get a good visualization'
+    assert not df.empty
+
+    fig = make_subplots(rows=1, cols=2, specs=[[{'type': 'surface'}, {'type': 'image'}]])
+    for _, row in df.iterrows():
+      self.add_trajectory(row['traject'])
+    for d in self.data:  # load all data from the self
+      fig.append_trace(d, row=1, col=1)
+
+    # heatmap
+    if 'traject_hmp' in df:
+      erp_heatmap = self._get_imshow_from_trajects_hmps(df)
+      fig.append_trace(erp_heatmap.data[0], row=1, col=2)
+      if isinstance(self.tileset, TileSet):
+        # fix given phi 0 being the north pole at Utils.cartesian_to_eulerian
+        fig.update_yaxes(autorange='reversed')
+
+    title = f'{str(df.shape[0])}_trajects_{self.tileset.prefix}'
+    fig.update_layout(width=800, showlegend=False, title_text=title)
+    fig.show()

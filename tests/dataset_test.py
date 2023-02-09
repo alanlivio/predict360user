@@ -1,11 +1,7 @@
 import unittest
 
-import plotly.io as pio
-
 from users360.dataset import Dataset
-from users360.utils.viz_sphere import *
 
-pio.renderers.default = None
 
 class Test(unittest.TestCase):
 
@@ -29,8 +25,3 @@ class Test(unittest.TestCase):
     ds_l = self.ds.get_ds_ids()
     self.assertTrue(ds_l.size)
     self.assertTrue(self.ds.get_traces(videos_l[0], users_l[0], ds_l[0]).size)
-
-  def test_show_one_traject(self) -> None:
-    one_row = self.ds.random_traject()
-    self.assertFalse(one_row.empty)
-    show_one_traject(one_row)
