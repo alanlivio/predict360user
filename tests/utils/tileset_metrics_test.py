@@ -11,7 +11,7 @@ class Test(unittest.TestCase):
   def setUp(self) -> None:
     # limit testing df to 2
     self.ds = Dataset()
-    assert not self.ds.df.empty
+    self.assertFalse(self.ds.df.empty)
     # force hmp recalc
     self.ds.df.drop(['traject_hmp'], axis=1, errors='ignore')
 
