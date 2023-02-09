@@ -2,8 +2,8 @@ import unittest
 
 import plotly.io as pio
 
-from users360.entropy import *
-from users360.trajects import *
+from users360.utils.entropy import *
+from users360.dataset import *
 
 pio.renderers.default = None
 

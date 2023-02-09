@@ -6,9 +6,9 @@ import plotly.express as px
 import scipy.stats
 from tqdm.auto import tqdm
 
-from . import config
-from .head_motion_prediction.Utils import cartesian_to_eulerian
-from .utils.tileset import TILESET_DEFAULT
+from .. import config
+from ..head_motion_prediction.Utils import cartesian_to_eulerian
+from .tileset import TILESET_DEFAULT
 
 tqdm.pandas()
 

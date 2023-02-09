@@ -1,7 +1,7 @@
 import unittest
 
-from users360.tileset_metrics import calc_tileset_reqs_metrics
-from users360.trajects import get_df_trajects
+from users360.utils.tileset_metrics import calc_tileset_reqs_metrics
+from users360.dataset import get_df_trajects
 from users360.utils.tileset import TileCover, TileSet
 from users360.utils.tileset_voro import TileSetVoro
 

@@ -4,8 +4,8 @@ import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 from tqdm.auto import tqdm
 
-from . import config
-from .utils.tileset import TileSet
+from .. import config
+from .tileset import TileSet
 
 tqdm.pandas()
 
