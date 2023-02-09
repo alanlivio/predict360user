@@ -19,7 +19,7 @@ class Test(unittest.TestCase):
     one_row = self.ds.df.query("ds=='david' and user=='david_0' and video=='david_10_Cows'")
     self.assertFalse(one_row.empty)
     trace = self.ds.random_trace()
-    self.assertEquals(trace.shape, (3, ))
+    self.assertEqual(trace.shape, (3, ))
 
   def test_trajects_get(self) -> None:
     videos_l = self.ds.get_video_ids()
