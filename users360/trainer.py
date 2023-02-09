@@ -10,9 +10,6 @@ from typing import Any, Generator
 import IPython
 import numpy as np
 import pandas as pd
-import plotly
-import plotly.express as px
-import tensorflow.keras as keras
 from keras.callbacks import CSVLogger, ModelCheckpoint, TensorBoard
 from sklearn.model_selection import train_test_split
 
@@ -20,12 +17,11 @@ from users360.head_motion_prediction.Utils import (all_metrics,
                                                    cartesian_to_eulerian,
                                                    eulerian_to_cartesian)
 
-from .dataset import *
-from .utils.entropy import *
+from . import config
+from .dataset import Dataset
+from .utils.entropy import calc_actual_entropy, calc_column_thresholds
 
 METRIC = all_metrics['orthodromic']
-RATE = 0.2
-BATCH_SIZE = 128.0
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
@@ -408,11 +404,14 @@ class Trainer():
         # df_wins.apply by column and add errors_per_timestamp
         errors_per_timestamp = {idx: [] for idx in range_win}
         # model_df_wins.apply(_calc_wins_error, axis=1, args=(errors_per_timestamp, ))
-        model_df_wins[:2].apply(_calc_wins_error, axis=1, args=(errors_per_timestamp,))
+        model_df_wins[:2].apply(_calc_wins_error, axis=1, args=(errors_per_timestamp, ))
         newid = len(self.ds.df_res)
         # save df_res for s_type, s_class
         # avg_error_per_timestamp = [np.mean(errors_per_timestamp[t]) for t in range_win ]
-        avg_error_per_timestamp = [np.mean(errors_per_timestamp[t]) if len(errors_per_timestamp[t]) else np.nan for t in range_win ]
+        avg_error_per_timestamp = [
+            np.mean(errors_per_timestamp[t]) if len(errors_per_timestamp[t]) else np.nan
+            for t in range_win
+        ]
         self.ds.df_res.loc[newid, ['model_name', 'S_type', 'S_class']] = [model, s_type, s_class]
         self.ds.df_res.loc[newid, range_win] = avg_error_per_timestamp
 

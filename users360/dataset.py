@@ -8,12 +8,10 @@ import pandas as pd
 
 from . import config
 
-PICKLE_FILE = os.path.join(config.DATADIR, 'df_trajects.pickle')
-
 
 class Dataset:
 
-  def __init__(self, pickle_f=PICKLE_FILE) -> None:
+  def __init__(self, pickle_f=config.PICKLE_FILE) -> None:
     self.pickle_f = pickle_f
     if exists(self.pickle_f):
       with open(self.pickle_f, 'rb') as f:
