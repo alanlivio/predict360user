@@ -168,32 +168,26 @@ class Dataset:
 
   def calc_trajects_poles_prc(self) -> None:
     # clean
-    self.df.drop(['poles_prc', 'poles_class'], axis=1, errors='ignore')
+    self.df.drop(['poles_prc', 'poles_prc_c'], axis=1, errors='ignore')
 
     # calc poles_prc
-    def _poles_prc(traces) -> float:
+    def _calc_poles_prc(traces) -> float:
       return np.count_nonzero(abs(traces[:, 2]) > 0.7) / len(traces)
-
-    self.df['poles_prc'] = pd.Series(self.df['traject'].progress_apply(_poles_prc))
-    # calc poles_class
+    self.df['poles_prc'] = pd.Series(self.df['traject'].progress_apply(_calc_poles_prc))
+    # calc poles_prc_c
     threshold_medium, threshold_hight = get_class_thresholds(self.df, 'poles_prc')
-    self.df['poles_class'] = self.df['poles_prc'].progress_apply(get_class_name,
+    self.df['poles_prc_c'] = self.df['poles_prc'].progress_apply(get_class_name,
                                                                  args=(threshold_medium,
                                                                        threshold_hight))
-    assert not self.df['poles_class'].isna().any()
+    assert not self.df['poles_prc_c'].isna().any()
 
   def show_trajects_poles_prc(self) -> None:
-    assert {'poles_prc', 'poles_class'}.issubset(self.df.columns)
-    fig = px.scatter(self.df,
-                     x='user',
-                     y='poles_prc',
-                     color='poles_class',
-                     hover_data=[self.df.index],
-                     title='trajects poles_perc',
-                     width=700)
-    fig.update_yaxes(showticklabels=False)
-    fig.update_traces(marker_size=2)
-    fig.show()
+    assert {'poles_prc', 'poles_prc_c'}.issubset(self.df.columns)
+    px.histogram(self.df,
+                 x='poles_prc',
+                 color='poles_prc_c',
+                 color_discrete_map=config.ENTROPY_CLASS_COLORS,
+                 width=900).show()
 
   def calc_trajects_hmp_entropy(self) -> None:
     if not 'traject_hmp' in self.df.columns:
