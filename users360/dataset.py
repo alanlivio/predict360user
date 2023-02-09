@@ -2,12 +2,34 @@ import io
 import os
 import pickle
 from os.path import exists
+from typing import Literal
 
 import numpy as np
 import pandas as pd
+import plotly.express as px
+import scipy.stats
+from tqdm.auto import tqdm
 
 from . import config
+from .utils.fov import *
+from .utils.tileset import TILESET_DEFAULT
 
+
+def calc_column_thresholds(df: pd.DataFrame, column) -> tuple[float, float]:
+  idxs_sort = df[column].argsort()
+  trajects_len = len(df[column])
+  idx_threshold_medium = idxs_sort[int(trajects_len * .60)]
+  idx_threshold_hight = idxs_sort[int(trajects_len * .90)]
+  threshold_medium = df[column][idx_threshold_medium]
+  threshold_hight = df[column][idx_threshold_hight]
+  return threshold_medium, threshold_hight
+
+
+def get_class_by_threshold(x, threshold_medium,
+                           threshold_hight) -> Literal['low', 'medium', 'hight']:
+  return 'low' if x < threshold_medium else ('medium' if x < threshold_hight else 'hight')
+
+tqdm.pandas()
 
 class Dataset:
 
@@ -118,3 +140,86 @@ class Dataset:
 
   def get_ds_ids(self) -> np.array:
     return self.df['ds'].unique()
+
+  def calc_trajects_entropy(self) -> None:
+    # clean
+    self.df.drop(['actS', 'actS_c'], axis=1, errors='ignore')
+    # calc actS
+    config.info('calculating trajects entropy ...')
+    self.df['actS'] = self.df['traject'].progress_apply(calc_actual_entropy)
+    assert not self.df['actS'].isnull().any()
+    # calc trajects_entropy_class
+    threshold_medium, threshold_hight = calc_column_thresholds(self.df, 'actS')
+    self.df['actS_c'] = self.df['actS'].progress_apply(get_class_by_threshold,
+                                                       args=(threshold_medium, threshold_hight))
+    assert not self.df['actS_c'].isnull().any()
+
+  def show_trajects_entropy(self, facet=None) -> None:
+    assert {'actS', 'actS_c'}.issubset(self.df.columns)
+    px.histogram(self.df,
+                 x='actS',
+                 color='actS_c',
+                 facet_col=facet,
+                 color_discrete_map=config.ENTROPY_CLASS_COLORS,
+                 width=900).show()
+    px.histogram(self.df,
+                 x='hmpS',
+                 facet_col=facet,
+                 color='hmpS_c',
+                 color_discrete_map=config.ENTROPY_CLASS_COLORS,
+                 width=900).show()
+
+  def calc_trajects_poles_prc(self) -> None:
+    # clean
+    self.df.drop(['poles_prc', 'poles_class'], axis=1, errors='ignore')
+
+    # calc poles_prc
+    def _poles_prc(traces) -> float:
+      return np.count_nonzero(abs(traces[:, 2]) > 0.7) / len(traces)
+
+    self.df['poles_prc'] = pd.Series(self.df['traject'].progress_apply(_poles_prc))
+    # calc poles_class
+    threshold_medium, threshold_hight = calc_column_thresholds(self.df, 'poles_prc')
+    self.df['poles_class'] = self.df['poles_prc'].progress_apply(get_class_by_threshold,
+                                                                 args=(threshold_medium,
+                                                                       threshold_hight))
+    assert not self.df['poles_class'].isna().any()
+
+  def show_trajects_poles_prc(self) -> None:
+    assert {'poles_prc', 'poles_class'}.issubset(self.df.columns)
+    fig = px.scatter(self.df,
+                     x='user',
+                     y='poles_prc',
+                     color='poles_class',
+                     hover_data=[self.df.index],
+                     title='trajects poles_perc',
+                     width=700)
+    fig.update_yaxes(showticklabels=False)
+    fig.update_traces(marker_size=2)
+    fig.show()
+
+  def calc_trajects_hmp_entropy(self) -> None:
+    if not 'traject_hmp' in self.df.columns:
+      config.info('calculating heatmaps ...')
+
+      def _calc_traject_hmp(traces) -> np.array:
+        return np.apply_along_axis(TILESET_DEFAULT.request, 1, traces)
+
+      np_hmps = self.df['traject'].progress_apply(_calc_traject_hmp)
+      self.df['traject_hmp'] = pd.Series(np_hmps)
+      assert not self.df['traject_hmp'].isnull().any()
+    # calc hmpS
+    config.info('calculating heatmaps entropy ...')
+
+    def _hmp_entropy(traject) -> float:
+      return scipy.stats.entropy(np.sum(traject, axis=0).reshape((-1)))
+
+    self.df['hmpS'] = self.df['traject_hmp'].progress_apply(_hmp_entropy)
+    assert not self.df['hmpS'].isnull().any()
+    # calc trajects_entropy_class
+    # clean
+    self.df.drop(['hmpS', 'hmpS_c'], axis=1, errors='ignore')
+    threshold_medium, threshold_hight = calc_column_thresholds(self.df, 'hmpS')
+    self.df['hmpS_c'] = self.df['hmpS'].progress_apply(get_class_by_threshold,
+                                                       args=(threshold_medium, threshold_hight))
+    assert not self.df['actS_c'].isnull().any()

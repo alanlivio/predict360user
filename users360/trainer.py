@@ -18,8 +18,8 @@ from users360.head_motion_prediction.Utils import (all_metrics,
                                                    eulerian_to_cartesian)
 
 from . import config
-from .dataset import Dataset
-from .utils.entropy import calc_actual_entropy, calc_column_thresholds
+from .dataset import *
+from .utils.fov import *
 
 METRIC = all_metrics['orthodromic']
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -143,7 +143,7 @@ class Trainer():
         else:
           raise NotImplementedError
         count += 1
-        if count == BATCH_SIZE:
+        if count == config.BATCH_SIZE:
           count = 0
           if self.model_name == 'pos_only':
             yield ([

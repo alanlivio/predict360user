@@ -25,3 +25,11 @@ class Test(unittest.TestCase):
     ds_l = self.ds.get_ds_ids()
     self.assertTrue(ds_l.size)
     self.assertTrue(self.ds.get_traces(videos_l[0], users_l[0], ds_l[0]).size)
+
+  def test_trajects_entropy(self) -> None:
+    self.ds.df = self.ds.df[:10] # limitig given time
+    self.ds.calc_trajects_entropy()
+
+  def test_poles_prc(self) -> None:
+    self.ds.df = self.ds.df[:10]  # limitig given time
+    self.ds.calc_trajects_poles_prc()
