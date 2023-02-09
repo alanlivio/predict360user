@@ -50,7 +50,7 @@ def get_train_test_split(df: pd.DataFrame, entropy: str,
   return train_test_split(df, **args)
 
 
-def count_traject_entropy_classes(df) -> tuple[int, int, int, int]:
+def count_traject_entropy_classes(df: pd.DataFrame) -> tuple[int, int, int, int]:
   a_len = len(df)
   l_len = len(df[df['actS_c'] == 'low'])
   m_len = len(df[df['actS_c'] == 'medium'])
@@ -103,14 +103,14 @@ class Trainer():
     assert self.dataset_name in config.ARGS_DS_NAMES
     assert self.train_entropy in config.ARGS_ENTROPY_NAMES + config.ARGS_ENTROPY_AUTO_NAMES
     self.using_auto = self.train_entropy.startswith('auto')
-    if self.train_entropy != 'all':
+    if self.dataset_name == 'all' and self.train_entropy == 'all':
+      self.model_fullname = self.model_name
+    elif self.train_entropy == 'all':
+      self.model_fullname = f'{self.model_name},{self.dataset_name},,'
+    else:
       self.entropy_type = 'hmpS' if self.train_entropy.endswith('hmp') else 'actS'
       self.train_entropy = self.train_entropy.removesuffix('_hmp')
-    # if any filter, use model_fullname with ','
-    if self.dataset_name != 'all' or self.train_entropy != 'all':
       self.model_fullname = f'{self.model_name},{self.dataset_name},{self.entropy_type},{self.train_entropy}'
-    else:
-      self.model_fullname = self.model_name
     self.model_dir = join(config.DATADIR, self.model_fullname)
     self.model_weights = join(self.model_dir, 'weights.hdf5')
     self.end_window = self.h_window

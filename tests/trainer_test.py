@@ -21,12 +21,11 @@ class Test(unittest.TestCase):
     for train_entropy in config.ARGS_ENTROPY_NAMES[1:] + config.ARGS_ENTROPY_AUTO_NAMES:
       trn = Trainer(train_entropy=train_entropy)
       entropy_type = 'hmpS' if train_entropy.endswith('hmp') else 'actS'
-      train_entropy = train_entropy.removesuffix('hmp')
+      train_entropy = train_entropy.removesuffix('_hmp')
       model_fullname = f'pos_only,all,{entropy_type},{train_entropy}'
-      assert trn.model_fullname == model_fullname
-      assert trn.model_dir == join(config.DATADIR, model_fullname)
-      using_auto = train_entropy.startswith('auto')
-      assert trn.using_auto is using_auto
+      self.assertEqual(trn.model_fullname, model_fullname)
+      self.assertEqual(trn.model_dir, join(config.DATADIR, model_fullname))
+      self.assertEqual(trn.using_auto, train_entropy.startswith('auto'))
 
   def test_train_test_split(self) -> None:
     self.ds = Dataset()
