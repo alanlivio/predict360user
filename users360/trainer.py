@@ -10,8 +10,8 @@ from typing import Any, Generator
 import IPython
 import numpy as np
 import pandas as pd
-import sklearn
 from keras.callbacks import CSVLogger, ModelCheckpoint, TensorBoard
+from sklearn.model_selection import train_test_split
 
 from users360.head_motion_prediction.Utils import (all_metrics,
                                                    cartesian_to_eulerian,
@@ -161,7 +161,7 @@ class Trainer():
     elif self.train_entropy != 'all':
       self.x_train, self.x_test = train_test_split_entropy(self.ds.df, self.entropy_type, self.train_entropy, self.perc_test)
     else:
-      self.x_train, self.x_test = sklearn.model_selection.train_test_split(self.ds.df, random_state=1, test_size=self.perc_test)
+      self.x_train, self.x_test = train_test_split(self.ds.df, random_state=1, test_size=self.perc_test)
 
     # create x_train_wins, x_test_wins
     self.x_train_wins = [{
