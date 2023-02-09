@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import scipy.stats
+from sklearn.model_selection import train_test_split
 from tqdm.auto import tqdm
 
 from . import config
@@ -25,9 +26,37 @@ def calc_column_thresholds(df: pd.DataFrame, column) -> tuple[float, float]:
   return threshold_medium, threshold_hight
 
 
-def get_class_by_threshold(x, threshold_medium,
-                           threshold_hight) -> Literal['low', 'medium', 'hight']:
+def get_class_by_threshold(x, threshold_medium, threshold_hight) -> Literal['low', 'medium', 'hight']:
   return 'low' if x < threshold_medium else ('medium' if x < threshold_hight else 'hight')
+
+
+def get_train_test_split(df: pd.DataFrame, entropy: str,
+                         perc_test: float) -> tuple[pd.DataFrame, pd.DataFrame]:
+  args = {'test_size': perc_test, 'random_state': 1}
+  if entropy.startswith('auto'):
+    raise RuntimeError()
+  if entropy != 'all':
+    if entropy.endswith('_hmp'):
+      entropy = entropy.removesuffix('_hmp')
+      if entropy == 'nohight':
+        df = df[df['hmpS_c'] != 'hight']
+      else:
+        df = df[df['hmpS_c'] == entropy]
+    else:
+      if entropy == 'nohight':
+        df = df[df['actS_c'] != 'hight']
+      else:
+        df = df[df['actS_c'] == entropy]
+  return train_test_split(df, **args)
+
+
+def count_traject_entropy_classes(df: pd.DataFrame) -> tuple[int, int, int, int]:
+  a_len = len(df)
+  l_len = len(df[df['actS_c'] == 'low'])
+  m_len = len(df[df['actS_c'] == 'medium'])
+  h_len = len(df[df['actS_c'] == 'hight'])
+  return a_len, l_len, m_len, h_len
+
 
 tqdm.pandas()
 
@@ -223,3 +252,10 @@ class Dataset:
     self.df['hmpS_c'] = self.df['hmpS'].progress_apply(get_class_by_threshold,
                                                        args=(threshold_medium, threshold_hight))
     assert not self.df['actS_c'].isnull().any()
+
+  def show_train_test_split(self, entropy: str, perc_test: float) -> None:
+    x_train, x_test = get_train_test_split(self.df, entropy, perc_test)
+    x_train['partition'] = 'train'
+    x_test['partition'] = 'test'
+    self.df = pd.concat([x_train, x_test])
+    self.show_trajects_entropy(facet='partition')

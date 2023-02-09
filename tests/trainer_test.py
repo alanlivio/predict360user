@@ -2,10 +2,9 @@ import unittest
 from os.path import join
 
 from users360 import config
-from users360.dataset import Dataset
-from users360.trainer import (Trainer, count_traject_entropy_classes,
-                              get_train_test_split)
-from users360.utils.fov import calc_actual_entropy
+from users360.dataset import *
+from users360.trainer import *
+from users360.utils.fov import *
 
 
 class Test(unittest.TestCase):

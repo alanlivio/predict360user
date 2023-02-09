@@ -25,43 +25,6 @@ METRIC = all_metrics['orthodromic']
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
-
-def get_train_test_split(df: pd.DataFrame, entropy: str,
-                         perc_test: float) -> tuple[pd.DataFrame, pd.DataFrame]:
-  args = {'test_size': perc_test, 'random_state': 1}
-  if entropy.startswith('auto'):
-    raise RuntimeError()
-  if entropy != 'all':
-    if entropy.endswith('_hmp'):
-      entropy = entropy.removesuffix('_hmp')
-      if entropy == 'nohight':
-        df = df[df['hmpS_c'] != 'hight']
-      else:
-        df = df[df['hmpS_c'] == entropy]
-    else:
-      if entropy == 'nohight':
-        df = df[df['actS_c'] != 'hight']
-      else:
-        df = df[df['actS_c'] == entropy]
-  return train_test_split(df, **args)
-
-
-def count_traject_entropy_classes(df: pd.DataFrame) -> tuple[int, int, int, int]:
-  a_len = len(df)
-  l_len = len(df[df['actS_c'] == 'low'])
-  m_len = len(df[df['actS_c'] == 'medium'])
-  h_len = len(df[df['actS_c'] == 'hight'])
-  return a_len, l_len, m_len, h_len
-
-
-def show_train_test_split(df: pd.DataFrame, entropy: str, perc_test: float) -> None:
-  x_train, x_test = get_train_test_split(df, entropy, perc_test)
-  x_train['partition'] = 'train'
-  x_test['partition'] = 'test'
-  df = pd.concat([x_train, x_test])
-  show_trajects_entropy(df, facet='partition')
-
-
 def transform_batches_cartesian_to_normalized_eulerian(positions_in_batch) -> np.array:
   positions_in_batch = np.array(positions_in_batch)
   eulerian_batches = [[cartesian_to_eulerian(pos[0], pos[1], pos[2]) for pos in batch]
@@ -220,8 +183,8 @@ class Trainer():
       os.makedirs(self.model_dir)
     model = self.create_model()
     assert model
-    steps_per_ep_train = np.ceil(len(self.x_train_wins) / BATCH_SIZE)
-    steps_per_ep_validate = np.ceil(len(self.x_val_wins) / BATCH_SIZE)
+    steps_per_ep_train = np.ceil(len(self.x_train_wins) / config.BATCH_SIZE)
+    steps_per_ep_validate = np.ceil(len(self.x_val_wins) / config.BATCH_SIZE)
     csv_logger_f = join(self.model_dir, 'train_results.csv')
     csv_logger = CSVLogger(csv_logger_f)
     tb_callback = TensorBoard(log_dir=f'{self.model_dir}/logs')
