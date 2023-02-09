@@ -8,11 +8,9 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import scipy.stats
-from sklearn.model_selection import train_test_split
-from tqdm.auto import tqdm
 
 from . import config
-from .utils.fov import *
+from .utils.fov import calc_actual_entropy
 from .utils.tileset import TILESET_DEFAULT
 
 
@@ -29,7 +27,6 @@ def calc_column_thresholds(df: pd.DataFrame, column) -> tuple[float, float]:
 def get_class_by_threshold(x, threshold_medium, threshold_hight) -> Literal['low', 'medium', 'hight']:
   return 'low' if x < threshold_medium else ('medium' if x < threshold_hight else 'hight')
 
-tqdm.pandas()
 
 class Dataset:
 

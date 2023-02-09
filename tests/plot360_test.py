@@ -2,8 +2,8 @@ import unittest
 
 import plotly.io as pio
 
-from users360.dataset import *
-from users360.plot360 import *
+from users360.dataset import Dataset
+from users360.plot360 import Plot360
 
 pio.renderers.default = None
 

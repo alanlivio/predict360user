@@ -2,9 +2,8 @@ import unittest
 from os.path import join
 
 from users360 import config
-from users360.dataset import *
-from users360.trainer import *
-from users360.utils.fov import *
+from users360.dataset import Dataset
+from users360.trainer import Trainer
 
 
 class Test(unittest.TestCase):

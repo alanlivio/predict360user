@@ -1,6 +1,8 @@
 import unittest
 
-from users360.utils.fov import *
+import numpy as np
+
+from users360.utils.fov import calc_actual_entropy_from_ids
 
 
 class Test(unittest.TestCase):

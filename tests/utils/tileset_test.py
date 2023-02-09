@@ -1,9 +1,8 @@
 import unittest
 
-from users360.dataset import *
-from users360.utils.fov import *
-from users360.utils.tileset import *
-from users360.utils.tileset_voro import *
+from users360.dataset import Dataset
+from users360.utils.fov import fov_poly
+from users360.utils.tileset import calc_tileset_reqs_metrics, tile_poly
 
 
 class Test(unittest.TestCase):
