@@ -3,7 +3,7 @@ import unittest
 import plotly.io as pio
 
 from users360.utils.tileset import tile_points
-from users360.utils.viz_sphere import VizSphere, show_fov
+from users360.utils.viz_sphere import *
 
 pio.renderers.default = None
 

@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import plotly.express as px
 import plotly.graph_objs as go
 from colour import Color
@@ -261,5 +262,67 @@ def show_fov(trace, tileset=TILESET_DEFAULT) -> None:
     fig.update_yaxes(autorange='reversed')
 
   title = f'trace_[{trace[0]:.2},{trace[1]:.2},{trace[2]:.2}]_{tileset.prefix}'
+  fig.update_layout(width=800, showlegend=False, title_text=title)
+  fig.show()
+
+
+def _get_imshow_from_trajects_hmps(df: pd.DataFrame, tileset=TILESET_DEFAULT) -> px.imshow:
+  hmp_sums = df['traject_hmp'].apply(lambda traces: np.sum(traces, axis=0))
+  if isinstance(tileset, TileSetVoro):
+    hmp_sums = np.reshape(hmp_sums, tileset.shape)
+  heatmap = np.sum(hmp_sums, axis=0)
+  x = [str(x) for x in range(1, heatmap.shape[1] + 1)]
+  y = [str(y) for y in range(1, heatmap.shape[0] + 1)]
+  return px.imshow(heatmap, text_auto=True, x=x, y=y)
+
+
+def show_one_traject(row: pd.Series, tileset=TILESET_DEFAULT) -> None:
+  assert row.shape[0] == 1
+  assert 'traject' in row.columns
+  # subplot two figures
+  fig = make_subplots(rows=1, cols=2, specs=[[{'type': 'surface'}, {'type': 'image'}]])
+  # sphere
+  sphere = VizSphere(tileset)
+  sphere.add_trajectory(row['traject'].iloc[0])
+  for d in sphere.data:  # load all data from the sphere
+    fig.append_trace(d, row=1, col=1)
+
+  # heatmap
+  if 'traject_hmp' in row:
+    erp_heatmap = _get_imshow_from_trajects_hmps(row, tileset)
+    erp_heatmap.update_layout(width=100, height=100)
+    fig.append_trace(erp_heatmap.data[0], row=1, col=2)
+    if isinstance(tileset, TileSet):
+      # fix given phi 0 being the north pole at Utils.cartesian_to_eulerian
+      fig.update_yaxes(autorange='reversed')
+
+  title = f'{str(row.shape[0])}_trajects_{tileset.prefix}'
+  fig.update_layout(width=800, showlegend=False, title_text=title)
+  fig.show()
+
+
+def show_sum_trajects(df: pd.DataFrame, tileset=TILESET_DEFAULT) -> None:
+  assert len(df) <= 4, 'df >=4 does not get a good visualization'
+  assert not df.empty
+
+  # subplot two figures
+  fig = make_subplots(rows=1, cols=2, specs=[[{'type': 'surface'}, {'type': 'image'}]])
+
+  # sphere
+  sphere = VizSphere(tileset)
+  for _, row in df.iterrows():
+    sphere.add_trajectory(row['traject'])
+  for d in sphere.data:  # load all data from the sphere
+    fig.append_trace(d, row=1, col=1)
+
+  # heatmap
+  if 'traject_hmp' in df:
+    erp_heatmap = _get_imshow_from_trajects_hmps(df, tileset)
+    fig.append_trace(erp_heatmap.data[0], row=1, col=2)
+    if isinstance(tileset, TileSet):
+      # fix given phi 0 being the north pole at Utils.cartesian_to_eulerian
+      fig.update_yaxes(autorange='reversed')
+
+  title = f'{str(df.shape[0])}_trajects_{tileset.prefix}'
   fig.update_layout(width=800, showlegend=False, title_text=title)
   fig.show()
