@@ -12,6 +12,7 @@ from .tileset import TILESET_DEFAULT
 
 tqdm.pandas()
 
+
 def calc_column_thresholds(df: pd.DataFrame, column) -> tuple[float, float]:
   idxs_sort = df[column].argsort()
   trajects_len = len(df[column])
@@ -108,25 +109,24 @@ def calc_trajects_entropy(df: pd.DataFrame) -> None:
   # calc trajects_entropy_class
   threshold_medium, threshold_hight = calc_column_thresholds(df, 'actS')
   df['actS_c'] = df['actS'].progress_apply(get_class_by_threshold,
-                                                                     args=(threshold_medium,
-                                                                           threshold_hight))
+                                           args=(threshold_medium, threshold_hight))
   assert not df['actS_c'].isnull().any()
 
 
 def show_trajects_entropy(df: pd.DataFrame, facet=None) -> None:
   assert {'actS', 'actS_c'}.issubset(df.columns)
   px.histogram(df,
-                x='actS',
-                color='actS_c',
-                facet_col=facet,
-                color_discrete_map=config.ENTROPY_CLASS_COLORS,
-                width=900).show()
+               x='actS',
+               color='actS_c',
+               facet_col=facet,
+               color_discrete_map=config.ENTROPY_CLASS_COLORS,
+               width=900).show()
   px.histogram(df,
-                x='hmpS',
-                facet_col=facet,
-                color='hmpS_c',
-                color_discrete_map=config.ENTROPY_CLASS_COLORS,
-                width=900).show()
+               x='hmpS',
+               facet_col=facet,
+               color='hmpS_c',
+               color_discrete_map=config.ENTROPY_CLASS_COLORS,
+               width=900).show()
 
 
 def _poles_prc(traces) -> float:
@@ -182,6 +182,5 @@ def calc_trajects_hmp_entropy(df: pd.DataFrame) -> None:
   df.drop(['hmpS', 'hmpS_c'], axis=1, errors='ignore')
   threshold_medium, threshold_hight = calc_column_thresholds(df, 'hmpS')
   df['hmpS_c'] = df['hmpS'].progress_apply(get_class_by_threshold,
-                                                             args=(threshold_medium,
-                                                                   threshold_hight))
+                                           args=(threshold_medium, threshold_hight))
   assert not df['actS_c'].isnull().any()

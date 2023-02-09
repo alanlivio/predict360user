@@ -2,8 +2,8 @@ import unittest
 
 import plotly.io as pio
 
-from users360.utils.entropy import *
 from users360.dataset import *
+from users360.utils.entropy import *
 
 pio.renderers.default = None
 
@@ -11,15 +11,14 @@ pio.renderers.default = None
 class Test(unittest.TestCase):
 
   def setUp(self) -> None:
-    self.df = get_df_trajects()
-    assert not self.df.empty
+    self.ds = Dataset()
+    assert not self.ds.df.empty
 
   def test_trajects_entropy(self) -> None:
-    calc_trajects_entropy(self.df[:10]) # limitig given time
+    calc_trajects_entropy(self.ds.df[:10]) # limitig given time
 
   def test_poles_prc(self) -> None:
-
-    calc_trajects_poles_prc(self.df)
+    calc_trajects_poles_prc(self.ds.df)
 
   def test_actual_entropy(self) -> None:
     ids = np.array([1, 2, 3, 4, 5, 6, 7])

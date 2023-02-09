@@ -20,8 +20,8 @@ from users360.head_motion_prediction.Utils import (all_metrics,
                                                    cartesian_to_eulerian,
                                                    eulerian_to_cartesian)
 
-from .entropy import *
-from .trajects import *
+from .dataset import *
+from .utils.entropy import *
 
 METRIC = all_metrics['orthodromic']
 RATE = 0.2
@@ -140,10 +140,10 @@ class Trainer():
         # load the data
         if self.model_name == 'pos_only':
           encoder_pos_inputs_for_batch.append(
-              get_traces(self.df, video, user, 'all')[x_i - self.m_window:x_i])
-          decoder_pos_inputs_for_batch.append(get_traces(self.df, video, user, 'all')[x_i:x_i + 1])
+              self.ds.get_traces(video, user, 'all')[x_i - self.m_window:x_i])
+          decoder_pos_inputs_for_batch.append(self.ds.get_traces(video, user, 'all')[x_i:x_i + 1])
           decoder_outputs_for_batch.append(
-              get_traces(self.df, video, user, 'all')[x_i + 1:x_i + self.h_window + 1])
+              self.ds.get_traces(video, user, 'all')[x_i + 1:x_i + self.h_window + 1])
         else:
           raise NotImplementedError
         count += 1
@@ -172,13 +172,18 @@ class Trainer():
 
   def partition(self) -> None:
     config.info('partioning...')
-    self.df = get_df_trajects()
-    df_to_split = self.df[self.df['ds'] == self.dataset_name] \
-      if self.dataset_name != 'all' else self.df
+
+    # get ds
+    if not hasattr(self, 'ds'):
+      self.ds = Dataset()
+
+    # split data
+    df_to_split = self.ds.df[self.ds.df['ds'] == self.dataset_name] \
+      if self.dataset_name != 'all' else self.ds.df
     entropy = 'all' if self.using_auto else self.train_entropy
     self.x_train, self.x_test = get_train_test_split(df_to_split, entropy, self.perc_test)
     if self.test_user and self.test_video:
-      self.x_test = get_rows(self.df, self.test_video, self.test_user, self.dataset_name)
+      self.x_test = self.ds.get_rows(self.test_video, self.test_user, self.dataset_name)
     self.x_train_wins = [{
         'video': row[1]['video'],
         'user': row[1]['user'],
@@ -249,9 +254,9 @@ class Trainer():
     fmt = 'x_test has {} trajectories: {} low, {} medium, {} hight'
     config.info(fmt.format(*count_traject_entropy_classes(self.x_test)))
 
-    if not self.model_fullname in self.df.columns:
-      empty = pd.Series([{} for _ in range(len(self.df))]).astype(object)
-      self.df[self.model_fullname] = empty
+    if not self.model_fullname in self.ds.df.columns:
+      empty = pd.Series([{} for _ in range(len(self.ds.df))]).astype(object)
+      self.ds.df[self.model_fullname] = empty
 
     # creating model
     config.info('creating model ...')
@@ -288,7 +293,7 @@ class Trainer():
       model.load_weights(model_weights)
 
     # predict by each pred_windows
-    threshold_medium, threshold_hight = calc_column_thresholds(self.df, 'actS')
+    threshold_medium, threshold_hight = calc_column_thresholds(self.ds.df, 'actS')
     for ids in tqdm(self.x_test_wins, desc='position predictions'):
       user = ids['user']
       video = ids['video']
@@ -296,9 +301,9 @@ class Trainer():
 
       if self.model_name == 'pos_only':
         encoder_pos_inputs_for_sample = np.array(
-            [get_traces(self.df, video, user, self.dataset_name)[x_i - self.m_window:x_i]])
+            [self.ds.get_traces(video, user, self.dataset_name)[x_i - self.m_window:x_i]])
         decoder_pos_inputs_for_sample = np.array(
-            [get_traces(self.df, video, user, self.dataset_name)[x_i:x_i + 1]])
+            [self.ds.get_traces(video, user, self.dataset_name)[x_i:x_i + 1]])
       else:
         raise NotImplementedError
 
@@ -307,11 +312,11 @@ class Trainer():
         if self.train_entropy == 'auto':
           actS_c = ids['actS_c']
         elif self.train_entropy == 'auto_m_window':
-          window = get_traces(self.df, video, user, self.dataset_name)[x_i - self.m_window:x_i]
+          window = self.ds.get_traces(video, user, self.dataset_name)[x_i - self.m_window:x_i]
           a_ent = calc_actual_entropy(window)
           actS_c = get_class_by_threshold(a_ent, threshold_medium, threshold_hight)
         elif self.train_entropy == 'auto_since_start':
-          window = get_traces(self.df, video, user, self.dataset_name)[0:x_i]
+          window = self.ds.get_traces(video, user, self.dataset_name)[0:x_i]
           a_ent = calc_actual_entropy(window)
           actS_c = get_class_by_threshold(a_ent, threshold_medium, threshold_hight)
         else:
@@ -336,13 +341,13 @@ class Trainer():
         raise NotImplementedError
 
       # save prediction
-      traject_row = self.df.loc[(self.df['video'] == video) & (self.df['user'] == user)]
+      traject_row = self.ds.df.loc[(self.ds.df['video'] == video) & (self.ds.df['user'] == user)]
       assert not traject_row.empty
       index = traject_row.index[0]
       traject_row.loc[index, self.model_fullname][x_i] = model_prediction
 
     # save on df
-    dump_df_trajects(self.df)
+    self.ds.dump()
 
   def compare_results(self) -> None:
     range_win = range(self.h_window)
@@ -351,34 +356,34 @@ class Trainer():
     s_classes = ['low', 'medium', 'nohight', 'hight']
 
     # create df_res
-    self.df_res = pd.DataFrame(columns=columns + list(range_win), dtype=np.float32)
+    self.ds.df_res = pd.DataFrame(columns=columns + list(range_win), dtype=np.float32)
 
     # create df_res for debug with random data
     # models = ['pos_only,all,actS_c,low', 'pos_only,all,actS_c,medium', 'pos_only,all,actS_c,hight', 'pos_only,david,actS_c,medium', 'pos_only,david,actS_c,hight', 'pos_only,david,actS_c,nohight', 'pos_only,david,hmpS_c,nohight', 'pos_only,all,hmpS_c,medium', 'pos_only,david,,']
     # iters = [models,  s_types, s_classes]
     # index = pd.MultiIndex.from_product(iters, names=columns)
     # data_cols = np.random.randn(np.prod(list(map(len,iters))), self.h_window)
-    # self.df_res = pd.DataFrame(data_cols, index=index)
-    # self.df_res.reset_index(inplace=True)
-    # IPython.display.display(self.df_res)
+    # self.ds.df_res = pd.DataFrame(data_cols, index=index)
+    # self.ds.df_res.reset_index(inplace=True)
+    # IPython.display.display(self.ds.df_res)
 
-    # get df
-    if not hasattr(self, 'df'):
-      self.df = get_df_trajects()
+    # get ds
+    if not hasattr(self, 'ds'):
+      self.ds = Dataset()
 
     # create test_targets
-    all_ds = ('all', 'all', pd.Series(True, index=self.df.index))
+    all_ds = ('all', 'all', pd.Series(True, index=self.ds.df.index))
     test_targets = [all_ds]  # s_type, s_class, mask
     for s_type, s_class in product(s_types, s_classes):
       if s_class == 'nohight':
-        test_targets.append((s_type, s_class, self.df[s_type] != 'hight'))
+        test_targets.append((s_type, s_class, self.ds.df[s_type] != 'hight'))
       else:
-        test_targets.append((s_type, s_class, self.df[s_type] == s_class))
+        test_targets.append((s_type, s_class, self.ds.df[s_type] == s_class))
 
     # fill df_res from moldel results column at df
     def _calc_wins_error(df_wins_cols, errors_per_timestamp) -> None:
       traject_index = df_wins_cols.name
-      traject = self.df.loc[traject_index, 'traject']
+      traject = self.ds.df.loc[traject_index, 'traject']
       win_pos_l = df_wins_cols.index
       for win_pos in win_pos_l:
         pred_win = df_wins_cols[win_pos]
@@ -388,13 +393,13 @@ class Trainer():
             errors_per_timestamp[t] = []
           errors_per_timestamp[t].append(METRIC(true_win[t], pred_win[t]))
 
-    models_cols = [col for col in self.df.columns if col.startswith(self.model_name)]
+    models_cols = [col for col in self.ds.df.columns if col.startswith(self.model_name)]
     for model in models_cols:
       for s_type, s_class, mask in test_targets:
         # create df_win by expading all model predictions
-        not_empty = self.df[model].apply(lambda x: len(x) != 0)
-        model_srs = self.df.loc[not_empty & mask, model]
-        if not len(model_srs):
+        not_empty = self.ds.df[model].apply(lambda x: len(x) != 0)
+        model_srs = self.ds.df.loc[not_empty & mask, model]
+        if len(model_srs) == 0:
           config.error(f"skipping {model=} {s_type=} {s_class=}")
           continue
         model_df_wins = pd.DataFrame.from_dict(model_srs.values.tolist())
@@ -404,17 +409,17 @@ class Trainer():
         errors_per_timestamp = {idx: [] for idx in range_win}
         # model_df_wins.apply(_calc_wins_error, axis=1, args=(errors_per_timestamp, ))
         model_df_wins[:2].apply(_calc_wins_error, axis=1, args=(errors_per_timestamp,))
-        newid = len(self.df_res)
+        newid = len(self.ds.df_res)
         # save df_res for s_type, s_class
         # avg_error_per_timestamp = [np.mean(errors_per_timestamp[t]) for t in range_win ]
         avg_error_per_timestamp = [np.mean(errors_per_timestamp[t]) if len(errors_per_timestamp[t]) else np.nan for t in range_win ]
-        self.df_res.loc[newid, ['model_name', 'S_type', 'S_class']] = [model, s_type, s_class]
-        self.df_res.loc[newid, range_win] = avg_error_per_timestamp
+        self.ds.df_res.loc[newid, ['model_name', 'S_type', 'S_class']] = [model, s_type, s_class]
+        self.ds.df_res.loc[newid, range_win] = avg_error_per_timestamp
 
     # create vis table
-    if len(self.df_res):
+    if len(self.ds.df_res):
       props = 'text-decoration: underline'
-      output = self.df_res.dropna()\
+      output = self.ds.df_res.dropna()\
         .background_gradient(axis=0, cmap='coolwarm')\
         .highlight_min(subset=list(range_win), props=props)\
         .highlight_max(subset=list(range_win), props=props)
