@@ -10,8 +10,8 @@ from typing import Any, Generator
 import IPython
 import numpy as np
 import pandas as pd
+import sklearn
 from keras.callbacks import CSVLogger, ModelCheckpoint, TensorBoard
-from sklearn.model_selection import train_test_split
 
 from users360.head_motion_prediction.Utils import (all_metrics,
                                                    cartesian_to_eulerian,
@@ -24,6 +24,23 @@ from .utils.fov import *
 METRIC = all_metrics['orthodromic']
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+
+
+def train_test_split_entropy(df: pd.DataFrame, entropy_type: str, train_entropy: str, test_size: float) -> tuple[pd.DataFrame, pd.DataFrame]:
+  if train_entropy == 'all':
+    df = df
+  elif train_entropy == 'nohight':
+    df = df[df[entropy_type+'_c'] != 'hight']
+  else:
+    df = df[df[entropy_type+'_c'] == train_entropy]
+  return train_test_split(df, random_state=1, test_size=test_size)
+
+def count_entropy(df: pd.DataFrame, entropy_type: str) -> tuple[int, int, int, int]:
+  a_len = len(df)
+  l_len = len(df[df[entropy_type+'_c'] == 'low'])
+  m_len = len(df[df[entropy_type+'_c'] == 'medium'])
+  h_len = len(df[df[entropy_type+'_c'] == 'hight'])
+  return a_len, l_len, m_len, h_len
 
 def transform_batches_cartesian_to_normalized_eulerian(positions_in_batch) -> np.array:
   positions_in_batch = np.array(positions_in_batch)
@@ -131,18 +148,22 @@ class Trainer():
 
   def partition(self) -> None:
     config.info('partioning...')
-
-    # get ds
     if not hasattr(self, 'ds'):
       self.ds = Dataset()
+      # TODO: change to Dataset(dataset=dataset_name)
+      if self.dataset_name != 'all':
+        self.ds.df = self.ds.df[self.ds.df['ds'] == self.dataset_name]
 
-    # split data
-    df_to_split = self.ds.df[self.ds.df['ds'] == self.dataset_name] \
-      if self.dataset_name != 'all' else self.ds.df
-    entropy = 'all' if self.using_auto else self.train_entropy
-    self.x_train, self.x_test = get_train_test_split(df_to_split, entropy, self.perc_test)
+    # split x_train, x_test
     if self.test_user and self.test_video:
-      self.x_test = self.ds.get_rows(self.test_video, self.test_user, self.dataset_name)
+      _, self.x_test = self.ds.get_rows(self.test_video, self.test_user, self.dataset_name)
+      return
+    elif self.train_entropy != 'all':
+      self.x_train, self.x_test = train_test_split_entropy(self.ds.df, self.entropy_type, self.train_entropy, self.perc_test)
+    else:
+      self.x_train, self.x_test = sklearn.model_selection.train_test_split(self.ds.df, random_state=1, test_size=self.perc_test)
+
+    # create x_train_wins, x_test_wins
     self.x_train_wins = [{
         'video': row[1]['video'],
         'user': row[1]['user'],
@@ -168,9 +189,9 @@ class Trainer():
       sys.exit()
     self.partition()
     fmt = 'x_train has {} trajectories: {} low, {} medium, {} hight'
-    config.info(fmt.format(*count_traject_entropy_classes(self.x_train)))
+    config.info(fmt.format(*count_entropy(self.x_train)))
     fmt = 'x_val has {} trajectories: {} low, {} medium, {} hight'
-    config.info(fmt.format(*count_traject_entropy_classes(self.x_val)))
+    config.info(fmt.format(*count_entropy(self.x_val)))
 
     with redirect_stderr(open(os.devnull, 'w')):
       os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -211,7 +232,7 @@ class Trainer():
     config.info('model_dir=' + self.model_dir)
     self.partition()
     fmt = 'x_test has {} trajectories: {} low, {} medium, {} hight'
-    config.info(fmt.format(*count_traject_entropy_classes(self.x_test)))
+    config.info(fmt.format(*count_entropy(self.x_test)))
 
     if not self.model_fullname in self.ds.df.columns:
       empty = pd.Series([{} for _ in range(len(self.ds.df))]).astype(object)
@@ -391,3 +412,10 @@ class Trainer():
       html_file = join(config.DATADIR, 'compare_results.html')
       output.to_html(html_file)
       print(pathlib.Path(html_file).as_uri())
+
+  def show_train_test_split(self) -> None:
+    self.partition()
+    self.x_train['partition'] = 'train'
+    self.x_test['partition'] = 'test'
+    self.ds.df = pd.concat([self.x_train, self.x_test])
+    self.ds.show_trajects_entropy(facet='partition')
