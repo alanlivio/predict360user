@@ -4,4 +4,3 @@ from .plot360 import *
 from .trainer import *
 from .utils import *
 from .utils.entropy import *
-from .utils.tileset_metrics import *

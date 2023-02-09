@@ -1,7 +1,9 @@
 import unittest
 
-from users360.utils.fov import fov_poly
-from users360.utils.tileset import tile_poly
+from users360.dataset import *
+from users360.utils.fov import *
+from users360.utils.tileset import *
+from users360.utils.tileset_voro import *
 
 
 class Test(unittest.TestCase):
@@ -35,3 +37,12 @@ class Test(unittest.TestCase):
     for col in range(4):
       self.assertAlmostEqual(tile_poly(6, 4, 5, col).overlap(fov_poly(0, 0, 1)), 0.0, places=4)
       self.assertAlmostEqual(tile_poly(6, 4, 5, col).overlap(fov_poly(0, 0, -1)), 1.0, places=4)
+
+  def test_tileset_metrics_reqs(self) -> None:
+    # limit testing df to 2
+    self.ds = Dataset()
+    self.assertFalse(self.ds.df.empty)
+    # force hmp recalc
+    self.ds.df.drop(['traject_hmp'], axis=1, errors='ignore')
+    tileset_variations = [TileSet(3, 3, TileCover.ANY), TileSetVoro(14, TileCover.ANY)]
+    calc_tileset_reqs_metrics(self.ds.df[:2], tileset_variations)
