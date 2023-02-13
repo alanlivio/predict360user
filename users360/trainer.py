@@ -418,4 +418,4 @@ class Trainer():
     self.x_train['partition'] = 'train'
     self.x_test['partition'] = 'test'
     self.ds.df = pd.concat([self.x_train, self.x_test])
-    self.ds.show_trajects_entropy(facet='partition')
+    self.ds.show_histogram(facet='partition')

@@ -146,21 +146,6 @@ class Dataset:
                                                        args=(threshold_medium, threshold_hight))
     assert not self.df['actS_c'].isnull().any()
 
-  def show_trajects_entropy(self, facet=None) -> None:
-    assert {'actS', 'actS_c'}.issubset(self.df.columns)
-    px.histogram(self.df,
-                 x='actS',
-                 color='actS_c',
-                 facet_col=facet,
-                 color_discrete_map=config.ENTROPY_CLASS_COLORS,
-                 width=900).show()
-    px.histogram(self.df,
-                 x='hmpS',
-                 facet_col=facet,
-                 color='hmpS_c',
-                 color_discrete_map=config.ENTROPY_CLASS_COLORS,
-                 width=900).show()
-
   def calc_trajects_poles_prc(self) -> None:
     self.df.drop(['poles_prc', 'poles_prc_c'], axis=1, errors='ignore')
 
@@ -175,14 +160,6 @@ class Dataset:
                                                                  args=(threshold_medium,
                                                                        threshold_hight))
     assert not self.df['poles_prc_c'].isna().any()
-
-  def show_trajects_poles_prc(self) -> None:
-    assert {'poles_prc', 'poles_prc_c'}.issubset(self.df.columns)
-    px.histogram(self.df,
-                 x='poles_prc',
-                 color='poles_prc_c',
-                 color_discrete_map=config.ENTROPY_CLASS_COLORS,
-                 width=900).show()
 
   def calc_trajects_hmp_entropy(self) -> None:
     self.df.drop(['hmpS', 'hmpS_c'], axis=1, errors='ignore')
@@ -204,3 +181,14 @@ class Dataset:
     self.df['hmpS_c'] = self.df['hmpS'].progress_apply(get_class_name,
                                                        args=(threshold_medium, threshold_hight))
     assert not self.df['hmpS_c'].isnull().any()
+
+
+  def show_histogram(self, facet=None) -> None:
+    cols = [col for col in ['actS', 'hmpS', 'poles_prc'] if {col}.issubset(self.df.columns)]
+    for col in cols:
+      px.histogram(self.df,
+                  x=col,
+                  color=col+'_c',
+                  facet_col=facet,
+                  color_discrete_map=config.ENTROPY_CLASS_COLORS,
+                  width=900).show()
