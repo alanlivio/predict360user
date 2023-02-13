@@ -135,7 +135,7 @@ class Dataset:
     return self.df['ds'].unique()
 
   def calc_trajects_entropy(self) -> None:
-    self.df.drop(['actS', 'actS_c'], axis=1, errors='ignore')
+    self.df.drop(['actS', 'actS_c'], axis=1, errors='ignore', inplace=True)
     # calc actS
     self.df['actS'] = self.df['traject'].progress_apply(calc_actual_entropy)
     assert not self.df['actS'].isnull().any()
@@ -146,7 +146,7 @@ class Dataset:
     assert not self.df['actS_c'].isnull().any()
 
   def calc_trajects_poles_prc(self) -> None:
-    self.df.drop(['poles_prc', 'poles_prc_c'], axis=1, errors='ignore')
+    self.df.drop(['poles_prc', 'poles_prc_c'], axis=1, errors='ignore', inplace=True)
 
     # calc poles_prc
     def _calc_poles_prc(traces) -> float:
@@ -161,7 +161,7 @@ class Dataset:
     assert not self.df['poles_prc_c'].isna().any()
 
   def calc_trajects_hmp_entropy(self) -> None:
-    self.df.drop(['hmpS', 'hmpS_c'], axis=1, errors='ignore')
+    self.df.drop(['hmpS', 'hmpS_c'], axis=1, errors='ignore', inplace=True)
 
     # calc hmpS
     if not 'traject_hmp' in self.df.columns:
@@ -191,3 +191,7 @@ class Dataset:
                   facet_col=facet,
                   color_discrete_map=config.ENTROPY_CLASS_COLORS,
                   width=900).show()
+
+  def drop_predict_cols(self) -> None:
+    col_rm = [col for col in self.df.columns for model in config.ARGS_MODEL_NAMES if col.startswith(model)]
+    self.df.drop(col_rm, axis=1, errors='ignore', inplace=True)
