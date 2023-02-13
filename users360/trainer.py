@@ -23,7 +23,6 @@ from .utils.fov import *
 
 METRIC = all_metrics['orthodromic']
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
 
 def train_test_split_entropy(df: pd.DataFrame, entropy_type: str, train_entropy: str, test_size: float) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -200,10 +199,6 @@ class Trainer():
       config.info('train() previous done')
       sys.exit()
     self.partition()
-
-    with redirect_stderr(open(os.devnull, 'w')):
-      os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-      os.environ['CUDA_VISIBLE_DEVICES'] = 0
 
     config.info('creating model ...')
     if self.dry_run:
