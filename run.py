@@ -20,7 +20,6 @@ if __name__ == '__main__':
   grp.add_argument('-evaluate', action='store_true', help='evaluate model')
 
   # Trainer params
-  psr.add_argument('-gpu_id', nargs='?', type=int, default=0, help='Used cuda gpu (default: 0)')
   psr.add_argument('-model_name',
                    nargs='?',
                    choices=config.ARGS_MODEL_NAMES,
