@@ -9,6 +9,7 @@ colour
 tqdm # progress bar
 keras-tqdm # progress bar
 kaleido # plotly save images
+jenkspy # clustering
 
 # requirements from head_motion_prediction/README.md
 # the commented versions are the previous ones

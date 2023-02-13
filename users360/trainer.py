@@ -372,7 +372,6 @@ class Trainer():
           if t not in errors_per_timestamp:
             errors_per_timestamp[t] = []
           errors_per_timestamp[t].append(METRIC(true_win[t], pred_win[t]))
-
     models_cols = [col for col in self.ds.df.columns if col.startswith(self.model_name)]
     for model in models_cols:
       for s_type, s_class, mask in test_targets:
@@ -403,6 +402,7 @@ class Trainer():
     if len(self.ds.df_res):
       props = 'text-decoration: underline'
       output = self.ds.df_res.dropna()\
+        .style\
         .background_gradient(axis=0, cmap='coolwarm')\
         .highlight_min(subset=list(range_win), props=props)\
         .highlight_max(subset=list(range_win), props=props)

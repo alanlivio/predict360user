@@ -4,6 +4,7 @@ import pickle
 from os.path import exists
 from typing import Literal
 
+import jenkspy
 import numpy as np
 import pandas as pd
 import plotly.express as px
@@ -15,16 +16,12 @@ from .utils.tileset import TILESET_DEFAULT
 
 
 def get_class_thresholds(df, col: str) -> tuple[float, float]:
-  idxs_sort = df[col].argsort()
-  trajects_len = len(df[col])
-  idx_threshold_medium = idxs_sort[int(trajects_len * .60)]
-  idx_threshold_hight = idxs_sort[int(trajects_len * .90)]
-  threshold_medium = df[col][idx_threshold_medium]
-  threshold_hight = df[col][idx_threshold_hight]
+  _, threshold_medium, threshold_hight, _ = jenkspy.jenks_breaks(df[col], n_classes=3)
   return threshold_medium, threshold_hight
 
 
-def get_class_name(x: float, threshold_medium: float, threshold_hight: float) -> Literal['low', 'medium', 'hight']:
+def get_class_name(x: float, threshold_medium: float,
+                   threshold_hight: float) -> Literal['low', 'medium', 'hight']:
   return 'low' if x < threshold_medium else ('medium' if x < threshold_hight else 'hight')
 
 
@@ -139,10 +136,8 @@ class Dataset:
     return self.df['ds'].unique()
 
   def calc_trajects_entropy(self) -> None:
-    # clean
     self.df.drop(['actS', 'actS_c'], axis=1, errors='ignore')
     # calc actS
-    config.info('calculating trajects entropy ...')
     self.df['actS'] = self.df['traject'].progress_apply(calc_actual_entropy)
     assert not self.df['actS'].isnull().any()
     # calc trajects_entropy_class
@@ -167,13 +162,13 @@ class Dataset:
                  width=900).show()
 
   def calc_trajects_poles_prc(self) -> None:
-    # clean
     self.df.drop(['poles_prc', 'poles_prc_c'], axis=1, errors='ignore')
 
     # calc poles_prc
     def _calc_poles_prc(traces) -> float:
       return np.count_nonzero(abs(traces[:, 2]) > 0.7) / len(traces)
     self.df['poles_prc'] = pd.Series(self.df['traject'].progress_apply(_calc_poles_prc))
+
     # calc poles_prc_c
     threshold_medium, threshold_hight = get_class_thresholds(self.df, 'poles_prc')
     self.df['poles_prc_c'] = self.df['poles_prc'].progress_apply(get_class_name,
@@ -190,27 +185,22 @@ class Dataset:
                  width=900).show()
 
   def calc_trajects_hmp_entropy(self) -> None:
-    if not 'traject_hmp' in self.df.columns:
-      config.info('calculating heatmaps ...')
+    self.df.drop(['hmpS', 'hmpS_c'], axis=1, errors='ignore')
 
+    # calc hmpS
+    if not 'traject_hmp' in self.df.columns:
       def _calc_traject_hmp(traces) -> np.array:
         return np.apply_along_axis(TILESET_DEFAULT.request, 1, traces)
-
       np_hmps = self.df['traject'].progress_apply(_calc_traject_hmp)
       self.df['traject_hmp'] = pd.Series(np_hmps)
       assert not self.df['traject_hmp'].isnull().any()
-    # calc hmpS
-    config.info('calculating heatmaps entropy ...')
-
     def _hmp_entropy(traject) -> float:
       return scipy.stats.entropy(np.sum(traject, axis=0).reshape((-1)))
-
     self.df['hmpS'] = self.df['traject_hmp'].progress_apply(_hmp_entropy)
     assert not self.df['hmpS'].isnull().any()
-    # calc trajects_entropy_class
-    # clean
-    self.df.drop(['hmpS', 'hmpS_c'], axis=1, errors='ignore')
+
+    # calc hmpS_c
     threshold_medium, threshold_hight = get_class_thresholds(self.df, 'hmpS')
     self.df['hmpS_c'] = self.df['hmpS'].progress_apply(get_class_name,
                                                        args=(threshold_medium, threshold_hight))
-    assert not self.df['actS_c'].isnull().any()
+    assert not self.df['hmpS_c'].isnull().any()
