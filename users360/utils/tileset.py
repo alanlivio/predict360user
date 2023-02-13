@@ -1,3 +1,4 @@
+import math
 from enum import Enum, auto
 from functools import cache
 
@@ -5,7 +6,9 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
+from scipy.spatial import SphericalVoronoi
 from spherical_geometry import polygon
+from spherical_geometry.polygon import SphericalPolygon
 from tqdm.auto import tqdm
 
 from .. import config
@@ -169,61 +172,111 @@ _4X6_20P = TileSet(4, 6, TileCover.ONLY20PERC)
 TILESET_DEFAULT = _4X6_ANY
 TILESET_VARIATIONS = [_4X6_CTR, _4X6_ANY, _4X6_20P]
 
-def _trace_mestrics_np(trace, tileset) -> np.array:
-  heatmap, vp_quality, area_out = tileset.request(trace, return_metrics=True)
-  return np.array([np.sum(heatmap), vp_quality, area_out])
 
 
-def _traject_metrics_np(traces, tileset) -> np.array:
-  return np.apply_along_axis(_trace_mestrics_np, 1, traces, tileset=tileset)
+@cache
+def voro_trinity(n_patchs: int) -> SphericalVoronoi:
+  points = np.empty((0, 3))
+  for index in range(0, n_patchs):
+    zi = (1 - 1.0 / n_patchs) * (1 - 2.0 * index / (n_patchs - 1))
+    di = math.sqrt(1 - math.pow(zi, 2))
+    alphai = index * math.pi * (3 - math.sqrt(5))
+    xi = di * math.cos(alphai)
+    yi = di * math.sin(alphai)
+    new_point = np.array([[xi, yi, zi]])
+    points = np.append(points, new_point, axis=0)
+  sv = SphericalVoronoi(points, 1, np.array([0, 0, 0]))
+  sv.sort_vertices_of_regions()
+  return sv
 
 
-def calc_tileset_reqs_metrics(df: pd.DataFrame,
-                              tileset_l: list[TileSet]) -> None:
-  if len(df) >= 4:
-    config.log("df.size >= 4, it will take for some time")
-  for tileset in tileset_l:
-    column_name = f'metrics_{tileset.title}'
-    metrics_np = df['traject'].progress_apply(_traject_metrics_np,
-                                                       tileset=tileset)
-    df[column_name] = metrics_np
-    assert not df[column_name].empty
+@cache
+def _voro_polys(n_patchs: int) -> dict:
+  voro = voro_trinity(n_patchs)
+  return {
+      i: SphericalPolygon(voro.vertices[voro.regions[i]])
+      for i, _ in enumerate(voro.regions)
+  }
 
 
-def show_tileset_reqs_metrics(df: pd.DataFrame) -> None:
-  # check
-  columns = [column for column in df.columns if column.startswith('metrics_')]
-  assert len(columns), 'run calc_tileset_reqs_metrics'
-  # create dftmp
-  data = []
-  for name in [
-      column for column in df.columns if column.startswith('metrics_')
-  ]:
-    avg_reqs = float(df[name].apply(lambda traces: np.sum(traces[:, 0])).mean())
-    avg_qlt = df[name].apply(lambda traces: np.sum(traces[:, 1])).mean()
-    avg_lost = df[name].apply(lambda traces: np.sum(traces[:, 2])).mean()
-    score = avg_qlt / avg_lost
-    data.append(
-        (name.removeprefix('metrics_'), avg_reqs, avg_qlt, avg_lost, score))
-  assert len(data) > 0
-  columns = ['tileset', 'avg_reqs', 'avg_qlt', 'avg_lost', 'score']
-  dftmp = pd.DataFrame(data, columns=columns)
-  # show dftmp
-  fig = make_subplots(rows=4,
-                      cols=1,
-                      subplot_titles=columns[1:],
-                      shared_yaxes=True)
-  trace = go.Bar(y=dftmp['tileset'], x=dftmp['avg_reqs'], orientation='h')
-  fig.add_trace(trace, row=1, col=1)
-  trace = go.Bar(y=dftmp['tileset'], x=dftmp['avg_lost'], orientation='h')
-  fig.add_trace(trace, row=2, col=1)
-  trace = go.Bar(y=dftmp['tileset'], x=dftmp['avg_qlt'], orientation='h')
-  fig.add_trace(trace, row=3, col=1)
-  trace = go.Bar(y=dftmp['tileset'], x=dftmp['score'], orientation='h')
-  fig.add_trace(trace, row=4, col=1)
-  fig.update_layout(
-      width=500,
-      showlegend=False,
-      barmode='stack',
-  )
-  fig.show()
+@cache
+def voro_poly(n_patchs, index) -> SphericalPolygon:
+  return _voro_polys(n_patchs)[index]
+
+
+class TileSetVoro(TileSet):
+  """
+  Class for Voroni TileSet
+  """
+
+  def __init__(self, n_patchs: int, cover = TileCover.ANY) -> None:
+    super().__init__(2, -1, cover)  # force shape (2,-1)
+    self.n_patchs = n_patchs
+    self.voro = voro_trinity(n_patchs)
+
+  @property
+  def prefix(self) -> str:
+    return f'voro{len(self.voro.points)}'
+
+  def request(self, trace, return_metrics=False):
+    if self.cover == TileCover.CENTER:
+      return self._request_110radius_center(trace, return_metrics)
+    elif self.cover == TileCover.ANY:
+      return self._request_min_cover(trace, 0, return_metrics)
+    elif self.cover == TileCover.ONLY20PERC:
+      return self._request_min_cover(trace, 0.2, return_metrics)
+    elif self.cover == TileCover.ONLY33PERC:
+      return self._request_min_cover(trace, 0.33, return_metrics)
+
+  def _request_110radius_center(self, trace, return_metrics):
+    areas_out = []
+    vp_quality = 0.0
+    fov_poly_trace = fov_poly(trace[0], trace[1], trace[2])
+    heatmap = np.zeros(self.n_patchs)
+    for index, _ in enumerate(self.voro.regions):
+      dist = compute_orthodromic_distance(trace, self.voro.points[index])
+      if dist <= HOR_MARGIN:
+        heatmap[index] += 1
+        if return_metrics:
+          poly = voro_poly(self.n_patchs, index)
+          view_ratio = poly.overlap(fov_poly_trace)
+          areas_out.append(1 - view_ratio)
+          vp_quality += fov_poly_trace.overlap(poly)
+    if return_metrics:
+      return heatmap, vp_quality, np.sum(areas_out)
+    else:
+      return heatmap
+
+  def _request_min_cover(self, trace, required_cover: float, return_metrics):
+    areas_out = []
+    vp_quality = 0.0
+    fov_poly_trace = fov_poly(trace[0], trace[1], trace[2])
+    heatmap = np.zeros(self.n_patchs)
+    for index, _ in enumerate(self.voro.regions):
+      dist = compute_orthodromic_distance(trace, self.voro.points[index])
+      if dist >= HOR_DIST:
+        continue
+      poly = voro_poly(self.n_patchs, index)
+      view_ratio = poly.overlap(fov_poly_trace)
+      if view_ratio > required_cover:
+        heatmap[index] += 1
+        if return_metrics:
+          areas_out.append(1 - view_ratio)
+          vp_quality += fov_poly_trace.overlap(poly)
+    if return_metrics:
+      return heatmap, vp_quality, np.sum(areas_out)
+    else:
+      return heatmap
+
+
+_VORO14_CTR = TileSetVoro(14, TileCover.CENTER)
+_VORO14_ANY = TileSetVoro(14, TileCover.ANY)
+_VORO14_20P = TileSetVoro(14, TileCover.ONLY20PERC)
+_VORO24_CTR = TileSetVoro(24, TileCover.CENTER)
+_VORO24_ANY = TileSetVoro(24, TileCover.ANY)
+_VORO24_20P = TileSetVoro(24, TileCover.ONLY20PERC)
+
+TILESET_VORO_VARIATIONS = [
+    _VORO14_CTR, _VORO14_ANY, _VORO14_20P, _VORO24_CTR, _VORO24_ANY, _VORO24_20P
+]
+TILESET_VORO_DEFAULT = _VORO14_ANY

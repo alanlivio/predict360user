@@ -2,7 +2,7 @@ import unittest
 
 from users360.dataset import Dataset
 from users360.utils.fov import fov_poly
-from users360.utils.tileset import calc_tileset_reqs_metrics, tile_poly
+from users360.utils.tileset import TileCover, TileSet, TileSetVoro, tile_poly
 
 
 class Test(unittest.TestCase):
@@ -41,7 +41,8 @@ class Test(unittest.TestCase):
     # limit testing df to 2
     self.ds = Dataset()
     self.assertFalse(self.ds.df.empty)
+    self.ds.df = self.ds.df[:2]
     # force hmp recalc
     self.ds.df.drop(['traject_hmp'], axis=1, errors='ignore')
     tileset_variations = [TileSet(3, 3, TileCover.ANY), TileSetVoro(14, TileCover.ANY)]
-    calc_tileset_reqs_metrics(self.ds.df[:2], tileset_variations)
+    self.ds.calc_tileset_reqs_metrics(tileset_variations)
