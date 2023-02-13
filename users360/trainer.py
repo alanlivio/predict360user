@@ -150,7 +150,6 @@ class Trainer():
     config.info('partioning...')
     if not hasattr(self, 'ds'):
       self.ds = Dataset()
-      # TODO: change to Dataset(dataset=dataset_name)
       if self.dataset_name != 'all':
         self.ds.df = self.ds.df[self.ds.df['ds'] == self.dataset_name]
 

@@ -27,14 +27,13 @@ def get_class_name(x: float, threshold_medium: float,
 
 class Dataset:
 
-  def __init__(self, pickle_f=config.PICKLE_FILE) -> None:
-    self.pickle_f = pickle_f
-    if exists(self.pickle_f):
-      with open(self.pickle_f, 'rb') as f:
-        config.info(f'loading df from {self.pickle_f}')
+  def __init__(self) -> None:
+    if exists(config.PICKLE_FILE):
+      with open(config.PICKLE_FILE, 'rb') as f:
+        config.info(f'loading df from {config.PICKLE_FILE}')
         self.df = pickle.load(f)
     else:
-      config.info(f'no {self.pickle_f}, loading df from {config.HMDDIR}')
+      config.info(f'no {config.PICKLE_FILE}, loading df from {config.HMDDIR}')
       self.df = self._load_df_trajects_from_hmp()
 
   def _load_df_trajects_from_hmp(self) -> pd.DataFrame:
@@ -94,10 +93,10 @@ class Dataset:
     return df
 
   def dump(self) -> None:
-    config.info(f'saving df to {self.pickle_f}')
-    with open(self.pickle_f, 'wb') as f:
+    config.info(f'saving df to {config.PICKLE_FILE}')
+    with open(config.PICKLE_FILE, 'wb') as f:
       pickle.dump(self.df, f)
-    with open(self.pickle_f + '.info.txt', 'w', encoding='utf-8') as f:
+    with open(config.PICKLE_FILE + '.info.txt', 'w', encoding='utf-8') as f:
       buffer = io.StringIO()
       self.df.info(buf=buffer)
       f.write(buffer.getvalue())
