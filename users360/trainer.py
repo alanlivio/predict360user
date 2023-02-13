@@ -161,6 +161,8 @@ class Trainer():
       self.x_train, self.x_test = train_test_split_entropy(self.ds.df, self.entropy_type, self.train_entropy, self.perc_test)
     else:
       self.x_train, self.x_test = train_test_split(self.ds.df, random_state=1, test_size=self.perc_test)
+    # split x_train, x_val
+    self.x_train, self.x_val = train_test_split(self.x_train, random_state=1, test_size=0.125) # 0.125 * 0.8 = 0.1
 
     # create x_train_wins, x_test_wins
     self.x_train_wins = [{
@@ -176,8 +178,19 @@ class Trainer():
         'actS_c': row[1]['actS_c']
     } for row in self.x_test.iterrows()\
       for trace_id in range(self.init_window, row[1]['traject'].shape[0] -self.end_window)]
-    self.x_val = self.x_test
-    self.x_val_wins = self.x_test_wins
+    self.x_val_wins = [{
+        'video': row[1]['video'],
+        'user': row[1]['user'],
+        'trace_id': trace_id,
+        'actS_c': row[1]['actS_c']
+    } for row in self.x_test.iterrows()\
+      for trace_id in range(self.init_window, row[1]['traject'].shape[0] -self.end_window)]
+    fmt = '''x_train has {} trajectories: {} low, {} medium, {} hight
+             x_val has {} trajectories: {} low, {} medium, {} hight
+             x_test has {} trajectories: {} low, {} medium, {} hight'''
+    config.info(fmt.format(*count_entropy(self.x_train, 'actS'),
+                           *count_entropy(self.x_val,   'actS'),
+                           *count_entropy(self.x_test,  'actS')))
 
   def train(self) -> None:
     assert not self.using_auto, "train(): train_entropy should not be auto"
@@ -187,10 +200,6 @@ class Trainer():
       config.info('train() previous done')
       sys.exit()
     self.partition()
-    fmt = 'x_train has {} trajectories: {} low, {} medium, {} hight'
-    config.info(fmt.format(*count_entropy(self.x_train)))
-    fmt = 'x_val has {} trajectories: {} low, {} medium, {} hight'
-    config.info(fmt.format(*count_entropy(self.x_val)))
 
     with redirect_stderr(open(os.devnull, 'w')):
       os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -230,8 +239,6 @@ class Trainer():
     config.info('evaluate()')
     config.info('model_dir=' + self.model_dir)
     self.partition()
-    fmt = 'x_test has {} trajectories: {} low, {} medium, {} hight of entropy {}'
-    config.info(fmt.format(*count_entropy(self.x_test, self.entropy_type), self.entropy_type))
 
     if not self.model_fullname in self.ds.df.columns:
       empty = pd.Series([{} for _ in range(len(self.ds.df))]).astype(object)
