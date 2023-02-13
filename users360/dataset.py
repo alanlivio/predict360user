@@ -182,8 +182,8 @@ class Dataset:
     assert not self.df['hmpS_c'].isnull().any()
 
 
-  def show_histogram(self, facet=None) -> None:
-    cols = [col for col in ['actS', 'hmpS', 'poles_prc'] if {col}.issubset(self.df.columns)]
+  def show_histogram(self, cols=['actS', 'hmpS'], facet=None) -> None:
+    cols = [col for col in cols if {col}.issubset(self.df.columns)]
     for col in cols:
       px.histogram(self.df,
                   x=col,
