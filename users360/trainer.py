@@ -147,7 +147,7 @@ class Trainer():
           raise NotImplementedError
 
   def partition(self) -> None:
-    config.info('partioning...')
+    config.info('partitioning...')
     if not hasattr(self, 'ds'):
       self.ds = Dataset()
       if self.dataset_name != 'all':
