@@ -402,13 +402,13 @@ class Trainer():
         self.df_res.loc[newid, range_win] = avg_error_per_timestamp
 
     # create vis table
-    if len(self.df_res):
-      props = 'text-decoration: underline'
-      output = self.df_res.dropna()\
-        .style\
-        .background_gradient(axis=0, cmap='coolwarm')\
-        .highlight_min(subset=list(range_win), props=props)\
-        .highlight_max(subset=list(range_win), props=props)
+    assert len(self.df_res), 'run -evaluate first'
+    props = 'text-decoration: underline'
+    output = self.df_res.dropna()\
+      .style\
+      .background_gradient(axis=0, cmap='coolwarm')\
+      .highlight_min(subset=list(range_win), props=props)\
+      .highlight_max(subset=list(range_win), props=props)
     if 'ipykernel' in sys.modules:
       IPython.display.display(output)
     else:
