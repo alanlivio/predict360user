@@ -12,6 +12,7 @@ import numpy as np
 import pandas as pd
 from keras.callbacks import CSVLogger, ModelCheckpoint, TensorBoard
 from sklearn.model_selection import train_test_split
+from tqdm.auto import tqdm
 
 from users360.head_motion_prediction.Utils import (all_metrics,
                                                    cartesian_to_eulerian,
@@ -23,6 +24,7 @@ from .utils.fov import *
 
 METRIC = all_metrics['orthodromic']
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+tqdm.pandas()
 
 
 def train_test_split_entropy(df: pd.DataFrame, entropy_type: str, train_entropy: str, test_size: float) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -268,7 +270,7 @@ class Trainer():
       model_medium.load_weights(model_weights_medium)
       model_hight = self.create_model()
       model_hight.load_weights(model_weights_hight)
-      self.threshold_medium, self.threshold_hight = get_class_thresholds(self.df, 'actS')
+      self.threshold_medium, self.threshold_hight = get_class_thresholds(self.ds.df, 'actS')
     else:
       model = self.create_model()
       assert exists(model_weights)
