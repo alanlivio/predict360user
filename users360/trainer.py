@@ -339,16 +339,16 @@ class Trainer():
     s_classes = ['low', 'medium', 'nohight', 'hight']
 
     # create df_res
-    self.ds.df_res = pd.DataFrame(columns=columns + list(range_win), dtype=np.float32)
+    self.df_res = pd.DataFrame(columns=columns + list(range_win), dtype=np.float32)
 
     # create df_res for debug with random data
     # models = ['pos_only,all,actS_c,low', 'pos_only,all,actS_c,medium', 'pos_only,all,actS_c,hight', 'pos_only,david,actS_c,medium', 'pos_only,david,actS_c,hight', 'pos_only,david,actS_c,nohight', 'pos_only,david,hmpS_c,nohight', 'pos_only,all,hmpS_c,medium', 'pos_only,david,,']
     # iters = [models,  s_types, s_classes]
     # index = pd.MultiIndex.from_product(iters, names=columns)
     # data_cols = np.random.randn(np.prod(list(map(len,iters))), self.h_window)
-    # self.ds.df_res = pd.DataFrame(data_cols, index=index)
-    # self.ds.df_res.reset_index(inplace=True)
-    # IPython.display.display(self.ds.df_res)
+    # self.df_res = pd.DataFrame(data_cols, index=index)
+    # self.df_res.reset_index(inplace=True)
+    # IPython.display.display(self.df_res)
 
     # get ds
     if not hasattr(self, 'ds'):
@@ -391,20 +391,20 @@ class Trainer():
         errors_per_timestamp = {idx: [] for idx in range_win}
         # model_df_wins.apply(_calc_wins_error, axis=1, args=(errors_per_timestamp, ))
         model_df_wins[:2].apply(_calc_wins_error, axis=1, args=(errors_per_timestamp, ))
-        newid = len(self.ds.df_res)
+        newid = len(self.df_res)
         # save df_res for s_type, s_class
         # avg_error_per_timestamp = [np.mean(errors_per_timestamp[t]) for t in range_win ]
         avg_error_per_timestamp = [
             np.mean(errors_per_timestamp[t]) if len(errors_per_timestamp[t]) else np.nan
             for t in range_win
         ]
-        self.ds.df_res.loc[newid, ['model_name', 'S_type', 'S_class']] = [model, s_type, s_class]
-        self.ds.df_res.loc[newid, range_win] = avg_error_per_timestamp
+        self.df_res.loc[newid, ['model_name', 'S_type', 'S_class']] = [model, s_type, s_class]
+        self.df_res.loc[newid, range_win] = avg_error_per_timestamp
 
     # create vis table
-    if len(self.ds.df_res):
+    if len(self.df_res):
       props = 'text-decoration: underline'
-      output = self.ds.df_res.dropna()\
+      output = self.df_res.dropna()\
         .style\
         .background_gradient(axis=0, cmap='coolwarm')\
         .highlight_min(subset=list(range_win), props=props)\
