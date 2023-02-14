@@ -376,6 +376,7 @@ class Trainer():
             errors_per_timestamp[t] = []
           errors_per_timestamp[t].append(METRIC(true_win[t], pred_win[t]))
     models_cols = [col for col in self.ds.df.columns if col.startswith(self.model_name)]
+    config.info(f"processing results from models: [{', '.join(models_cols)}]")
     for model in models_cols:
       for s_type, s_class, mask in test_targets:
         # create df_win by expading all model predictions
