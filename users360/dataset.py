@@ -145,22 +145,7 @@ class Dataset:
                                                        args=(threshold_medium, threshold_hight))
     assert not self.df['actS_c'].isnull().any()
 
-  def calc_trajects_poles_prc(self) -> None:
-    self.df.drop(['poles_prc', 'poles_prc_c'], axis=1, errors='ignore', inplace=True)
-
-    # calc poles_prc
-    def _calc_poles_prc(traces) -> float:
-      return np.count_nonzero(abs(traces[:, 2]) > 0.7) / len(traces)
-    self.df['poles_prc'] = pd.Series(self.df['traject'].progress_apply(_calc_poles_prc))
-
-    # calc poles_prc_c
-    threshold_medium, threshold_hight = get_class_thresholds(self.df, 'poles_prc')
-    self.df['poles_prc_c'] = self.df['poles_prc'].progress_apply(get_class_name,
-                                                                 args=(threshold_medium,
-                                                                       threshold_hight))
-    assert not self.df['poles_prc_c'].isna().any()
-
-  def calc_trajects_hmp_entropy(self) -> None:
+  def calc_trajects_entropy_hmp(self) -> None:
     self.df.drop(['hmpS', 'hmpS_c'], axis=1, errors='ignore', inplace=True)
 
     # calc hmpS
@@ -181,6 +166,20 @@ class Dataset:
                                                        args=(threshold_medium, threshold_hight))
     assert not self.df['hmpS_c'].isnull().any()
 
+  def calc_trajects_poles_prc(self) -> None:
+    self.df.drop(['poles_prc', 'poles_prc_c'], axis=1, errors='ignore', inplace=True)
+
+    # calc poles_prc
+    def _calc_poles_prc(traces) -> float:
+      return np.count_nonzero(abs(traces[:, 2]) > 0.7) / len(traces)
+    self.df['poles_prc'] = pd.Series(self.df['traject'].progress_apply(_calc_poles_prc))
+
+    # calc poles_prc_c
+    threshold_medium, threshold_hight = get_class_thresholds(self.df, 'poles_prc')
+    self.df['poles_prc_c'] = self.df['poles_prc'].progress_apply(get_class_name,
+                                                                 args=(threshold_medium,
+                                                                       threshold_hight))
+    assert not self.df['poles_prc_c'].isna().any()
 
   def show_histogram(self, cols=['actS', 'hmpS'], facet=None) -> None:
     cols = [col for col in cols if {col}.issubset(self.df.columns)]

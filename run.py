@@ -78,7 +78,8 @@ if __name__ == '__main__':
   # -calculate_entropy
   if args.calculate_entropy:
     ds = Dataset()
-    calc_trajects_entropy(ds.df)
+    ds.calc_trajects_entropy()
+    ds.calc_trajects_entropy_hmp()
     ds.dump()
   else:
     trn_args = {
