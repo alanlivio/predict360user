@@ -26,6 +26,12 @@ def get_class_name(x: float, threshold_medium: float,
 
 
 class Dataset:
+  """:class:`Dataset` stores the original dataset in memory.
+    It provides functions for data preprocessing, such user clustering by entropy, and analyses, such as tileset usage.
+    Features are stored as :class:`pandas.DataFrame`.
+    Attributes:
+        df (str): pandas.DataFrame.
+    """
 
   def __init__(self) -> None:
     if exists(config.PICKLE_FILE):

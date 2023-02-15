@@ -171,7 +171,18 @@ class Trainer():
     # split x_train, x_val
     self.x_train, self.x_val = train_test_split(self.x_train, random_state=1, test_size=0.125) # 0.125 * 0.8 = 0.1
 
-    # create x_train_wins, x_test_wins
+
+
+  def train(self) -> None:
+    assert not self.using_auto, "train(): train_entropy should not be auto"
+    config.info('train()')
+    config.info('model_dir=' + self.model_dir)
+    if exists(self.model_weights):
+      config.info('train() previous done')
+      sys.exit()
+
+    # create x_train_wins, x_val_wins
+    self.partition()
     self.x_train_wins = [{
         'video': row[1]['video'],
         'user': row[1]['user'],
@@ -184,29 +195,8 @@ class Trainer():
         'trace_id': trace_id,
     } for row in self.x_val.iterrows()\
       for trace_id in range(self.init_window, row[1]['traject'].shape[0] -self.end_window)]
-    self.x_test_wins = [{
-        'video': row[1]['video'],
-        'user': row[1]['user'],
-        'trace_id': trace_id,
-        'actS_c': row[1]['actS_c']
-    } for row in self.x_test.iterrows()\
-      for trace_id in range(self.init_window, row[1]['traject'].shape[0] -self.end_window)]
-    fmt = '''x_train has {} trajectories: {} low, {} medium, {} hight
-             x_val has {} trajectories: {} low, {} medium, {} hight
-             x_test has {} trajectories: {} low, {} medium, {} hight'''
-    config.info(fmt.format(*count_entropy(self.x_train, self.entropy_type),
-                           *count_entropy(self.x_val,   self.entropy_type),
-                           *count_entropy(self.x_test,  self.entropy_type)))
 
-  def train(self) -> None:
-    assert not self.using_auto, "train(): train_entropy should not be auto"
-    config.info('train()')
-    config.info('model_dir=' + self.model_dir)
-    if exists(self.model_weights):
-      config.info('train() previous done')
-      sys.exit()
-    self.partition()
-
+    # fit
     config.info('creating model ...')
     if self.dry_run:
       return
@@ -241,6 +231,19 @@ class Trainer():
     config.info('evaluate()')
     config.info('model_dir=' + self.model_dir)
     self.partition()
+    self.x_test_wins = [{
+        'video': row[1]['video'],
+        'user': row[1]['user'],
+        'trace_id': trace_id,
+        'actS_c': row[1]['actS_c']
+    } for row in self.x_test.iterrows()\
+      for trace_id in range(self.init_window, row[1]['traject'].shape[0] -self.end_window)]
+    fmt = '''x_train has {} trajectories: {} low, {} medium, {} hight
+             x_val has {} trajectories: {} low, {} medium, {} hight
+             x_test has {} trajectories: {} low, {} medium, {} hight'''
+    config.info(fmt.format(*count_entropy(self.x_train, self.entropy_type),
+                           *count_entropy(self.x_val,   self.entropy_type),
+                           *count_entropy(self.x_test,  self.entropy_type)))
 
     if not self.model_fullname in self.ds.df.columns:
       empty = pd.Series([{} for _ in range(len(self.ds.df))]).astype(object)
