@@ -147,21 +147,27 @@ class Trainer():
         else:
           raise NotImplementedError
 
-  def partition(self) -> None:
-    config.info('partitioning...')
+  def _get_ds(self) -> None:
     if not hasattr(self, 'ds'):
       self.ds = Dataset()
-      if self.dataset_name != 'all':
-        self.ds.df = self.ds.df[self.ds.df['ds'] == self.dataset_name]
+
+  def partition(self) -> None:
+    config.info('partitioning...')
+    self._get_ds()
+
+    if self.dataset_name != 'all':
+      df_to_split = self.ds.df[self.ds.df['ds'] == self.dataset_name]
+    else:
+      df_to_split = self.ds.df
 
     # split x_train, x_test
     if self.test_user and self.test_video:
       _, self.x_test = self.ds.get_rows(self.test_video, self.test_user, self.dataset_name)
       return
     elif self.train_entropy != 'all' and not self.using_auto:
-      self.x_train, self.x_test = train_test_split_entropy(self.ds.df, self.entropy_type, self.train_entropy, self.perc_test)
+      self.x_train, self.x_test = train_test_split_entropy(df_to_split, self.entropy_type, self.train_entropy, self.perc_test)
     else:
-      self.x_train, self.x_test = train_test_split(self.ds.df, random_state=1, test_size=self.perc_test)
+      self.x_train, self.x_test = train_test_split(df_to_split, random_state=1, test_size=self.perc_test)
     # split x_train, x_val
     self.x_train, self.x_val = train_test_split(self.x_train, random_state=1, test_size=0.125) # 0.125 * 0.8 = 0.1
 
