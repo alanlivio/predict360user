@@ -100,6 +100,10 @@ class Dataset:
       buffer = io.StringIO()
       self.df.info(buf=buffer)
       f.write(buffer.getvalue())
+      f.write(f"{self.df['actS'].max()=}")
+      f.write(f"{self.df['actS'].min()=}")
+      f.write(f"{self.df['hmpS'].max()=}")
+      f.write(f"{self.df['hmpS'].min()=}")
 
   def random_traject(self) -> pd.Series:
     return self.df.sample(1)
