@@ -283,6 +283,7 @@ class Trainer():
       model.load_weights(model_weights)
 
     # predict by each pred_windows
+    tb_callback = TensorBoard(log_dir=f'{self.model_dir}/logs')
     for ids in tqdm(self.x_test_wins, desc='position predictions'):
       user = ids['user']
       video = ids['video']
@@ -324,7 +325,7 @@ class Trainer():
         model_pred = model.predict([
             transform_batches_cartesian_to_normalized_eulerian(encoder_pos_inputs_for_sample),
             transform_batches_cartesian_to_normalized_eulerian(decoder_pos_inputs_for_sample)
-        ])[0]
+        ], callbacks=[tb_callback])[0]
         model_prediction = transform_normalized_eulerian_to_cartesian(model_pred)
       else:
         raise NotImplementedError
@@ -366,7 +367,7 @@ class Trainer():
     for model, s_type, s_class in product(models_cols, s_types, s_classes):
       model_split = model.split(',')
       if len(model_split) > 1 and model_split[2] and model_split[3]:
-        if (model_split[2] == 'actS_c' and  s_type == 'hmpS_c') or (model_split[2] == 'hmpS_c' and  s_type == 'actS_c') :
+        if (model_split[2] == 'actS_c' and s_type == 'hmpS_c') or (model_split[2] == 'hmpS_c' and  s_type == 'actS_c') :
           continue # skip 'pos_only,david,actS,ANY' for 'hmpS_c,ANY'
       if s_class == 'nohight':
         # TODO: filter mask empty
