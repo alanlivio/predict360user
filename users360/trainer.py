@@ -339,7 +339,10 @@ class Trainer():
     self.ds.dump()
 
   def compare_results(self) -> None:
-    range_win = range(self.h_window)
+    self._get_ds()
+
+    # range_win = range(self.h_window)
+    range_win = range(self.h_window)[::4]
     columns = ['model_name', 'S_type', 'S_class']
     s_types = ['actS_c', 'hmpS_c']
     s_classes = ['low', 'medium', 'nohight', 'hight']
@@ -356,18 +359,20 @@ class Trainer():
     # self.df_res.reset_index(inplace=True)
     # IPython.display.display(self.df_res)
 
-    # get ds
-    if not hasattr(self, 'ds'):
-      self.ds = Dataset()
-
-    # create test_targets
-    all_ds = ('all', 'all', pd.Series(True, index=self.ds.df.index))
-    test_targets = [all_ds]  # s_type, s_class, mask
-    for s_type, s_class in product(s_types, s_classes):
+    # create targets in format (model, s_type, s_class, mask)
+    models_cols = sorted([col for col in self.ds.df.columns if col.startswith(self.model_name)])
+    config.info(f"processing results from models: [{', '.join(models_cols)}]")
+    targets = [(model, 'all', 'all', pd.Series(True, index=self.ds.df.index)) for model in models_cols]
+    for model, s_type, s_class in product(models_cols, s_types, s_classes):
+      model_split = model.split(',')
+      if len(model_split) > 1 and model_split[2] and model_split[3]:
+        if (model_split[2] == 'actS_c' and  s_type == 'hmpS_c') or (model_split[2] == 'hmpS_c' and  s_type == 'actS_c') :
+          continue # skip 'pos_only,david,actS,ANY' for 'hmpS_c,ANY'
       if s_class == 'nohight':
-        test_targets.append((s_type, s_class, self.ds.df[s_type] != 'hight'))
+        # TODO: filter mask empty
+        targets.append((model, s_type, s_class, self.ds.df[s_type] != 'hight'))
       else:
-        test_targets.append((s_type, s_class, self.ds.df[s_type] == s_class))
+        targets.append((model, s_type, s_class, self.ds.df[s_type] == s_class))
 
     # fill df_res from moldel results column at df
     def _calc_wins_error(df_wins_cols, errors_per_timestamp) -> None:
@@ -381,32 +386,29 @@ class Trainer():
           if t not in errors_per_timestamp:
             errors_per_timestamp[t] = []
           errors_per_timestamp[t].append(METRIC(true_win[t], pred_win[t]))
-    models_cols = [col for col in self.ds.df.columns if col.startswith(self.model_name)]
-    config.info(f"processing results from models: [{', '.join(models_cols)}]")
-    for model in models_cols:
-      for s_type, s_class, mask in test_targets:
-        # create df_win by expading all model predictions
-        not_empty = self.ds.df[model].apply(lambda x: len(x) != 0)
-        model_srs = self.ds.df.loc[not_empty & mask, model]
-        if len(model_srs) == 0:
-          config.error(f"skipping {model=} {s_type=} {s_class=}")
-          continue
-        model_df_wins = pd.DataFrame.from_dict(model_srs.values.tolist())
-        model_df_wins.index = model_srs.index
+    for model, s_type, s_class, mask in targets:
+      # create df_win by expading all model predictions
+      not_empty = self.ds.df[model].apply(lambda x: len(x) != 0)
+      model_srs = self.ds.df.loc[not_empty & mask, model]
+      if len(model_srs) == 0:
+        config.error(f"skipping {model=} {s_type=} {s_class=}")
+        continue
+      model_df_wins = pd.DataFrame.from_dict(model_srs.values.tolist())
+      model_df_wins.index = model_srs.index
 
-        # df_wins.apply by column and add errors_per_timestamp
-        errors_per_timestamp = {idx: [] for idx in range_win}
-        # model_df_wins.apply(_calc_wins_error, axis=1, args=(errors_per_timestamp, ))
-        model_df_wins[:2].apply(_calc_wins_error, axis=1, args=(errors_per_timestamp, ))
-        newid = len(self.df_res)
-        # save df_res for s_type, s_class
-        # avg_error_per_timestamp = [np.mean(errors_per_timestamp[t]) for t in range_win ]
-        avg_error_per_timestamp = [
-            np.mean(errors_per_timestamp[t]) if len(errors_per_timestamp[t]) else np.nan
-            for t in range_win
-        ]
-        self.df_res.loc[newid, ['model_name', 'S_type', 'S_class']] = [model, s_type, s_class]
-        self.df_res.loc[newid, range_win] = avg_error_per_timestamp
+      # df_wins.apply by column and add errors_per_timestamp
+      errors_per_timestamp = {idx: [] for idx in range_win}
+      # model_df_wins.apply(_calc_wins_error, axis=1, args=(errors_per_timestamp, ))
+      model_df_wins[:2].apply(_calc_wins_error, axis=1, args=(errors_per_timestamp, ))
+      newid = len(self.df_res)
+      # save df_res for s_type, s_class
+      # avg_error_per_timestamp = [np.mean(errors_per_timestamp[t]) for t in range_win ]
+      avg_error_per_timestamp = [
+          np.mean(errors_per_timestamp[t]) if len(errors_per_timestamp[t]) else np.nan
+          for t in range_win
+      ]
+      self.df_res.loc[newid, ['model_name', 'S_type', 'S_class']] = [model, s_type, s_class]
+      self.df_res.loc[newid, range_win] = avg_error_per_timestamp
 
     # create vis table
     assert len(self.df_res), 'run -evaluate first'
