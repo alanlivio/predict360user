@@ -178,14 +178,13 @@ class Trainer():
         'trace_id': trace_id
     } for row in self.x_train.iterrows()\
       for trace_id in range(self.init_window, row[1]['traject'].shape[0] -self.end_window)]
-    self.x_test_wins = [{
+    self.x_val_wins = [{
         'video': row[1]['video'],
         'user': row[1]['user'],
         'trace_id': trace_id,
-        'actS_c': row[1]['actS_c']
-    } for row in self.x_test.iterrows()\
+    } for row in self.x_val.iterrows()\
       for trace_id in range(self.init_window, row[1]['traject'].shape[0] -self.end_window)]
-    self.x_val_wins = [{
+    self.x_test_wins = [{
         'video': row[1]['video'],
         'user': row[1]['user'],
         'trace_id': trace_id,
@@ -195,9 +194,9 @@ class Trainer():
     fmt = '''x_train has {} trajectories: {} low, {} medium, {} hight
              x_val has {} trajectories: {} low, {} medium, {} hight
              x_test has {} trajectories: {} low, {} medium, {} hight'''
-    config.info(fmt.format(*count_entropy(self.x_train, 'actS'),
-                           *count_entropy(self.x_val,   'actS'),
-                           *count_entropy(self.x_test,  'actS')))
+    config.info(fmt.format(*count_entropy(self.x_train, self.entropy_type),
+                           *count_entropy(self.x_val,   self.entropy_type),
+                           *count_entropy(self.x_test,  self.entropy_type)))
 
   def train(self) -> None:
     assert not self.using_auto, "train(): train_entropy should not be auto"
