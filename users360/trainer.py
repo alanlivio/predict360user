@@ -365,6 +365,12 @@ class Trainer():
     # create targets in format (model, s_type, s_class, mask)
     models_cols = sorted([col for col in self.ds.df.columns if col.startswith(self.model_name)])
     config.info(f"processing results from models: [{', '.join(models_cols)}]")
+    if self.dataset_name == 'all':
+      for ds_name in config.ARGS_DS_NAMES[1:]:
+        models_cols = [col for col in models_cols if ds_name not in col]
+    else:
+        models_cols = [col for col in models_cols if col.startswith(f'{self.model_name},{self.dataset_name}')]
+    config.info(f"processing results from models: [{', '.join(models_cols)}]")
     targets = [(model, 'all', 'all', pd.Series(True, index=self.ds.df.index)) for model in models_cols]
     for model, s_type, s_class in product(models_cols, s_types, s_classes):
       model_split = model.split(',')
