@@ -423,11 +423,15 @@ class Trainer():
       ]
       self.df_res.loc[newid, ['model_name', 'S_type', 'S_class']] = [model, s_type, s_class]
       self.df_res.loc[newid, range_win] = avg_error_per_timestamp
+    self._show_compare_results()
 
+  def _show_compare_results(self, df_res=None) -> None:
+    df_res = self.df_res if df_res is None else df_res
+    range_win = range(self.h_window)[::4]
     # create vis table
-    assert len(self.df_res), 'run -evaluate first'
+    assert len(df_res), 'run -evaluate first'
     props = 'text-decoration: underline'
-    output = self.df_res.dropna()\
+    output = df_res.dropna()\
       .style\
       .background_gradient(axis=0, cmap='coolwarm')\
       .highlight_min(subset=list(range_win), props=props)\
