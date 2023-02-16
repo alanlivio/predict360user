@@ -384,11 +384,16 @@ class Trainer():
       win_pos_l = df_wins_cols.index
       for win_pos in win_pos_l:
         pred_win = df_wins_cols[win_pos]
+        if isinstance(df_wins_cols[win_pos], float):
+          break # TODO: review why some pred ends at 51
         true_win = traject[win_pos + 1:win_pos + self.h_window + 1]
         for t in range_win:
           if t not in errors_per_timestamp:
             errors_per_timestamp[t] = []
-          errors_per_timestamp[t].append(METRIC(true_win[t], pred_win[t]))
+          try:
+            errors_per_timestamp[t].append(METRIC(true_win[t], pred_win[t]))
+          except:
+            print('error')
     for model, s_type, s_class, mask in targets:
       # create df_win by expading all model predictions
       not_empty = self.ds.df[model].apply(lambda x: len(x) != 0)
@@ -401,8 +406,8 @@ class Trainer():
 
       # df_wins.apply by column and add errors_per_timestamp
       errors_per_timestamp = {idx: [] for idx in range_win}
-      # model_df_wins.apply(_calc_wins_error, axis=1, args=(errors_per_timestamp, ))
-      model_df_wins[:2].apply(_calc_wins_error, axis=1, args=(errors_per_timestamp, ))
+      model_df_wins.apply(_calc_wins_error, axis=1, args=(errors_per_timestamp, ))
+      # model_df_wins[:2].apply(_calc_wins_error, axis=1, args=(errors_per_timestamp, ))
       newid = len(self.df_res)
       # save df_res for s_type, s_class
       # avg_error_per_timestamp = [np.mean(errors_per_timestamp[t]) for t in range_win ]
