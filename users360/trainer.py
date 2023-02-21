@@ -377,6 +377,8 @@ class Trainer():
       if len(model_split) > 1 and model_split[2] and model_split[3]:
         if (model_split[2] == 'actS_c' and s_type == 'hmpS_c') or (model_split[2] == 'hmpS_c' and  s_type == 'actS_c') :
           continue # skip 'pos_only,david,actS,ANY' for 'hmpS_c,ANY'
+        if ('auto' in model and s_type == 'hmpS_c'):
+          continue # skip 'pos_only,ANY,actS,auto' for 'hmpS_c,ANY'
       if s_class == 'nohight':
         # TODO: filter mask empty
         targets.append((model, s_type, s_class, self.ds.df[s_type] != 'hight'))
