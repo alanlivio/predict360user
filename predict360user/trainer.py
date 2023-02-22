@@ -5,9 +5,9 @@ from itertools import product
 from os.path import exists, join
 from typing import Any, Generator
 
-import IPython
 import numpy as np
 import pandas as pd
+import plotly.express as px
 from keras.callbacks import CSVLogger, ModelCheckpoint, TensorBoard
 from sklearn.model_selection import train_test_split
 from tqdm.auto import tqdm
@@ -369,6 +369,23 @@ class Trainer():
 
     # save on df
     self.ds.dump()
+
+  def compare_train(self) -> None:
+    result_csv = 'train_results.csv'
+    # find result_csv files
+    csv_df_l = [(dir_name, pd.read_csv(join(config.DATADIR, dir_name, file_name)))
+                  for dir_name in os.listdir(config.DATADIR) if os.path.isdir(join(config.DATADIR, dir_name))
+                  for file_name in os.listdir(join(config.DATADIR, dir_name))
+                  if file_name == result_csv ]
+    csv_df_l = [ df.assign(model=dir_name) for (dir_name, df) in csv_df_l]
+    assert csv_df_l, f'no data/<model>/{result_csv} files, run -train'
+
+    # plot
+    df_compare = pd.concat(csv_df_l)
+    fig = px.line(df_compare,x='epoch', y='loss', color='model', title='compare_train_loss', width=800)
+    config.show_or_save(fig)
+    fig = px.line(df_compare,x='epoch', y='val_loss', color='model', title='compare_train_val_loss', width=800)
+    config.show_or_save(fig)
 
   def compare_evaluate(self) -> None:
     self._get_ds()

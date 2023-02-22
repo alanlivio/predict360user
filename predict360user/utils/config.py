@@ -22,5 +22,8 @@ def show_or_save(output, title = '') -> None:
       else:
         title = datetime.datetime.now().strftime("%y%m%d_%H%M%S")
     html_file = join(DATADIR, title +'.html')
-    output.write_html(html_file)
+    if isinstance(output, go.Figure):
+      output.write_html(html_file)
+    else:
+      output.to_html(html_file)
     print(pathlib.Path(html_file).as_uri())

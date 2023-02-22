@@ -12,12 +12,11 @@ if __name__ == '__main__':
 
   # actions params
   grp = psr.add_mutually_exclusive_group(required=True)
-  grp.add_argument('-calculate_entropy',
-                   action='store_true',
-                   help='load dataset, calculate entropy and save it ')
-  grp.add_argument('-compare_evaluate', action='store_true', help='compare -evaluate results ')
+  grp.add_argument('-calculate_entropy', action='store_true', help='calculate and save entropy')
   grp.add_argument('-train', action='store_true', help='train model')
+  grp.add_argument('-compare_train', action='store_true', help='compare -train results')
   grp.add_argument('-evaluate', action='store_true', help='evaluate model')
+  grp.add_argument('-compare_evaluate', action='store_true', help='compare -evaluate results')
 
   # Trainer params
   psr.add_argument('-model_name',
@@ -100,6 +99,8 @@ if __name__ == '__main__':
       trn.train()
     elif args.evaluate:
       trn.evaluate()
+    elif args.compare_train:
+      trn.compare_train()
     elif args.compare_evaluate:
       trn.compare_evaluate()
   sys.exit()
