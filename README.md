@@ -1,16 +1,18 @@
 # predict360user
 
-This project extends [Rondon 360-videos models/dataset collection](https://gitlab.com/miguelfromeror/head-motion-prediction).
-It is composed by these main classes:
+Python library to predict user navigation in 360 videos. It extends extends [Rondon 360-videos models/dataset collection](https://gitlab.com/miguelfromeror/head-motion-prediction) and is composed by these main classes:
 
-* Dataset: stores the original dataset in memory as a pandas.DataFrame and provides functions for data preprocessing, such user clustering by entropy.
+* `Dataset`: stores the dataset in memory as a pandas.DataFrame and provides functions for data preprocessing, such as user clustering by entropy.
 
-  |       | ds    | user    | video         | traject | traject_hmps |
-  | ----- | ----- | ------- | ------------- | ------- | ------------ |
-  | 0     | david | david_0 | david_10_Cows | [[...   | [[[...       |
 
-* Plot360: plot users' trajectories with a Plotly 3d visualization
-* Trainer: train and perform prediction models from Rondon collection
+|     | ds    | user    | video         | traject       | traject_hmps |
+| --- | ----- | ------- | ------------- | ------------- | ------------ |
+| 0   | david | david_0 | david_10_Cows | [[x,y,z],...] | [[4x6],...]  |
+
+* `Trainer`: train and perform prediction models from Rondon collection
+* `Plot360`: plot viewport, trajectory or predictions for users using 3D visualization
+
+<div style="text-align:center"><img src="docs/requests.gif" width="300" ></div>
 
 ## Requirements
 
@@ -47,15 +49,13 @@ python training_procedure.py -train -dataset_name David_MMSys_18 -model_name pos
 python training_procedure.py -evaluate -dataset_name David_MMSys_18 -model_name pos_only
 ```
 
-user360:
+predict360user:
 
 ```bash
 python run.py -train -dataset_name david -model_name pos_only
 python run.py -evaluate -dataset_name david -model_name pos_only
 ```
 
-## Notebooks
+## Documentation
 
-See [notebooks/](notebooks/) folder
-
-![Alt Text](docs/requests.gif)
+See notebooks at [docs/](docs/) folder.
