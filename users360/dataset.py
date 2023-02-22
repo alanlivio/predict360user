@@ -33,6 +33,8 @@ class Dataset:
         df (str): pandas.DataFrame.
     """
 
+  ENTROPY_CLASS_COLORS = {'low': 'blue', 'medium': 'green', 'hight': 'red'}
+
   def __init__(self) -> None:
     if exists(config.PICKLE_FILE):
       with open(config.PICKLE_FILE, 'rb') as f:
@@ -198,7 +200,7 @@ class Dataset:
                   x=col,
                   color=col+'_c',
                   facet_col=facet,
-                  color_discrete_map=config.ENTROPY_CLASS_COLORS,
+                  color_discrete_map=self.ENTROPY_CLASS_COLORS,
                   width=900).show()
 
   def drop_predict_cols(self) -> None:

@@ -12,7 +12,6 @@ ARGS_DS_NAMES = ['all', 'david', 'fan', 'nguyen', 'xucvpr', 'xupami']
 ARGS_ENTROPY_NAMES = ['all','low','medium','hight', 'nohight', 'low_hmp','medium_hmp','hight_hmp', 'nohight_hmp']
 ARGS_ENTROPY_AUTO_NAMES = ['auto', 'auto_m_window', 'auto_since_start']
 DEFAULT_EPOCHS = 50
-ENTROPY_CLASS_COLORS = {'low': 'blue', 'medium': 'green', 'hight': 'red'}
 RES_WIDTH = 3840
 RES_HIGHT = 2160
 RATE = 0.2
