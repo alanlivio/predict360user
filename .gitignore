@@ -175,4 +175,4 @@ data-*
 Graph/*
 logs/*
 bkp*
-users360/head_motion_prediction
+predict360user/head_motion_prediction
