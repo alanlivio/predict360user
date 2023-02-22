@@ -15,7 +15,7 @@ if __name__ == '__main__':
   grp.add_argument('-calculate_entropy',
                    action='store_true',
                    help='load dataset, calculate entropy and save it ')
-  grp.add_argument('-compare_results', action='store_true', help='compare -evaluate results ')
+  grp.add_argument('-compare_evaluate', action='store_true', help='compare -evaluate results ')
   grp.add_argument('-train', action='store_true', help='train model')
   grp.add_argument('-evaluate', action='store_true', help='evaluate model')
 
@@ -100,6 +100,6 @@ if __name__ == '__main__':
       trn.train()
     elif args.evaluate:
       trn.evaluate()
-    elif args.compare_results:
-      trn.compare_results()
+    elif args.compare_evaluate:
+      trn.compare_evaluate()
   sys.exit()

@@ -370,7 +370,7 @@ class Trainer():
     # save on df
     self.ds.dump()
 
-  def compare_results(self) -> None:
+  def compare_evaluate(self) -> None:
     self._get_ds()
 
     # range_win = range(self.h_window)
@@ -459,9 +459,9 @@ class Trainer():
       ]
       self.df_res.loc[newid, ['model_name', 'S_type', 'S_class']] = [model, s_type, s_class]
       self.df_res.loc[newid, range_win] = avg_error_per_timestamp
-    self._show_compare_results()
+    self._show_compare_evaluate()
 
-  def _show_compare_results(self, df_res=None) -> None:
+  def _show_compare_evaluate(self, df_res=None) -> None:
     df_res = self.df_res if df_res is None else df_res
     range_win = range(self.h_window)[::4]
     # create vis table
@@ -475,7 +475,7 @@ class Trainer():
     if 'ipykernel' in sys.modules:
       IPython.display.display(output)
     else:
-      html_file = join(self.DATADIR, 'compare_results.html')
+      html_file = join(self.DATADIR, 'compare_evaluate.html')
       output.to_html(html_file)
       print(pathlib.Path(html_file).as_uri())
 
