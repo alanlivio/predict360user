@@ -12,7 +12,6 @@ if __name__ == '__main__':
 
   # actions params
   grp = psr.add_mutually_exclusive_group(required=True)
-  grp.add_argument('-calculate_entropy', action='store_true', help='calculate and save entropy')
   grp.add_argument('-train', action='store_true', help='train model')
   grp.add_argument('-compare_train', action='store_true', help='compare -train results')
   grp.add_argument('-evaluate', action='store_true', help='evaluate model')
@@ -73,34 +72,26 @@ if __name__ == '__main__':
   psr.add_argument('-test_video', nargs='?', default='', type=str, help='video to filter test data')
 
   args = psr.parse_args()
-
-  # -calculate_entropy
-  if args.calculate_entropy:
-    ds = Dataset()
-    ds.calc_trajects_entropy()
-    ds.calc_trajects_entropy_hmp()
-    ds.dump()
-  else:
-    trn_args = {
-        'dataset_name': args.dataset_name,
-        'model_name': args.model_name,
-        'perc_test': args.perc_test,
-        'init_window': args.init_window,
-        'm_window': args.m_window,
-        'h_window': args.h_window,
-        'dry_run': args.dry_run,
-        'epochs': args.epochs,
-        'train_entropy': args.train_entropy,
-        'test_user': args.test_user,
-        'test_video': args.test_video
-    }
-    trn = Trainer(**trn_args)
-    if args.train:
-      trn.train()
-    elif args.evaluate:
-      trn.evaluate()
-    elif args.compare_train:
-      trn.compare_train()
-    elif args.compare_evaluate:
-      trn.compare_evaluate()
+  trn_args = {
+      'dataset_name': args.dataset_name,
+      'model_name': args.model_name,
+      'perc_test': args.perc_test,
+      'init_window': args.init_window,
+      'm_window': args.m_window,
+      'h_window': args.h_window,
+      'dry_run': args.dry_run,
+      'epochs': args.epochs,
+      'train_entropy': args.train_entropy,
+      'test_user': args.test_user,
+      'test_video': args.test_video
+  }
+  trn = Trainer(**trn_args)
+  if args.train:
+    trn.train()
+  elif args.evaluate:
+    trn.evaluate()
+  elif args.compare_train:
+    trn.compare_train()
+  elif args.compare_evaluate:
+    trn.compare_evaluate()
   sys.exit()
