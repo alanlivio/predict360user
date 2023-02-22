@@ -266,8 +266,6 @@ class Trainer():
     if self.dry_run:
       return
 
-    if not exists(self.model_dir):
-      os.makedirs(self.model_dir)
     if self.using_auto:
       assert exists(model_weights_low)
       assert exists(model_weights_medium)
@@ -280,6 +278,8 @@ class Trainer():
       model_hight.load_weights(model_weights_hight)
       self.threshold_medium, self.threshold_hight = get_class_thresholds(self.ds.df, 'actS')
     else:
+      if not exists(self.model_dir) :
+        os.makedirs(self.model_dir)
       model = self.create_model()
       assert exists(model_weights)
       model.load_weights(model_weights)
