@@ -1,5 +1,6 @@
 import io
 import os
+import pathlib
 import pickle
 from os.path import exists
 from typing import Literal
@@ -11,6 +12,7 @@ import plotly.express as px
 import scipy.stats
 
 from . import config
+from .trainer import Trainer
 from .utils.fov import calc_actual_entropy
 from .utils.tileset import TILESET_DEFAULT, TileSet
 
@@ -32,22 +34,26 @@ class Dataset:
     Attributes:
         df (str): pandas.DataFrame.
     """
-
+  DATADIR = f"{pathlib.Path(__file__).parent.parent / 'data/'}"
+  PICKLE_FILE = os.path.join(DATADIR, 'df_trajects.pickle')
+  HMDDIR = f"{pathlib.Path(__file__).parent / 'head_motion_prediction/'}"
+  DS_NAMES = ['david', 'fan', 'nguyen', 'xucvpr', 'xupami']
+  DS_SIZES = [1083, 300, 432, 6654, 4408]
   ENTROPY_CLASS_COLORS = {'low': 'blue', 'medium': 'green', 'hight': 'red'}
 
   def __init__(self) -> None:
-    if exists(config.PICKLE_FILE):
-      with open(config.PICKLE_FILE, 'rb') as f:
-        config.info(f'loading df from {config.PICKLE_FILE}')
+    if exists(self.PICKLE_FILE):
+      with open(self.PICKLE_FILE, 'rb') as f:
+        config.info(f'loading df from {self.PICKLE_FILE}')
         self.df = pickle.load(f)
     else:
-      config.info(f'no {config.PICKLE_FILE}, loading df from {config.HMDDIR}')
+      config.info(f'no {self.PICKLE_FILE}, loading df from {self.HMDDIR}')
       self.df = self._load_df_trajects_from_hmp()
 
   def _load_df_trajects_from_hmp(self) -> pd.DataFrame:
     # save cwd and move to head_motion_prediction for invoking funcs
     cwd = os.getcwd()
-    os.chdir(config.HMDDIR)
+    os.chdir(self.HMDDIR)
     from .head_motion_prediction.David_MMSys_18 import Read_Dataset as david
     from .head_motion_prediction.Fan_NOSSDAV_17 import Read_Dataset as fan
     from .head_motion_prediction.Nguyen_MM_18 import Read_Dataset as nguyen
@@ -73,9 +79,9 @@ class Dataset:
       # convert dict to DataFrame
       data = [
           (
-              config.DS_NAMES[idx],
-              config.DS_NAMES[idx] + '_' + user,
-              config.DS_NAMES[idx] + '_' + video,
+              self.DS_NAMES[idx],
+              self.DS_NAMES[idx] + '_' + user,
+              self.DS_NAMES[idx] + '_' + video,
               # np.around(dataset[user][video][:n_traces, 0], decimals=2),
               dataset[user][video][:n_traces, 1:]) for user in dataset.keys()
           for video in dataset[user].keys()
@@ -90,7 +96,7 @@ class Dataset:
               'traject'  # [[x,y,z], ...]
           ])
       # assert and check
-      assert tmpdf['ds'].value_counts()[config.DS_NAMES[idx]] == config.DS_SIZES[idx]
+      assert tmpdf['ds'].value_counts()[self.DS_NAMES[idx]] == self.DS_SIZES[idx]
       return tmpdf
 
     # create df for each dataset
@@ -101,10 +107,10 @@ class Dataset:
     return df
 
   def dump(self) -> None:
-    config.info(f'saving df to {config.PICKLE_FILE}')
-    with open(config.PICKLE_FILE, 'wb') as f:
+    config.info(f'saving df to {self.PICKLE_FILE}')
+    with open(self.PICKLE_FILE, 'wb') as f:
       pickle.dump(self.df, f)
-    with open(config.PICKLE_FILE + '.info.txt', 'w', encoding='utf-8') as f:
+    with open(self.PICKLE_FILE + '.info.txt', 'w', encoding='utf-8') as f:
       buffer = io.StringIO()
       self.df.info(buf=buffer)
       f.write(buffer.getvalue())
@@ -210,7 +216,7 @@ class Dataset:
 
   def drop_predict_cols(self) -> None:
     col_rm = [
-        col for col in self.df.columns for model in config.ARGS_MODEL_NAMES if col.startswith(model)
+        col for col in self.df.columns for model in Trainer.ARGS_MODEL_NAMES if col.startswith(model)
     ]
     self.df.drop(col_rm, axis=1, errors='ignore', inplace=True)
 

@@ -14,6 +14,8 @@ X1Y0Z0 = np.array([1, 0, 0])
 HOR_DIST = degrees_to_radian(110)
 HOR_MARGIN = degrees_to_radian(110 / 2)
 VER_MARGIN = degrees_to_radian(90 / 2)
+RES_WIDTH = 3840
+RES_HIGHT = 2160
 
 _fov_x1y0z0_fov_points_euler = np.array([
     eulerian_in_range(-HOR_MARGIN, VER_MARGIN),
@@ -50,8 +52,8 @@ def fov_poly(x, y, z) -> polygon.SphericalPolygon:
 def calc_fixmps_ids(traces: np.array) -> np.array:
   # calc fixation_ids
   scale = 0.025
-  n_height = int(scale * config.RES_HIGHT)
-  n_width = int(scale * config.RES_WIDTH)
+  n_height = int(scale * RES_HIGHT)
+  n_width = int(scale * RES_WIDTH)
   im_theta = np.linspace(0, 2 * np.pi - 2 * np.pi / n_width, n_width, endpoint=True)
   im_phi = np.linspace(0 + np.pi / (2 * n_height),
                        np.pi - np.pi / (2 * n_height),
