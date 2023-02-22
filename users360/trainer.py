@@ -1,8 +1,6 @@
 import os
 import pathlib
 import sys
-from contextlib import redirect_stderr
-from dataclasses import dataclass
 from itertools import product
 from os.path import exists, join
 from typing import Any, Generator
@@ -14,12 +12,12 @@ from keras.callbacks import CSVLogger, ModelCheckpoint, TensorBoard
 from sklearn.model_selection import train_test_split
 from tqdm.auto import tqdm
 
-from users360.head_motion_prediction.Utils import (all_metrics,
-                                                   cartesian_to_eulerian,
-                                                   eulerian_to_cartesian)
-
 from . import config
 from .dataset import *
+from .head_motion_prediction.position_only_baseline import \
+    create_pos_only_model
+from .head_motion_prediction.Utils import (all_metrics, cartesian_to_eulerian,
+                                           eulerian_to_cartesian)
 from .utils.fov import *
 
 METRIC = all_metrics['orthodromic']
@@ -27,21 +25,24 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 tqdm.pandas()
 
 
-def train_test_split_entropy(df: pd.DataFrame, entropy_type: str, train_entropy: str, test_size: float) -> tuple[pd.DataFrame, pd.DataFrame]:
+def train_test_split_entropy(df: pd.DataFrame, entropy_type: str, train_entropy: str,
+                             test_size: float) -> tuple[pd.DataFrame, pd.DataFrame]:
   if train_entropy == 'all':
     df = df
   elif train_entropy == 'nohight':
-    df = df[df[entropy_type+'_c'] != 'hight']
+    df = df[df[entropy_type + '_c'] != 'hight']
   else:
-    df = df[df[entropy_type+'_c'] == train_entropy]
+    df = df[df[entropy_type + '_c'] == train_entropy]
   return train_test_split(df, random_state=1, test_size=test_size)
+
 
 def count_entropy(df: pd.DataFrame, entropy_type: str) -> tuple[int, int, int, int]:
   a_len = len(df)
-  l_len = len(df[df[entropy_type+'_c'] == 'low'])
-  m_len = len(df[df[entropy_type+'_c'] == 'medium'])
-  h_len = len(df[df[entropy_type+'_c'] == 'hight'])
+  l_len = len(df[df[entropy_type + '_c'] == 'low'])
+  m_len = len(df[df[entropy_type + '_c'] == 'medium'])
+  h_len = len(df[df[entropy_type + '_c'] == 'hight'])
   return a_len, l_len, m_len, h_len
+
 
 def transform_batches_cartesian_to_normalized_eulerian(positions_in_batch) -> np.array:
   positions_in_batch = np.array(positions_in_batch)
@@ -57,28 +58,41 @@ def transform_normalized_eulerian_to_cartesian(positions) -> np.array:
   return np.array(eulerian_samples)
 
 
-@dataclass
 class Trainer():
+  ARGS_MODEL_NAMES = ['pos_only', 'TRACK', 'CVPR18', 'MM18', 'most_salient_point']
+  ARGS_DS_NAMES = ['all', 'david', 'fan', 'nguyen', 'xucvpr', 'xupami']
+  ARGS_ENTROPY_NAMES = ['all','low','medium','hight', 'nohight', 'low_hmp','medium_hmp','hight_hmp', 'nohight_hmp']
+  ARGS_ENTROPY_AUTO_NAMES = ['auto', 'auto_m_window', 'auto_since_start']
+  BATCH_SIZE = 128.0
+  DEFAULT_EPOCHS = 50
+  RATE = 0.2
 
-  # dataclass attrs
-  model_name: str = 'pos_only'
-  dataset_name: str = 'all'
-  h_window: int = 25
-  init_window: int = 30
-  m_window: int = 5
-  perc_test: float = 0.2
-  train_entropy: str = 'all'
-  # dataclass attrs: train()
-  epochs: int = config.DEFAULT_EPOCHS
-  # dataclass attrs: evaluate()
-  test_user: str = ''
-  test_video: str = ''
-  dry_run: bool = False
-
-  def __post_init__(self) -> None:
-    assert self.model_name in config.ARGS_MODEL_NAMES
-    assert self.dataset_name in config.ARGS_DS_NAMES
-    assert self.train_entropy in config.ARGS_ENTROPY_NAMES + config.ARGS_ENTROPY_AUTO_NAMES
+  def __init__(self,
+             model_name='pos_only',
+             dataset_name='all',
+             h_window=25,
+             init_window=30,
+             m_window=5,
+             perc_test=0.2,
+             train_entropy='all',
+             epochs=DEFAULT_EPOCHS,
+             test_user='',
+             test_video='',
+             dry_run=False) -> None:
+    self.model_name = model_name
+    self.dataset_name = dataset_name
+    self.h_window = h_window
+    self.init_window = init_window
+    self.m_window = m_window
+    self.perc_test = perc_test
+    self.train_entropy = train_entropy
+    self.epochs = epochs
+    self.test_user = test_user
+    self.test_video = test_video
+    self.dry_run = dry_run
+    assert self.model_name in self.ARGS_MODEL_NAMES
+    assert self.dataset_name in self.ARGS_DS_NAMES
+    assert self.train_entropy in self.ARGS_ENTROPY_NAMES + self.ARGS_ENTROPY_AUTO_NAMES
     self.using_auto = self.train_entropy.startswith('auto')
     self.entropy_type = 'hmpS' if self.train_entropy.endswith('hmp') else 'actS'
     if self.dataset_name == 'all' and self.train_entropy == 'all':
@@ -91,12 +105,17 @@ class Trainer():
     self.model_dir = join(config.DATADIR, self.model_fullname)
     self.model_weights = join(self.model_dir, 'weights.hdf5')
     self.end_window = self.h_window
-    config.info(self)
+    config.info(self.__str__())
+
+  def __str__(self) -> str:
+    return "(" + ", ".join( f'{elem}={getattr(self, elem)}' for elem in [
+        'model_name', 'dataset_name', 'h_window', 'init_window', 'm_window',
+        'perc_test', 'train_entropy', 'epochs', 'test_user', 'test_video',
+        'dry_run'
+    ]) + ")"
 
   def create_model(self) -> Any:
     if self.model_name == 'pos_only':
-      from users360.head_motion_prediction.position_only_baseline import \
-          create_pos_only_model
       return create_pos_only_model(self.m_window, self.h_window)
     else:
       raise NotImplementedError
@@ -124,7 +143,7 @@ class Trainer():
         else:
           raise NotImplementedError
         count += 1
-        if count == config.BATCH_SIZE:
+        if count == self.BATCH_SIZE:
           count = 0
           if self.model_name == 'pos_only':
             yield ([
@@ -165,13 +184,15 @@ class Trainer():
       _, self.x_test = self.ds.get_rows(self.test_video, self.test_user, self.dataset_name)
       return
     elif self.train_entropy != 'all' and not self.using_auto:
-      self.x_train, self.x_test = train_test_split_entropy(df_to_split, self.entropy_type, self.train_entropy, self.perc_test)
+      self.x_train, self.x_test = train_test_split_entropy(df_to_split, self.entropy_type,
+                                                           self.train_entropy, self.perc_test)
     else:
-      self.x_train, self.x_test = train_test_split(df_to_split, random_state=1, test_size=self.perc_test)
+      self.x_train, self.x_test = train_test_split(df_to_split,
+                                                   random_state=1,
+                                                   test_size=self.perc_test)
     # split x_train, x_val
-    self.x_train, self.x_val = train_test_split(self.x_train, random_state=1, test_size=0.125) # 0.125 * 0.8 = 0.1
-
-
+    self.x_train, self.x_val = train_test_split(self.x_train, random_state=1,
+                                                test_size=0.125)  # 0.125 * 0.8 = 0.1
 
   def train(self) -> None:
     assert not self.using_auto, "train(): train_entropy should not be auto"
@@ -204,8 +225,8 @@ class Trainer():
       os.makedirs(self.model_dir)
     model = self.create_model()
     assert model
-    steps_per_ep_train = np.ceil(len(self.x_train_wins) / config.BATCH_SIZE)
-    steps_per_ep_validate = np.ceil(len(self.x_val_wins) / config.BATCH_SIZE)
+    steps_per_ep_train = np.ceil(len(self.x_train_wins) / self.BATCH_SIZE)
+    steps_per_ep_validate = np.ceil(len(self.x_val_wins) / self.BATCH_SIZE)
     csv_logger_f = join(self.model_dir, 'train_results.csv')
     csv_logger = CSVLogger(csv_logger_f)
     tb_callback = TensorBoard(log_dir=f'{self.model_dir}/logs')
@@ -241,9 +262,10 @@ class Trainer():
     fmt = '''x_train has {} trajectories: {} low, {} medium, {} hight
              x_val has {} trajectories: {} low, {} medium, {} hight
              x_test has {} trajectories: {} low, {} medium, {} hight'''
-    config.info(fmt.format(*count_entropy(self.x_train, self.entropy_type),
-                           *count_entropy(self.x_val,   self.entropy_type),
-                           *count_entropy(self.x_test,  self.entropy_type)))
+    config.info(
+        fmt.format(*count_entropy(self.x_train, self.entropy_type),
+                   *count_entropy(self.x_val, self.entropy_type),
+                   *count_entropy(self.x_test, self.entropy_type)))
 
     if not self.model_fullname in self.ds.df.columns:
       empty = pd.Series([{} for _ in range(len(self.ds.df))]).astype(object)
@@ -252,7 +274,7 @@ class Trainer():
     # creating model
     config.info('creating model ...')
     if self.using_auto:
-      prefix = join(config.DATADIR, f'{self.model_name},{self.dataset_name},actS,')
+      prefix = join(self.DATADIR, f'{self.model_name},{self.dataset_name},actS,')
       model_weights_low = join(prefix + 'low', 'weights.hdf5')
       model_weights_medium = join(prefix + 'medium', 'weights.hdf5')
       model_weights_hight = join(prefix + 'hight', 'weights.hdf5')
@@ -278,7 +300,7 @@ class Trainer():
       model_hight.load_weights(model_weights_hight)
       self.threshold_medium, self.threshold_hight = get_class_thresholds(self.ds.df, 'actS')
     else:
-      if not exists(self.model_dir) :
+      if not exists(self.model_dir):
         os.makedirs(self.model_dir)
       model = self.create_model()
       assert exists(model_weights)
@@ -327,7 +349,8 @@ class Trainer():
         model_pred = model.predict([
             transform_batches_cartesian_to_normalized_eulerian(encoder_pos_inputs_for_sample),
             transform_batches_cartesian_to_normalized_eulerian(decoder_pos_inputs_for_sample)
-        ], callbacks=[tb_callback])[0]
+        ],
+                                   callbacks=[tb_callback])[0]
         model_prediction = transform_normalized_eulerian_to_cartesian(model_pred)
       else:
         raise NotImplementedError
@@ -366,19 +389,23 @@ class Trainer():
     models_cols = sorted([col for col in self.ds.df.columns if col.startswith(self.model_name)])
     config.info(f"processing results from models: [{', '.join(models_cols)}]")
     if self.dataset_name == 'all':
-      for ds_name in config.ARGS_DS_NAMES[1:]:
+      for ds_name in self.ARGS_DS_NAMES[1:]:
         models_cols = [col for col in models_cols if ds_name not in col]
     else:
-        models_cols = [col for col in models_cols if col.startswith(f'{self.model_name},{self.dataset_name}')]
+      models_cols = [
+          col for col in models_cols if col.startswith(f'{self.model_name},{self.dataset_name}')
+      ]
     config.info(f"processing results from models: [{', '.join(models_cols)}]")
-    targets = [(model, 'all', 'all', pd.Series(True, index=self.ds.df.index)) for model in models_cols]
+    targets = [(model, 'all', 'all', pd.Series(True, index=self.ds.df.index))
+               for model in models_cols]
     for model, s_type, s_class in product(models_cols, s_types, s_classes):
       model_split = model.split(',')
       if len(model_split) > 1 and model_split[2] and model_split[3]:
-        if (model_split[2] == 'actS_c' and s_type == 'hmpS_c') or (model_split[2] == 'hmpS_c' and  s_type == 'actS_c') :
-          continue # skip 'pos_only,david,actS,ANY' for 'hmpS_c,ANY'
+        if (model_split[2] == 'actS_c' and s_type == 'hmpS_c') or (model_split[2] == 'hmpS_c'
+                                                                   and s_type == 'actS_c'):
+          continue  # skip 'pos_only,david,actS,ANY' for 'hmpS_c,ANY'
         if ('auto' in model and s_type == 'hmpS_c'):
-          continue # skip 'pos_only,ANY,actS,auto' for 'hmpS_c,ANY'
+          continue  # skip 'pos_only,ANY,actS,auto' for 'hmpS_c,ANY'
       if s_class == 'nohight':
         # TODO: filter mask empty
         targets.append((model, s_type, s_class, self.ds.df[s_type] != 'hight'))
@@ -393,7 +420,7 @@ class Trainer():
       for win_pos in win_pos_l:
         pred_win = df_wins_cols[win_pos]
         if isinstance(df_wins_cols[win_pos], float):
-          break # TODO: review why some pred ends at 51
+          break  # TODO: review why some pred ends at 51
         true_win = traject[win_pos + 1:win_pos + self.h_window + 1]
         for t in range_win:
           if t not in errors_per_timestamp:
@@ -402,6 +429,7 @@ class Trainer():
             errors_per_timestamp[t].append(METRIC(true_win[t], pred_win[t]))
           except:
             print('error')
+
     for model, s_type, s_class, mask in targets:
       # create df_win by expading all model predictions
       not_empty = self.ds.df[model].apply(lambda x: len(x) != 0)
@@ -441,7 +469,7 @@ class Trainer():
     if 'ipykernel' in sys.modules:
       IPython.display.display(output)
     else:
-      html_file = join(config.DATADIR, 'compare_results.html')
+      html_file = join(self.DATADIR, 'compare_results.html')
       output.to_html(html_file)
       print(pathlib.Path(html_file).as_uri())
 

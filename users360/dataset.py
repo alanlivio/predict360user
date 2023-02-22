@@ -162,13 +162,17 @@ class Dataset:
 
     # calc hmpS
     if not 'traject_hmp' in self.df.columns:
+
       def _calc_traject_hmp(traces) -> np.array:
         return np.apply_along_axis(TILESET_DEFAULT.request, 1, traces)
+
       np_hmps = self.df['traject'].progress_apply(_calc_traject_hmp)
       self.df['traject_hmp'] = pd.Series(np_hmps)
       assert not self.df['traject_hmp'].isnull().any()
+
     def _hmp_entropy(traject) -> float:
       return scipy.stats.entropy(np.sum(traject, axis=0).reshape((-1)))
+
     self.df['hmpS'] = self.df['traject_hmp'].progress_apply(_hmp_entropy)
     assert not self.df['hmpS'].isnull().any()
 
@@ -184,6 +188,7 @@ class Dataset:
     # calc poles_prc
     def _calc_poles_prc(traces) -> float:
       return np.count_nonzero(abs(traces[:, 2]) > 0.7) / len(traces)
+
     self.df['poles_prc'] = pd.Series(self.df['traject'].progress_apply(_calc_poles_prc))
 
     # calc poles_prc_c
@@ -197,32 +202,34 @@ class Dataset:
     cols = [col for col in cols if {col}.issubset(self.df.columns)]
     for col in cols:
       px.histogram(self.df,
-                  x=col,
-                  color=col+'_c',
-                  facet_col=facet,
-                  color_discrete_map=self.ENTROPY_CLASS_COLORS,
-                  width=900).show()
+                   x=col,
+                   color=col + '_c',
+                   facet_col=facet,
+                   color_discrete_map=self.ENTROPY_CLASS_COLORS,
+                   width=900).show()
 
   def drop_predict_cols(self) -> None:
-    col_rm = [col for col in self.df.columns for model in config.ARGS_MODEL_NAMES if col.startswith(model)]
+    col_rm = [
+        col for col in self.df.columns for model in config.ARGS_MODEL_NAMES if col.startswith(model)
+    ]
     self.df.drop(col_rm, axis=1, errors='ignore', inplace=True)
-
 
   def calc_tileset_reqs_metrics(self, tileset_l: list[TileSet]) -> None:
     if len(self.df) >= 4:
       config.log("df.size >= 4, it will take for some time")
+
     def _trace_mestrics_np(trace, tileset) -> np.array:
       heatmap, vp_quality, area_out = tileset.request(trace, return_metrics=True)
       return np.array([np.sum(heatmap), vp_quality, area_out])
+
     def _traject_metrics_np(traces, tileset) -> np.array:
       return np.apply_along_axis(_trace_mestrics_np, 1, traces, tileset=tileset)
+
     for tileset in tileset_l:
       column_name = f'metrics_{tileset.title}'
-      metrics_np = self.df['traject'].progress_apply(_traject_metrics_np,
-                                                        tileset=tileset)
+      metrics_np = self.df['traject'].progress_apply(_traject_metrics_np, tileset=tileset)
       self.df[column_name] = metrics_np
       assert not self.df[column_name].empty
-
 
   def show_tileset_reqs_metrics(self) -> None:
     # check
@@ -230,23 +237,17 @@ class Dataset:
     assert len(columns), 'run calc_tileset_reqs_metrics'
     # create dftmp
     data = []
-    for name in [
-        column for column in df.columns if column.startswith('metrics_')
-    ]:
+    for name in [column for column in df.columns if column.startswith('metrics_')]:
       avg_reqs = float(self.df[name].apply(lambda traces: np.sum(traces[:, 0])).mean())
       avg_qlt = self.df[name].apply(lambda traces: np.sum(traces[:, 1])).mean()
       avg_lost = self.df[name].apply(lambda traces: np.sum(traces[:, 2])).mean()
       score = avg_qlt / avg_lost
-      data.append(
-          (name.removeprefix('metrics_'), avg_reqs, avg_qlt, avg_lost, score))
+      data.append((name.removeprefix('metrics_'), avg_reqs, avg_qlt, avg_lost, score))
     assert len(data) > 0
     columns = ['tileset', 'avg_reqs', 'avg_qlt', 'avg_lost', 'score']
     dftmp = pd.DataFrame(data, columns=columns)
     # show dftmp
-    fig = make_subplots(rows=4,
-                        cols=1,
-                        subplot_titles=columns[1:],
-                        shared_yaxes=True)
+    fig = make_subplots(rows=4, cols=1, subplot_titles=columns[1:], shared_yaxes=True)
     trace = go.Bar(y=dftmp['tileset'], x=dftmp['avg_reqs'], orientation='h')
     fig.add_trace(trace, row=1, col=1)
     trace = go.Bar(y=dftmp['tileset'], x=dftmp['avg_lost'], orientation='h')

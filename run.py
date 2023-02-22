@@ -3,7 +3,7 @@
 import argparse
 import sys
 
-from users360 import *
+from users360 import Trainer
 
 if __name__ == '__main__':
   # argparse
@@ -22,13 +22,13 @@ if __name__ == '__main__':
   # Trainer params
   psr.add_argument('-model_name',
                    nargs='?',
-                   choices=config.ARGS_MODEL_NAMES,
-                   default=config.ARGS_MODEL_NAMES[0],
+                   choices=Trainer.ARGS_MODEL_NAMES,
+                   default=Trainer.ARGS_MODEL_NAMES[0],
                    help='reference model to used (default: pos_only)')
   psr.add_argument('-dataset_name',
                    nargs='?',
-                   choices=config.ARGS_DS_NAMES,
-                   default=config.ARGS_DS_NAMES[0],
+                   choices=Trainer.ARGS_DS_NAMES,
+                   default=Trainer.ARGS_DS_NAMES[0],
                    help='dataset used to train this network  (default: all)')
   psr.add_argument('-init_window',
                    nargs='?',
@@ -58,7 +58,7 @@ if __name__ == '__main__':
                    nargs='?',
                    type=str,
                    default='all',
-                   choices=config.ARGS_ENTROPY_NAMES + config.ARGS_ENTROPY_AUTO_NAMES,
+                   choices=Trainer.ARGS_ENTROPY_NAMES + Trainer.ARGS_ENTROPY_AUTO_NAMES,
                    help='''entropy to filter train data (default all).
                            -evaluate accepts auto, auto_m_window, auto_since_start''')
 
@@ -66,8 +66,8 @@ if __name__ == '__main__':
   psr.add_argument('-epochs',
                    nargs='?',
                    type=int,
-                   default=config.DEFAULT_EPOCHS,
-                   help=f'epochs numbers (default is {config.DEFAULT_EPOCHS})')
+                   default=Trainer.DEFAULT_EPOCHS,
+                   help=f'epochs numbers (default is {Trainer.DEFAULT_EPOCHS})')
 
   # Trainer.evaluate() only params
   psr.add_argument('-test_user', nargs='?', default='', type=str, help='user to filter test data')

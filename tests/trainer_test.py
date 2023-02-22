@@ -3,7 +3,7 @@ from os.path import join
 
 from users360 import config
 from users360.dataset import Dataset
-from users360.trainer import Trainer, count_entropy, train_test_split_entropy
+from users360.trainer import Trainer, train_test_split_entropy
 
 
 class Test(unittest.TestCase):
@@ -16,7 +16,7 @@ class Test(unittest.TestCase):
     trn = Trainer(dataset_name='david')
     self.assertEqual(trn.model_fullname, 'pos_only,david,,')
     self.assertEqual(trn.using_auto, False)
-    for train_entropy in config.ARGS_ENTROPY_NAMES[1:] + config.ARGS_ENTROPY_AUTO_NAMES:
+    for train_entropy in Trainer.ARGS_ENTROPY_NAMES[1:] + Trainer.ARGS_ENTROPY_AUTO_NAMES:
       trn = Trainer(train_entropy=train_entropy)
       entropy_type = 'hmpS' if train_entropy.endswith('hmp') else 'actS'
       train_entropy = train_entropy.removesuffix('_hmp')
