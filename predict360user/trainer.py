@@ -472,12 +472,7 @@ class Trainer():
       .background_gradient(axis=0, cmap='coolwarm')\
       .highlight_min(subset=list(range_win), props=props)\
       .highlight_max(subset=list(range_win), props=props)
-    if 'ipykernel' in sys.modules:
-      IPython.display.display(output)
-    else:
-      html_file = join(self.DATADIR, 'compare_evaluate.html')
-      output.to_html(html_file)
-      print(pathlib.Path(html_file).as_uri())
+    config.show_or_save(output, 'compare_evaluate.html')
 
   def show_train_test_split(self) -> None:
     self.partition()
