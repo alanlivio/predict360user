@@ -11,7 +11,7 @@ from spherical_geometry import polygon
 from spherical_geometry.polygon import SphericalPolygon
 from tqdm.auto import tqdm
 
-from .. import config
+from . import config
 from ..head_motion_prediction.Utils import (compute_orthodromic_distance,
                                             degrees_to_radian,
                                             eulerian_to_cartesian)

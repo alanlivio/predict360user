@@ -12,12 +12,12 @@ from keras.callbacks import CSVLogger, ModelCheckpoint, TensorBoard
 from sklearn.model_selection import train_test_split
 from tqdm.auto import tqdm
 
-from . import config
-from .dataset import *
+from .dataset import Dataset
 from .head_motion_prediction.position_only_baseline import \
     create_pos_only_model
 from .head_motion_prediction.Utils import (all_metrics, cartesian_to_eulerian,
                                            eulerian_to_cartesian)
+from .utils import config
 from .utils.fov import *
 
 METRIC = all_metrics['orthodromic']
@@ -169,6 +169,12 @@ class Trainer():
   def _get_ds(self) -> None:
     if not hasattr(self, 'ds'):
       self.ds = Dataset()
+
+  def drop_predict_cols(self) -> None:
+    col_rm = [
+        col for col in self.df.columns for model in config.MODEL_NAMES if col.startswith(model)
+    ]
+    self.df.drop(col_rm, axis=1, errors='ignore', inplace=True)
 
   def partition(self) -> None:
     config.info('partitioning...')

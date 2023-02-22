@@ -11,8 +11,7 @@ import pandas as pd
 import plotly.express as px
 import scipy.stats
 
-from . import config
-from .trainer import Trainer
+from .utils import config
 from .utils.fov import calc_actual_entropy
 from .utils.tileset import TILESET_DEFAULT, TileSet
 
@@ -34,8 +33,7 @@ class Dataset:
     Attributes:
         df (str): pandas.DataFrame.
     """
-  DATADIR = f"{pathlib.Path(__file__).parent.parent / 'data/'}"
-  PICKLE_FILE = os.path.join(DATADIR, 'df_trajects.pickle')
+  PICKLE_FILE = os.path.join(config.DATADIR, 'df_trajects.pickle')
   HMDDIR = f"{pathlib.Path(__file__).parent / 'head_motion_prediction/'}"
   DS_NAMES = ['david', 'fan', 'nguyen', 'xucvpr', 'xupami']
   DS_SIZES = [1083, 300, 432, 6654, 4408]
@@ -213,12 +211,6 @@ class Dataset:
                    facet_col=facet,
                    color_discrete_map=self.ENTROPY_CLASS_COLORS,
                    width=900).show()
-
-  def drop_predict_cols(self) -> None:
-    col_rm = [
-        col for col in self.df.columns for model in Trainer.ARGS_MODEL_NAMES if col.startswith(model)
-    ]
-    self.df.drop(col_rm, axis=1, errors='ignore', inplace=True)
 
   def calc_tileset_reqs_metrics(self, tileset_l: list[TileSet]) -> None:
     if len(self.df) >= 4:

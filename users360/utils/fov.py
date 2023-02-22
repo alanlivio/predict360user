@@ -3,7 +3,6 @@ from functools import cache
 import numpy as np
 from spherical_geometry import polygon
 
-from .. import config
 from ..head_motion_prediction.Utils import (cartesian_to_eulerian,
                                             degrees_to_radian,
                                             eulerian_in_range,

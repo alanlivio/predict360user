@@ -1,7 +1,6 @@
 import unittest
 from os.path import join
 
-from users360 import config
 from users360.dataset import Dataset
 from users360.trainer import Trainer, train_test_split_entropy
 
