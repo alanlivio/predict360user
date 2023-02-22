@@ -1,15 +1,17 @@
 # predict360user
 
-This project extends [Rondon 360-videos models/dataset collection](https://gitlab.com/miguelfromeror/head-motion-prediction) with support to:
+This project extends [Rondon 360-videos models/dataset collection](https://gitlab.com/miguelfromeror/head-motion-prediction).
+It is composed by these main classes:
 
-* Access users' trajectories as a panda.DataFrame and perform user clustering by entropy (Dataset class) and: perform user clustering by entropy; perform tileset analyses.
-|       | ds    | user    | video         | traject | traject_hmps |
-| ----- | ----- | ------- | ------------- | ------- | ------------ |
-| 0     | david | david_0 | david_10_Cows | [[...   | [[[...       |
+* Dataset: stores the original dataset in memory as a pandas.DataFrame and provides functions for data preprocessing, such user clustering by entropy.
 
-* Plot users' trajectories with a Plotly 3d visualization (Plot360 class)
-* Perform prediction models from Rondon collection (Trainer class)
-s
+  |       | ds    | user    | video         | traject | traject_hmps |
+  | ----- | ----- | ------- | ------------- | ------- | ------------ |
+  | 0     | david | david_0 | david_10_Cows | [[...   | [[[...       |
+
+* Plot360: plot users' trajectories with a Plotly 3d visualization
+* Trainer: train and perform prediction models from Rondon collection
+
 ## Requirements
 
 To install TensorFlow with Cuda, please follow https://www.tensorflow.org/install/.
