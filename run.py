@@ -3,7 +3,7 @@
 import argparse
 import sys
 
-from users360 import Trainer
+from predict360user import Trainer
 
 if __name__ == '__main__':
   # argparse

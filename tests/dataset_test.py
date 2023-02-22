@@ -1,6 +1,6 @@
 import unittest
 
-from users360.dataset import Dataset
+from predict360user.dataset import Dataset
 
 
 class Test(unittest.TestCase):

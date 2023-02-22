@@ -1,8 +1,8 @@
 import unittest
 
-from users360.dataset import Dataset
-from users360.utils.fov import fov_poly
-from users360.utils.tileset import TileCover, TileSet, TileSetVoro, tile_poly
+from predict360user.dataset import Dataset
+from predict360user.utils.fov import fov_poly
+from predict360user.utils.tileset import TileCover, TileSet, TileSetVoro, tile_poly
 
 
 class Test(unittest.TestCase):

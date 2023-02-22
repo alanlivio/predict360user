@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from users360.utils.fov import calc_actual_entropy_from_ids
+from predict360user.utils.fov import calc_actual_entropy_from_ids
 
 
 class Test(unittest.TestCase):

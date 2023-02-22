@@ -1,4 +1,4 @@
-# users360
+# predict360user
 
 This project extends [Rondon 360-videos models/dataset collection](https://gitlab.com/miguelfromeror/head-motion-prediction) with support to:
 
@@ -25,12 +25,12 @@ Then install requirements,
 pip install -r requeriments.txt
 ```
 
-Ensure users360/head_motion_prediction submodule and patch it.
+Ensure predict360user/head_motion_prediction submodule and patch it.
 
 ```bash
 git submodule init
 git submodule update
-sed -i -e 's/import keras/import tensorflow.keras/g' -e 's/from keras/from tensorflow.keras/g'  ./users360/head_motion_prediction/*.py
+sed -i -e 's/import keras/import tensorflow.keras/g' -e 's/from keras/from tensorflow.keras/g'  ./predict360user/head_motion_prediction/*.py
 ```
 
 ## Train and evaluate
@@ -40,7 +40,7 @@ To comparison, the code bellow shows how to train/evaluate one dataset using [Ro
 Rondon:
 
 ```bash
-cd users360/head_motion_prediction
+cd predict360user/head_motion_prediction
 python training_procedure.py -train -dataset_name David_MMSys_18 -model_name pos_only
 python training_procedure.py -evaluate -dataset_name David_MMSys_18 -model_name pos_only
 ```
