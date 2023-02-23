@@ -1,9 +1,12 @@
 # predict360user
 
-Python library to predict user navigation in 360 videos. It extends extends [Rondon 360-videos models/dataset collection](https://gitlab.com/miguelfromeror/head-motion-prediction) and is composed by these main classes:
+Python library to predict user navigation in 360 videos. It extends extends [Rondon 360-videos models/dataset collection](https://gitlab.com/miguelfromeror/head-motion-prediction).
+
+## Classes
+
+The main library classes are:
 
 * `Dataset`: stores the dataset in memory as a pandas.DataFrame and provides functions for data preprocessing, such as user clustering by entropy.
-
 
 |     | ds    | user    | video         | traject       | traject_hmps |
 | --- | ----- | ------- | ------------- | ------------- | ------------ |
@@ -13,6 +16,29 @@ Python library to predict user navigation in 360 videos. It extends extends [Ron
 * `Plot360`: plot viewport, trajectory or predictions for users using 3D visualization
 
 <div style="text-align:center"><img src="docs/requests.gif" width="300" ></div>
+
+## Datasets
+
+| dataset            | users (u) | videos (v) | trajects (u*v) |
+| ------------------ | ---------- | --------- | -------------- |
+| Xu_PAMI_18 [1]     | 58         | 76        | 4,350          |
+| Xu_CVPR_18 [2]     | 30        | 208        | 6,240          |
+| Nguyen_MM_18 [3]   | 48         | 11        | 528            |
+| Fan_NOSSDAV_17 [4] | 25         | 10        | 250            |
+| David_MMSys_18 [5] | 57         | 19        | 1,083          |
+| total              |            |           | 12,451         |
+
+
+## Models
+
+| model              | category | user input      | video input |
+| ------------------ | -------- | --------------- | ----------- |
+| Xu_PAMI_18 [1]     | LSTM     | position        | saliency    |
+| Xu_CVPR_18 [2]     | LSTM     | gaze            | gaze RGB    |
+| Nguyen_MM_18 [3]   | LSTM     | position, tiles | saliency    |
+| Li_ChinaCom_18 [6] | LSTM     | tiles           | saliency    |
+| Rondon_TRACK [7]   | LSTM     | position        | saliency    |
+
 
 ## Requirements
 
@@ -59,3 +85,14 @@ python run.py -evaluate -dataset_name david -model_name pos_only
 ## Documentation
 
 See notebooks at [docs/](docs/) folder.
+
+
+## References
+
+[1] https://ieeexplore.ieee.org/document/8418756
+[2] https://ieeexplore.ieee.org/document/8578657
+[3] https://dl.acm.org/doi/10.1145/3240508.3240669
+[4] https://doi.org/10.1145/3204949.3208139
+[5] https://dl.acm.org/doi/10.1145/3083165.3083180
+[6] https://eudl.eu/pdf/10.1007/978-3-030-06161-6_49
+[7] https://arxiv.org/pdf/1911.11702.pdf
