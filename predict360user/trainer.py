@@ -61,24 +61,27 @@ def transform_normalized_eulerian_to_cartesian(positions) -> np.array:
 class Trainer():
   ARGS_MODEL_NAMES = ['pos_only', 'TRACK', 'CVPR18', 'MM18', 'most_salient_point']
   ARGS_DS_NAMES = ['all', 'david', 'fan', 'nguyen', 'xucvpr', 'xupami']
-  ARGS_ENTROPY_NAMES = ['all','low','medium','hight', 'nohight', 'low_hmp','medium_hmp','hight_hmp', 'nohight_hmp']
+  ARGS_ENTROPY_NAMES = [
+      'all', 'low', 'medium', 'hight', 'nohight', 'low_hmp', 'medium_hmp', 'hight_hmp',
+      'nohight_hmp'
+  ]
   ARGS_ENTROPY_AUTO_NAMES = ['auto', 'auto_m_window', 'auto_since_start']
   BATCH_SIZE = 128.0
   DEFAULT_EPOCHS = 50
   RATE = 0.2
 
   def __init__(self,
-             model_name='pos_only',
-             dataset_name='all',
-             h_window=25,
-             init_window=30,
-             m_window=5,
-             perc_test=0.2,
-             train_entropy='all',
-             epochs=DEFAULT_EPOCHS,
-             test_user='',
-             test_video='',
-             dry_run=False) -> None:
+               model_name='pos_only',
+               dataset_name='all',
+               h_window=25,
+               init_window=30,
+               m_window=5,
+               perc_test=0.2,
+               train_entropy='all',
+               epochs=DEFAULT_EPOCHS,
+               test_user='',
+               test_video='',
+               dry_run=False) -> None:
     self.model_name = model_name
     self.dataset_name = dataset_name
     self.h_window = h_window
@@ -108,10 +111,9 @@ class Trainer():
     config.info(self.__str__())
 
   def __str__(self) -> str:
-    return "(" + ", ".join( f'{elem}={getattr(self, elem)}' for elem in [
-        'model_name', 'dataset_name', 'h_window', 'init_window', 'm_window',
-        'perc_test', 'train_entropy', 'epochs', 'test_user', 'test_video',
-        'dry_run'
+    return "Trainer(" + ", ".join(f'{elem}={getattr(self, elem)}' for elem in [
+        'model_name', 'dataset_name', 'h_window', 'init_window', 'm_window', 'perc_test',
+        'train_entropy', 'epochs', 'test_user', 'test_video', 'dry_run'
     ]) + ")"
 
   def create_model(self) -> Any:
@@ -374,17 +376,28 @@ class Trainer():
     result_csv = 'train_results.csv'
     # find result_csv files
     csv_df_l = [(dir_name, pd.read_csv(join(config.DATADIR, dir_name, file_name)))
-                  for dir_name in os.listdir(config.DATADIR) if os.path.isdir(join(config.DATADIR, dir_name))
-                  for file_name in os.listdir(join(config.DATADIR, dir_name))
-                  if file_name == result_csv ]
-    csv_df_l = [ df.assign(model=dir_name) for (dir_name, df) in csv_df_l]
+                for dir_name in os.listdir(config.DATADIR)
+                if os.path.isdir(join(config.DATADIR, dir_name))
+                for file_name in os.listdir(join(config.DATADIR, dir_name))
+                if file_name == result_csv]
+    csv_df_l = [df.assign(model=dir_name) for (dir_name, df) in csv_df_l]
     assert csv_df_l, f'no data/<model>/{result_csv} files, run -train'
 
     # plot
     df_compare = pd.concat(csv_df_l)
-    fig = px.line(df_compare,x='epoch', y='loss', color='model', title='compare_train_loss', width=800)
+    fig = px.line(df_compare,
+                  x='epoch',
+                  y='loss',
+                  color='model',
+                  title='compare_train_loss',
+                  width=800)
     config.show_or_save(fig)
-    fig = px.line(df_compare,x='epoch', y='val_loss', color='model', title='compare_train_val_loss', width=800)
+    fig = px.line(df_compare,
+                  x='epoch',
+                  y='val_loss',
+                  color='model',
+                  title='compare_train_val_loss',
+                  width=800)
     config.show_or_save(fig)
 
   def compare_evaluate(self) -> None:
