@@ -1,4 +1,4 @@
-from .prediction_test import *
-from .utils.tileset_metrics_test import *
 from .dataset_test import *
+from .plot360_test import *
+from .trainer_test import *
 from .utils import *
