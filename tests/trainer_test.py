@@ -3,6 +3,7 @@ from os.path import join
 
 from predict360user.dataset import Dataset
 from predict360user.trainer import Trainer, train_test_split_entropy
+from predict360user.utils import config
 
 
 class Test(unittest.TestCase):
@@ -10,7 +11,7 @@ class Test(unittest.TestCase):
   def test_init(self) -> None:
     trn = Trainer()
     self.assertEqual(trn.model_fullname, 'pos_only')
-    self.assertEqual(trn.model_dir, join(Dataset.DATADIR, trn.model_fullname))
+    self.assertEqual(trn.model_dir, join(config.DATADIR, trn.model_fullname))
     self.assertEqual(trn.using_auto, False)
     trn = Trainer(dataset_name='david')
     self.assertEqual(trn.model_fullname, 'pos_only,david,,')
@@ -21,7 +22,7 @@ class Test(unittest.TestCase):
       train_entropy = train_entropy.removesuffix('_hmp')
       model_fullname = f'pos_only,all,{entropy_type},{train_entropy}'
       self.assertEqual(trn.model_fullname, model_fullname)
-      self.assertEqual(trn.model_dir, join(Dataset.DATADIR, model_fullname))
+      self.assertEqual(trn.model_dir, join(config.DATADIR, model_fullname))
       self.assertEqual(trn.using_auto, train_entropy.startswith('auto'))
 
   def test_train_test_split_entropy(self) -> None:

@@ -282,7 +282,7 @@ class Trainer():
     # creating model
     config.info('creating model ...')
     if self.using_auto:
-      prefix = join(self.DATADIR, f'{self.model_name},{self.dataset_name},actS,')
+      prefix = join(config.DATADIR, f'{self.model_name},{self.dataset_name},actS,')
       model_weights_low = join(prefix + 'low', 'weights.hdf5')
       model_weights_medium = join(prefix + 'medium', 'weights.hdf5')
       model_weights_hight = join(prefix + 'hight', 'weights.hdf5')
