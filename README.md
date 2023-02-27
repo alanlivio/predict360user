@@ -70,8 +70,8 @@ python training_procedure.py -evaluate -dataset_name David_MMSys_18 -model_name 
 predict360user:
 
 ```bash
-python run.py -train -dataset_name david -model_name pos_only
-python run.py -evaluate -dataset_name david -model_name pos_only
+python -m predict360user -train -dataset_name david -model_name pos_only
+python -m predict360user -evaluate -dataset_name david -model_name pos_only
 ```
 
 ## Documentation
