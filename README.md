@@ -106,19 +106,19 @@ If you use `predict360user` please consider citing it as:
 
 This repository was born as part of UK EPSR SpheryStream project. Its maintainance is limited by the time and the resources of a research project. Even if I would like to automate all 360 user prediction models, I do not have the time to maintain the whole body of automation that a well maintained package deserves. Any help is very welcome. A quick guide to interacting with this repository:
 
-- If you find a bug, please open an issue, and I will fix it as soon as I can.
-- If you want to request a new feature, please open an issue, and I will consider it as soon as I can.
-- If you want to contribute yourself, please open an issue first, let's discuss objective, plan a proposal, and open a pull request to act on it.
+* If you find a bug, please open an issue, and I will fix it as soon as I can.
+* If you want to request a new feature, please open an issue, and I will consider it as soon as I can.
+* If you want to contribute yourself, please open an issue first, let's discuss objective, plan a proposal, and open a pull request to act on it.
 
 If you would like to be involved further in the development of this repository, please contact me directly at: aguedes dot at ucl dot ac dot uk.
 
 
 ## References
 
-[1] https://ieeexplore.ieee.org/document/8418756
-[2] https://ieeexplore.ieee.org/document/8578657
-[3] https://dl.acm.org/doi/10.1145/3240508.3240669
-[4] https://doi.org/10.1145/3204949.3208139
-[5] https://dl.acm.org/doi/10.1145/3083165.3083180
-[6] https://eudl.eu/pdf/10.1007/978-3-030-06161-6_49
-[7] https://arxiv.org/pdf/1911.11702.pdf
+[1] https://ieeexplore.ieee.org/document/8418756  
+[2] https://ieeexplore.ieee.org/document/8578657  
+[3] https://dl.acm.org/doi/10.1145/3240508.3240669  
+[4] https://doi.org/10.1145/3204949.3208139  
+[5] https://dl.acm.org/doi/10.1145/3083165.3083180  
+[6] https://eudl.eu/pdf/10.1007/978-3-030-06161-6_49  
+[7] https://arxiv.org/pdf/1911.11702.pdf  
