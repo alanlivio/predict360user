@@ -87,6 +87,20 @@ python run.py -evaluate -dataset_name david -model_name pos_only
 
 See notebooks at [docs/](docs/) folder.
 
+## Cite
+
+If you use `predict360user` please consider citing it as:
+
+  ```bibtex
+  @misc{predict360user,
+    author = {Guedes, Alan},
+    title = {predict360user: library to predict user navigation in 360 videos},
+    year = {2021},
+    publisher = {GitHub},
+    journal = {GitHub repository},
+    howpublished = {\url{https://github.com/alanlivio/predict360user}}
+  }
+  ```
 
 ## A note on maintainance
 
@@ -97,6 +111,7 @@ This repository was born as part of UK EPSR SpheryStream project. Its maintainan
 - If you want to contribute yourself, please open an issue first, let's discuss objective, plan a proposal, and open a pull request to act on it.
 
 If you would like to be involved further in the development of this repository, please contact me directly at: aguedes dot at ucl dot ac dot uk.
+
 
 ## References
 
