@@ -138,10 +138,10 @@ class Trainer():
         # load the data
         if self.model_name == 'pos_only':
           encoder_pos_inputs_for_batch.append(
-              self.ds.get_traces(video, user, 'all')[x_i - self.m_window:x_i])
-          decoder_pos_inputs_for_batch.append(self.ds.get_traces(video, user, 'all')[x_i:x_i + 1])
+              self.ds.get_traces(video, user)[x_i - self.m_window:x_i])
+          decoder_pos_inputs_for_batch.append(self.ds.get_traces(video, user)[x_i:x_i + 1])
           decoder_outputs_for_batch.append(
-              self.ds.get_traces(video, user, 'all')[x_i + 1:x_i + self.h_window + 1])
+              self.ds.get_traces(video, user)[x_i + 1:x_i + self.h_window + 1])
         else:
           raise NotImplementedError
         count += 1
@@ -189,7 +189,7 @@ class Trainer():
 
     # split x_train, x_test
     if self.test_user and self.test_video:
-      _, self.x_test = self.ds.get_rows(self.test_video, self.test_user, self.dataset_name)
+      _, self.x_test = self.ds.get_rows(self.test_video, self.test_user)
       return
     elif self.train_entropy != 'all' and not self.using_auto:
       self.x_train, self.x_test = train_test_split_entropy(df_to_split, self.entropy_type,
@@ -323,9 +323,9 @@ class Trainer():
 
       if self.model_name == 'pos_only':
         encoder_pos_inputs_for_sample = np.array(
-            [self.ds.get_traces(video, user, self.dataset_name)[x_i - self.m_window:x_i]])
+            [self.ds.get_traces(video, user)[x_i - self.m_window:x_i]])
         decoder_pos_inputs_for_sample = np.array(
-            [self.ds.get_traces(video, user, self.dataset_name)[x_i:x_i + 1]])
+            [self.ds.get_traces(video, user)[x_i:x_i + 1]])
       else:
         raise NotImplementedError
 
@@ -334,11 +334,11 @@ class Trainer():
         if self.train_entropy == 'auto':
           actS_c = ids['actS_c']
         elif self.train_entropy == 'auto_m_window':
-          window = self.ds.get_traces(video, user, self.dataset_name)[x_i - self.m_window:x_i]
+          window = self.ds.get_traces(video, user)[x_i - self.m_window:x_i]
           a_ent = calc_actual_entropy(window)
           actS_c = get_class_name(a_ent, self.threshold_medium, self.threshold_hight)
         elif self.train_entropy == 'auto_since_start':
-          window = self.ds.get_traces(video, user, self.dataset_name)[0:x_i]
+          window = self.ds.get_traces(video, user)[0:x_i]
           a_ent = calc_actual_entropy(window)
           actS_c = get_class_name(a_ent, self.threshold_medium, self.threshold_hight)
         else:

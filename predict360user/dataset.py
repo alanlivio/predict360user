@@ -125,19 +125,13 @@ class Dataset:
     trace = traject_ar[np.random.randint(len(traject_ar - 1))]
     return trace
 
-  def get_rows(self, video: str, user: str, ds: str) -> np.array:
-    if ds == 'all':
-      rows = self.df.query(f"user=='{user}' and video=='{video}'")
-    else:
-      rows = self.df.query(f"ds=='{ds}' and user=='{user}' and video=='{video}'")
+  def get_rows(self, video: str, user: str) -> np.array:
+    rows = self.df.query(f"user=='{user}' and video=='{video}'")
     assert not rows.empty
     return rows
 
-  def get_traces(self, video: str, user: str, ds: str) -> np.array:
-    if ds == 'all':
-      row = self.df.query(f"user=='{user}' and video=='{video}'")
-    else:
-      row = self.df.query(f"ds=='{ds}' and user=='{user}' and video=='{video}'")
+  def get_traces(self, video: str, user: str) -> np.array:
+    row = self.df.query(f"user=='{user}' and video=='{video}'")
     assert not row.empty
     return row['traject'].iloc[0]
 

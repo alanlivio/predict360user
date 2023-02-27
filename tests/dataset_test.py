@@ -24,7 +24,7 @@ class Test(unittest.TestCase):
     self.assertTrue(users_l.size)
     ds_l = self.ds.get_ds_ids()
     self.assertTrue(ds_l.size)
-    self.assertTrue(self.ds.get_traces(videos_l[0], users_l[0], ds_l[0]).size)
+    self.assertTrue(self.ds.get_traces(videos_l[0], users_l[0]).size)
 
   def test_trajects_entropy(self) -> None:
     self.ds.df = self.ds.df.sample(n=5) # limitig given time
