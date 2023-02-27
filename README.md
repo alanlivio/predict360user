@@ -1,6 +1,6 @@
 # predict360user
 
-Python library to predict user navigation in 360 videos. It extends extends [Rondon 360-videos models/dataset collection](https://gitlab.com/miguelfromeror/head-motion-prediction).
+Python library to predict user navigation in 360 videos. It extends [Rondon 360-videos models/dataset collection](https://gitlab.com/miguelfromeror/head-motion-prediction).
 
 ## Classes
 
@@ -41,7 +41,7 @@ The main library classes are:
 
 ## Requirements
 
-The project dependecies are described in pip [requeriments.txt](requeriments.txt) file. Do as follow to install them in a conda environment with [TensorFlow and Cuda](https://www.tensorflow.org/install/pip). At Windows, you must install [SDK and MSVC](https://visualstudio.microsoft.com/visual-cpp-build-tools/) becuase of [spherical_geometry](https://github.com/spacetelescope/spherical_geometry) package.
+The project dependencies are described in the pip [requirements.txt](requirements.txt) file. Do as follow to install them in a conda environment with [TensorFlow and Cuda](https://www.tensorflow.org/install/pip). On Windows, you must install [SDK and MSVC](https://visualstudio.microsoft.com/visual-cpp-build-tools/) because of the [spherical_geometry](https://github.com/spacetelescope/spherical_geometry) package.
 
 ```bash
 conda env create -f environment.yml
@@ -57,7 +57,7 @@ sed -i -e 's/import keras/import tensorflow.keras/g' -e 's/from keras/from tenso
 
 ## Train and evaluate
 
-To comparison, the code bellow shows how to train/evaluate one dataset using [Rondon repo](https://gitlab.com/miguelfromeror/head-motion-prediction) and using this project.
+To compare, the code below shows how to train/evaluate one dataset using [Rondon repo](https://gitlab.com/miguelfromeror/head-motion-prediction) and using this project.
 
 Rondon:
 
@@ -76,7 +76,7 @@ python run.py -evaluate -dataset_name david -model_name pos_only
 
 ## Documentation
 
-See notebooks at [docs/](docs/) folder.
+See notebooks in [docs/](docs/) folder.
 
 ## Cite
 
@@ -95,13 +95,13 @@ If you use `predict360user` please consider citing it as:
 
 ## A note on maintainance
 
-This repository was born as part of UK EPSR SpheryStream project. Its maintainance is limited by the time and the resources of a research project. Even if I would like to automate all 360 user prediction models, I do not have the time to maintain the whole body of automation that a well maintained package deserves. Any help is very welcome. A quick guide to interacting with this repository:
+This repository was born as part of UK EPSR SpheryStream project. Its maintenance is limited by a research project's time and resources. Even if I would like to automate all 360 user prediction models, I do not have the time to maintain the whole body of automation that a well-maintained package deserves. Any help is very welcome. Here is a quick guide to interacting with this repository:
 
 * If you find a bug, please open an issue, and I will fix it as soon as I can.
 * If you want to request a new feature, please open an issue, and I will consider it as soon as I can.
-* If you want to contribute yourself, please open an issue first, let's discuss objective, plan a proposal, and open a pull request to act on it.
+* If you want to contribute yourself, please open an issue first, we discuss the objective, plan a proposal, and open a pull request to act on it.
 
-If you would like to be involved further in the development of this repository, please contact me directly at: aguedes dot at ucl dot ac dot uk.
+If you would like to be involved further in the development of this repository, please get in touch with me directly: aguedes at ucl dot ac dot uk.
 
 ## References
 
