@@ -80,8 +80,6 @@ class Trainer():
                perc_test=0.2,
                train_entropy='all',
                epochs=DEFAULT_EPOCHS,
-               test_user='',
-               test_video='',
                dry_run=False) -> None:
     self.model_name = model_name
     self.dataset_name = dataset_name
@@ -91,8 +89,6 @@ class Trainer():
     self.perc_test = perc_test
     self.train_entropy = train_entropy
     self.epochs = epochs
-    self.test_user = test_user
-    self.test_video = test_video
     self.dry_run = dry_run
     assert self.model_name in self.ARGS_MODEL_NAMES
     assert self.dataset_name in self.ARGS_DS_NAMES
@@ -115,8 +111,7 @@ class Trainer():
   def __str__(self) -> str:
     return "Trainer(" + ", ".join(f'{elem}={getattr(self, elem)}' for elem in [
         'model_name', 'dataset_name', 'h_window', 'init_window', 'm_window', 'perc_test',
-        'train_entropy', 'epochs', 'test_user', 'test_video', 'dry_run'
-    ]) + ")"
+        'train_entropy', 'epochs', 'dry_run']) + ")"
 
   def create_model(self) -> Any:
     if self.model_name == 'pos_only':
@@ -190,10 +185,7 @@ class Trainer():
       df_to_split = self.ds.df
 
     # split x_train, x_test
-    if self.test_user and self.test_video:
-      _, self.x_test = self.ds.get_trajects(self.test_video, self.test_user)
-      return
-    elif self.train_entropy != 'all' and not self.using_auto:
+    if self.train_entropy != 'all' and not self.using_auto:
       self.x_train, self.x_test = train_test_split_entropy(df_to_split, self.entropy_type,
                                                            self.train_entropy, self.perc_test)
     else:

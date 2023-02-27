@@ -67,10 +67,6 @@ if __name__ == '__main__':
                    default=Trainer.DEFAULT_EPOCHS,
                    help=f'epochs numbers (default is {Trainer.DEFAULT_EPOCHS})')
 
-  # Trainer.evaluate() only params
-  psr.add_argument('-test_user', nargs='?', default='', type=str, help='user to filter test data')
-  psr.add_argument('-test_video', nargs='?', default='', type=str, help='video to filter test data')
-
   args = psr.parse_args()
   trn_args = {
       'dataset_name': args.dataset_name,
@@ -82,8 +78,6 @@ if __name__ == '__main__':
       'dry_run': args.dry_run,
       'epochs': args.epochs,
       'train_entropy': args.train_entropy,
-      'test_user': args.test_user,
-      'test_video': args.test_video
   }
   trn = Trainer(**trn_args)
   if args.train:
