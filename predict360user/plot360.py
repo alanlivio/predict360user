@@ -20,7 +20,7 @@ class Plot360():
       self.data = self._data_self_voro(self.tileset.voro)
     else:
       self.data = self._data_self_tiled(self.tileset.t_ver, self.tileset.t_hor)
-    self.title = 'trajectory'
+    self.title = 'tracesory'
 
   def _data_self_surface(self) -> list:
     # https://community.plotly.com/t/3d-surface-bug-a-custom-colorscale-defined-with-rgba-values-ignores-the-alpha-specification/30809
@@ -146,7 +146,7 @@ class Plot360():
   dft_start_c = Color('DarkBlue').hex
   dft_end_c = Color('SkyBlue').hex
 
-  def add_trajectory(self, traces: np.array, start_c = dft_start_c, end_c = dft_end_c, visible=True) -> None:
+  def add_traces(self, traces: np.array, start_c = dft_start_c, end_c = dft_end_c, visible=True) -> None:
     # start, end marks
     self.data.append(
         go.Scatter3d(x=[traces[0][0]],
@@ -181,7 +181,7 @@ class Plot360():
                           y=result[..., 1],
                           z=result[..., 2],
                           visible=visible,
-                          hovertext=f'trajectory[{index}]',
+                          hovertext=f'tracesory[{index}]',
                           hoverinfo='text',
                           mode='lines',
                           line={
@@ -202,7 +202,7 @@ class Plot360():
     # argsclean=[{"visible": [True] * n_pre + [False] * (n_end-n_pre)}]
 
     for i, (_, traces) in enumerate(predictions.items()):
-      self.add_trajectory(traces, self.prediction_start_c, self.prediction_end_c, visible=False)
+      self.add_traces(traces, self.prediction_start_c, self.prediction_end_c, visible=False)
       step = dict(method="update",
                   args=[{"visible": [True] * n_pre + [False] * (n_end-n_pre)}])
       beg = n_pre + i * n_one_pred
@@ -261,7 +261,7 @@ class Plot360():
     fig.show()
 
   def _get_imshow_from_trajects_hmps(self, df: pd.DataFrame) -> px.imshow:
-    hmp_sums = df['traject_hmp'].apply(lambda traces: np.sum(traces, axis=0))
+    hmp_sums = df['traces_hmp'].apply(lambda traces: np.sum(traces, axis=0))
     if isinstance(self.tileset, TileSetVoro):
       hmp_sums = np.reshape(hmp_sums, self.tileset.shape)
     heatmap = np.sum(hmp_sums, axis=0)
@@ -272,14 +272,14 @@ class Plot360():
 
   def show_traject(self, row: pd.Series) -> None:
     assert row.shape[0] == 1
-    assert 'traject' in row.columns
+    assert 'traces' in row.columns
     fig = make_subplots(rows=1, cols=2, specs=[[{'type': 'surface'}, {'type': 'image'}]])
-    self.add_trajectory(row['traject'].iloc[0])
+    self.add_traces(row['traces'].iloc[0])
     for d in self.data:  # load all data from the self
       fig.append_trace(d, row=1, col=1)
 
     # heatmap
-    if 'traject_hmp' in row:
+    if 'traces_hmp' in row:
       erp_heatmap = self._get_imshow_from_trajects_hmps(row)
       erp_heatmap.update_layout(width=100, height=100)
       fig.append_trace(erp_heatmap.data[0], row=1, col=2)
@@ -298,12 +298,12 @@ class Plot360():
 
     fig = make_subplots(rows=1, cols=2, specs=[[{'type': 'surface'}, {'type': 'image'}]])
     for _, row in df.iterrows():
-      self.add_trajectory(row['traject'])
+      self.add_traces(row['traces'])
     for d in self.data:  # load all data from the self
       fig.append_trace(d, row=1, col=1)
 
     # heatmap
-    if 'traject_hmp' in df:
+    if 'traces_hmp' in df:
       erp_heatmap = self._get_imshow_from_trajects_hmps(df)
       fig.append_trace(erp_heatmap.data[0], row=1, col=2)
       if isinstance(self.tileset, TileSet):

@@ -91,7 +91,7 @@ class Dataset:
               'user',  # e.g., david_0
               'video',  # e.g., david_10_Cows
               # 'times',
-              'traject'  # [[x,y,z], ...]
+              'traces'  # [[x,y,z], ...]
           ])
       # assert and check
       assert tmpdf['ds'].value_counts()[self.DS_NAMES[idx]] == self.DS_SIZES[idx]
@@ -117,24 +117,25 @@ class Dataset:
       f.write(f"{self.df['hmpS'].max()=}")
       f.write(f"{self.df['hmpS'].min()=}")
 
-  def random_traject(self) -> pd.Series:
-    return self.df.sample(1)
 
-  def random_trace(self, ) -> np.array:
-    traject_ar = self.random_traject()['traject'].iloc[0]
-    trace = traject_ar[np.random.randint(len(traject_ar - 1))]
-    return trace
-
-  def get_rows(self, video: str, user: str) -> np.array:
+  def get_trajects(self, video: str, user: str) -> np.array:
     rows = self.df.query(f"user=='{user}' and video=='{video}'")
     assert not rows.empty
     return rows
 
+  def get_traject_random(self) -> pd.Series:
+    return self.df.sample(1)
+
   def get_traces(self, video: str, user: str) -> np.array:
     row = self.df.query(f"user=='{user}' and video=='{video}'")
     assert not row.empty
-    return row['traject'].iloc[0]
-
+    return row['traces'].iloc[0]
+  
+  def get_trace_random(self, ) -> np.array:
+    traject_ar = self.get_traject_random()['traces'].iloc[0]
+    trace = traject_ar[np.random.randint(len(traject_ar - 1))]
+    return trace
+    
   def get_video_ids(self) -> np.array:
     return self.df['video'].unique()
 
@@ -144,10 +145,10 @@ class Dataset:
   def get_ds_ids(self) -> np.array:
     return self.df['ds'].unique()
 
-  def calc_trajects_entropy(self) -> None:
+  def calc_traces_entropy(self) -> None:
     self.df.drop(['actS', 'actS_c'], axis=1, errors='ignore', inplace=True)
     # calc actS
-    self.df['actS'] = self.df['traject'].progress_apply(calc_actual_entropy)
+    self.df['actS'] = self.df['traces'].progress_apply(calc_actual_entropy)
     assert not self.df['actS'].isnull().any()
     # calc trajects_entropy_class
     threshold_medium, threshold_hight = get_class_thresholds(self.df, 'actS')
@@ -155,23 +156,23 @@ class Dataset:
                                                        args=(threshold_medium, threshold_hight))
     assert not self.df['actS_c'].isnull().any()
 
-  def calc_trajects_entropy_hmp(self) -> None:
+  def calc_traces_entropy_hmp(self) -> None:
     self.df.drop(['hmpS', 'hmpS_c'], axis=1, errors='ignore', inplace=True)
 
     # calc hmpS
-    if not 'traject_hmp' in self.df.columns:
+    if not 'traces_hmp' in self.df.columns:
 
       def _calc_traject_hmp(traces) -> np.array:
         return np.apply_along_axis(TILESET_DEFAULT.request, 1, traces)
 
-      np_hmps = self.df['traject'].progress_apply(_calc_traject_hmp)
-      self.df['traject_hmp'] = pd.Series(np_hmps)
-      assert not self.df['traject_hmp'].isnull().any()
+      np_hmps = self.df['traces'].progress_apply(_calc_traject_hmp)
+      self.df['traces_hmp'] = pd.Series(np_hmps)
+      assert not self.df['traces_hmp'].isnull().any()
 
     def _hmp_entropy(traject) -> float:
       return scipy.stats.entropy(np.sum(traject, axis=0).reshape((-1)))
 
-    self.df['hmpS'] = self.df['traject_hmp'].progress_apply(_hmp_entropy)
+    self.df['hmpS'] = self.df['traces_hmp'].progress_apply(_hmp_entropy)
     assert not self.df['hmpS'].isnull().any()
 
     # calc hmpS_c
@@ -180,14 +181,14 @@ class Dataset:
                                                        args=(threshold_medium, threshold_hight))
     assert not self.df['hmpS_c'].isnull().any()
 
-  def calc_trajects_poles_prc(self) -> None:
+  def calc_traces_poles_prc(self) -> None:
     self.df.drop(['poles_prc', 'poles_prc_c'], axis=1, errors='ignore', inplace=True)
 
     # calc poles_prc
     def _calc_poles_prc(traces) -> float:
       return np.count_nonzero(abs(traces[:, 2]) > 0.7) / len(traces)
 
-    self.df['poles_prc'] = pd.Series(self.df['traject'].progress_apply(_calc_poles_prc))
+    self.df['poles_prc'] = pd.Series(self.df['traces'].progress_apply(_calc_poles_prc))
 
     # calc poles_prc_c
     threshold_medium, threshold_hight = get_class_thresholds(self.df, 'poles_prc')
@@ -219,7 +220,7 @@ class Dataset:
 
     for tileset in tileset_l:
       column_name = f'metrics_{tileset.title}'
-      metrics_np = self.df['traject'].progress_apply(_traject_metrics_np, tileset=tileset)
+      metrics_np = self.df['traces'].progress_apply(_traject_metrics_np, tileset=tileset)
       self.df[column_name] = metrics_np
       assert not self.df[column_name].empty
 

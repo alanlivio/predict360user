@@ -25,7 +25,7 @@ class Test(unittest.TestCase):
       plot.show_fov(trace)
 
   def test_show_traject(self) -> None:
-    one_row = Dataset().random_traject()
+    one_row = Dataset().get_traject_random()
     self.assertFalse(one_row.empty)
     plot = Plot360()
     plot.show_traject(one_row)

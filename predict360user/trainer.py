@@ -189,7 +189,7 @@ class Trainer():
 
     # split x_train, x_test
     if self.test_user and self.test_video:
-      _, self.x_test = self.ds.get_rows(self.test_video, self.test_user)
+      _, self.x_test = self.ds.get_trajects(self.test_video, self.test_user)
       return
     elif self.train_entropy != 'all' and not self.using_auto:
       self.x_train, self.x_test = train_test_split_entropy(df_to_split, self.entropy_type,
@@ -217,13 +217,13 @@ class Trainer():
         'user': row[1]['user'],
         'trace_id': trace_id
     } for row in self.x_train.iterrows()\
-      for trace_id in range(self.init_window, row[1]['traject'].shape[0] -self.end_window)]
+      for trace_id in range(self.init_window, row[1]['traces'].shape[0] -self.end_window)]
     self.x_val_wins = [{
         'video': row[1]['video'],
         'user': row[1]['user'],
         'trace_id': trace_id,
     } for row in self.x_val.iterrows()\
-      for trace_id in range(self.init_window, row[1]['traject'].shape[0] -self.end_window)]
+      for trace_id in range(self.init_window, row[1]['traces'].shape[0] -self.end_window)]
 
     # fit
     config.info('creating model ...')
@@ -266,7 +266,7 @@ class Trainer():
         'trace_id': trace_id,
         'actS_c': row[1]['actS_c']
     } for row in self.x_test.iterrows()\
-      for trace_id in range(self.init_window, row[1]['traject'].shape[0] -self.end_window)]
+      for trace_id in range(self.init_window, row[1]['traces'].shape[0] -self.end_window)]
     fmt = '''x_train has {} trajectories: {} low, {} medium, {} hight
              x_val has {} trajectories: {} low, {} medium, {} hight
              x_test has {} trajectories: {} low, {} medium, {} hight'''
@@ -451,7 +451,7 @@ class Trainer():
     # fill df_res from moldel results column at df
     def _calc_wins_error(df_wins_cols, errors_per_timestamp) -> None:
       traject_index = df_wins_cols.name
-      traject = self.ds.df.loc[traject_index, 'traject']
+      traject = self.ds.df.loc[traject_index, 'traces']
       win_pos_l = df_wins_cols.index
       for win_pos in win_pos_l:
         pred_win = df_wins_cols[win_pos]

@@ -2,7 +2,8 @@ import unittest
 
 from predict360user.dataset import Dataset
 from predict360user.utils.fov import fov_poly
-from predict360user.utils.tileset import TileCover, TileSet, TileSetVoro, tile_poly
+from predict360user.utils.tileset import (TileCover, TileSet, TileSetVoro,
+                                          tile_poly)
 
 
 class Test(unittest.TestCase):
@@ -43,6 +44,6 @@ class Test(unittest.TestCase):
     self.assertFalse(self.ds.df.empty)
     self.ds.df = self.ds.df[:2]
     # force hmp recalc
-    self.ds.df.drop(['traject_hmp'], axis=1, errors='ignore')
+    self.ds.df.drop(['traces_hmp'], axis=1, errors='ignore')
     tileset_variations = [TileSet(3, 3, TileCover.ANY), TileSetVoro(14, TileCover.ANY)]
     self.ds.calc_tileset_reqs_metrics(tileset_variations)
