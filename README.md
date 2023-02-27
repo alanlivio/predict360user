@@ -31,13 +31,14 @@ The main library classes are:
 
 ## Models
 
-| model              | category | user input      | video input |
-| ------------------ | -------- | --------------- | ----------- |
-| Xu_PAMI_18 [1]     | LSTM     | position        | saliency    |
-| Xu_CVPR_18 [2]     | LSTM     | gaze            | gaze RGB    |
-| Nguyen_MM_18 [3]   | LSTM     | position, tiles | saliency    |
-| Li_ChinaCom_18 [6] | LSTM     | tiles           | saliency    |
-| Rondon_TRACK [7]   | LSTM     | position        | saliency    |
+| model              | category | user input      | video input | status |
+| ------------------ | -------- | --------------- | ----------- | ------ |
+| pos_only [7]       | LSTM     | position        | saliency    | OK     |
+| Xu_PAMI_18 [1]     | LSTM     | position        | saliency    | WIP    |
+| Xu_CVPR_18 [2]     | LSTM     | gaze            | gaze RGB    | WIP    |
+| Nguyen_MM_18 [3]   | LSTM     | position, tiles | saliency    | WIP    |
+| Li_ChinaCom_18 [6] | LSTM     | tiles           | saliency    | WIP    |
+| Rondon_TRACK [7]   | LSTM     | position        | saliency    | WIP    |
 
 
 ## Requirements
@@ -86,6 +87,16 @@ python run.py -evaluate -dataset_name david -model_name pos_only
 
 See notebooks at [docs/](docs/) folder.
 
+
+## A note on maintainance
+
+This repository was born as part of UK EPSR SpheryStream project. Its maintainance is limited by the time and the resources of a research project. Even if I would like to automate all 360 user prediction models, I do not have the time to maintain the whole body of automation that a well maintained package deserves. Any help is very welcome. A quick guide to interacting with this repository:
+
+- If you find a bug, please open an issue, and I will fix it as soon as I can.
+- If you want to request a new feature, please open an issue, and I will consider it as soon as I can.
+- If you want to contribute yourself, please open an issue first, let's discuss objective, plan a proposal, and open a pull request to act on it.
+
+If you would like to be involved further in the development of this repository, please contact me directly at: aguedes dot at ucl dot ac dot uk.
 
 ## References
 
