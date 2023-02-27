@@ -12,7 +12,7 @@ The main library classes are:
 | --- | ----- | ------- | ------------- | ------------- | ------------ |
 | 0   | david | david_0 | david_10_Cows | [[x,y,z],...] | [[4x6],...]  |
 
-* `Trainer`: train and perform prediction models from Rondon collection
+* `Trainer`: train and perform prediction models from the Rondon collection
 * `Plot360`: plot viewport, trajectory or predictions for users using 3D visualization
 
 <div style="text-align:center"><img src="docs/requests.gif" width="300" ></div>
@@ -28,7 +28,6 @@ The main library classes are:
 | David_MMSys_18 [5] | 57         | 19        | 1,083          |
 | total              |            |           | 12,451         |
 
-
 ## Models
 
 | model              | category | user input      | video input | status |
@@ -40,23 +39,15 @@ The main library classes are:
 | Li_ChinaCom_18 [6] | LSTM     | tiles           | saliency    | WIP    |
 | Rondon_TRACK [7]   | LSTM     | position        | saliency    | WIP    |
 
-
 ## Requirements
 
-To install TensorFlow with Cuda, please follow https://www.tensorflow.org/install/.
-For instance, you can do the following command with conda.
+The project dependecies are described in pip [requeriments.txt](requeriments.txt) file. Do as follow to install them in a conda environment with [TensorFlow and Cuda](https://www.tensorflow.org/install/pip). At Windows, you must install [SDK and MSVC](https://visualstudio.microsoft.com/visual-cpp-build-tools/) becuase of [spherical_geometry](https://github.com/spacetelescope/spherical_geometry) package.
 
 ```bash
-conda install -c conda-forge cudatoolkit=11.2 cudnn=8.1.0
+conda env create -f environment.yml
 ```
 
-Then install requirements,
-
-```bash
-pip install -r requeriments.txt
-```
-
-Ensure predict360user/head_motion_prediction submodule and patch it.
+To fetch and patch the Rondon head_motion_prediction submodule, do
 
 ```bash
 git submodule init
@@ -111,7 +102,6 @@ This repository was born as part of UK EPSR SpheryStream project. Its maintainan
 * If you want to contribute yourself, please open an issue first, let's discuss objective, plan a proposal, and open a pull request to act on it.
 
 If you would like to be involved further in the development of this repository, please contact me directly at: aguedes dot at ucl dot ac dot uk.
-
 
 ## References
 

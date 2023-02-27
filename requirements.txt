@@ -1,9 +1,8 @@
-# requirements from users360
+# requirements from predict360user/head_motion_prediction
 jupyter
 plotly
 scipy # entropy
-sklearn
-spherical_geometry # voronoi tiles
+spherical_geometry # tiles area/overlap calculation
 psutil # swifter req
 colour
 tqdm # progress bar
@@ -24,4 +23,5 @@ quaternion==0.3.1 #==0.3.1
 scikit-image #==0.16.2
 scikit-learn #==0.22.1
 tensorflow==2.7 #tensorflow-gpu==2.1.0
+protobuf==3.19.6
 xlrd #==1.2.0

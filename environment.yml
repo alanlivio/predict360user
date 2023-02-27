@@ -1,0 +1,14 @@
+name: predict360user
+
+channels:
+  - conda-forge
+  - anaconda
+  - defaults
+
+dependencies:
+  - python=3.9
+  - cudatoolkit=11.2 
+  - cudnn=8.1.0
+  - pip=22
+  - pip:
+     - -r requirements.txt

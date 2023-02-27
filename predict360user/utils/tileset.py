@@ -204,6 +204,7 @@ def voro_poly(n_patchs, index) -> SphericalPolygon:
 class TileSetVoro(TileSet):
   """
   Class for Voroni TileSet
+  # It uses https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.SphericalVoronoi.html
   """
 
   def __init__(self, n_patchs: int, cover = TileCover.ANY) -> None:
