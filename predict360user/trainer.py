@@ -1,3 +1,4 @@
+import csv
 import os
 import pathlib
 import sys
@@ -106,6 +107,7 @@ class Trainer():
       self.train_entropy = self.train_entropy.removesuffix('_hmp')
       self.model_fullname = f'{self.model_name},{self.dataset_name},{self.entropy_type},{self.train_entropy}'
     self.model_dir = join(config.DATADIR, self.model_fullname)
+    self.train_csv_log_f = join(self.model_dir, 'train_results.csv')
     self.model_weights = join(self.model_dir, 'weights.hdf5')
     self.end_window = self.h_window
     config.info(self.__str__())
@@ -207,8 +209,11 @@ class Trainer():
     config.info('train()')
     config.info('model_dir=' + self.model_dir)
     if exists(self.model_weights):
-      config.info('train() previous done')
-      sys.exit()
+      with open(self.train_csv_log_f, 'r') as f:
+        epochs_l = list(csv.DictReader(f)) 
+        if len(epochs_l) >= self.epochs:
+          config.info(f'{self.train_csv_log_f} has {self.epochs}>=epochs previous done. exiting.')
+          sys.exit()
 
     # create x_train_wins, x_val_wins
     self.partition()
@@ -235,8 +240,7 @@ class Trainer():
     assert model
     steps_per_ep_train = np.ceil(len(self.x_train_wins) / self.BATCH_SIZE)
     steps_per_ep_validate = np.ceil(len(self.x_val_wins) / self.BATCH_SIZE)
-    csv_logger_f = join(self.model_dir, 'train_results.csv')
-    csv_logger = CSVLogger(csv_logger_f)
+    csv_logger = CSVLogger(self.train_csv_log_f)
     tb_callback = TensorBoard(log_dir=f'{self.model_dir}/logs')
     model_checkpoint = ModelCheckpoint(self.model_weights,
                                        save_best_only=True,
