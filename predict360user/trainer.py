@@ -311,7 +311,6 @@ class Trainer():
       model.load_weights(model_weights)
 
     # predict by each pred_windows
-    tb_callback = TensorBoard(log_dir=f'{self.model_dir}/logs')
     for ids in tqdm(self.x_test_wins, desc='position predictions'):
       user = ids['user']
       video = ids['video']
@@ -353,8 +352,7 @@ class Trainer():
         model_pred = model.predict([
             transform_batches_cartesian_to_normalized_eulerian(encoder_pos_inputs_for_sample),
             transform_batches_cartesian_to_normalized_eulerian(decoder_pos_inputs_for_sample)
-        ],
-                                   callbacks=[tb_callback])[0]
+        ])[0]
         model_prediction = transform_normalized_eulerian_to_cartesian(model_pred)
       else:
         raise NotImplementedError
