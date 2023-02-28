@@ -349,7 +349,7 @@ class Trainer():
       traject_row.loc[index, self.model_fullname][x_i] = model_prediction
 
     # save on df
-    self.ds.dump()
+    self.ds.dump_column(self.model_fullname)
 
   def compare_train(self) -> None:
     result_csv = 'train_results.csv'

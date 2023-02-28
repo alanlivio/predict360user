@@ -1,4 +1,4 @@
-import io
+import multiprocessing
 import os
 import pathlib
 import pickle
@@ -117,6 +117,16 @@ class Dataset:
     with open(self.PICKLE_FILE, 'wb') as f:
       pickle.dump(self.df, f)
 
+  def dump_column(self, column) -> None:
+    if exists(self.PICKLE_FILE):
+      with multiprocessing.Lock():
+        with open(self.PICKLE_FILE, 'rb') as f:
+          tmpdf = pickle.load(f)
+          tmpdf[column] = self.df[column]
+          pickle.dump(tmpdf, f)
+    else:
+      self.dump()
+    
   def get_trajects(self, video: str, user: str) -> np.array:
     rows = self.df.query(f"user=='{user}' and video=='{video}'")
     assert not rows.empty
