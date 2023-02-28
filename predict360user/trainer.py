@@ -174,15 +174,7 @@ class Trainer():
     self.x_train, self.x_test = train_test_split(df, random_state=1, test_size=self.test_size, stratify=df[self.entropy_type+'_c'])
     # split x_train, x_val
     self.x_train, self.x_val = train_test_split(self.x_train, random_state=1, test_size=0.125, stratify=self.x_train[self.entropy_type+'_c'])  # 0.125 * 0.8 = 0.1
-    fmt = '''
-          x_train has {} trajectories: {} low, {} medium, {} hight
-          x_val has {} trajectories: {} low, {} medium, {} hight
-          x_test has {} trajectories: {} low, {} medium, {} hight'''
-    config.info(
-        fmt.format(*count_entropy(self.x_train, self.entropy_type),
-                   *count_entropy(self.x_val, self.entropy_type),
-                   *count_entropy(self.x_test, self.entropy_type)))
-                   
+
   def train(self) -> None:
     config.info('train()')
     assert not self.using_auto, "train(): train_entropy should not be auto"
@@ -194,13 +186,11 @@ class Trainer():
       config.info('train_entropy != all, so filtering x_train, x_val')
       self.x_train = filter_df_by_entropy(self.x_train, self.entropy_type, self.train_entropy)
       self.x_val = filter_df_by_entropy(self.x_val, self.entropy_type, self.train_entropy)
-      fmt = '''
-      x_train filtred has {} trajectories: {} low, {} medium, {} hight
-      x_val filtred has {} trajectories: {} low, {} medium, {} hight'''
-      config.info(
-          fmt.format(*count_entropy(self.x_train, self.entropy_type),
-                    *count_entropy(self.x_val, self.entropy_type),
-                    *count_entropy(self.x_test, self.entropy_type)))
+      config.info('x_train filtred has {} trajectories: {} low, {} medium, {} hight'.format(*count_entropy(self.x_train, self.entropy_type)))
+      config.info('x_val filtred has {} trajectories: {} low, {} medium, {} hight'.format(*count_entropy(self.x_val, self.entropy_type)))
+    else:
+      config.info('x_train has {} trajectories: {} low, {} medium, {} hight'.format(*count_entropy(self.x_train, self.entropy_type)))
+      config.info('x_val has {} trajectories: {} low, {} medium, {} hight'.format(*count_entropy(self.x_val, self.entropy_type)))
     # create x_train_wins, x_val_wins
     self.x_train_wins = [{
         'video': row[1]['video'],
@@ -256,6 +246,7 @@ class Trainer():
     config.info('model_dir=' + self.model_dir)
     # partition
     self.partition()
+    config.info('x_test has {} trajectories: {} low, {} medium, {} hight'.format(*count_entropy(self.x_test, self.entropy_type)))
     # create x_test_wins
     self.x_test_wins = [{
         'video': row[1]['video'],
