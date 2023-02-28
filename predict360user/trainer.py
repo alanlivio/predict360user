@@ -26,17 +26,15 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 tqdm.pandas()
 
 
-def train_test_split_entropy(df: pd.DataFrame, entropy_type: str, train_entropy: str,
-                             test_size: float) -> tuple[pd.DataFrame, pd.DataFrame]:
+def filter_df_by_entropy(df: pd.DataFrame, entropy_type: str, train_entropy: str) -> pd.DataFrame:
   if train_entropy == 'all':
     df = df
   elif train_entropy == 'nohight':
     df = df[df[entropy_type + '_c'] != 'hight']
   else:
     df = df[df[entropy_type + '_c'] == train_entropy]
-  return train_test_split(df, random_state=1, test_size=test_size)
-
-
+  return df
+  
 
 def transform_batches_cartesian_to_normalized_eulerian(positions_in_batch) -> np.array:
   positions_in_batch = np.array(positions_in_batch)
@@ -171,24 +169,15 @@ class Trainer():
   def partition(self) -> None:
     config.info('partitioning...')
     self._get_ds()
+    df = self.ds.df if self.dataset_name == 'all' else self.ds.df[self.ds.df['ds'] == self.dataset_name]
     # split x_train, x_test
-    if self.dataset_name != 'all':
-      df_to_split = self.ds.df[self.ds.df['ds'] == self.dataset_name]
-    else:
-      df_to_split = self.ds.df
-    if self.train_entropy != 'all':
-      self.x_train, self.x_test = train_test_split_entropy(df_to_split, self.entropy_type,
-                                                           self.train_entropy, self.perc_test)
-    else:
-      self.x_train, self.x_test = train_test_split(df_to_split,
-                                                   random_state=1,
-                                                   test_size=self.perc_test)
+    self.x_train, self.x_test = train_test_split(df, random_state=1, test_size=self.perc_test, stratify=df[self.entropy_type+'_c'])
     # split x_train, x_val
-    self.x_train, self.x_val = train_test_split(self.x_train, random_state=1,
-                                                test_size=0.125)  # 0.125 * 0.8 = 0.1
-    fmt = '''x_train has {} trajectories: {} low, {} medium, {} hight
-             x_val has {} trajectories: {} low, {} medium, {} hight
-             x_test has {} trajectories: {} low, {} medium, {} hight'''
+    self.x_train, self.x_val = train_test_split(self.x_train, random_state=1, test_size=0.125, stratify=self.x_train[self.entropy_type+'_c'])  # 0.125 * 0.8 = 0.1
+    fmt = '''
+          x_train has {} trajectories: {} low, {} medium, {} hight
+          x_val has {} trajectories: {} low, {} medium, {} hight
+          x_test has {} trajectories: {} low, {} medium, {} hight'''
     config.info(
         fmt.format(*count_entropy(self.x_train, self.entropy_type),
                    *count_entropy(self.x_val, self.entropy_type),
@@ -198,15 +187,21 @@ class Trainer():
     config.info('train()')
     assert not self.using_auto, "train(): train_entropy should not be auto"
     config.info('model_dir=' + self.model_dir)
-    if exists(self.model_weights):
-      with open(self.train_csv_log_f, 'r') as f:
-        epochs_l = list(csv.DictReader(f)) 
-        if len(epochs_l) >= self.epochs:
-          config.info(f'{self.train_csv_log_f} has {self.epochs}>=epochs previous done. exiting.')
-          sys.exit()
 
-    # create x_train_wins, x_val_wins
+    # partition
     self.partition()
+    if self.train_entropy != 'all':
+      config.info('train_entropy != all, so filtering x_train, x_val')
+      self.x_train = filter_df_by_entropy(self.x_train, self.entropy_type, self.train_entropy)
+      self.x_val = filter_df_by_entropy(self.x_val, self.entropy_type, self.train_entropy)
+      fmt = '''
+      x_train filtred has {} trajectories: {} low, {} medium, {} hight
+      x_val filtred has {} trajectories: {} low, {} medium, {} hight'''
+      config.info(
+          fmt.format(*count_entropy(self.x_train, self.entropy_type),
+                    *count_entropy(self.x_val, self.entropy_type),
+                    *count_entropy(self.x_test, self.entropy_type)))
+    # create x_train_wins, x_val_wins
     self.x_train_wins = [{
         'video': row[1]['video'],
         'user': row[1]['user'],
@@ -224,6 +219,12 @@ class Trainer():
     config.info('creating model ...')
     if self.dry_run:
       return
+    if exists(self.model_weights):
+      with open(self.train_csv_log_f, 'r') as f:
+        epochs_l = list(csv.DictReader(f)) 
+        if len(epochs_l) >= self.epochs:
+          config.info(f'{self.train_csv_log_f} has {self.epochs}>=epochs previous done. exiting.')
+          return
     if not exists(self.model_dir):
       os.makedirs(self.model_dir)
     model = self.create_model()
@@ -253,7 +254,9 @@ class Trainer():
   def evaluate(self) -> None:
     config.info('evaluate()')
     config.info('model_dir=' + self.model_dir)
+    # partition
     self.partition()
+    # create x_test_wins
     self.x_test_wins = [{
         'video': row[1]['video'],
         'user': row[1]['user'],

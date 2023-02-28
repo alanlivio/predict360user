@@ -1,8 +1,7 @@
 import unittest
 from os.path import join
 
-from predict360user.dataset import Dataset
-from predict360user.trainer import Trainer, train_test_split_entropy
+from predict360user.trainer import Trainer
 from predict360user.utils import config
 
 
@@ -25,41 +24,50 @@ class Test(unittest.TestCase):
       self.assertEqual(trn.model_dir, join(config.DATADIR, model_fullname))
       self.assertEqual(trn.using_auto, train_entropy.startswith('auto'))
 
-  def test_train_test_split_entropy(self) -> None:
-    self.ds = Dataset()
-    self.assertTrue(self.ds.df.size)
-
-    if not 'actS_c' in self.ds.df.columns:
-      calc_actual_entropy(self.ds.df)
-
-    for entropy_type in ['actS', 'hmpS']:
-      # all
-      x_train, x_test = train_test_split_entropy(self.ds.df, entropy_type, 'all', 0.2)
-      classes = set(x_train[entropy_type+'_c'].unique())
-      self.assertSequenceEqual(classes, set(['low', 'medium', 'hight']))
-      classes = set(x_test[entropy_type+'_c'].unique())
-      self.assertSequenceEqual(classes, set(['low', 'medium', 'hight']))
-      # low
-      x_train, x_test = train_test_split_entropy(self.ds.df, entropy_type, 'low', 0.2)
-      classes = set(x_train[entropy_type+'_c'].unique())
-      self.assertSequenceEqual(classes, set(['low']))
-      classes = set(x_test[entropy_type+'_c'].unique())
-      self.assertSequenceEqual(classes, set(['low']))
-      # medium
-      x_train, x_test = train_test_split_entropy(self.ds.df, entropy_type, 'medium', 0.2)
-      classes = set(x_train[entropy_type+'_c'].unique())
-      self.assertSequenceEqual(classes, set(['medium']))
-      classes = set(x_test[entropy_type+'_c'].unique())
-      self.assertSequenceEqual(classes, set(['medium']))
-      # nohight
-      x_train, x_test = train_test_split_entropy(self.ds.df, entropy_type, 'nohight', 0.2)
-      classes = set(x_train[entropy_type+'_c'].unique())
-      self.assertSequenceEqual(classes, set(['low','medium']))
-      classes = set(x_test[entropy_type+'_c'].unique())
-      self.assertSequenceEqual(classes, set(['low','medium']))
-      # hight
-      x_train, x_test = train_test_split_entropy(self.ds.df, entropy_type, 'hight', 0.2)
-      classes = set(x_train[entropy_type+'_c'].unique())
-      self.assertSequenceEqual(classes, set(['hight']))
-      classes = set(x_test[entropy_type+'_c'].unique())
-      self.assertSequenceEqual(classes, set(['hight']))
+  def test_train(self) -> None:
+    trn = Trainer(train_entropy='all', dry_run=True) # dry_run stop before build model
+    # all
+    trn.train_entropy = 'all'
+    trn.train() 
+    classes = set(trn.x_train['actS_c'].unique())
+    self.assertSequenceEqual(classes, set(['low', 'medium', 'hight']))
+    classes = set(trn.x_train['actS_c'].unique())
+    self.assertSequenceEqual(classes, set(['low', 'medium', 'hight']))
+    classes = set(trn.x_test['actS_c'].unique())
+    self.assertSequenceEqual(classes, set(['low', 'medium', 'hight']))
+    # low
+    trn.train_entropy = 'low'
+    trn.train() 
+    classes = set(trn.x_train['actS_c'].unique())
+    self.assertSequenceEqual(classes, set(['low']))
+    classes = set(trn.x_val['actS_c'].unique())
+    self.assertSequenceEqual(classes, set(['low']))
+    classes = set(trn.x_test['actS_c'].unique())
+    self.assertSequenceEqual(classes, set(['low', 'medium', 'hight']))
+    # medium
+    trn.train_entropy = 'medium'
+    trn.train() 
+    classes = set(trn.x_train['actS_c'].unique())
+    self.assertSequenceEqual(classes, set(['medium']))
+    classes = set(trn.x_val['actS_c'].unique())
+    self.assertSequenceEqual(classes, set(['medium']))
+    classes = set(trn.x_test['actS_c'].unique())
+    self.assertSequenceEqual(classes, set(['low', 'medium', 'hight']))
+    # nohight
+    trn.train_entropy = 'nohight'
+    trn.train() 
+    classes = set(trn.x_train['actS_c'].unique())
+    self.assertSequenceEqual(classes, set(['low','medium']))
+    classes = set(trn.x_val['actS_c'].unique())
+    self.assertSequenceEqual(classes, set(['low','medium']))
+    classes = set(trn.x_test['actS_c'].unique())
+    self.assertSequenceEqual(classes, set(['low', 'medium', 'hight']))
+    # hight
+    trn.train_entropy = 'hight'
+    trn.train() 
+    classes = set(trn.x_train['actS_c'].unique())
+    self.assertSequenceEqual(classes, set(['hight']))
+    classes = set(trn.x_val['actS_c'].unique())
+    self.assertSequenceEqual(classes, set(['hight']))
+    classes = set(trn.x_test['actS_c'].unique())
+    self.assertSequenceEqual(classes, set(['low', 'medium', 'hight']))
