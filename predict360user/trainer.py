@@ -179,12 +179,14 @@ class Trainer():
     config.info('partitioning...')
     self._get_ds()
     # split x_train, x_test
-    if self.train_entropy != 'all' and not self.using_auto:
+    if self.dataset_name != 'all':
       df_to_split = self.ds.df[self.ds.df['ds'] == self.dataset_name]
+    else:
+      df_to_split = self.ds.df
+    if self.train_entropy != 'all':
       self.x_train, self.x_test = train_test_split_entropy(df_to_split, self.entropy_type,
                                                            self.train_entropy, self.perc_test)
     else:
-      df_to_split = self.ds.df
       self.x_train, self.x_test = train_test_split(df_to_split,
                                                    random_state=1,
                                                    test_size=self.perc_test)
