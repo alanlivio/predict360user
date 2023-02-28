@@ -68,7 +68,7 @@ class Trainer():
                h_window=25,
                init_window=30,
                m_window=5,
-               perc_test=0.2,
+               test_size=0.2,
                train_entropy='all',
                epochs=DEFAULT_EPOCHS,
                dry_run=False) -> None:
@@ -77,7 +77,7 @@ class Trainer():
     self.h_window = h_window
     self.init_window = init_window
     self.m_window = m_window
-    self.perc_test = perc_test
+    self.test_size = test_size
     self.train_entropy = train_entropy
     self.epochs = epochs
     self.dry_run = dry_run
@@ -101,7 +101,7 @@ class Trainer():
 
   def __str__(self) -> str:
     return "Trainer(" + ", ".join(f'{elem}={getattr(self, elem)}' for elem in [
-        'model_name', 'dataset_name', 'h_window', 'init_window', 'm_window', 'perc_test',
+        'model_name', 'dataset_name', 'h_window', 'init_window', 'm_window', 'test_size',
         'train_entropy', 'epochs', 'dry_run']) + ")"
 
   def create_model(self) -> Any:
@@ -171,7 +171,7 @@ class Trainer():
     self._get_ds()
     df = self.ds.df if self.dataset_name == 'all' else self.ds.df[self.ds.df['ds'] == self.dataset_name]
     # split x_train, x_test
-    self.x_train, self.x_test = train_test_split(df, random_state=1, test_size=self.perc_test, stratify=df[self.entropy_type+'_c'])
+    self.x_train, self.x_test = train_test_split(df, random_state=1, test_size=self.test_size, stratify=df[self.entropy_type+'_c'])
     # split x_train, x_val
     self.x_train, self.x_val = train_test_split(self.x_train, random_state=1, test_size=0.125, stratify=self.x_train[self.entropy_type+'_c'])  # 0.125 * 0.8 = 0.1
     fmt = '''

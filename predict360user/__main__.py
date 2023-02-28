@@ -55,7 +55,7 @@ if __name__ == '__main__':
   #                  default=25,
   #                  help='''forecast window in timesteps (5 timesteps = 1 second)
   #                          used to predict (default: 25)''')
-  # psr.add_argument('-perc_test',
+  # psr.add_argument('-test_size',
   #                  nargs='?',
   #                  type=float,
   #                  default=0.2,
@@ -75,7 +75,7 @@ if __name__ == '__main__':
       'train_entropy': args.train_entropy,
       'dry_run': args.dry_run,
       'epochs': args.epochs,
-      # 'perc_test': args.perc_test,
+      # 'test_size': args.test_size,
       # 'init_window': args.init_window,
       # 'm_window': args.m_window,
       # 'h_window': args.h_window,
