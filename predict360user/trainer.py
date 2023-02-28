@@ -34,7 +34,7 @@ def filter_df_by_entropy(df: pd.DataFrame, entropy_type: str, train_entropy: str
   else:
     df = df[df[entropy_type + '_c'] == train_entropy]
   return df
-  
+
 
 def transform_batches_cartesian_to_normalized_eulerian(positions_in_batch) -> np.array:
   positions_in_batch = np.array(positions_in_batch)
@@ -92,7 +92,8 @@ class Trainer():
   def __str__(self) -> str:
     return "Trainer(" + ", ".join(f'{elem}={getattr(self, elem)}' for elem in [
         'model_name', 'dataset_name', 'h_window', 'init_window', 'm_window', 'test_size',
-        'train_entropy', 'epochs', 'dry_run']) + ")"
+        'train_entropy', 'epochs', 'dry_run'
+    ]) + ")"
 
   def create_model(self) -> Any:
     if self.model_name == 'pos_only':
@@ -153,11 +154,19 @@ class Trainer():
   def partition(self) -> None:
     config.info('partitioning...')
     self._get_ds()
-    df = self.ds.df if self.dataset_name == 'all' else self.ds.df[self.ds.df['ds'] == self.dataset_name]
+    df = self.ds.df if self.dataset_name == 'all' else self.ds.df[self.ds.df['ds'] ==
+                                                                  self.dataset_name]
     # split x_train, x_test
-    self.x_train, self.x_test = train_test_split(df, random_state=1, test_size=self.test_size, stratify=df[self.entropy_type+'_c'])
+    self.x_train, self.x_test = train_test_split(df,
+                                                 random_state=1,
+                                                 test_size=self.test_size,
+                                                 stratify=df[self.entropy_type + '_c'])
     # split x_train, x_val
-    self.x_train, self.x_val = train_test_split(self.x_train, random_state=1, test_size=0.125, stratify=self.x_train[self.entropy_type+'_c'])  # 0.125 * 0.8 = 0.1
+    self.x_train, self.x_val = train_test_split(self.x_train,
+                                                random_state=1,
+                                                test_size=0.125,
+                                                stratify=self.x_train[self.entropy_type +
+                                                                      '_c'])  # 0.125 * 0.8 = 0.1
 
   def train(self) -> None:
     config.info('train()')
@@ -170,11 +179,15 @@ class Trainer():
       config.info('train_entropy != all, so filtering x_train, x_val')
       self.x_train = filter_df_by_entropy(self.x_train, self.entropy_type, self.train_entropy)
       self.x_val = filter_df_by_entropy(self.x_val, self.entropy_type, self.train_entropy)
-      config.info('x_train filtred has {} trajectories: {} low, {} medium, {} hight'.format(*count_entropy(self.x_train, self.entropy_type)))
-      config.info('x_val filtred has {} trajectories: {} low, {} medium, {} hight'.format(*count_entropy(self.x_val, self.entropy_type)))
+      config.info('x_train filtred has {} trajectories: {} low, {} medium, {} hight'.format(
+          *count_entropy(self.x_train, self.entropy_type)))
+      config.info('x_val filtred has {} trajectories: {} low, {} medium, {} hight'.format(
+          *count_entropy(self.x_val, self.entropy_type)))
     else:
-      config.info('x_train has {} trajectories: {} low, {} medium, {} hight'.format(*count_entropy(self.x_train, self.entropy_type)))
-      config.info('x_val has {} trajectories: {} low, {} medium, {} hight'.format(*count_entropy(self.x_val, self.entropy_type)))
+      config.info('x_train has {} trajectories: {} low, {} medium, {} hight'.format(
+          *count_entropy(self.x_train, self.entropy_type)))
+      config.info('x_val has {} trajectories: {} low, {} medium, {} hight'.format(
+          *count_entropy(self.x_val, self.entropy_type)))
     # create x_train_wins, x_val_wins
     self.x_train_wins = [{
         'video': row[1]['video'],
@@ -195,7 +208,7 @@ class Trainer():
       return
     if exists(self.model_weights):
       with open(self.train_csv_log_f, 'r') as f:
-        epochs_l = list(csv.DictReader(f)) 
+        epochs_l = list(csv.DictReader(f))
         if len(epochs_l) >= self.epochs:
           config.info(f'{self.train_csv_log_f} has {self.epochs}>=epochs previous done. exiting.')
           return
@@ -230,7 +243,8 @@ class Trainer():
     config.info('model_dir=' + self.model_dir)
     # partition
     self.partition()
-    config.info('x_test has {} trajectories: {} low, {} medium, {} hight'.format(*count_entropy(self.x_test, self.entropy_type)))
+    config.info('x_test has {} trajectories: {} low, {} medium, {} hight'.format(
+        *count_entropy(self.x_test, self.entropy_type)))
     # create x_test_wins
     self.x_test_wins = [{
         'video': row[1]['video'],
@@ -288,8 +302,7 @@ class Trainer():
       if self.model_name == 'pos_only':
         encoder_pos_inputs_for_sample = np.array(
             [self.ds.get_traces(video, user)[x_i - self.m_window:x_i]])
-        decoder_pos_inputs_for_sample = np.array(
-            [self.ds.get_traces(video, user)[x_i:x_i + 1]])
+        decoder_pos_inputs_for_sample = np.array([self.ds.get_traces(video, user)[x_i:x_i + 1]])
       else:
         raise NotImplementedError
 
@@ -365,51 +378,29 @@ class Trainer():
 
   def compare_evaluate(self) -> None:
     self._get_ds()
-
-    # range_win = range(self.h_window)
+    # horizon timestamps to be calculated
     range_win = range(self.h_window)[::4]
-    columns = ['model_name', 'S_type', 'S_class']
-    s_types = ['actS_c', 'hmpS_c']
-    s_classes = ['low', 'medium', 'nohight', 'hight']
 
     # create df_res
+    columns = ['model_name', 'S_type', 'S_class']
     self.df_res = pd.DataFrame(columns=columns + list(range_win), dtype=np.float32)
 
-    # create df_res for debug with random data
-    # models = ['pos_only,all,actS_c,low', 'pos_only,all,actS_c,medium', 'pos_only,all,actS_c,hight', 'pos_only,david,actS_c,medium', 'pos_only,david,actS_c,hight', 'pos_only,david,actS_c,nohight', 'pos_only,david,hmpS_c,nohight', 'pos_only,all,hmpS_c,medium', 'pos_only,david,,']
-    # iters = [models,  s_types, s_classes]
-    # index = pd.MultiIndex.from_product(iters, names=columns)
-    # data_cols = np.random.randn(np.prod(list(map(len,iters))), self.h_window)
-    # self.df_res = pd.DataFrame(data_cols, index=index)
-    # self.df_res.reset_index(inplace=True)
-    # IPython.display.display(self.df_res)
-
     # create targets in format (model, s_type, s_class, mask)
-    models_cols = sorted([col for col in self.ds.df.columns if col.startswith(self.model_name)])
-    config.info(f"processing results from models: [{', '.join(models_cols)}]")
-    if self.dataset_name == 'all':
-      for ds_name in config.ARGS_DS_NAMES[1:]:
-        models_cols = [col for col in models_cols if ds_name not in col]
-    else:
-      models_cols = [
-          col for col in models_cols if col.startswith(f'{self.model_name},{self.dataset_name}')
-      ]
-    config.info(f"processing results from models: [{', '.join(models_cols)}]")
-    targets = [(model, 'all', 'all', pd.Series(True, index=self.ds.df.index))
-               for model in models_cols]
-    for model, s_type, s_class in product(models_cols, s_types, s_classes):
-      model_split = model.split(',')
-      if len(model_split) > 1 and model_split[2] and model_split[3]:
-        if (model_split[2] == 'actS_c' and s_type == 'hmpS_c') or (model_split[2] == 'hmpS_c'
-                                                                   and s_type == 'actS_c'):
-          continue  # skip 'pos_only,david,actS,ANY' for 'hmpS_c,ANY'
-        if ('auto' in model and s_type == 'hmpS_c'):
-          continue  # skip 'pos_only,ANY,actS,auto' for 'hmpS_c,ANY'
-      if s_class == 'nohight':
-        # TODO: filter mask empty
-        targets.append((model, s_type, s_class, self.ds.df[s_type] != 'hight'))
-      else:
-        targets.append((model, s_type, s_class, self.ds.df[s_type] == s_class))
+    models_cols = sorted([
+      col for col in self.ds.df.columns \
+      if (col.startswith(self.model_name)) \
+      and not any(ds_name in col for ds_name in config.ARGS_DS_NAMES[1:])
+    ])
+    config.info(f"processing results from models: {', '.join(models_cols)}")
+    targets = []
+    for model in models_cols:
+      targets.append((model, 'all', 'all', pd.Series(True, index=self.ds.df.index)))
+      targets.append((model, self.entropy_type, 'low', self.ds.df[self.entropy_type] != 'low'))
+      targets.append(
+          (model, self.entropy_type, 'medium', self.ds.df[self.entropy_type] != 'medium'))
+      targets.append(
+          (model, self.entropy_type, 'nohight', self.ds.df[self.entropy_type] != 'hight'))
+      targets.append((model, self.entropy_type, 'hight', self.entropy_type == 'hight'))
 
     # fill df_res from moldel results column at df
     def _calc_wins_error(df_wins_cols, errors_per_timestamp) -> None:
