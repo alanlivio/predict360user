@@ -71,9 +71,9 @@ class Trainer():
     self.train_entropy = train_entropy
     self.epochs = epochs
     self.dry_run = dry_run
-    assert self.model_name in self.ARGS_MODEL_NAMES
-    assert self.dataset_name in self.ARGS_DS_NAMES
-    assert self.train_entropy in self.ARGS_ENTROPY_NAMES + self.ARGS_ENTROPY_AUTO_NAMES
+    assert self.model_name in config.ARGS_MODEL_NAMES
+    assert self.dataset_name in config.ARGS_DS_NAMES
+    assert self.train_entropy in config.ARGS_ENTROPY_NAMES + config.ARGS_ENTROPY_AUTO_NAMES
     self.using_auto = self.train_entropy.startswith('auto')
     self.entropy_type = 'hmpS' if self.train_entropy.endswith('hmp') else 'actS'
     if self.dataset_name == 'all' and self.train_entropy == 'all':
@@ -123,7 +123,7 @@ class Trainer():
         else:
           raise NotImplementedError
         count += 1
-        if count == self.BATCH_SIZE:
+        if count == config.BATCH_SIZE:
           count = 0
           if self.model_name == 'pos_only':
             yield ([
@@ -203,8 +203,8 @@ class Trainer():
       os.makedirs(self.model_dir)
     model = self.create_model()
     assert model
-    steps_per_ep_train = np.ceil(len(self.x_train_wins) / self.BATCH_SIZE)
-    steps_per_ep_validate = np.ceil(len(self.x_val_wins) / self.BATCH_SIZE)
+    steps_per_ep_train = np.ceil(len(self.x_train_wins) / config.BATCH_SIZE)
+    steps_per_ep_validate = np.ceil(len(self.x_val_wins) / config.BATCH_SIZE)
     csv_logger = CSVLogger(self.train_csv_log_f)
     tb_callback = TensorBoard(log_dir=f'{self.model_dir}/logs')
     model_checkpoint = ModelCheckpoint(self.model_weights,
@@ -388,7 +388,7 @@ class Trainer():
     models_cols = sorted([col for col in self.ds.df.columns if col.startswith(self.model_name)])
     config.info(f"processing results from models: [{', '.join(models_cols)}]")
     if self.dataset_name == 'all':
-      for ds_name in self.ARGS_DS_NAMES[1:]:
+      for ds_name in config.ARGS_DS_NAMES[1:]:
         models_cols = [col for col in models_cols if ds_name not in col]
     else:
       models_cols = [
