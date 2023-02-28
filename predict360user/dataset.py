@@ -11,7 +11,7 @@ import pandas as pd
 import plotly.express as px
 import scipy.stats
 
-from .utils import config
+from . import config
 from .utils.fov import calc_actual_entropy
 from .utils.tileset import TILESET_DEFAULT, TileSet
 
@@ -41,11 +41,6 @@ class Dataset:
         df (str): pandas.DataFrame.
     """
   PICKLE_FILE = os.path.join(config.DATADIR, 'df_trajects.pickle')
-  HMDDIR = f"{pathlib.Path(__file__).parent / 'head_motion_prediction/'}"
-  DS_NAMES = ['david', 'fan', 'nguyen', 'xucvpr', 'xupami']
-  DS_SIZES = [1083, 300, 432, 6654, 4408]
-  # DS_SIZES = [1083, 300, 432, 7106, 4543] # TODO: check sample_dataset folders
-  ENTROPY_CLASS_COLORS = {'low': 'blue', 'medium': 'green', 'hight': 'red'}
 
   def __init__(self) -> None:
     if exists(self.PICKLE_FILE):
@@ -53,13 +48,13 @@ class Dataset:
         config.info(f'loading df from {self.PICKLE_FILE}')
         self.df = pickle.load(f)
     else:
-      config.info(f'no {self.PICKLE_FILE}, loading df from {self.HMDDIR}')
+      config.info(f'no {self.PICKLE_FILE}, loading df from {config.HMDDIR}')
       self.df = self._load_df_trajects_from_hmp()
 
   def _load_df_trajects_from_hmp(self) -> pd.DataFrame:
     # save cwd and move to head_motion_prediction for invoking funcs
     cwd = os.getcwd()
-    os.chdir(self.HMDDIR)
+    os.chdir(config.HMDDIR)
     from .head_motion_prediction.David_MMSys_18 import Read_Dataset as david
     from .head_motion_prediction.Fan_NOSSDAV_17 import Read_Dataset as fan
     from .head_motion_prediction.Nguyen_MM_18 import Read_Dataset as nguyen
@@ -85,9 +80,9 @@ class Dataset:
       # convert dict to DataFrame
       data = [
           (
-              self.DS_NAMES[idx],
-              self.DS_NAMES[idx] + '_' + user,
-              self.DS_NAMES[idx] + '_' + video,
+              config.DS_NAMES[idx],
+              config.DS_NAMES[idx] + '_' + user,
+              config.DS_NAMES[idx] + '_' + video,
               # np.around(dataset[user][video][:n_traces, 0], decimals=2),
               dataset[user][video][:n_traces, 1:]) for user in dataset.keys()
           for video in dataset[user].keys()
@@ -102,7 +97,7 @@ class Dataset:
               'traces'  # [[x,y,z], ...]
           ])
       # assert and check
-      assert len(tmpdf['ds']) == self.DS_SIZES[idx]
+      assert len(tmpdf['ds']) == config.DS_SIZES[idx]
       return tmpdf
 
     # create df for each dataset
@@ -126,7 +121,11 @@ class Dataset:
           pickle.dump(tmpdf, f)
     else:
       self.dump()
-    
+      
+  def drop_predict_cols(self) -> None:
+    col_rm = [col for col in self.df.columns for model in config.ARGS_MODEL_NAMES if col.startswith(model)]
+    self.df.drop(col_rm, axis=1, errors='ignore', inplace=True)
+  
   def get_trajects(self, video: str, user: str) -> np.array:
     rows = self.df.query(f"user=='{user}' and video=='{video}'")
     assert not rows.empty
@@ -219,7 +218,7 @@ class Dataset:
                    x=col,
                    color=col + '_c',
                    facet_col=facet,
-                   color_discrete_map=self.ENTROPY_CLASS_COLORS,
+                   color_discrete_map=config.ENTROPY_CLASS_COLORS,
                    width=900).show()
 
   def calc_tileset_reqs_metrics(self, tileset_l: list[TileSet]) -> None:

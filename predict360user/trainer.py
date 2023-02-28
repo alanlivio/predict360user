@@ -13,12 +13,12 @@ from keras.callbacks import CSVLogger, ModelCheckpoint, TensorBoard
 from sklearn.model_selection import train_test_split
 from tqdm.auto import tqdm
 
+from . import config
 from .dataset import *
 from .head_motion_prediction.position_only_baseline import \
     create_pos_only_model
 from .head_motion_prediction.Utils import (all_metrics, cartesian_to_eulerian,
                                            eulerian_to_cartesian)
-from .utils import config
 from .utils.fov import *
 
 METRIC = all_metrics['orthodromic']
@@ -51,16 +51,6 @@ def transform_normalized_eulerian_to_cartesian(positions) -> np.array:
 
 
 class Trainer():
-  ARGS_MODEL_NAMES = ['pos_only', 'TRACK', 'CVPR18', 'MM18', 'most_salient_point']
-  ARGS_DS_NAMES = ['all', 'david', 'fan', 'nguyen', 'xucvpr', 'xupami']
-  ARGS_ENTROPY_NAMES = [
-      'all', 'low', 'medium', 'hight', 'nohight', 'low_hmp', 'medium_hmp', 'hight_hmp',
-      'nohight_hmp'
-  ]
-  ARGS_ENTROPY_AUTO_NAMES = ['auto', 'auto_m_window', 'auto_since_start']
-  BATCH_SIZE = 128.0
-  DEFAULT_EPOCHS = 50
-  RATE = 0.2
 
   def __init__(self,
                model_name='pos_only',
@@ -70,7 +60,7 @@ class Trainer():
                m_window=5,
                test_size=0.2,
                train_entropy='all',
-               epochs=DEFAULT_EPOCHS,
+               epochs=config.DEFAULT_EPOCHS,
                dry_run=False) -> None:
     self.model_name = model_name
     self.dataset_name = dataset_name
@@ -159,12 +149,6 @@ class Trainer():
   def _get_ds(self) -> None:
     if not hasattr(self, 'ds'):
       self.ds = Dataset()
-
-  def drop_predict_cols(self) -> None:
-    col_rm = [
-        col for col in self.df.columns for model in config.MODEL_NAMES if col.startswith(model)
-    ]
-    self.df.drop(col_rm, axis=1, errors='ignore', inplace=True)
 
   def partition(self) -> None:
     config.info('partitioning...')

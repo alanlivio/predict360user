@@ -3,7 +3,7 @@
 import argparse
 import sys
 
-from predict360user import Trainer
+from predict360user import Trainer, config
 
 if __name__ == '__main__':
   # argparse
@@ -20,19 +20,19 @@ if __name__ == '__main__':
   # Trainer params
   psr.add_argument('-model_name',
                    nargs='?',
-                   choices=Trainer.ARGS_MODEL_NAMES,
-                   default=Trainer.ARGS_MODEL_NAMES[0],
+                   choices=config.ARGS_MODEL_NAMES,
+                   default=config.ARGS_MODEL_NAMES[0],
                    help='reference model to used (default: pos_only)')
   psr.add_argument('-dataset_name',
                    nargs='?',
-                   choices=Trainer.ARGS_DS_NAMES,
-                   default=Trainer.ARGS_DS_NAMES[0],
+                   choices=config.ARGS_DS_NAMES,
+                   default=config.ARGS_DS_NAMES[0],
                    help='dataset used to train this network (default: all)')
   psr.add_argument('-train_entropy',
                    nargs='?',
                    type=str,
                    default='all',
-                   choices=Trainer.ARGS_ENTROPY_NAMES + Trainer.ARGS_ENTROPY_AUTO_NAMES,
+                   choices=config.ARGS_ENTROPY_NAMES + config.ARGS_ENTROPY_AUTO_NAMES,
                    help='''entropy to filter train data (default all).
                            -evaluate accepts auto, auto_m_window, auto_since_start''')
   psr.add_argument('-dry_run',
@@ -61,12 +61,12 @@ if __name__ == '__main__':
   #                  default=0.2,
   #                  help='test percetage (default: 0.2)')
 
-  # Trainer.train() only params
+  # train() only params
   psr.add_argument('-epochs',
                    nargs='?',
                    type=int,
-                   default=Trainer.DEFAULT_EPOCHS,
-                   help=f'epochs numbers (default is {Trainer.DEFAULT_EPOCHS})')
+                   default=config.DEFAULT_EPOCHS,
+                   help=f'epochs numbers (default is {config.DEFAULT_EPOCHS})')
 
   args = psr.parse_args()
   trn_args = {
