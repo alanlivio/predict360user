@@ -27,31 +27,7 @@ if __name__ == '__main__':
                    nargs='?',
                    choices=Trainer.ARGS_DS_NAMES,
                    default=Trainer.ARGS_DS_NAMES[0],
-                   help='dataset used to train this network  (default: all)')
-  psr.add_argument('-init_window',
-                   nargs='?',
-                   type=int,
-                   default=30,
-                   help='initial buffer to avoid stationary part (default: 30)')
-  psr.add_argument('-m_window',
-                   nargs='?',
-                   type=int,
-                   default=5,
-                   help='buffer window in timesteps (default: 5)')
-  psr.add_argument('-h_window',
-                   nargs='?',
-                   type=int,
-                   default=25,
-                   help='''forecast window in timesteps (5 timesteps = 1 second)
-                           used to predict (default: 25)''')
-  psr.add_argument('-perc_test',
-                   nargs='?',
-                   type=float,
-                   default=0.2,
-                   help='test percetage (default: 0.2)')
-  psr.add_argument('-dry_run',
-                   action='store_true',
-                   help='show train/test info but stop before perform')
+                   help='dataset used to train this network (default: all)')
   psr.add_argument('-train_entropy',
                    nargs='?',
                    type=str,
@@ -59,6 +35,31 @@ if __name__ == '__main__':
                    choices=Trainer.ARGS_ENTROPY_NAMES + Trainer.ARGS_ENTROPY_AUTO_NAMES,
                    help='''entropy to filter train data (default all).
                            -evaluate accepts auto, auto_m_window, auto_since_start''')
+  psr.add_argument('-dry_run',
+                  action='store_true',
+                  help='show train/test info but stop before perform')
+  
+  # psr.add_argument('-init_window',
+  #                  nargs='?',
+  #                  type=int,
+  #                  default=30,
+  #                  help='initial buffer to avoid stationary part (default: 30)')
+  # psr.add_argument('-m_window',
+  #                  nargs='?',
+  #                  type=int,
+  #                  default=5,
+  #                  help='buffer window in timesteps (default: 5)')
+  # psr.add_argument('-h_window',
+  #                  nargs='?',
+  #                  type=int,
+  #                  default=25,
+  #                  help='''forecast window in timesteps (5 timesteps = 1 second)
+  #                          used to predict (default: 25)''')
+  # psr.add_argument('-perc_test',
+  #                  nargs='?',
+  #                  type=float,
+  #                  default=0.2,
+  #                  help='test percetage (default: 0.2)')
 
   # Trainer.train() only params
   psr.add_argument('-epochs',
@@ -71,13 +72,13 @@ if __name__ == '__main__':
   trn_args = {
       'dataset_name': args.dataset_name,
       'model_name': args.model_name,
-      'perc_test': args.perc_test,
-      'init_window': args.init_window,
-      'm_window': args.m_window,
-      'h_window': args.h_window,
+      'train_entropy': args.train_entropy,
       'dry_run': args.dry_run,
       'epochs': args.epochs,
-      'train_entropy': args.train_entropy,
+      # 'perc_test': args.perc_test,
+      # 'init_window': args.init_window,
+      # 'm_window': args.m_window,
+      # 'h_window': args.h_window,
   }
   trn = Trainer(**trn_args)
   if args.train:
