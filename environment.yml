@@ -1,4 +1,4 @@
-name: predict360user
+name: p3u
 
 channels:
   - conda-forge
