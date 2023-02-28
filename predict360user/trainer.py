@@ -13,7 +13,7 @@ from keras.callbacks import CSVLogger, ModelCheckpoint, TensorBoard
 from sklearn.model_selection import train_test_split
 from tqdm.auto import tqdm
 
-from .dataset import Dataset
+from .dataset import *
 from .head_motion_prediction.position_only_baseline import \
     create_pos_only_model
 from .head_motion_prediction.Utils import (all_metrics, cartesian_to_eulerian,
@@ -36,13 +36,6 @@ def train_test_split_entropy(df: pd.DataFrame, entropy_type: str, train_entropy:
     df = df[df[entropy_type + '_c'] == train_entropy]
   return train_test_split(df, random_state=1, test_size=test_size)
 
-
-def count_entropy(df: pd.DataFrame, entropy_type: str) -> tuple[int, int, int, int]:
-  a_len = len(df)
-  l_len = len(df[df[entropy_type + '_c'] == 'low'])
-  m_len = len(df[df[entropy_type + '_c'] == 'medium'])
-  h_len = len(df[df[entropy_type + '_c'] == 'hight'])
-  return a_len, l_len, m_len, h_len
 
 
 def transform_batches_cartesian_to_normalized_eulerian(positions_in_batch) -> np.array:

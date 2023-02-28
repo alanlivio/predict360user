@@ -21,10 +21,10 @@ The main library classes are:
 
 | dataset            | users (u) | videos (v) | trajectories (u*v) |
 | ------------------ | --------- | ---------- | ------------------ |
-| Xu_PAMI_18 [1]     | 58        | 76         | 4,350              |
-| Xu_CVPR_18 [2]     | 30        | 208        | 6,240              |
-| Nguyen_MM_18 [3]   | 48        | 11         | 528                |
-| Fan_NOSSDAV_17 [4] | 25        | 10         | 250                |
+| Xu_PAMI_18 [1]     | 59        | 77         | 4,543              |
+| Xu_CVPR_18 [2]     | 34        | 209        | 7,106              |
+| Nguyen_MM_18 [3]   | 48        | 9          | 432                |
+| Fan_NOSSDAV_17 [4] | 39        | 9          | 300                |
 | David_MMSys_18 [5] | 57        | 19         | 1,083              |
 | total              |           |            | 12,451             |
 

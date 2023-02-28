@@ -26,6 +26,13 @@ def get_class_name(x: float, threshold_medium: float,
   return 'low' if x < threshold_medium else ('medium' if x < threshold_hight else 'hight')
 
 
+def count_entropy(df: pd.DataFrame, entropy_type: str) -> tuple[int, int, int, int]:
+  a_len = len(df)
+  l_len = len(df[df[entropy_type + '_c'] == 'low'])
+  m_len = len(df[df[entropy_type + '_c'] == 'medium'])
+  h_len = len(df[df[entropy_type + '_c'] == 'hight'])
+  return a_len, l_len, m_len, h_len
+
 class Dataset:
   """:class:`Dataset` stores the original dataset in memory.
     It provides functions for data preprocessing, such user clustering by entropy, and analyses, such as tileset usage.
@@ -37,6 +44,7 @@ class Dataset:
   HMDDIR = f"{pathlib.Path(__file__).parent / 'head_motion_prediction/'}"
   DS_NAMES = ['david', 'fan', 'nguyen', 'xucvpr', 'xupami']
   DS_SIZES = [1083, 300, 432, 6654, 4408]
+  # DS_SIZES = [1083, 300, 432, 7106, 4543] # TODO: check sample_dataset folders
   ENTROPY_CLASS_COLORS = {'low': 'blue', 'medium': 'green', 'hight': 'red'}
 
   def __init__(self) -> None:
@@ -94,7 +102,7 @@ class Dataset:
               'traces'  # [[x,y,z], ...]
           ])
       # assert and check
-      assert tmpdf['ds'].value_counts()[self.DS_NAMES[idx]] == self.DS_SIZES[idx]
+      assert len(tmpdf['ds']) == self.DS_SIZES[idx]
       return tmpdf
 
     # create df for each dataset
@@ -108,15 +116,6 @@ class Dataset:
     config.info(f'saving df to {self.PICKLE_FILE}')
     with open(self.PICKLE_FILE, 'wb') as f:
       pickle.dump(self.df, f)
-    with open(self.PICKLE_FILE + '.info.txt', 'w', encoding='utf-8') as f:
-      buffer = io.StringIO()
-      self.df.info(buf=buffer)
-      f.write(buffer.getvalue())
-      f.write(f"{self.df['actS'].max()=}")
-      f.write(f"{self.df['actS'].min()=}")
-      f.write(f"{self.df['hmpS'].max()=}")
-      f.write(f"{self.df['hmpS'].min()=}")
-
 
   def get_trajects(self, video: str, user: str) -> np.array:
     rows = self.df.query(f"user=='{user}' and video=='{video}'")
@@ -197,6 +196,12 @@ class Dataset:
                                                                        threshold_hight))
     assert not self.df['poles_prc_c'].isna().any()
 
+  def show_entropy_counts(self) -> None:
+    fmt = '''df has {} trajectories with entropy: {} low, {} medium, {} hight'''
+    config.info(fmt.format(*count_entropy(self.df, 'actS')))
+    config.info(f"df['actS'].max()={self.df['actS'].max()=}")
+    config.info(f"df['actS'].min()={self.df['actS'].min()=}")
+    
   def show_histogram(self, cols=['actS', 'hmpS'], facet=None) -> None:
     cols = [col for col in cols if {col}.issubset(self.df.columns)]
     for col in cols:
