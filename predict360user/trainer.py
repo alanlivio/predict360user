@@ -12,6 +12,7 @@ import plotly.express as px
 import tensorflow.keras as keras
 from keras.callbacks import CSVLogger, ModelCheckpoint, TensorBoard
 from sklearn.model_selection import train_test_split
+from sklearn.utils import shuffle
 from tqdm.auto import tqdm
 
 from . import config
@@ -112,7 +113,7 @@ class Trainer():
       # decoder_sal_inputs_for_batch = []
       decoder_outputs_for_batch = []
       count = 0
-      np.random.shuffle(wins)
+      shuffle(wins, random_state=1)
       for ids in wins:
         user = ids['user']
         video = ids['video']
