@@ -117,7 +117,8 @@ class Dataset:
       with multiprocessing.Lock():
         with open(self.PICKLE_FILE, 'rb') as f:
           tmpdf = pickle.load(f)
-          tmpdf[column] = self.df[column]
+        tmpdf[column] = self.df[column]
+        with open(self.PICKLE_FILE, 'wb') as f:
           pickle.dump(tmpdf, f)
     else:
       self.dump()
