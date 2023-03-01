@@ -9,14 +9,15 @@ from typing import Any, Generator
 import numpy as np
 import pandas as pd
 import plotly.express as px
+import tensorflow.keras as keras
 from keras.callbacks import CSVLogger, ModelCheckpoint, TensorBoard
 from sklearn.model_selection import train_test_split
 from tqdm.auto import tqdm
 
 from . import config
 from .dataset import *
-from .head_motion_prediction.position_only_baseline import \
-    create_pos_only_model
+from .head_motion_prediction.position_only_baseline import (
+    create_pos_only_model, metric_orth_dist)
 from .head_motion_prediction.Utils import (all_metrics, cartesian_to_eulerian,
                                            eulerian_to_cartesian)
 from .utils.fov import *
@@ -87,7 +88,7 @@ class Trainer():
       self.model_fullname = f'{self.model_name},{self.dataset_name},{self.entropy_type},{self.train_entropy}'
     self.model_dir = join(config.DATADIR, self.model_fullname)
     self.train_csv_log_f = join(self.model_dir, 'train_results.csv')
-    self.model_weights = join(self.model_dir, 'weights.hdf5')
+    self.model_file = join(self.model_dir, 'model.h5')
     self.end_window = self.h_window
     config.info(self.__str__())
 
@@ -189,7 +190,7 @@ class Trainer():
           *count_entropy(self.x_val, self.entropy_type)))
       pos_filter_x_train_len = len(self.x_train)
       # given pre_filter_x_train_len < pos_filter_x_train_len, increase epochs
-      self.epochs = self.epochs * round(pre_filter_x_train_len / pos_filter_x_train_len)
+      self.epochs = self.epochs + 0.1*self.epochs * round(pre_filter_x_train_len / pos_filter_x_train_len)
       config.info('given x_train filtred, compensate by changing epochs from {} to {} '.format(
           pre_filter_epochs, self.epochs))
     else:
@@ -200,18 +201,28 @@ class Trainer():
 
     if self.dry_run:
       return
-    # check enogh epochs
-    if exists(self.model_weights):
-      with open(self.train_csv_log_f, 'r') as f:
-        epochs_l = list(csv.DictReader(f))
-        if len(epochs_l) >= self.epochs:
-          config.info(f'{self.train_csv_log_f} has {self.epochs}>=epochs. stopping.')
-          return
-        else:
-          config.info(f'{self.train_csv_log_f} has {self.epochs}<epochs. continuing.')
-
-    # create x_train_wins, x_val_wins, model
+      
+    # check model
     config.info('creating model ...')
+    model: keras.models.Model
+    co_metric={'metric_orth_dist': metric_orth_dist}
+    if exists(self.model_file):
+      done_epochs = int(pd.read_csv(self.train_csv_log_f).iloc[-1]['epoch'])
+      if done_epochs >= self.epochs:
+        config.info(f'{self.train_csv_log_f} has {self.epochs}>=epochs. stopping.')
+        return
+      else:
+        config.info(f'{self.train_csv_log_f} has {self.epochs}<epochs. continuing.')
+        model = keras.models.load_model(self.model_file, custom_objects=co_metric)
+        initial_epoch = done_epochs
+    else:
+      model = self.create_model()
+      initial_epoch = 1 
+      if not exists(self.model_dir):
+        os.makedirs(self.model_dir)
+    assert model
+    
+    # create x_train_wins, x_val_wins
     self.x_train_wins = [{
         'video': row[1]['video'],
         'user': row[1]['user'],
@@ -224,29 +235,28 @@ class Trainer():
         'trace_id': trace_id,
     } for row in self.x_val.iterrows()\
       for trace_id in range(self.init_window, row[1]['traces'].shape[0] -self.end_window)]
-    if not exists(self.model_dir):
-      os.makedirs(self.model_dir)
-    model = self.create_model()
-    assert model
+    
+    # fit
     steps_per_ep_train = np.ceil(len(self.x_train_wins) / config.BATCH_SIZE)
     steps_per_ep_validate = np.ceil(len(self.x_val_wins) / config.BATCH_SIZE)
-    csv_logger = CSVLogger(self.train_csv_log_f)
-    tb_callback = TensorBoard(log_dir=f'{self.model_dir}/logs')
-    model_checkpoint = ModelCheckpoint(self.model_weights,
-                                       save_best_only=True,
-                                       save_weights_only=True,
-                                       mode='auto',
-                                       period=1)
+    csv_logger = CSVLogger(self.train_csv_log_f, append=True)
+    # tb_callback = TensorBoard(log_dir=f'{self.model_dir}/logs')
+    early_stopping_cb = keras.callbacks.EarlyStopping(patience=10, monitor='loss', restore_best_weights=True, )
+    model_checkpoint = ModelCheckpoint(self.model_file, mode='auto', save_freq=1, multiprocessing=True)
+    callbacks = [csv_logger, model_checkpoint, early_stopping_cb]
     if self.model_name == 'pos_only':
       generator = self.generate_batchs(self.x_train_wins)
       validation_data = self.generate_batchs(self.x_val_wins)
-      model.fit_generator(generator=generator,
-                          verbose=1,
-                          steps_per_epoch=steps_per_ep_train,
-                          epochs=self.epochs,
-                          callbacks=[csv_logger, model_checkpoint, tb_callback],
-                          validation_data=validation_data,
-                          validation_steps=steps_per_ep_validate)
+      model.fit(x=generator,
+                verbose=1,
+                steps_per_epoch=steps_per_ep_train,
+                validation_data=validation_data,
+                validation_steps=steps_per_ep_validate,
+                validation_freq=config.BATCH_SIZE,
+                epochs=self.epochs,
+                initial_epoch=initial_epoch,
+                callbacks=callbacks,
+                use_multiprocessing=True)
     else:
       raise NotImplementedError
 
@@ -262,8 +272,34 @@ class Trainer():
     if self.dry_run:
       return
       
-    # create x_test_wins, model
+    # create model
     config.info('creating model ...')
+    model: keras.models.Model
+    if self.using_auto:
+      prefix = join(config.DATADIR, f'{self.model_name},{self.dataset_name},actS,')
+      model_file_low = join(prefix + 'low', 'model.h5')
+      model_file_medium = join(prefix + 'medium', 'model.h5')
+      model_file_hight = join(prefix + 'hight', 'model.h5')
+      config.info('model_file_low=' + model_file_low)
+      config.info('model_file_medium=' + model_file_medium)
+      config.info('model_file_hight=' + model_file_hight)
+    else:
+      model_file = join(self.model_dir, 'model.h5')
+      config.info(f'model_file={model_file}')
+
+    if self.using_auto:
+      assert exists(model_file_low)
+      assert exists(model_file_medium)
+      assert exists(model_file_hight)
+      model_low = keras.models.load_model(model_file_low)
+      model_medium = keras.models.load_model(model_file_medium)
+      model_hight = keras.models.load_model(model_file_hight)
+      self.threshold_medium, self.threshold_hight = get_class_thresholds(self.ds.df, 'actS')
+    else:
+      assert exists(model_file)
+      model = keras.models.load_model(model_file)
+
+    # predict by each x_test_wins
     self.x_test_wins = [{
         'video': row[1]['video'],
         'user': row[1]['user'],
@@ -271,51 +307,18 @@ class Trainer():
         'actS_c': row[1]['actS_c']
     } for row in self.x_test.iterrows()\
       for trace_id in range(self.init_window, row[1]['traces'].shape[0] -self.end_window)]
-
+    
     if not self.model_fullname in self.ds.df.columns:
       empty = pd.Series([{} for _ in range(len(self.ds.df))]).astype(object)
       self.ds.df[self.model_fullname] = empty
-
-    # creating model
-    if self.using_auto:
-      prefix = join(config.DATADIR, f'{self.model_name},{self.dataset_name},actS,')
-      model_weights_low = join(prefix + 'low', 'weights.hdf5')
-      model_weights_medium = join(prefix + 'medium', 'weights.hdf5')
-      model_weights_hight = join(prefix + 'hight', 'weights.hdf5')
-      config.info('model_weights_low=' + model_weights_low)
-      config.info('model_weights_medium=' + model_weights_medium)
-      config.info('model_weights_hight=' + model_weights_hight)
-    else:
-      model_weights = join(self.model_dir, 'weights.hdf5')
-      config.info(f'model_weights={model_weights}')
-
-    if self.using_auto:
-      assert exists(model_weights_low)
-      assert exists(model_weights_medium)
-      assert exists(model_weights_hight)
-      model_low = self.create_model()
-      model_low.load_weights(model_weights_low)
-      model_medium = self.create_model()
-      model_medium.load_weights(model_weights_medium)
-      model_hight = self.create_model()
-      model_hight.load_weights(model_weights_hight)
-      self.threshold_medium, self.threshold_hight = get_class_thresholds(self.ds.df, 'actS')
-    else:
-      if not exists(self.model_dir):
-        os.makedirs(self.model_dir)
-      model = self.create_model()
-      assert exists(model_weights)
-      model.load_weights(model_weights)
-
-    # predict by each pred_windows
+    
     for ids in tqdm(self.x_test_wins, desc='position predictions'):
       user = ids['user']
       video = ids['video']
       x_i = ids['trace_id']
 
       if self.model_name == 'pos_only':
-        encoder_pos_inputs_for_sample = np.array(
-            [self.ds.get_traces(video, user)[x_i - self.m_window:x_i]])
+        encoder_pos_inputs_for_sample = np.array([self.ds.get_traces(video, user)[x_i - self.m_window:x_i]])
         decoder_pos_inputs_for_sample = np.array([self.ds.get_traces(video, user)[x_i:x_i + 1]])
       else:
         raise NotImplementedError
