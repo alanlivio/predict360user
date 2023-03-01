@@ -9,13 +9,7 @@
   "python.testing.pytestEnabled": false,
   "python.testing.unittestEnabled": true,
   "jupyter.notebookFileRoot": "${workspaceFolder}",
-  "files.exclude": {
-    "**/.git": true,
-    "**/.svn": true,
-    "**/.hg": true,
-    "**/CVS": true,
-    "**/.DS_Store": true,
-    "**/Thumbs.db": true,
-    "predict360user/head_motion_prediction": true
-  }
+  "git.repositoryScanIgnoredFolders": [
+    "predict360user/head_motion_prediction"
+  ]
 }
