@@ -1,19 +1,21 @@
-import csv
 import os
-import pathlib
-import sys
-from itertools import product
+from contextlib import redirect_stderr
 from os.path import exists, join
 from typing import Any, Generator
 
 import numpy as np
 import pandas as pd
 import plotly.express as px
-import tensorflow.keras as keras
-from keras.callbacks import CSVLogger, ModelCheckpoint, TensorBoard
 from sklearn.model_selection import train_test_split
 from sklearn.utils import shuffle
 from tqdm.auto import tqdm
+
+with redirect_stderr(open(os.devnull, 'w')):
+  os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+  os.environ['TF_ENABLE_ONEDNN_OPTS'] = "0"
+  os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
+  import tensorflow.keras as keras
+  from tensorflow.keras.callbacks import CSVLogger, ModelCheckpoint, TensorBoard
 
 from . import config
 from .dataset import *
@@ -24,7 +26,6 @@ from .head_motion_prediction.Utils import (all_metrics, cartesian_to_eulerian,
 from .utils.fov import *
 
 METRIC = all_metrics['orthodromic']
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 tqdm.pandas()
 
 
@@ -55,7 +56,6 @@ def transform_normalized_eulerian_to_cartesian(positions) -> np.array:
 
 
 class Trainer():
-
   def __init__(self,
                model_name='pos_only',
                dataset_name='all',
@@ -191,7 +191,8 @@ class Trainer():
           *count_entropy(self.x_val, self.entropy_type)))
       pos_filter_x_train_len = len(self.x_train)
       # given pre_filter_x_train_len < pos_filter_x_train_len, increase epochs
-      self.epochs = self.epochs + round(0.1*self.epochs * pre_filter_x_train_len / pos_filter_x_train_len)
+      self.epochs = self.epochs + round(
+          0.1 * self.epochs * pre_filter_x_train_len / pos_filter_x_train_len)
       config.info('given x_train filtred, compensate by changing epochs from {} to {} '.format(
           pre_filter_epochs, self.epochs))
     else:
@@ -202,11 +203,11 @@ class Trainer():
 
     if self.dry_run:
       return
-      
+
     # check model
     config.info('creating model ...')
     model: keras.models.Model
-    co_metric={'metric_orth_dist': metric_orth_dist}
+    co_metric = {'metric_orth_dist': metric_orth_dist}
     if exists(self.model_file) and exists(self.train_csv_log_f):
       done_epochs = int(pd.read_csv(self.train_csv_log_f).iloc[-1]['epoch'])
       if done_epochs >= self.epochs:
@@ -222,7 +223,7 @@ class Trainer():
       if not exists(self.model_dir):
         os.makedirs(self.model_dir)
     assert model
-    
+
     # create x_train_wins, x_val_wins
     self.x_train_wins = [{
         'video': row[1]['video'],
@@ -236,14 +237,21 @@ class Trainer():
         'trace_id': trace_id,
     } for row in self.x_val.iterrows()\
       for trace_id in range(self.init_window, row[1]['traces'].shape[0] -self.end_window)]
-    
+
     # fit
     steps_per_ep_train = np.ceil(len(self.x_train_wins) / config.BATCH_SIZE)
     steps_per_ep_validate = np.ceil(len(self.x_val_wins) / config.BATCH_SIZE)
     csv_logger = CSVLogger(self.train_csv_log_f, append=True)
     # tb_callback = TensorBoard(log_dir=f'{self.model_dir}/logs')
-    early_stopping_cb = keras.callbacks.EarlyStopping(patience=10, monitor='loss', restore_best_weights=True, )
-    model_checkpoint = ModelCheckpoint(self.model_file, mode='auto', save_freq=1, multiprocessing=True)
+    early_stopping_cb = keras.callbacks.EarlyStopping(
+        patience=10,
+        monitor='loss',
+        restore_best_weights=True,
+    )
+    model_checkpoint = ModelCheckpoint(self.model_file,
+                                       mode='auto',
+                                       save_freq=1,
+                                       multiprocessing=True)
     callbacks = [csv_logger, model_checkpoint, early_stopping_cb]
     if self.model_name == 'pos_only':
       generator = self.generate_batchs(self.x_train_wins)
@@ -264,15 +272,15 @@ class Trainer():
   def evaluate(self) -> None:
     config.info('evaluate()')
     config.info('model_dir=' + self.model_dir)
-    
+
     # partition
     self.partition()
     config.info('x_test has {} trajectories: {} low, {} medium, {} hight'.format(
         *count_entropy(self.x_test, self.entropy_type)))
-    
+
     if self.dry_run:
       return
-      
+
     # create model
     config.info('creating model ...')
     model: keras.models.Model
@@ -308,19 +316,21 @@ class Trainer():
         'actS_c': row[1]['actS_c']
     } for row in self.x_test.iterrows()\
       for trace_id in range(self.init_window, row[1]['traces'].shape[0] -self.end_window)]
-    
+
     if not self.model_fullname in self.ds.df.columns:
       empty = pd.Series([{} for _ in range(len(self.ds.df))]).astype(object)
       self.ds.df[self.model_fullname] = empty
-    
+
     for ids in tqdm(self.x_test_wins, desc='position predictions'):
       user = ids['user']
       video = ids['video']
       x_i = ids['trace_id']
 
       if self.model_name == 'pos_only':
-        encoder_pos_inputs_for_sample = np.array([self.ds.get_traces(video, user)[x_i - self.m_window:x_i]])
-        decoder_pos_inputs_for_sample = np.array([self.ds.get_traces(video, user)[x_i:x_i + 1]])
+        encoder_pos_inputs_for_sample = np.array(
+            [self.ds.get_traces(video, user)[x_i - self.m_window:x_i]])
+        decoder_pos_inputs_for_sample = np.array(
+          [self.ds.get_traces(video, user)[x_i:x_i + 1]])
       else:
         raise NotImplementedError
 
