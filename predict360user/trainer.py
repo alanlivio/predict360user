@@ -176,6 +176,8 @@ class Trainer():
     # partition
     self.partition()
     if self.train_entropy != 'all':
+      pre_filter_x_train_len = len(self.x_train)
+      pre_filter_epochs = self.epochs
       config.info('train_entropy != all, so filtering x_train, x_val')
       self.x_train = filter_df_by_entropy(self.x_train, self.entropy_type, self.train_entropy)
       self.x_val = filter_df_by_entropy(self.x_val, self.entropy_type, self.train_entropy)
@@ -183,12 +185,31 @@ class Trainer():
           *count_entropy(self.x_train, self.entropy_type)))
       config.info('x_val filtred has {} trajectories: {} low, {} medium, {} hight'.format(
           *count_entropy(self.x_val, self.entropy_type)))
+      pos_filter_x_train_len = len(self.x_train)
+      # given pre_filter_x_train_len < pos_filter_x_train_len, increase epochs
+      self.epochs = self.epochs * round(pre_filter_x_train_len / pos_filter_x_train_len)
+      config.info('given x_train filtred, compensate by changing epochs from {} to {} '.format(
+          pre_filter_epochs, self.epochs))
     else:
       config.info('x_train has {} trajectories: {} low, {} medium, {} hight'.format(
           *count_entropy(self.x_train, self.entropy_type)))
       config.info('x_val has {} trajectories: {} low, {} medium, {} hight'.format(
           *count_entropy(self.x_val, self.entropy_type)))
-    # create x_train_wins, x_val_wins
+
+    if self.dry_run:
+      return
+    # check enogh epochs
+    if exists(self.model_weights):
+      with open(self.train_csv_log_f, 'r') as f:
+        epochs_l = list(csv.DictReader(f))
+        if len(epochs_l) >= self.epochs:
+          config.info(f'{self.train_csv_log_f} has {self.epochs}>=epochs. stopping.')
+          return
+        else:
+          config.info(f'{self.train_csv_log_f} has {self.epochs}<epochs. continuing.')
+
+    # create x_train_wins, x_val_wins, model
+    config.info('creating model ...')
     self.x_train_wins = [{
         'video': row[1]['video'],
         'user': row[1]['user'],
@@ -201,17 +222,6 @@ class Trainer():
         'trace_id': trace_id,
     } for row in self.x_val.iterrows()\
       for trace_id in range(self.init_window, row[1]['traces'].shape[0] -self.end_window)]
-
-    # fit
-    config.info('creating model ...')
-    if self.dry_run:
-      return
-    if exists(self.model_weights):
-      with open(self.train_csv_log_f, 'r') as f:
-        epochs_l = list(csv.DictReader(f))
-        if len(epochs_l) >= self.epochs:
-          config.info(f'{self.train_csv_log_f} has {self.epochs}>=epochs previous done. exiting.')
-          return
     if not exists(self.model_dir):
       os.makedirs(self.model_dir)
     model = self.create_model()
@@ -241,11 +251,17 @@ class Trainer():
   def evaluate(self) -> None:
     config.info('evaluate()')
     config.info('model_dir=' + self.model_dir)
+    
     # partition
     self.partition()
     config.info('x_test has {} trajectories: {} low, {} medium, {} hight'.format(
         *count_entropy(self.x_test, self.entropy_type)))
-    # create x_test_wins
+    
+    if self.dry_run:
+      return
+      
+    # create x_test_wins, model
+    config.info('creating model ...')
     self.x_test_wins = [{
         'video': row[1]['video'],
         'user': row[1]['user'],
@@ -259,7 +275,6 @@ class Trainer():
       self.ds.df[self.model_fullname] = empty
 
     # creating model
-    config.info('creating model ...')
     if self.using_auto:
       prefix = join(config.DATADIR, f'{self.model_name},{self.dataset_name},actS,')
       model_weights_low = join(prefix + 'low', 'weights.hdf5')
@@ -271,9 +286,6 @@ class Trainer():
     else:
       model_weights = join(self.model_dir, 'weights.hdf5')
       config.info(f'model_weights={model_weights}')
-
-    if self.dry_run:
-      return
 
     if self.using_auto:
       assert exists(model_weights_low)
