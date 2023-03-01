@@ -53,6 +53,15 @@ class Test(unittest.TestCase):
     self.assertSequenceEqual(classes, set(['medium']))
     classes = set(trn.x_test['actS_c'].unique())
     self.assertSequenceEqual(classes, set(['low', 'medium', 'hight']))
+    # nolow
+    trn.train_entropy = 'nolow'
+    trn.train() 
+    classes = set(trn.x_train['actS_c'].unique())
+    self.assertSequenceEqual(classes, set(['medium','hight']))
+    classes = set(trn.x_val['actS_c'].unique())
+    self.assertSequenceEqual(classes, set(['medium','hight']))
+    classes = set(trn.x_test['actS_c'].unique())
+    self.assertSequenceEqual(classes, set(['low', 'medium', 'hight']))
     # nohight
     trn.train_entropy = 'nohight'
     trn.train() 

@@ -31,6 +31,8 @@ def filter_df_by_entropy(df: pd.DataFrame, entropy_type: str, train_entropy: str
     df = df
   elif train_entropy == 'nohight':
     df = df[df[entropy_type + '_c'] != 'hight']
+  elif train_entropy == 'nolow':
+    df = df[df[entropy_type + '_c'] != 'low']
   else:
     df = df[df[entropy_type + '_c'] == train_entropy]
   return df
