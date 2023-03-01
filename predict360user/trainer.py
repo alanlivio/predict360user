@@ -191,7 +191,7 @@ class Trainer():
           *count_entropy(self.x_val, self.entropy_type)))
       pos_filter_x_train_len = len(self.x_train)
       # given pre_filter_x_train_len < pos_filter_x_train_len, increase epochs
-      self.epochs = self.epochs + 0.1*self.epochs * round(pre_filter_x_train_len / pos_filter_x_train_len)
+      self.epochs = self.epochs + round(0.1*self.epochs * pre_filter_x_train_len / pos_filter_x_train_len)
       config.info('given x_train filtred, compensate by changing epochs from {} to {} '.format(
           pre_filter_epochs, self.epochs))
     else:
@@ -207,7 +207,7 @@ class Trainer():
     config.info('creating model ...')
     model: keras.models.Model
     co_metric={'metric_orth_dist': metric_orth_dist}
-    if exists(self.model_file):
+    if exists(self.model_file) and exists(self.train_csv_log_f):
       done_epochs = int(pd.read_csv(self.train_csv_log_f).iloc[-1]['epoch'])
       if done_epochs >= self.epochs:
         config.info(f'{self.train_csv_log_f} has {self.epochs}>=epochs. stopping.')
@@ -218,7 +218,7 @@ class Trainer():
         initial_epoch = done_epochs
     else:
       model = self.create_model()
-      initial_epoch = 1 
+      initial_epoch = 0
       if not exists(self.model_dir):
         os.makedirs(self.model_dir)
     assert model
