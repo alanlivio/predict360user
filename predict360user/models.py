@@ -2,26 +2,13 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.keras import backend as K
 from tensorflow.keras import optimizers
-from tensorflow.keras.layers import (LSTM, Concatenate, ConvLSTM2D, Convolution2D, Dense, Flatten,
-                                     Input, Lambda, MaxPooling2D, Reshape, TimeDistributed)
+from tensorflow.keras.layers import (LSTM, Concatenate, ConvLSTM2D,
+                                     Convolution2D, Dense, Flatten, Input,
+                                     Lambda, MaxPooling2D, Reshape,
+                                     TimeDistributed)
 from tensorflow.keras.models import Model
 
-
-# Compute the orthodromic distance between two points in 3d coordinates
-def compute_orthodromic_distance(true_position, pred_position):
-  norm_a = np.sqrt(
-      np.square(true_position[0]) + np.square(true_position[1]) + np.square(true_position[2]))
-  norm_b = np.sqrt(
-      np.square(pred_position[0]) + np.square(pred_position[1]) + np.square(pred_position[2]))
-  x_true = true_position[0] / norm_a
-  y_true = true_position[1] / norm_a
-  z_true = true_position[2] / norm_a
-  x_pred = pred_position[0] / norm_b
-  y_pred = pred_position[1] / norm_b
-  z_pred = pred_position[2] / norm_b
-  great_circle_distance = np.arccos(
-      np.maximum(np.minimum(x_true * x_pred + y_true * y_pred + z_true * z_pred, 1.0), -1.0))
-  return great_circle_distance
+from .utils.fov import compute_orthodromic_distance
 
 
 def metric_orth_dist(true_position, pred_position):
