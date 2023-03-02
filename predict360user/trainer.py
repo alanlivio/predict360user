@@ -14,12 +14,12 @@ with redirect_stderr(open(os.devnull, 'w')):
   os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
   os.environ['TF_ENABLE_ONEDNN_OPTS'] = "0"
   os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
-  import tensorflow.keras as keras
-  from tensorflow.keras.callbacks import CSVLogger, ModelCheckpoint, TensorBoard
+  from tensorflow import keras
+  from keras.callbacks import CSVLogger, ModelCheckpoint, TensorBoard
+  from .models import *
 
 from . import config
 from .dataset import *
-from .models import *
 from .utils.fov import *
 
 METRIC = compute_orthodromic_distance

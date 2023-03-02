@@ -1,14 +1,11 @@
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras import backend as K
-from tensorflow.keras import optimizers
-from tensorflow.keras.layers import (LSTM, Concatenate, ConvLSTM2D,
-                                     Convolution2D, Dense, Flatten, Input,
-                                     Lambda, MaxPooling2D, Reshape,
-                                     TimeDistributed)
-from tensorflow.keras.models import Model
-
-from .utils.fov import compute_orthodromic_distance
+from keras import backend as K
+from keras import optimizers
+from keras.layers import (LSTM, Concatenate, ConvLSTM2D, Convolution2D, Dense,
+                          Flatten, Input, Lambda, MaxPooling2D, Reshape,
+                          TimeDistributed)
+from keras.models import Model
 
 
 def metric_orth_dist(true_position, pred_position):
