@@ -301,7 +301,7 @@ class Trainer():
       model_medium = keras.models.load_model(model_file_medium)
       model_hight = keras.models.load_model(model_file_hight)
       self.threshold_medium, self.threshold_hight = get_class_thresholds(self.ds.df, 'actS')
-    else:
+    elif self.model_name != 'no_motion':
       assert exists(model_file)
       model = keras.models.load_model(model_file)
 
@@ -323,7 +323,7 @@ class Trainer():
       video = ids['video']
       x_i = ids['trace_id']
 
-      if self.model_name == 'pos_only':
+      if self.model_name in  ['pos_only', 'no_motion']:
         encoder_pos_inputs_for_sample = np.array(
             [self.ds.get_traces(video, user)[x_i - self.m_window:x_i]])
         decoder_pos_inputs_for_sample = np.array(
@@ -361,6 +361,8 @@ class Trainer():
             transform_batches_cartesian_to_normalized_eulerian(decoder_pos_inputs_for_sample)
         ])[0]
         model_prediction = transform_normalized_eulerian_to_cartesian(model_pred)
+      elif self.model_name == 'no_motion':
+          model_prediction = np.repeat(decoder_pos_inputs_for_sample[0], self.h_window, axis=0)
       else:
         raise NotImplementedError
 
