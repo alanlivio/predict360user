@@ -415,7 +415,7 @@ class Trainer():
     # create targets in format (model, s_type, s_class, mask)
     models_cols = sorted([
       col for col in self.ds.df.columns \
-      if (col.startswith(self.model_name)) \
+      if any(m_name in col for m_name in config.ARGS_MODEL_NAMES[1:])\
       and not any(ds_name in col for ds_name in config.ARGS_DS_NAMES[1:])
     ])
     config.info(f"processing results from models: {', '.join(models_cols)}")
