@@ -19,13 +19,13 @@ with redirect_stderr(open(os.devnull, 'w')):
 
 from . import config
 from .dataset import *
-from .head_motion_prediction.position_only_baseline import (
-    create_pos_only_model, metric_orth_dist)
-from .head_motion_prediction.Utils import (all_metrics, cartesian_to_eulerian,
+from .head_motion_prediction.Utils import (cartesian_to_eulerian,
                                            eulerian_to_cartesian)
+from .models import (compute_orthodromic_distance, create_pos_only_model,
+                     metric_orth_dist)
 from .utils.fov import *
 
-METRIC = all_metrics['orthodromic']
+METRIC = compute_orthodromic_distance
 tqdm.pandas()
 
 
