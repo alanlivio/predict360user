@@ -28,14 +28,14 @@ tqdm.pandas()
 
 def filter_df_by_entropy(df: pd.DataFrame, entropy_type: str, train_entropy: str) -> pd.DataFrame:
   if train_entropy == 'all':
-    df = df
+    filter_df = df
   elif train_entropy == 'nohight':
-    df = df[df[entropy_type + '_c'] != 'hight']
+    filter_df = df[df[entropy_type + '_c'] != 'hight']
   elif train_entropy == 'nolow':
-    df = df[df[entropy_type + '_c'] != 'low']
+    filter_df = df[df[entropy_type + '_c'] != 'low']
   else:
-    df = df[df[entropy_type + '_c'] == train_entropy]
-  return df
+    filter_df = df[df[entropy_type + '_c'] == train_entropy]
+  return filter_df
 
 
 def transform_batches_cartesian_to_normalized_eulerian(positions_in_batch) -> np.array:
@@ -362,7 +362,7 @@ class Trainer():
         ])[0]
         model_prediction = transform_normalized_eulerian_to_cartesian(model_pred)
       elif self.model_name == 'no_motion':
-          model_prediction = np.repeat(decoder_pos_inputs_for_sample[0], self.h_window, axis=0)
+        model_prediction = np.repeat(decoder_pos_inputs_for_sample[0], self.h_window, axis=0)
       else:
         raise NotImplementedError
 
@@ -442,10 +442,7 @@ class Trainer():
         for t in range_win:
           if t not in errors_per_timestamp:
             errors_per_timestamp[t] = []
-          try:
-            errors_per_timestamp[t].append(METRIC(true_win[t], pred_win[t]))
-          except:
-            print('error')
+          errors_per_timestamp[t].append(METRIC(true_win[t], pred_win[t]))
 
     for model, s_type, s_class, mask in targets:
       # create df_win by expading all model predictions

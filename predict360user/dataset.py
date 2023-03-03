@@ -1,6 +1,5 @@
 import multiprocessing
 import os
-import pathlib
 import pickle
 from os.path import exists
 from typing import Literal
@@ -9,7 +8,9 @@ import jenkspy
 import numpy as np
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objs as go
 import scipy.stats
+from plotly.subplots import make_subplots
 
 from . import config
 from .utils.fov import calc_actual_entropy
@@ -122,11 +123,11 @@ class Dataset:
           pickle.dump(tmpdf, f)
     else:
       self.dump()
-      
+
   def drop_predict_cols(self) -> None:
     col_rm = [col for col in self.df.columns for model in config.ARGS_MODEL_NAMES if col.startswith(model)]
     self.df.drop(col_rm, axis=1, errors='ignore', inplace=True)
-  
+
   def get_trajects(self, video: str, user: str) -> np.array:
     rows = self.df.query(f"user=='{user}' and video=='{video}'")
     assert not rows.empty
@@ -139,12 +140,12 @@ class Dataset:
     row = self.df.query(f"user=='{user}' and video=='{video}'")
     assert not row.empty
     return row['traces'].iloc[0]
-  
+
   def get_trace_random(self, ) -> np.array:
     traject_ar = self.get_traject_random()['traces'].iloc[0]
     trace = traject_ar[np.random.randint(len(traject_ar - 1))]
     return trace
-    
+
   def get_video_ids(self) -> np.array:
     return self.df['video'].unique()
 
@@ -211,10 +212,12 @@ class Dataset:
     config.info(fmt.format(*count_entropy(self.df, 'actS')))
     config.info(f"df['actS'].max()={self.df['actS'].max()=}")
     config.info(f"df['actS'].min()={self.df['actS'].min()=}")
-    
-  def show_histogram(self, cols=['actS', 'hmpS'], facet=None) -> None:
-    cols = [col for col in cols if {col}.issubset(self.df.columns)]
-    for col in cols:
+
+  def show_histogram(self, cols: list, facet=None) -> None:
+    if not cols:
+      cols = ['actS', 'hmpS']
+    cols_data = [col for col in cols if {col}.issubset(self.df.columns)]
+    for col in cols_data:
       px.histogram(self.df,
                    x=col,
                    color=col + '_c',
@@ -241,11 +244,11 @@ class Dataset:
 
   def show_tileset_reqs_metrics(self) -> None:
     # check
-    columns = [column for column in df.columns if column.startswith('metrics_')]
+    columns = [column for column in self.df.columns if column.startswith('metrics_')]
     assert len(columns), 'run calc_tileset_reqs_metrics'
     # create dftmp
     data = []
-    for name in [column for column in df.columns if column.startswith('metrics_')]:
+    for name in [column for column in self.df.columns if column.startswith('metrics_')]:
       avg_reqs = float(self.df[name].apply(lambda traces: np.sum(traces[:, 0])).mean())
       avg_qlt = self.df[name].apply(lambda traces: np.sum(traces[:, 1])).mean()
       avg_lost = self.df[name].apply(lambda traces: np.sum(traces[:, 2])).mean()
