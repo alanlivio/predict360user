@@ -165,9 +165,9 @@ class Trainer():
     # split x_train, x_val
     self.x_train, self.x_val = train_test_split(self.x_train,
                                                 random_state=1,
-                                                test_size=0.125,
+                                                test_size=0.625,
                                                 stratify=self.x_train[self.entropy_type +
-                                                                      '_c'])  # 0.125 * 0.8 = 0.1
+                                                                      '_c'])  # 0.625 * 0.8 = 0.5
 
   def train(self) -> None:
     config.info('train()')
