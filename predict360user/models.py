@@ -87,6 +87,6 @@ def create_pos_only_model(M_WINDOW, H_WINDOW):
 
   # Define and compile model
   model = Model([encoder_inputs, decoder_inputs], decoder_outputs)
-  model_optimizer = optimizers.Adam(lr=0.0005)
+  model_optimizer = optimizers.Adam(learning_rate=0.0005)
   model.compile(optimizer=model_optimizer, loss=metric_orth_dist)
   return model
