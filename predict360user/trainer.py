@@ -12,8 +12,8 @@ from tqdm.auto import tqdm
 
 with redirect_stderr(open(os.devnull, 'w')):
   os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-  os.environ['TF_ENABLE_ONEDNN_OPTS'] = "0"
-  os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
+  # os.environ['TF_ENABLE_ONEDNN_OPTS'] = "0"
+  # os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
   from tensorflow import keras
   from keras.callbacks import CSVLogger, ModelCheckpoint, TensorBoard
   from .models import *
