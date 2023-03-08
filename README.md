@@ -2,9 +2,9 @@
 
 Python library to predict user navigation in 360 videos. It extends [Rondon 360-videos models/dataset collection](https://gitlab.com/miguelfromeror/head-motion-prediction).
 
-## Classes
+## Library
 
-The main library classes are:
+The library's main classes are:
 
 * `Dataset`: stores the dataset in memory as a pandas.DataFrame and provides functions for data preprocessing, such as user clustering by entropy.
 
@@ -41,10 +41,11 @@ The main library classes are:
 
 ## Requirements
 
-The project dependencies are described in the pip [requirements.txt](requirements.txt) file. Do as follow to install them in a conda environment with [TensorFlow and Cuda](https://www.tensorflow.org/install/pip). On Windows, you must install [SDK and MSVC](https://visualstudio.microsoft.com/visual-cpp-build-tools/) because of the [spherical_geometry](https://github.com/spacetelescope/spherical_geometry) package.
+The project dependencies are described [environment.yml](environment.yml) and [requirements.txt](requirements.txt), which the main one is [TensorFlow](https://www.tensorflow.org/install/pip). On Windows, you must install [SDK and MSVC](https://visualstudio.microsoft.com/visual-cpp-build-tools/) because of the [spherical_geometry](https://github.com/spacetelescope/spherical_geometry) package.
 
 ```bash
 conda env create -f environment.yml
+conda activate p3u
 ```
 
 To fetch and patch the Rondon head_motion_prediction submodule, do
@@ -57,7 +58,7 @@ sed -i -e 's/import keras/import tensorflow.keras/g' -e 's/from keras/from tenso
 
 ## Train and evaluate
 
-To compare, the code below shows how to train/evaluate one dataset using [Rondon repo](https://gitlab.com/miguelfromeror/head-motion-prediction) and using this project.
+To illustrate usage, the code below shows how to train/evaluate one dataset using [Rondon repo](https://gitlab.com/miguelfromeror/head-motion-prediction) and using this project.
 
 Rondon:
 
@@ -93,12 +94,12 @@ If you use `predict360user` please consider citing it as:
   }
   ```
 
-## A note on maintainance
+## A note on maintenance
 
-This repository was born as part of UK EPSR SpheryStream project. Its maintenance is limited by a research project's time and resources. Even if I would like to automate all 360 user prediction models, I do not have the time to maintain the whole body of automation that a well-maintained package deserves. Any help is very welcome. Here is a quick guide to interacting with this repository:
+This repository was born as part of the UK EPSR SpheryStream project. Its maintenance is limited by a research project's time and resources. Even if I want to automate all 360 user prediction models, I do not have the time to maintain the whole body of automation that a well-maintained package deserves. Any help is very welcome. Here is a quick guide to interacting with this repository:
 
-* If you find a bug, please open an issue, and I will fix it as soon as I can.
-* If you want to request a new feature, please open an issue, and I will consider it as soon as I can.
+* If you find a bug, please open an issue, and I will fix it as soon as possible.
+* If you want to request a new feature, please open an issue, and I will consider it as soon as possible.
 * If you want to contribute yourself, please open an issue first, we discuss the objective, plan a proposal, and open a pull request to act on it.
 
 If you would like to be involved further in the development of this repository, please get in touch with me directly: aguedes at ucl dot ac dot uk.
