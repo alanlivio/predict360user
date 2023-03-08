@@ -165,9 +165,9 @@ class Trainer():
     # split x_train, x_val
     self.x_train, self.x_val = train_test_split(self.x_train,
                                                 random_state=1,
-                                                test_size=0.625,
+                                                test_size=0.125,
                                                 stratify=self.x_train[self.entropy_type +
-                                                                      '_c'])  # 0.625 * 0.8 = 0.5
+                                                                      '_c'])  # 0.125 * 0.8 = 0.1
 
   def train(self) -> None:
     config.info('train()')
@@ -245,10 +245,7 @@ class Trainer():
         monitor='loss',
         restore_best_weights=True,
     )
-    model_checkpoint = ModelCheckpoint(self.model_file,
-                                       mode='auto',
-                                       save_freq=1,
-                                       multiprocessing=True)
+    model_checkpoint = ModelCheckpoint(self.model_file, mode='auto')
     callbacks = [csv_logger, model_checkpoint, early_stopping_cb]
     if self.model_name == 'pos_only':
       generator = self.generate_batchs(self.x_train_wins)
