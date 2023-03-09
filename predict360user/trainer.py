@@ -207,7 +207,7 @@ class Trainer():
     co_metric = {'metric_orth_dist': metric_orth_dist}
     if exists(self.model_file) and exists(self.train_csv_log_f):
       done_epochs = int(pd.read_csv(self.train_csv_log_f).iloc[-1]['epoch'])
-      if done_epochs >= self.epochs:
+      if done_epochs > self.epochs:
         config.info(f'{self.train_csv_log_f} has {self.epochs}>=epochs. stopping.')
         return
       else:
