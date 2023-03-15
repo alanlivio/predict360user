@@ -412,7 +412,7 @@ class Trainer():
     # create targets in format (model, s_type, s_class, mask)
     models_cols = sorted([
       col for col in self.ds.df.columns \
-      if any(m_name in col for m_name in config.ARGS_MODEL_NAMES[1:])\
+      if any(m_name in col for m_name in config.ARGS_MODEL_NAMES)\
       and not any(ds_name in col for ds_name in config.ARGS_DS_NAMES[1:])
     ])
     config.info(f"processing results from models: {', '.join(models_cols)}")
@@ -441,7 +441,7 @@ class Trainer():
             errors_per_timestamp[t] = []
           errors_per_timestamp[t].append(METRIC(true_win[t], pred_win[t]))
 
-    for model, s_type, s_class, mask in targets:
+    for model, s_type, s_class, mask in tqdm(targets, desc='models predictions'):
       # create df_win by expading all model predictions
       not_empty = self.ds.df[model].apply(lambda x: len(x) != 0)
       model_srs = self.ds.df.loc[not_empty & mask, model]
@@ -465,6 +465,21 @@ class Trainer():
       self.df_res.loc[newid, ['model_name', 'S_type', 'S_class']] = [model, s_type, s_class]
       self.df_res.loc[newid, range_win] = avg_error_per_timestamp
     self._show_compare_evaluate()
+
+
+  RES_EVALUATE = os.path.join(config.DATADIR, 'df_res_evaluate.pickle')
+
+  def _save_compare_evaluate(self) -> None:
+    config.info(f'saving df to {self.RES_EVALUATE}')
+    with open(self.RES_EVALUATE, 'wb') as f:
+      config.info(f'saving df_res to {self.RES_EVALUATE}')
+      pickle.dump(self.df, f)
+
+  def _load_compare_evaluate(self) -> None:
+    if exists(self.RES_EVALUATE):
+      with open(self.RES_EVALUATE, 'rb') as f:
+        config.info(f'loading df_res from {self.RES_EVALUATE}')
+        self.df_res = pickle.load(f)
 
   def _show_compare_evaluate(self, df_res=None) -> None:
     df_res = self.df_res if df_res is None else df_res
