@@ -53,6 +53,7 @@ def transform_normalized_eulerian_to_cartesian(positions) -> np.array:
 
 
 class Trainer():
+
   def __init__(self,
                model_name='pos_only',
                dataset_name='all',
@@ -320,11 +321,10 @@ class Trainer():
       video = ids['video']
       x_i = ids['trace_id']
 
-      if self.model_name in  ['pos_only', 'no_motion']:
+      if self.model_name in ['pos_only', 'no_motion']:
         encoder_pos_inputs_for_sample = np.array(
             [self.ds.get_traces(video, user)[x_i - self.m_window:x_i]])
-        decoder_pos_inputs_for_sample = np.array(
-          [self.ds.get_traces(video, user)[x_i:x_i + 1]])
+        decoder_pos_inputs_for_sample = np.array([self.ds.get_traces(video, user)[x_i:x_i + 1]])
       else:
         raise NotImplementedError
 
@@ -417,12 +417,18 @@ class Trainer():
     ])
     targets = []
     for model in models_cols:
-      targets.append(model, 'all', 'all', pd.Series(True, index=self.x_test.index)),
-      targets.append(model, self.entropy_type, 'low', self.x_test[self.entropy_type + '_c'] == 'low'),
-      targets.append(model, self.entropy_type, 'medium', self.x_test[self.entropy_type + '_c'] == 'medium'),
-      targets.append(model, self.entropy_type, 'nohight', self.x_test[self.entropy_type + '_c'] != 'hight'),
-      targets.append(model, self.entropy_type, 'nolow', self.x_test[self.entropy_type + '_c'] != 'low'),
-      targets.append(model, self.entropy_type, 'hight', self.x_test[self.entropy_type + '_c'] == 'hight')
+      assert len(self.x_test) == len(self.x_test[model].apply(lambda x: len(x) != 0))
+      targets.append((model, 'all', 'all', pd.Series(True, index=self.x_test.index)))
+      targets.append(
+          (model, self.entropy_type, 'low', self.x_test[self.entropy_type + '_c'] == 'low'))
+      targets.append(
+          (model, self.entropy_type, 'nolow', self.x_test[self.entropy_type + '_c'] != 'low'))
+      targets.append(
+          (model, self.entropy_type, 'medium', self.x_test[self.entropy_type + '_c'] == 'medium'))
+      targets.append(
+          (model, self.entropy_type, 'nohight', self.x_test[self.entropy_type + '_c'] != 'hight'))
+      targets.append(
+          (model, self.entropy_type, 'hight', self.x_test[self.entropy_type + '_c'] == 'hight'))
 
     # fill df_res from moldel results column at df
     def _calc_wins_error(df_wins_cols, errors_per_timestamp) -> None:
@@ -440,24 +446,19 @@ class Trainer():
           errors_per_timestamp[t].append(METRIC(true_win[t], pred_win[t]))
 
     config.info(f"compare results for models: {', '.join(models_cols)}")
-    config.info(f"for each model, compare users: {config.ARGS_ENTROPY_NAMES[:5]}")
+    config.info(f"for each model, compare users: {config.ARGS_ENTROPY_NAMES[:6]}")
     for model, s_type, s_class, mask in tqdm(targets):
-      # create df_win by expading all model predictions
-      not_empty = self.x_test[model].apply(lambda x: len(x) != 0)
-      model_srs = self.x_test.loc[not_empty & mask, model]
+      # print(model, s_type, s_class, mask.values.sum(), type(mask))
+      # create df_win with columns as timestamps
+      model_srs = self.x_test.loc[mask, model]
       if len(model_srs) == 0:
-        config.error(f"skipping {model=}, {s_type}={s_class}")
-        continue
+        raise RuntimeError(f"empty {model=}, {s_type}={s_class}")
       model_df_wins = pd.DataFrame.from_dict(model_srs.values.tolist())
       model_df_wins.index = model_srs.index
-
-      # df_wins.apply by column and add errors_per_timestamp
+      # calc errors_per_timestamp from df_wins
       errors_per_timestamp = {idx: [] for idx in range_win}
       model_df_wins.apply(_calc_wins_error, axis=1, args=(errors_per_timestamp, ))
-      # model_df_wins[:2].apply(_calc_wins_error, axis=1, args=(errors_per_timestamp, ))
       newid = len(self.df_res)
-      # save df_res for s_type, s_class
-      # avg_error_per_timestamp = [np.mean(errors_per_timestamp[t]) for t in range_win ]
       avg_error_per_timestamp = [
           np.mean(errors_per_timestamp[t]) if len(errors_per_timestamp[t]) else np.nan
           for t in range_win
@@ -465,7 +466,6 @@ class Trainer():
       self.df_res.loc[newid, ['model_name', 'S_type', 'S_class']] = [model, s_type, s_class]
       self.df_res.loc[newid, range_win] = avg_error_per_timestamp
     self._show_compare_evaluate()
-
 
   RES_EVALUATE = os.path.join(config.DATADIR, 'df_res_evaluate.pickle')
 
@@ -488,6 +488,7 @@ class Trainer():
     assert len(df_res), 'run -evaluate first'
     props = 'text-decoration: underline'
     output = df_res.dropna()\
+      .sort_values(by=list(range_win))\
       .style\
       .background_gradient(axis=0, cmap='coolwarm')\
       .highlight_min(subset=list(range_win), props=props)\

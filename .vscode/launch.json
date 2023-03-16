@@ -5,24 +5,14 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "-train",
+            "name": "predict360user",
             "type": "python",
             "request": "launch",
-            "module": "run",
+            "module": "predict360user",
             "args": [
-                "-train",
-                // "-dataset_name",
-                //  "david"
-            ],
-            "justMyCode": true
-        },
-        {
-            "name": "-evaluate",
-            "type": "python",
-            "request": "launch",
-            "module": "run",
-            "args": [
-                "-evaluate",
+                // "-train",
+                // "-compare_evaluate",
+                // "-evaluate",
                 // "-dataset_name", "david",
                 // "-oneuser", "david_1", "-onevideo", "david_6_DroneFlight", // medium
                 // "-oneuser", "david_0", "-onevideo", "david_10_Cows", // index 0
@@ -34,15 +24,5 @@
             ],
             "justMyCode": true
         },
-        {
-            "name": "-compare_result",
-            "type": "python",
-            "request": "launch",
-            "module": "run",
-            "args": [
-                "-compare_results",
-            ],
-            "justMyCode": true
-        }
     ]
 }
