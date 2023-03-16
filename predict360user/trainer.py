@@ -473,7 +473,7 @@ class Trainer():
     config.info(f'saving df to {self.RES_EVALUATE}')
     with open(self.RES_EVALUATE, 'wb') as f:
       config.info(f'saving df_res to {self.RES_EVALUATE}')
-      pickle.dump(self.df, f)
+      pickle.dump(self.df_res, f)
 
   def _load_compare_evaluate(self) -> None:
     if exists(self.RES_EVALUATE):
