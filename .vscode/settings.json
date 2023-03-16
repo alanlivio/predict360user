@@ -11,5 +11,8 @@
   "jupyter.notebookFileRoot": "${workspaceFolder}",
   "git.repositoryScanIgnoredFolders": [
     "predict360user/head_motion_prediction"
-  ]
+  ],
+  "python.analysis.exclude": [
+    "predict360user/head_motion_prediction"
+  ],
 }
