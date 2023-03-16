@@ -401,7 +401,7 @@ class Trainer():
     config.show_or_save(fig)
 
   def compare_evaluate(self) -> None:
-    self._get_ds()
+    self.partition()
     # horizon timestamps to be calculated
     range_win = range(self.h_window)[::4]
 
@@ -411,25 +411,23 @@ class Trainer():
 
     # create targets in format (model, s_type, s_class, mask)
     models_cols = sorted([
-      col for col in self.ds.df.columns \
+      col for col in self.x_test.columns \
       if any(m_name in col for m_name in config.ARGS_MODEL_NAMES)\
       and not any(ds_name in col for ds_name in config.ARGS_DS_NAMES[1:])
     ])
-    config.info(f"processing results from models: {', '.join(models_cols)}")
     targets = []
     for model in models_cols:
-      targets.append((model, 'all', 'all', pd.Series(True, index=self.ds.df.index)))
-      targets.append((model, self.entropy_type, 'low', self.ds.df[self.entropy_type] != 'low'))
-      targets.append(
-          (model, self.entropy_type, 'medium', self.ds.df[self.entropy_type] != 'medium'))
-      targets.append(
-          (model, self.entropy_type, 'nohight', self.ds.df[self.entropy_type] != 'hight'))
-      targets.append((model, self.entropy_type, 'hight', self.entropy_type == 'hight'))
+      targets.append(model, 'all', 'all', pd.Series(True, index=self.x_test.index)),
+      targets.append(model, self.entropy_type, 'low', self.x_test[self.entropy_type + '_c'] == 'low'),
+      targets.append(model, self.entropy_type, 'medium', self.x_test[self.entropy_type + '_c'] == 'medium'),
+      targets.append(model, self.entropy_type, 'nohight', self.x_test[self.entropy_type + '_c'] != 'hight'),
+      targets.append(model, self.entropy_type, 'nolow', self.x_test[self.entropy_type + '_c'] != 'low'),
+      targets.append(model, self.entropy_type, 'hight', self.x_test[self.entropy_type + '_c'] == 'hight')
 
     # fill df_res from moldel results column at df
     def _calc_wins_error(df_wins_cols, errors_per_timestamp) -> None:
       traject_index = df_wins_cols.name
-      traject = self.ds.df.loc[traject_index, 'traces']
+      traject = self.x_test.loc[traject_index, 'traces']
       win_pos_l = df_wins_cols.index
       for win_pos in win_pos_l:
         pred_win = df_wins_cols[win_pos]
@@ -441,12 +439,14 @@ class Trainer():
             errors_per_timestamp[t] = []
           errors_per_timestamp[t].append(METRIC(true_win[t], pred_win[t]))
 
-    for model, s_type, s_class, mask in tqdm(targets, desc='models predictions'):
+    config.info(f"compare results for models: {', '.join(models_cols)}")
+    config.info(f"for each model, compare users: {config.ARGS_ENTROPY_NAMES[:5]}")
+    for model, s_type, s_class, mask in tqdm(targets):
       # create df_win by expading all model predictions
-      not_empty = self.ds.df[model].apply(lambda x: len(x) != 0)
-      model_srs = self.ds.df.loc[not_empty & mask, model]
+      not_empty = self.x_test[model].apply(lambda x: len(x) != 0)
+      model_srs = self.x_test.loc[not_empty & mask, model]
       if len(model_srs) == 0:
-        config.error(f"skipping {model=} {s_type=} {s_class=}")
+        config.error(f"skipping {model=}, {s_type}={s_class}")
         continue
       model_df_wins = pd.DataFrame.from_dict(model_srs.values.tolist())
       model_df_wins.index = model_srs.index
