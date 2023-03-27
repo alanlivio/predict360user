@@ -156,19 +156,14 @@ class Trainer():
   def partition(self) -> None:
     config.info('partitioning...')
     self._get_ds()
-    df = self.ds.df if self.dataset_name == 'all' else self.ds.df[self.ds.df['ds'] ==
-                                                                  self.dataset_name]
-    # split x_train, x_test
-    self.x_train, self.x_test = train_test_split(df,
-                                                 random_state=1,
-                                                 test_size=self.test_size,
-                                                 stratify=df[self.entropy_type + '_c'])
-    # split x_train, x_val
-    self.x_train, self.x_val = train_test_split(self.x_train,
-                                                random_state=1,
-                                                test_size=0.125,
-                                                stratify=self.x_train[self.entropy_type +
-                                                                      '_c'])  # 0.125 * 0.8 = 0.1
+    df = self.ds.df if self.dataset_name == 'all' \
+       else self.ds.df[self.ds.df['ds'] ==self.dataset_name]
+    # split x_train, x_test (0.2)
+    self.x_train, self.x_test = \
+      train_test_split(df, random_state=1, test_size=self.test_size, stratify=df[self.entropy_type + '_c'])
+    # split x_train, x_val (0.125 * 0.8 = 0.1)
+    self.x_train, self.x_val = \
+      train_test_split(self.x_train,random_state=1, test_size=0.125, stratify=self.x_train[self.entropy_type + '_c'])
 
   def train(self) -> None:
     config.info('train()')
