@@ -401,24 +401,26 @@ class Trainer():
     config.show_or_save(fig)
 
   def compare_evaluate(self, load_saved=False) -> None:
-    self.partition()
     # horizon timestamps to be calculated
     range_win = range(self.h_window)[::4]
 
     # create df_res
     columns = ['model_name', 'S_type', 'S_class']
-    if load_saved:
-      self._load_compare_evaluate()
-    else:
-      self.df_res = pd.DataFrame(columns=columns + list(range_win), dtype=np.float32)
+    if not hasattr(self, 'df_res'):
+      if load_saved:
+        self._load_compare_evaluate()
+      else:
+        self.df_res = pd.DataFrame(columns=columns + list(range_win), dtype=np.float32)
 
     # create targets in format (model, s_type, s_class, mask)
+    self.partition()
     models_cols = sorted([
       col for col in self.x_test.columns \
       if any(m_name in col for m_name in config.ARGS_MODEL_NAMES)\
       and not any(ds_name in col for ds_name in config.ARGS_DS_NAMES[1:])\
       and not any(self.df_res['model_name'] == col) # already calculated
       ])
+    # models_cols = ['no_motion']
     targets = []
     for model in models_cols:
       assert len(self.x_test) == len(self.x_test[model].apply(lambda x: len(x) != 0))
@@ -479,10 +481,9 @@ class Trainer():
       pickle.dump(self.df_res, f)
 
   def _load_compare_evaluate(self) -> None:
-    if exists(self.RES_EVALUATE):
-      with open(self.RES_EVALUATE, 'rb') as f:
-        config.info(f'loading df_res from {self.RES_EVALUATE}')
-        self.df_res = pickle.load(f)
+    with open(self.RES_EVALUATE, 'rb') as f:
+      config.info(f'loading df_res from {self.RES_EVALUATE}')
+      self.df_res = pickle.load(f)
 
   def _show_compare_evaluate(self, df_res=None) -> None:
     df_res = self.df_res if df_res is None else df_res
