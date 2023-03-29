@@ -1,8 +1,7 @@
 import os
 from contextlib import redirect_stderr
 from os.path import exists, join
-from typing import Any, Generator
-
+from typing import Generator
 import numpy as np
 import pandas as pd
 import plotly.express as px
@@ -11,6 +10,7 @@ from sklearn.utils import shuffle
 from tqdm.auto import tqdm
 
 with redirect_stderr(open(os.devnull, 'w')):
+  import tensorflow
   os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
   # os.environ['TF_ENABLE_ONEDNN_OPTS'] = "0"
   # os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
@@ -20,11 +20,11 @@ with redirect_stderr(open(os.devnull, 'w')):
 
 from . import config
 from .dataset import *
+from .models import *
 from .utils.fov import *
 
 METRIC = compute_orthodromic_distance
 tqdm.pandas()
-
 
 def filter_df_by_entropy(df: pd.DataFrame, entropy_type: str, train_entropy: str) -> pd.DataFrame:
   if train_entropy == 'all':
@@ -36,20 +36,6 @@ def filter_df_by_entropy(df: pd.DataFrame, entropy_type: str, train_entropy: str
   else:
     filter_df = df[df[entropy_type + '_c'] == train_entropy]
   return filter_df
-
-
-def transform_batches_cartesian_to_normalized_eulerian(positions_in_batch) -> np.array:
-  positions_in_batch = np.array(positions_in_batch)
-  eulerian_batches = [[cartesian_to_eulerian(pos[0], pos[1], pos[2]) for pos in batch]
-                      for batch in positions_in_batch]
-  eulerian_batches = np.array(eulerian_batches) / np.array([2 * np.pi, np.pi])
-  return eulerian_batches
-
-
-def transform_normalized_eulerian_to_cartesian(positions) -> np.array:
-  positions = positions * np.array([2 * np.pi, np.pi])
-  eulerian_samples = [eulerian_to_cartesian(pos[0], pos[1]) for pos in positions]
-  return np.array(eulerian_samples)
 
 
 class Trainer():
@@ -66,17 +52,23 @@ class Trainer():
                dry_run=False) -> None:
     self.model_name = model_name
     self.dataset_name = dataset_name
-    self.h_window = h_window
-    self.init_window = init_window
-    self.m_window = m_window
-    self.test_size = test_size
     self.train_entropy = train_entropy
-    self.epochs = epochs
-    self.dry_run = dry_run
     assert self.model_name in config.ARGS_MODEL_NAMES
     assert self.dataset_name in config.ARGS_DS_NAMES
     assert self.train_entropy in config.ARGS_ENTROPY_NAMES + config.ARGS_ENTROPY_AUTO_NAMES
     self.using_auto = self.train_entropy.startswith('auto')
+    self.h_window = h_window
+    self.init_window = init_window
+    self.m_window = m_window
+    if model_name == 'pos_only':
+      self.model = PosOnlyModel(m_window, h_window)
+    elif self.using_auto:
+      self.model = PosOnlyModel_Auto(m_window, h_window)
+    else:
+      raise RuntimeError
+    self.test_size = test_size
+    self.epochs = epochs
+    self.dry_run = dry_run
     self.entropy_type = 'hmpS' if self.train_entropy.endswith('hmp') else 'actS'
     if self.dataset_name == 'all' and self.train_entropy == 'all':
       self.model_fullname = self.model_name
@@ -97,57 +89,14 @@ class Trainer():
         'train_entropy', 'epochs', 'dry_run'
     ]) + ")"
 
-  def create_model(self) -> Any:
-    if self.model_name == 'pos_only':
-      return create_pos_only_model(self.m_window, self.h_window)
-    else:
-      raise NotImplementedError
-
   def generate_batchs(self, wins: list) -> Generator:
     while True:
-      encoder_pos_inputs_for_batch = []
-      # encoder_sal_inputs_for_batch = []
-      decoder_pos_inputs_for_batch = []
-      # decoder_sal_inputs_for_batch = []
-      decoder_outputs_for_batch = []
-      count = 0
       shuffle(wins, random_state=1)
-      for ids in wins:
-        user = ids['user']
-        video = ids['video']
-        x_i = ids['trace_id']
-        # load the data
-        if self.model_name == 'pos_only':
-          encoder_pos_inputs_for_batch.append(
-              self.ds.get_traces(video, user)[x_i - self.m_window:x_i])
-          decoder_pos_inputs_for_batch.append(self.ds.get_traces(video, user)[x_i:x_i + 1])
-          decoder_outputs_for_batch.append(
-              self.ds.get_traces(video, user)[x_i + 1:x_i + self.h_window + 1])
-        else:
-          raise NotImplementedError
-        count += 1
-        if count == config.BATCH_SIZE:
-          count = 0
-          if self.model_name == 'pos_only':
-            yield ([
-                transform_batches_cartesian_to_normalized_eulerian(encoder_pos_inputs_for_batch),
-                transform_batches_cartesian_to_normalized_eulerian(decoder_pos_inputs_for_batch)
-            ], transform_batches_cartesian_to_normalized_eulerian(decoder_outputs_for_batch))
-          else:
-            raise NotImplementedError
-          encoder_pos_inputs_for_batch = []
-          # encoder_sal_inputs_for_batch = []
-          decoder_pos_inputs_for_batch = []
-          # decoder_sal_inputs_for_batch = []
-          decoder_outputs_for_batch = []
-      if count != 0:
-        if self.model_name == 'pos_only':
-          yield ([
-              transform_batches_cartesian_to_normalized_eulerian(encoder_pos_inputs_for_batch),
-              transform_batches_cartesian_to_normalized_eulerian(decoder_pos_inputs_for_batch)
-          ], transform_batches_cartesian_to_normalized_eulerian(decoder_outputs_for_batch))
-        else:
-          raise NotImplementedError
+      for count, _ in enumerate(wins[::config.BATCH_SIZE]):
+        end = count+config.BATCH_SIZE if count+config.BATCH_SIZE <= len(wins) else len(wins)
+        traces_l = [self.ds.get_traces(win['video'],win['user']) for win in wins[count:end]]
+        x_i_l = [win['trace_id'] for win in wins[count:end]]
+        yield self.model.generate_batch(traces_l,x_i_l)
 
   def _get_ds(self) -> None:
     if not hasattr(self, 'ds'):
@@ -157,7 +106,7 @@ class Trainer():
     config.info('partitioning...')
     self._get_ds()
     df = self.ds.df if self.dataset_name == 'all' \
-       else self.ds.df[self.ds.df['ds'] ==self.dataset_name]
+       else self.ds.df[self.ds.df['ds'] == self.dataset_name]
     # split x_train, x_test (0.2)
     self.x_train, self.x_test = \
       train_test_split(df, random_state=1, test_size=self.test_size, stratify=df[self.entropy_type + '_c'])
@@ -199,8 +148,6 @@ class Trainer():
 
     # check model
     config.info('creating model ...')
-    model: keras.models.Model
-    co_metric = {'metric_orth_dist': metric_orth_dist}
     if exists(self.model_file) and exists(self.train_csv_log_f):
       done_epochs = int(pd.read_csv(self.train_csv_log_f).iloc[-1]['epoch'])
       if done_epochs > self.epochs:
@@ -208,10 +155,10 @@ class Trainer():
         return
       else:
         config.info(f'{self.train_csv_log_f} has {self.epochs}<epochs. continuing.')
-        model = keras.models.load_model(self.model_file, custom_objects=co_metric)
+        model = self.model.load(self.model_file)
         initial_epoch = done_epochs
     else:
-      model = self.create_model()
+      model = self.model.build()
       initial_epoch = 0
       if not exists(self.model_dir):
         os.makedirs(self.model_dir)
@@ -243,21 +190,19 @@ class Trainer():
     )
     model_checkpoint = ModelCheckpoint(self.model_file, mode='auto')
     callbacks = [csv_logger, model_checkpoint, early_stopping_cb]
-    if self.model_name == 'pos_only':
-      generator = self.generate_batchs(self.x_train_wins)
-      validation_data = self.generate_batchs(self.x_val_wins)
-      model.fit(x=generator,
-                verbose=1,
-                steps_per_epoch=steps_per_ep_train,
-                validation_data=validation_data,
-                validation_steps=steps_per_ep_validate,
-                validation_freq=config.BATCH_SIZE,
-                epochs=self.epochs,
-                initial_epoch=initial_epoch,
-                callbacks=callbacks,
-                use_multiprocessing=True)
-    else:
-      raise NotImplementedError
+    generator = self.generate_batchs(self.x_train_wins)
+    validation_data = self.generate_batchs(self.x_val_wins)
+    model.fit(x=generator,
+              verbose=1,
+              steps_per_epoch=steps_per_ep_train,
+              validation_data=validation_data,
+              validation_steps=steps_per_ep_validate,
+              validation_freq=config.BATCH_SIZE,
+              epochs=self.epochs,
+              initial_epoch=initial_epoch,
+              callbacks=callbacks,
+              # use_multiprocessing=True
+              )
 
   def evaluate(self) -> None:
     config.info('evaluate()')
@@ -276,27 +221,12 @@ class Trainer():
     model: keras.models.Model
     if self.using_auto:
       prefix = join(config.DATADIR, f'{self.model_name},{self.dataset_name},actS,')
-      model_file_low = join(prefix + 'low', 'model.h5')
-      model_file_medium = join(prefix + 'medium', 'model.h5')
-      model_file_hight = join(prefix + 'hight', 'model.h5')
-      config.info('model_file_low=' + model_file_low)
-      config.info('model_file_medium=' + model_file_medium)
-      config.info('model_file_hight=' + model_file_hight)
-    else:
-      model_file = join(self.model_dir, 'model.h5')
-      config.info(f'model_file={model_file}')
-
-    if self.using_auto:
-      assert exists(model_file_low)
-      assert exists(model_file_medium)
-      assert exists(model_file_hight)
-      model_low = keras.models.load_model(model_file_low)
-      model_medium = keras.models.load_model(model_file_medium)
-      model_hight = keras.models.load_model(model_file_hight)
-      self.threshold_medium, self.threshold_hight = get_class_thresholds(self.ds.df, 'actS')
+      threshold_medium, threshold_hight = get_class_thresholds(self.ds.df, 'actS')
+      self.model.load_models( join(prefix + 'low', 'model.h5'), join(prefix + 'medium', 'model.h5'),
+                      join(prefix + 'hight', 'model.h5'), threshold_medium, threshold_hight)
     elif self.model_name != 'no_motion':
-      assert exists(model_file)
-      model = keras.models.load_model(model_file)
+      model_file = join(self.model_dir, 'model.h5')
+      model = model.load(model_file)
 
     # predict by each x_test_wins
     self.x_test_wins = [{
@@ -315,49 +245,8 @@ class Trainer():
       user = ids['user']
       video = ids['video']
       x_i = ids['trace_id']
-
-      if self.model_name in ['pos_only', 'no_motion']:
-        encoder_pos_inputs_for_sample = np.array(
-            [self.ds.get_traces(video, user)[x_i - self.m_window:x_i]])
-        decoder_pos_inputs_for_sample = np.array([self.ds.get_traces(video, user)[x_i:x_i + 1]])
-      else:
-        raise NotImplementedError
-
-      if self.using_auto:
-        # actS_c
-        if self.train_entropy == 'auto':
-          actS_c = ids['actS_c']
-        elif self.train_entropy == 'auto_m_window':
-          window = self.ds.get_traces(video, user)[x_i - self.m_window:x_i]
-          a_ent = calc_actual_entropy(window)
-          actS_c = get_class_name(a_ent, self.threshold_medium, self.threshold_hight)
-        elif self.train_entropy == 'auto_since_start':
-          window = self.ds.get_traces(video, user)[0:x_i]
-          a_ent = calc_actual_entropy(window)
-          actS_c = get_class_name(a_ent, self.threshold_medium, self.threshold_hight)
-        else:
-          raise RuntimeError()
-        if actS_c == 'low':
-          model = model_low
-        elif actS_c == 'medium':
-          model = model_medium
-        elif actS_c == 'hight':
-          model = model_hight
-        else:
-          raise NotImplementedError
-
       # predict
-      if self.model_name == 'pos_only':
-        model_pred = model.predict([
-            transform_batches_cartesian_to_normalized_eulerian(encoder_pos_inputs_for_sample),
-            transform_batches_cartesian_to_normalized_eulerian(decoder_pos_inputs_for_sample)
-        ])[0]
-        model_prediction = transform_normalized_eulerian_to_cartesian(model_pred)
-      elif self.model_name == 'no_motion':
-        model_prediction = np.repeat(decoder_pos_inputs_for_sample[0], self.h_window, axis=0)
-      else:
-        raise NotImplementedError
-
+      model_prediction = self.model.predict(self.ds.get_traces(video, user), x_i)
       # save prediction
       traject_row = self.ds.df.loc[(self.ds.df['video'] == video) & (self.ds.df['user'] == user)]
       assert not traject_row.empty

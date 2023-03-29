@@ -1,14 +1,17 @@
 import numpy as np
+import os
 import tensorflow as tf
+from tensorflow import keras
 from keras import backend as K
-from keras import optimizers
-from keras.layers import (LSTM, Concatenate, ConvLSTM2D, Convolution2D, Dense,
-                          Flatten, Input, Lambda, MaxPooling2D, Reshape,
-                          TimeDistributed)
-from keras.models import Model
+from keras.layers import (LSTM, Concatenate, ConvLSTM2D, Convolution2D, Dense, Flatten, Input, Lambda, MaxPooling2D, Reshape, TimeDistributed)
+# from tensorflow.compat.v1.keras.layers import CuDNNLSTM
+from abc import ABC, abstractmethod
+from typing import Tuple
+from .utils.fov import *
+from .dataset import *
 
 
-def metric_orth_dist(true_position, pred_position):
+def metric_orth_dist(true_position, pred_position) -> float:
   yaw_true = (true_position[:, :, 0:1] - 0.5) * 2 * np.pi
   pitch_true = (true_position[:, :, 1:2] - 0.5) * np.pi
   # Transform it to range -pi, pi for yaw and -pi/2, pi/2 for pitch
@@ -52,41 +55,156 @@ def toPosition(values):
   return tf.concat([yaw_pred, pitch_pred], -1)
 
 
-def create_pos_only_model(M_WINDOW, H_WINDOW):
-  # Defining model structure
-  encoder_inputs = Input(shape=(M_WINDOW, 2))
-  decoder_inputs = Input(shape=(1, 2))
+def transform_batches_cartesian_to_normalized_eulerian(positions_in_batch) -> np.array:
+  positions_in_batch = np.array(positions_in_batch)
+  eulerian_batches = [[cartesian_to_eulerian(pos[0], pos[1], pos[2]) for pos in batch]
+                      for batch in positions_in_batch]
+  eulerian_batches = np.array(eulerian_batches) / np.array([2 * np.pi, np.pi])
+  return eulerian_batches
 
-  lstm_layer = LSTM(1024, return_sequences=True, return_state=True)
-  decoder_dense_mot = Dense(2, activation='sigmoid')
-  decoder_dense_dir = Dense(2, activation='tanh')
-  To_Position = Lambda(toPosition)
 
-  # Encoding
-  encoder_outputs, state_h, state_c = lstm_layer(encoder_inputs)
-  states = [state_h, state_c]
+def transform_normalized_eulerian_to_cartesian(positions) -> np.array:
+  positions = positions * np.array([2 * np.pi, np.pi])
+  eulerian_samples = [eulerian_to_cartesian(pos[0], pos[1]) for pos in positions]
+  return np.array(eulerian_samples)
 
-  # Decoding
-  all_outputs = []
-  inputs = decoder_inputs
-  for curr_idx in range(H_WINDOW):
-    # # Run the decoder on one timestep
-    decoder_pred, state_h, state_c = lstm_layer(inputs, initial_state=states)
-    outputs_delta = decoder_dense_mot(decoder_pred)
-    outputs_delta_dir = decoder_dense_dir(decoder_pred)
-    outputs_pos = To_Position([inputs, outputs_delta, outputs_delta_dir])
-    # Store the current prediction (we will concantenate all predictions later)
-    all_outputs.append(outputs_pos)
-    # Reinject the outputs as inputs for the next loop iteration as well as update the states
-    inputs = outputs_pos
+
+co_metric = {'metric_orth_dist': metric_orth_dist}
+
+
+class ModelABC(ABC):
+
+  model: keras.models.Model
+
+  @abstractmethod
+  def build(self) -> keras.Model:
+    pass
+
+  @abstractmethod
+  def generate_batch(self, traces_l: list[np.array], x_i_l: list) -> Tuple[list, list]:
+    pass
+
+  def load(self, model_file: str) -> keras.Model:
+    config.info(f'model_file={model_file}')
+    assert exists(model_file)
+    self._model = keras.models.load_model(model_file, custom_objects=co_metric)
+    return self._model
+
+  @abstractmethod
+  def predict(self, traces: np.array, x_i) -> np.array:
+    pass
+
+
+class PosOnlyModel(ModelABC):
+
+  def __init__(self, m_window: int, h_window: int) -> None:
+    self.m_window, self.h_window = m_window, h_window
+
+  def generate_batch(self, traces_l: list[np.array], x_i_l: list) -> Tuple[list, list]:
+    encoder_pos_inputs_for_batch = []
+    decoder_pos_inputs_for_batch = []
+    decoder_outputs_for_batch = []
+    for traces, x_i in zip(traces_l, x_i_l):
+      encoder_pos_inputs_for_batch.append(traces[x_i-self.m_window:x_i])
+      decoder_pos_inputs_for_batch.append(traces[x_i:x_i+1])
+      decoder_outputs_for_batch.append(traces[x_i+1:x_i+self.h_window+1])
+    return ([transform_batches_cartesian_to_normalized_eulerian(encoder_pos_inputs_for_batch), transform_batches_cartesian_to_normalized_eulerian(decoder_pos_inputs_for_batch)], transform_batches_cartesian_to_normalized_eulerian(decoder_outputs_for_batch))
+
+
+  def build(self) -> keras.models.Model:
+    # Defining model structure
+    encoder_inputs = Input(shape=(self.m_window, 2))
+    decoder_inputs = Input(shape=(1, 2))
+
+    # TODO: try tf.compat.v1.keras.layers.CuDNNLSTM
+    lstm_layer = LSTM(1024, return_sequences=True, return_state=True)
+    # print(type(lstm_layer))
+    # print(isinstance(lstm_layer, LSTM))
+    # print(isinstance(lstm_layer, CuDNNLSTM))
+    decoder_dense_mot = Dense(2, activation='sigmoid')
+    decoder_dense_dir = Dense(2, activation='tanh')
+    To_Position = Lambda(toPosition)
+
+    # Encoding
+    _, state_h, state_c = lstm_layer(encoder_inputs)
     states = [state_h, state_c]
 
-  # Concatenate all predictions
-  decoder_outputs = Lambda(lambda x: K.concatenate(x, axis=1))(all_outputs)
-  # decoder_outputs = all_outputs
+    # Decoding
+    all_outputs = []
+    inputs = decoder_inputs
+    for _ in range(self.h_window):
+      # # Run the decoder on one timestep
+      decoder_pred, state_h, state_c = lstm_layer(inputs, initial_state=states)
+      outputs_delta = decoder_dense_mot(decoder_pred)
+      outputs_delta_dir = decoder_dense_dir(decoder_pred)
+      outputs_pos = To_Position([inputs, outputs_delta, outputs_delta_dir])
+      # Store the current prediction (we will concantenate all predictions later)
+      all_outputs.append(outputs_pos)
+      # Reinject the outputs as inputs for the next loop iteration as well as update the states
+      inputs = outputs_pos
+      states = [state_h, state_c]
 
-  # Define and compile model
-  model = Model([encoder_inputs, decoder_inputs], decoder_outputs)
-  model_optimizer = optimizers.Adam(learning_rate=0.0005)
-  model.compile(optimizer=model_optimizer, loss=metric_orth_dist)
-  return model
+    # Concatenate all predictions
+    decoder_outputs = Lambda(lambda x: K.concatenate(x, axis=1))(all_outputs)
+    # decoder_outputs = all_outputs
+
+    # Define and compile model
+    self._model = keras.models.Model([encoder_inputs, decoder_inputs], decoder_outputs)
+    model_optimizer = keras.optimizers.Adam(learning_rate=0.0005)
+    self._model.compile(optimizer=model_optimizer, loss=metric_orth_dist)
+    return self._model
+
+  def predict(self, traces: np.array, x_i) -> np.array:
+    inputs, _ = self._model.get_inputs_outputs_per_sample(traces, x_i)
+    model_pred = self._model.predict(inputs)[0]
+    return transform_normalized_eulerian_to_cartesian(model_pred)
+
+
+class PosOnlyModel_Auto(PosOnlyModel):
+
+  def load_models(self, model_file_low: str, model_file_medium: str, model_file_hight: str,
+                  threshold_medium, threshold_hight) -> None:
+    config.info('model_file_low=' + model_file_low)
+    config.info('model_file_medium=' + model_file_medium)
+    config.info('model_file_hight=' + model_file_hight)
+    assert os.path.exists(model_file_low)
+    assert os.path.exists(model_file_medium)
+    assert os.path.exists(model_file_hight)
+    self.model_low = keras.models.load_model(model_file_low)
+    self.model_medium = keras.models.load_model(model_file_medium)
+    self.model_hight = keras.models.load_model(model_file_hight)
+    self.threshold_medium, self.threshold_hight = threshold_medium, threshold_hight
+
+  def predict(
+      self,
+      train_entropy: str,
+      traces: np.array,
+      x_i,
+  ) -> np.array:
+    if train_entropy == 'auto':
+      window = traces
+    elif train_entropy == 'auto_m_window':
+      window = traces[x_i - self.m_window:x_i]
+    elif train_entropy == 'auto_since_start':
+      window = traces[0:x_i]
+    else:
+      raise RuntimeError()
+    inputs, _ = self.get_inputs_outputs_per_sample(traces, x_i)
+    a_ent = calc_actual_entropy(window)
+    actS_c = get_class_name(a_ent, self.threshold_medium, self.threshold_hight)
+    if actS_c == 'low':
+      model_pred = self.model_low.predict(inputs)[0]
+    elif actS_c == 'medium':
+      model_pred = self.model_medium.predict(inputs)[0]
+    elif actS_c == 'hight':
+      model_pred = self.model_hight.predict(inputs)[0]
+    else:
+      raise RuntimeError()
+    return transform_normalized_eulerian_to_cartesian(model_pred)
+
+
+class ReplicateModel(ModelABC):
+
+  def predict(self, traces: np.array, x_i) -> np.array:
+    model_pred = np.repeat(traces[x_i:x_i + 1], self.h_window, axis=0)
+    return model_pred
