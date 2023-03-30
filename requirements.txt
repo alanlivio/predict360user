@@ -6,12 +6,12 @@ spherical_geometry  # tiles area/overlap calculation
 tqdm                # progress bar
 keras-tqdm          # progress bar
 jenkspy             # clustering
-protobuf==3.9.*     # minimum for tensorflow 2.11.*
+protobuf     # minimum for tensorflow 2.11.*
 
 # requirements from head_motion_prediction/README.md
 # the commented versions are the previous ones
 # make sure that this patch is applyied: ./patch_submodule.sh
-keras==2.10         # ==2.3.1
+keras==2.12         # ==2.3.1
 matplotlib==3.7     # ==3.1.3
 numpy               # ==1.18.1
 opencv-python       # ==4.2.0.32
@@ -22,4 +22,4 @@ scikit-image        # ==0.16.2
 scikit-learn        # ==0.22.1
 xlrd                # ==1.2.0
 # https://github.com/tensorflow/tensorflow/issues/58681
-tensorflow==2.10.0  # tensorflow-gpu==2.1.0
+tensorflow==2.12  # tensorflow-gpu==2.1.0
