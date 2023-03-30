@@ -88,7 +88,6 @@ class ModelABC(ABC):
     config.info(f'model_file={model_file}')
     assert exists(model_file)
     self._model = keras.models.load_model(model_file, custom_objects=co_metric)
-    return self._model
 
   @abstractmethod
   def predict(self, traces: np.array, x_i) -> np.array:
@@ -155,10 +154,12 @@ class PosOnlyModel(ModelABC):
     return self._model
 
   def predict(self, traces: np.array, x_i) -> np.array:
-    inputs, _ = self._model.get_inputs_outputs_per_sample(traces, x_i)
-    model_pred = self._model.predict(inputs)[0]
-    return transform_normalized_eulerian_to_cartesian(model_pred)
-
+    encoder_pos_inputs_for_sample = np.array([traces[x_i - self.m_window:x_i]])
+    decoder_pos_inputs_for_sample = np.array([traces[x_i:x_i + 1]])
+    return self._model.predict([
+        transform_batches_cartesian_to_normalized_eulerian(encoder_pos_inputs_for_sample),
+        transform_batches_cartesian_to_normalized_eulerian(decoder_pos_inputs_for_sample)
+    ],verbose=0)[0]
 
 class PosOnlyModel_Auto(PosOnlyModel):
 

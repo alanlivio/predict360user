@@ -12,8 +12,8 @@ from tqdm.auto import tqdm
 with redirect_stderr(open(os.devnull, 'w')):
   import tensorflow
   os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-  # os.environ['TF_ENABLE_ONEDNN_OPTS'] = "0"
-  # os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
+  os.environ['TF_ENABLE_ONEDNN_OPTS'] = "0"
+  os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
   from tensorflow import keras
   from keras.callbacks import CSVLogger, ModelCheckpoint, TensorBoard
   from .models import *
@@ -218,7 +218,6 @@ class Trainer():
 
     # create model
     config.info('creating model ...')
-    model: keras.models.Model
     if self.using_auto:
       prefix = join(config.DATADIR, f'{self.model_name},{self.dataset_name},actS,')
       threshold_medium, threshold_hight = get_class_thresholds(self.ds.df, 'actS')
@@ -226,7 +225,7 @@ class Trainer():
                       join(prefix + 'hight', 'model.h5'), threshold_medium, threshold_hight)
     elif self.model_name != 'no_motion':
       model_file = join(self.model_dir, 'model.h5')
-      model = model.load(model_file)
+      self.model.load(model_file)
 
     # predict by each x_test_wins
     self.x_test_wins = [{
