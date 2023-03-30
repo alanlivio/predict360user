@@ -1,30 +1,28 @@
 import os
 from contextlib import redirect_stderr
-from os.path import exists, join
+from os.path import exists, join, isdir
 from typing import Generator
 import numpy as np
 import pandas as pd
 import plotly.express as px
 from sklearn.model_selection import train_test_split
 from sklearn.utils import shuffle
+import pickle
 from tqdm.auto import tqdm
 
 with redirect_stderr(open(os.devnull, 'w')):
-  import tensorflow
+  import tensorflow as tf
   os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
   os.environ['TF_ENABLE_ONEDNN_OPTS'] = "0"
   os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
   from tensorflow import keras
-  from keras.callbacks import CSVLogger, ModelCheckpoint, TensorBoard
-  from .models import *
+  from keras.callbacks import CSVLogger, ModelCheckpoint
 
 from . import config
-from .dataset import *
-from .models import *
-from .utils.fov import *
+from .dataset import (Dataset, get_class_thresholds, count_entropy)
+from .models import (PosOnlyModel, PosOnlyModel_Auto)
+from .utils.fov import compute_orthodromic_distance
 
-METRIC = compute_orthodromic_distance
-tqdm.pandas()
 
 def filter_df_by_entropy(df: pd.DataFrame, entropy_type: str, train_entropy: str) -> pd.DataFrame:
   if train_entropy == 'all':
@@ -260,7 +258,7 @@ class Trainer():
     # find result_csv files
     csv_df_l = [(dir_name, pd.read_csv(join(config.DATADIR, dir_name, file_name)))
                 for dir_name in os.listdir(config.DATADIR)
-                if os.path.isdir(join(config.DATADIR, dir_name))
+                if isdir(join(config.DATADIR, dir_name))
                 for file_name in os.listdir(join(config.DATADIR, dir_name))
                 if file_name == result_csv]
     csv_df_l = [df.assign(model=dir_name) for (dir_name, df) in csv_df_l]
@@ -332,7 +330,7 @@ class Trainer():
         for t in range_win:
           if t not in errors_per_timestamp:
             errors_per_timestamp[t] = []
-          errors_per_timestamp[t].append(METRIC(true_win[t], pred_win[t]))
+          errors_per_timestamp[t].append(compute_orthodromic_distance(true_win[t], pred_win[t]))
 
     config.info(f"compare results for models: {', '.join(models_cols)}")
     config.info(f"for each model, compare users: {config.ARGS_ENTROPY_NAMES[:6]}")

@@ -1,15 +1,23 @@
 import numpy as np
 import os
-import tensorflow as tf
-from tensorflow import keras
-from keras import backend as K
-from keras.layers import (LSTM, Concatenate, ConvLSTM2D, Convolution2D, Dense, Flatten, Input, Lambda, MaxPooling2D, Reshape, TimeDistributed)
-# from tensorflow.compat.v1.keras.layers import CuDNNLSTM
+from contextlib import redirect_stderr
+from os.path import exists
 from abc import ABC, abstractmethod
 from typing import Tuple
-from .utils.fov import *
-from .dataset import *
 
+with redirect_stderr(open(os.devnull, 'w')):
+  import tensorflow as tf
+  os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+  os.environ['TF_ENABLE_ONEDNN_OPTS'] = "0"
+  os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
+  from tensorflow import keras
+  from keras import backend as K
+  from keras.layers import (LSTM, Concatenate, ConvLSTM2D, Convolution2D, Dense, Flatten, Input, Lambda, MaxPooling2D, Reshape, TimeDistributed)
+  # from tensorflow.compat.v1.keras.layers import CuDNNLSTM
+
+from .utils.fov import (eulerian_to_cartesian, cartesian_to_eulerian, calc_actual_entropy)
+from .dataset import get_class_name
+from . import config
 
 def metric_orth_dist(true_position, pred_position) -> float:
   yaw_true = (true_position[:, :, 0:1] - 0.5) * 2 * np.pi
@@ -168,9 +176,9 @@ class PosOnlyModel_Auto(PosOnlyModel):
     config.info('model_file_low=' + model_file_low)
     config.info('model_file_medium=' + model_file_medium)
     config.info('model_file_hight=' + model_file_hight)
-    assert os.path.exists(model_file_low)
-    assert os.path.exists(model_file_medium)
-    assert os.path.exists(model_file_hight)
+    assert exists(model_file_low)
+    assert exists(model_file_medium)
+    assert exists(model_file_hight)
     self.model_low = keras.models.load_model(model_file_low)
     self.model_medium = keras.models.load_model(model_file_medium)
     self.model_hight = keras.models.load_model(model_file_hight)
