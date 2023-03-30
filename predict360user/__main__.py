@@ -38,7 +38,7 @@ if __name__ == '__main__':
   psr.add_argument('-dry_run',
                   action='store_true',
                   help='show train/test info but stop before perform')
-  
+
   # psr.add_argument('-init_window',
   #                  nargs='?',
   #                  type=int,
@@ -55,11 +55,11 @@ if __name__ == '__main__':
   #                  default=25,
   #                  help='''forecast window in timesteps (5 timesteps = 1 second)
   #                          used to predict (default: 25)''')
-  # psr.add_argument('-test_size',
-  #                  nargs='?',
-  #                  type=float,
-  #                  default=0.2,
-  #                  help='test percetage (default: 0.2)')
+  psr.add_argument('-test_size',
+                   nargs='?',
+                   type=float,
+                   default=0.2,
+                   help='test percetage (default: 0.2)')
 
   # train() only params
   psr.add_argument('-epochs',
@@ -75,7 +75,7 @@ if __name__ == '__main__':
       'train_entropy': args.train_entropy,
       'dry_run': args.dry_run,
       'epochs': args.epochs,
-      # 'test_size': args.test_size,
+      'test_size': args.test_size,
       # 'init_window': args.init_window,
       # 'm_window': args.m_window,
       # 'h_window': args.h_window,
