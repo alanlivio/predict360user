@@ -2,7 +2,7 @@ import numpy as np
 import os
 from contextlib import redirect_stderr
 from os.path import exists
-from abc import ABC, abstractmethod
+from abc import ABC
 from typing import Tuple
 
 with redirect_stderr(open(os.devnull, 'w')):
@@ -84,22 +84,19 @@ class ModelABC(ABC):
 
   model: keras.models.Model
 
-  @abstractmethod
   def build(self) -> keras.Model:
-    pass
+    raise NotImplementedError
 
-  @abstractmethod
   def generate_batch(self, traces_l: list[np.array], x_i_l: list) -> Tuple[list, list]:
-    pass
+    raise NotImplementedError
 
   def load(self, model_file: str) -> keras.Model:
     config.info(f'model_file={model_file}')
     assert exists(model_file)
     self._model = keras.models.load_model(model_file, custom_objects=co_metric)
 
-  @abstractmethod
   def predict(self, traces: np.array, x_i) -> np.array:
-    pass
+    raise NotImplementedError
 
 
 class PosOnlyModel(ModelABC):
