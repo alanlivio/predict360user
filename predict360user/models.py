@@ -19,6 +19,7 @@ from .utils.fov import (eulerian_to_cartesian, cartesian_to_eulerian, calc_actua
 from .dataset import get_class_name
 from . import config
 
+
 def metric_orth_dist(true_position, pred_position) -> float:
   yaw_true = (true_position[:, :, 0:1] - 0.5) * 2 * np.pi
   pitch_true = (true_position[:, :, 1:2] - 0.5) * np.pi
@@ -51,9 +52,6 @@ def transform_normalized_eulerian_to_cartesian(positions) -> np.array:
   return np.array(eulerian_samples)
 
 
-co_metric = {'metric_orth_dist': metric_orth_dist}
-
-
 class ModelABC(ABC):
 
   model: keras.models.Model
@@ -61,22 +59,26 @@ class ModelABC(ABC):
   def build(self) -> keras.Model:
     raise NotImplementedError
 
-  def generate_batch(self, traces_l: list[np.array], x_i_l: list) -> Tuple[list, list]:
+  def load(self, model_file: str) -> keras.Model:
     raise NotImplementedError
 
-  def load(self, model_file: str) -> keras.Model:
-    config.info(f'model_file={model_file}')
-    assert exists(model_file)
-    self._model = keras.models.load_model(model_file, custom_objects=co_metric)
+  def generate_batch(self, traces_l: list[np.array], x_i_l: list) -> Tuple[list, list]:
+    raise NotImplementedError
 
   def predict(self, traces: np.array, x_i) -> np.array:
     raise NotImplementedError
 
 
-class PosOnly(ModelABC):
+co_metric = {'metric_orth_dist': metric_orth_dist}
 
+
+class PosOnly(ModelABC):
   def __init__(self, m_window: int, h_window: int) -> None:
     self.m_window, self.h_window = m_window, h_window
+
+  def load(self, model_file: str) -> keras.Model:
+    assert exists(model_file)
+    self._model = keras.models.load_model(model_file, custom_objects=co_metric)
 
   # This way we ensure that the network learns to predict the delta angle
   def toPosition(self, values):
@@ -92,7 +94,7 @@ class PosOnly(ModelABC):
     cond_above = tf.cast(tf.greater(pitch_pred_wo_corr, 1.0), tf.float32)
     cond_correct = tf.cast(
         tf.logical_and(tf.less_equal(pitch_pred_wo_corr, 1.0),
-                      tf.greater_equal(pitch_pred_wo_corr, 0.0)), tf.float32)
+                       tf.greater_equal(pitch_pred_wo_corr, 0.0)), tf.float32)
     cond_below = tf.cast(tf.less(pitch_pred_wo_corr, 0.0), tf.float32)
 
     pitch_pred = cond_above * (
@@ -162,19 +164,16 @@ class PosOnly(ModelABC):
   def predict(self, traces: np.array, x_i) -> np.array:
     encoder_pos_inputs_for_sample = np.array([traces[x_i - self.m_window:x_i]])
     decoder_pos_inputs_for_sample = np.array([traces[x_i:x_i + 1]])
-    return self._model.predict([
+    batchs = [
         transform_batches_cartesian_to_normalized_eulerian(encoder_pos_inputs_for_sample),
         transform_batches_cartesian_to_normalized_eulerian(decoder_pos_inputs_for_sample)
-    ], verbose=0)[0]
+    ]
+    return self._model.predict(batchs,verbose=0)[0]
 
 
 class PosOnly_Auto(PosOnly):
-
   def load_models(self, model_file_low: str, model_file_medium: str, model_file_hight: str,
                   threshold_medium, threshold_hight) -> None:
-    config.info('model_file_low=' + model_file_low)
-    config.info('model_file_medium=' + model_file_medium)
-    config.info('model_file_hight=' + model_file_hight)
     assert exists(model_file_low)
     assert exists(model_file_medium)
     assert exists(model_file_hight)
@@ -212,7 +211,6 @@ class PosOnly_Auto(PosOnly):
 
 
 class NoMotion(ModelABC):
-
   def predict(self, traces: np.array, x_i) -> np.array:
     model_pred = np.repeat(traces[x_i:x_i + 1], self.h_window, axis=0)
     return model_pred
