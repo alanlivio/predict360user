@@ -37,32 +37,6 @@ def metric_orth_dist(true_position, pred_position) -> float:
   return great_circle_distance
 
 
-# This way we ensure that the network learns to predict the delta angle
-def toPosition(values):
-  orientation = values[0]
-  magnitudes = values[1] / 2.0
-  directions = values[2]
-  # The network returns values between 0 and 1, we force it to be between -2/5 and 2/5
-  motion = magnitudes * directions
-
-  yaw_pred_wo_corr = orientation[:, :, 0:1] + motion[:, :, 0:1]
-  pitch_pred_wo_corr = orientation[:, :, 1:2] + motion[:, :, 1:2]
-
-  cond_above = tf.cast(tf.greater(pitch_pred_wo_corr, 1.0), tf.float32)
-  cond_correct = tf.cast(
-      tf.logical_and(tf.less_equal(pitch_pred_wo_corr, 1.0),
-                     tf.greater_equal(pitch_pred_wo_corr, 0.0)), tf.float32)
-  cond_below = tf.cast(tf.less(pitch_pred_wo_corr, 0.0), tf.float32)
-
-  pitch_pred = cond_above * (
-      1.0 - (pitch_pred_wo_corr - 1.0)) + cond_correct * pitch_pred_wo_corr + cond_below * (
-          -pitch_pred_wo_corr)
-  yaw_pred = tf.math.mod(
-      cond_above * (yaw_pred_wo_corr - 0.5) + cond_correct * yaw_pred_wo_corr + cond_below *
-      (yaw_pred_wo_corr - 0.5), 1.0)
-  return tf.concat([yaw_pred, pitch_pred], -1)
-
-
 def transform_batches_cartesian_to_normalized_eulerian(positions_in_batch) -> np.array:
   positions_in_batch = np.array(positions_in_batch)
   eulerian_batches = [[cartesian_to_eulerian(pos[0], pos[1], pos[2]) for pos in batch]
@@ -104,16 +78,43 @@ class PosOnlyModel(ModelABC):
   def __init__(self, m_window: int, h_window: int) -> None:
     self.m_window, self.h_window = m_window, h_window
 
+  # This way we ensure that the network learns to predict the delta angle
+  def toPosition(self, values):
+    orientation = values[0]
+    magnitudes = values[1] / 2.0
+    directions = values[2]
+    # The network returns values between 0 and 1, we force it to be between -2/5 and 2/5
+    motion = magnitudes * directions
+
+    yaw_pred_wo_corr = orientation[:, :, 0:1] + motion[:, :, 0:1]
+    pitch_pred_wo_corr = orientation[:, :, 1:2] + motion[:, :, 1:2]
+
+    cond_above = tf.cast(tf.greater(pitch_pred_wo_corr, 1.0), tf.float32)
+    cond_correct = tf.cast(
+        tf.logical_and(tf.less_equal(pitch_pred_wo_corr, 1.0),
+                      tf.greater_equal(pitch_pred_wo_corr, 0.0)), tf.float32)
+    cond_below = tf.cast(tf.less(pitch_pred_wo_corr, 0.0), tf.float32)
+
+    pitch_pred = cond_above * (
+        1.0 - (pitch_pred_wo_corr - 1.0)) + cond_correct * pitch_pred_wo_corr + cond_below * (
+            -pitch_pred_wo_corr)
+    yaw_pred = tf.math.mod(
+        cond_above * (yaw_pred_wo_corr - 0.5) + cond_correct * yaw_pred_wo_corr + cond_below *
+        (yaw_pred_wo_corr - 0.5), 1.0)
+    return tf.concat([yaw_pred, pitch_pred], -1)
+
   def generate_batch(self, traces_l: list[np.array], x_i_l: list) -> Tuple[list, list]:
     encoder_pos_inputs_for_batch = []
     decoder_pos_inputs_for_batch = []
     decoder_outputs_for_batch = []
     for traces, x_i in zip(traces_l, x_i_l):
-      encoder_pos_inputs_for_batch.append(traces[x_i-self.m_window:x_i])
-      decoder_pos_inputs_for_batch.append(traces[x_i:x_i+1])
-      decoder_outputs_for_batch.append(traces[x_i+1:x_i+self.h_window+1])
-    return ([transform_batches_cartesian_to_normalized_eulerian(encoder_pos_inputs_for_batch), transform_batches_cartesian_to_normalized_eulerian(decoder_pos_inputs_for_batch)], transform_batches_cartesian_to_normalized_eulerian(decoder_outputs_for_batch))
-
+      encoder_pos_inputs_for_batch.append(traces[x_i - self.m_window:x_i])
+      decoder_pos_inputs_for_batch.append(traces[x_i:x_i + 1])
+      decoder_outputs_for_batch.append(traces[x_i + 1:x_i + self.h_window + 1])
+    return ([
+        transform_batches_cartesian_to_normalized_eulerian(encoder_pos_inputs_for_batch),
+        transform_batches_cartesian_to_normalized_eulerian(decoder_pos_inputs_for_batch)
+    ], transform_batches_cartesian_to_normalized_eulerian(decoder_outputs_for_batch))
 
   def build(self) -> keras.models.Model:
     # Defining model structure
@@ -127,7 +128,7 @@ class PosOnlyModel(ModelABC):
     # print(isinstance(lstm_layer, CuDNNLSTM))
     decoder_dense_mot = Dense(2, activation='sigmoid')
     decoder_dense_dir = Dense(2, activation='tanh')
-    To_Position = Lambda(toPosition)
+    To_Position = Lambda(self.toPosition)
 
     # Encoding
     _, state_h, state_c = lstm_layer(encoder_inputs)
@@ -164,7 +165,8 @@ class PosOnlyModel(ModelABC):
     return self._model.predict([
         transform_batches_cartesian_to_normalized_eulerian(encoder_pos_inputs_for_sample),
         transform_batches_cartesian_to_normalized_eulerian(decoder_pos_inputs_for_sample)
-    ],verbose=0)[0]
+    ], verbose=0)[0]
+
 
 class PosOnlyModel_Auto(PosOnlyModel):
 
