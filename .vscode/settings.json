@@ -9,10 +9,4 @@
   "python.testing.pytestEnabled": false,
   "python.testing.unittestEnabled": true,
   "jupyter.notebookFileRoot": "${workspaceFolder}",
-  "git.repositoryScanIgnoredFolders": [
-    "predict360user/head_motion_prediction"
-  ],
-  "python.analysis.exclude": [
-    "predict360user/head_motion_prediction"
-  ],
 }
