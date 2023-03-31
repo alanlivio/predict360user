@@ -60,6 +60,8 @@ class Trainer():
     self.m_window = m_window
     if model_name == 'pos_only':
       self.model = PosOnly(m_window, h_window)
+    if model_name == 'pos_only_3d':
+      self.model = PosOnly3D(m_window, h_window)
     if model_name == 'no_motion':
       self.model = NoMotion(m_window, h_window)
     elif self.using_auto:

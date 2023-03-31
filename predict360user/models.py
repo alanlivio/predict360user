@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import os
 from contextlib import redirect_stderr
 from os.path import exists
@@ -11,8 +12,10 @@ with redirect_stderr(open(os.devnull, 'w')):
   os.environ['TF_ENABLE_ONEDNN_OPTS'] = "0"
   os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
   from tensorflow import keras
+  from keras.metrics import mean_squared_error as mse
   from keras import backend as K
-  from keras.layers import (LSTM, Concatenate, ConvLSTM2D, Convolution2D, Dense, Flatten, Input, Lambda, MaxPooling2D, Reshape, TimeDistributed)
+  from keras.layers import (LSTM, Concatenate, ConvLSTM2D, Convolution2D, Dense, Flatten, Input,
+                            Lambda, MaxPooling2D, Reshape, TimeDistributed)
   # from tensorflow.compat.v1.keras.layers import CuDNNLSTM
 
 from .utils.fov import (eulerian_to_cartesian, cartesian_to_eulerian, calc_actual_entropy)
@@ -214,3 +217,81 @@ class NoMotion(ModelABC):
   def predict(self, traces: np.array, x_i) -> np.array:
     model_pred = np.repeat(traces[x_i:x_i + 1], self.h_window, axis=0)
     return model_pred
+
+
+class PosOnly3D(PosOnly):
+
+  # This way we ensure that the network learns to predict the delta angle
+  def toPosition(self, values):
+    orientation = values[0]
+    delta = values[1]
+    return orientation + delta
+
+  def loss_function(self, x_true, x_pred):
+    xent_loss = mse(x_true, x_pred)
+    unitary_loss = K.square((K.sqrt(K.sum(K.square(x_pred), axis=-1))) - 1.0)
+    loss = xent_loss + unitary_loss
+    return loss
+
+  def build(self, h_window) -> keras.models.Model:
+    # Defining model structure
+    encoder_inputs = Input(shape=(None, 3))
+    decoder_inputs = Input(shape=(1, 3))
+
+    sense_pos_1 = TimeDistributed(Dense(256))
+    sense_pos_2 = TimeDistributed(Dense(256))
+    sense_pos_3 = TimeDistributed(Dense(256))
+    lstm_layer_enc = LSTM(1024, return_sequences=True, return_state=True)
+    lstm_layer_dec = LSTM(1024, return_sequences=True, return_state=True)
+    decoder_dense_1 = Dense(256)
+    decoder_dense_2 = Dense(256)
+    decoder_dense_3 = Dense(3)
+    To_Position = Lambda(self.toPosition)
+
+    # Encoding
+    encoder_outputs = sense_pos_1(encoder_inputs)
+    encoder_outputs, state_h, state_c = lstm_layer_enc(encoder_outputs)
+    states = [state_h, state_c]
+
+    # Decoding
+    all_outputs = []
+    inputs = decoder_inputs
+    for _ in range(h_window):
+      # # Run the decoder on one timestep
+      inputs_1 = sense_pos_1(inputs)
+      inputs_2 = sense_pos_2(inputs_1)
+      inputs_3 = sense_pos_3(inputs_2)
+      decoder_pred, state_h, state_c = lstm_layer_dec(inputs_3, initial_state=states)
+      outputs_delta = decoder_dense_1(decoder_pred)
+      outputs_delta = decoder_dense_2(outputs_delta)
+      outputs_delta = decoder_dense_3(outputs_delta)
+      outputs_pos = To_Position([inputs, outputs_delta])
+      # Store the current prediction (we will concantenate all predictions later)
+      all_outputs.append(outputs_pos)
+      # Reinject the outputs as inputs for the next loop iteration as well as update the states
+      inputs = outputs_pos
+      states = [state_h, state_c]
+    if h_window == 1:
+      decoder_outputs = outputs_pos
+    else:
+      # Concatenate all predictions
+      decoder_outputs = Lambda(lambda x: K.concatenate(x, axis=1))(all_outputs)
+
+    # Define and compile model
+    self._model = keras.models.Model([encoder_inputs, decoder_inputs], decoder_outputs)
+    model_optimizer = keras.optmizers.Adam(lr=0.0005)
+    self._model.compile(optimizer=model_optimizer,
+                        loss=self.loss_function,
+                        metrics=[metric_orth_dist])
+    return self._model
+
+  def predict(self, pos_inputs) -> np.array:
+    pred = self._model.predict([np.array([pos_inputs[:-1]]), np.array([pos_inputs[-1:]])])
+    norm_factor = np.sqrt(pred[0, :, 0] * pred[0, :, 0] + pred[0, :, 1] * pred[0, :, 1] +
+                          pred[0, :, 2] * pred[0, :, 2])
+    data = {
+        'x': pred[0, :, 0] / norm_factor,
+        'y': pred[0, :, 1] / norm_factor,
+        'z': pred[0, :, 2] / norm_factor
+    }
+    return pd.DataFrame(data)
