@@ -73,7 +73,7 @@ class ModelABC(ABC):
     raise NotImplementedError
 
 
-class PosOnlyModel(ModelABC):
+class PosOnly(ModelABC):
 
   def __init__(self, m_window: int, h_window: int) -> None:
     self.m_window, self.h_window = m_window, h_window
@@ -168,7 +168,7 @@ class PosOnlyModel(ModelABC):
     ], verbose=0)[0]
 
 
-class PosOnlyModel_Auto(PosOnlyModel):
+class PosOnly_Auto(PosOnly):
 
   def load_models(self, model_file_low: str, model_file_medium: str, model_file_hight: str,
                   threshold_medium, threshold_hight) -> None:
@@ -211,7 +211,7 @@ class PosOnlyModel_Auto(PosOnlyModel):
     return transform_normalized_eulerian_to_cartesian(model_pred)
 
 
-class ReplicateModel(ModelABC):
+class NoMotion(ModelABC):
 
   def predict(self, traces: np.array, x_i) -> np.array:
     model_pred = np.repeat(traces[x_i:x_i + 1], self.h_window, axis=0)

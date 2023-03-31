@@ -20,7 +20,7 @@ with redirect_stderr(open(os.devnull, 'w')):
 
 from . import config
 from .dataset import (Dataset, get_class_thresholds, count_entropy)
-from .models import (PosOnlyModel, PosOnlyModel_Auto)
+from .models import *
 from .utils.fov import compute_orthodromic_distance
 
 
@@ -59,9 +59,11 @@ class Trainer():
     self.init_window = init_window
     self.m_window = m_window
     if model_name == 'pos_only':
-      self.model = PosOnlyModel(m_window, h_window)
+      self.model = PosOnly(m_window, h_window)
+    if model_name == 'no_motion':
+      self.model = NoMotion(m_window, h_window)
     elif self.using_auto:
-      self.model = PosOnlyModel_Auto(m_window, h_window)
+      self.model = PosOnly_Auto(m_window, h_window)
     else:
       raise RuntimeError
     self.test_size = test_size
