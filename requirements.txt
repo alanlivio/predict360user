@@ -7,6 +7,8 @@ tqdm                # progress bar
 keras-tqdm          # progress bar
 jenkspy             # clustering
 protobuf     # minimum for tensorflow 2.11.*
+# https://www.tensorflow.org/install/pip
+nvidia-cudnn-cu11==8.6.0.163
 
 # requirements from head_motion_prediction/README.md
 # the commented versions are the previous ones

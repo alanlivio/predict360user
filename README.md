@@ -41,8 +41,8 @@ The library's main classes are:
 
 ## Requirements
 
-The project dependencies are described [environment.yml](environment.yml) and [requirements.txt](requirements.txt), which the main one is [TensorFlow](https://www.tensorflow.org/install/pip). On Windows, you must install [SDK and MSVC](https://visualstudio.microsoft.com/visual-cpp-build-tools/) because of the [spherical_geometry](https://github.com/spacetelescope/spherical_geometry) package.
-
+The project was tested in linux and Windows-WSL. First follow [TensorFlow pip installation tutorial](https://www.tensorflow.org/install/pip). 
+The use conda to dependencies described [environment.yml](environment.yml) as follow. 
 ```bash
 conda env create -f environment.yml
 conda activate p3u
