@@ -49,8 +49,12 @@ class Dataset:
         config.info(f'loading df from {self.PICKLE_FILE}')
         self.df = pickle.load(f)
     else:
-      config.info(f'no {self.PICKLE_FILE}, loading df from {config.HMDDIR}')
+      config.info(f'there is no {self.PICKLE_FILE}')
+      config.info(f'loading df from {config.HMDDIR}')
       self.df = self._load_df_trajects_from_hmp()
+      config.info(f'calculating entropy')
+      self.calc_traces_entropy()
+      self.dump()
 
   def _load_df_trajects_from_hmp(self) -> pd.DataFrame:
     # save cwd and move to head_motion_prediction for invoking funcs
