@@ -27,7 +27,7 @@ class Test(unittest.TestCase):
     self.assertTrue(self.ds.get_traces(videos_l[0], users_l[0]).size)
 
   def test_trajects_entropy(self) -> None:
-    self.ds.df = self.ds.df.sample(n=5) # limitig given time
+    self.ds.df = self.ds.df.sample(n=8) # limitig given time
     self.ds.calc_traces_entropy()
     self.ds.calc_traces_entropy_hmp()
     self.ds.calc_traces_poles_prc()
