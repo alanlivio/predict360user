@@ -382,7 +382,7 @@ class Trainer():
       .background_gradient(axis=0, cmap='coolwarm')\
       .highlight_min(subset=list(range_win), props=props)\
       .highlight_max(subset=list(range_win), props=props)
-    config.show_or_save(output, 'compare_evaluate.html')
+    config.show_or_save(output, 'compare_evaluate')
 
   def show_train_test_split(self) -> None:
     self.partition()
