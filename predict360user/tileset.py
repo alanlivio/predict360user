@@ -8,11 +8,16 @@ from spherical_geometry import polygon
 from spherical_geometry.polygon import SphericalPolygon
 from tqdm.auto import tqdm
 
-from .. import config
-from .fov import *
+from . import config
+from .utils.fov import *
 
 tqdm.pandas()
 
+
+@cache
+def fov_poly(x, y, z) -> polygon.SphericalPolygon:
+  points_trace = fov_points(x, y, z)
+  return polygon.SphericalPolygon(points_trace)
 
 @cache
 def tile_points(t_ver, t_hor, row, col) -> np.ndarray:

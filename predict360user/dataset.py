@@ -14,7 +14,7 @@ from plotly.subplots import make_subplots
 
 from . import config
 from .utils.fov import calc_actual_entropy
-from .utils.tileset import TILESET_DEFAULT, TileSet
+from .tileset import TILESET_DEFAULT, TileSet
 
 
 def get_class_thresholds(df, col: str) -> tuple[float, float]:

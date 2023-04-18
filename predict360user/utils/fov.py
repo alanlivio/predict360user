@@ -4,7 +4,6 @@ import numpy as np
 from numpy import cross, dot
 from pyquaternion import Quaternion
 from sklearn.preprocessing import normalize
-from spherical_geometry import polygon
 
 
 def degrees_to_radian(degree):
@@ -117,12 +116,6 @@ _fov_x1y0z0_points = np.array([
     eulerian_to_cartesian(*_fov_x1y0z0_fov_points_euler[2]),
     eulerian_to_cartesian(*_fov_x1y0z0_fov_points_euler[3])
 ])
-
-@cache
-def fov_poly(x, y, z) -> polygon.SphericalPolygon:
-  points_trace = fov_points(x, y, z)
-  return polygon.SphericalPolygon(points_trace)
-
 
 def calc_fixmps_ids(traces: np.array) -> np.array:
   # calc fixation_ids

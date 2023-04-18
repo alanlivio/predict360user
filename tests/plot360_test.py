@@ -4,7 +4,7 @@ import plotly.io as pio
 
 from predict360user.dataset import Dataset
 from predict360user.plot360 import Plot360
-from predict360user.utils.tileset import tile_points
+from predict360user.tileset import tile_points
 
 pio.renderers.default = None
 
