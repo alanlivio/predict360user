@@ -20,7 +20,6 @@ with redirect_stderr(open(os.devnull, 'w')):
 
 from .utils.fov import (eulerian_to_cartesian, cartesian_to_eulerian, calc_actual_entropy)
 from .dataset import get_class_name
-from . import config
 
 
 def metric_orth_dist(true_position, pred_position) -> float:
@@ -171,7 +170,7 @@ class PosOnly(ModelABC):
         transform_batches_cartesian_to_normalized_eulerian(encoder_pos_inputs_for_sample),
         transform_batches_cartesian_to_normalized_eulerian(decoder_pos_inputs_for_sample)
     ]
-    return self._model.predict(batchs,verbose=0)[0]
+    return self._model.predict(batchs, verbose=0)[0]
 
 
 class PosOnly_Auto(PosOnly):
@@ -217,6 +216,15 @@ class NoMotion(ModelABC):
   def predict(self, traces: np.array, x_i) -> np.array:
     model_pred = np.repeat(traces[x_i:x_i + 1], self.h_window, axis=0)
     return model_pred
+
+
+class Interpolation(ModelABC):
+  def predict(self, traces: np.array, x_i) -> np.array:
+    raise NotImplementedError
+
+class Regression(ModelABC):
+  def predict(self, traces: np.array, x_i) -> np.array:
+    raise NotImplementedError
 
 
 class PosOnly3D(PosOnly):
@@ -295,3 +303,38 @@ class PosOnly3D(PosOnly):
         'z': pred[0, :, 2] / norm_factor
     }
     return pd.DataFrame(data)
+
+
+class CVPR18(ModelABC):
+  def predict(self, traces: np.array, x_i) -> np.array:
+    raise NotImplementedError
+
+
+class TrueSaliency(ModelABC):
+  def predict(self, traces: np.array, x_i) -> np.array:
+    raise NotImplementedError
+
+
+class ContentSaliency(ModelABC):
+  def predict(self, traces: np.array, x_i) -> np.array:
+    raise NotImplementedError
+
+
+class MM18(ModelABC):
+  def predict(self, traces: np.array, x_i) -> np.array:
+    raise NotImplementedError
+
+
+class TRACK(ModelABC):
+  def predict(self, traces: np.array, x_i) -> np.array:
+    raise NotImplementedError
+
+
+class PointNet(ModelABC):
+  def predict(self, traces: np.array, x_i) -> np.array:
+    raise NotImplementedError
+
+
+class GNN(ModelABC):
+  def predict(self, traces: np.array, x_i) -> np.array:
+    raise NotImplementedError
