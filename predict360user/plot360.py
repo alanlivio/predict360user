@@ -8,7 +8,7 @@ from plotly.subplots import make_subplots
 from scipy.spatial import SphericalVoronoi, geometric_slerp
 from spherical_geometry.polygon import SphericalPolygon
 
-from .utils.fov import fov_points
+from .fov import fov_points
 from .tileset import TILESET_DEFAULT, TileSet, TileSetVoro, tile_points
 
 

@@ -18,7 +18,7 @@ with redirect_stderr(open(os.devnull, 'w')):
                             Lambda, MaxPooling2D, Reshape, TimeDistributed)
   # from tensorflow.compat.v1.keras.layers import CuDNNLSTM
 
-from .utils.fov import (eulerian_to_cartesian, cartesian_to_eulerian, calc_actual_entropy)
+from .fov import (eulerian_to_cartesian, cartesian_to_eulerian, calc_actual_entropy)
 from .dataset import get_class_name
 
 

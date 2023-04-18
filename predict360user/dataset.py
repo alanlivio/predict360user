@@ -13,7 +13,7 @@ import scipy.stats
 from plotly.subplots import make_subplots
 
 from . import config
-from .utils.fov import calc_actual_entropy
+from .fov import calc_actual_entropy
 from .tileset import TILESET_DEFAULT, TileSet
 
 

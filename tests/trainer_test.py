@@ -2,7 +2,7 @@ import unittest
 from os.path import join
 
 from predict360user.trainer import Trainer
-from predict360user.utils import config
+from predict360user import config
 
 
 class Test(unittest.TestCase):

@@ -21,7 +21,7 @@ with redirect_stderr(open(os.devnull, 'w')):
 from . import config
 from .dataset import (Dataset, get_class_thresholds, count_entropy)
 from .models import *
-from .utils.fov import compute_orthodromic_distance
+from .fov import compute_orthodromic_distance
 
 
 def filter_df_by_entropy(df: pd.DataFrame, entropy_type: str, train_entropy: str) -> pd.DataFrame:

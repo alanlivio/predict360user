@@ -9,7 +9,7 @@ from spherical_geometry.polygon import SphericalPolygon
 from tqdm.auto import tqdm
 
 from . import config
-from .utils.fov import *
+from .fov import *
 
 tqdm.pandas()
 
