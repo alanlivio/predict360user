@@ -1,16 +1,14 @@
 import numpy as np
 import pandas as pd
 import os
+import tensorflow as tf
 from contextlib import redirect_stderr
 from os.path import exists
 from abc import ABC
 from typing import Tuple
 
 with redirect_stderr(open(os.devnull, 'w')):
-  import tensorflow as tf
   os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-  os.environ['TF_ENABLE_ONEDNN_OPTS'] = "0"
-  os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
   from tensorflow import keras
   from keras.metrics import mean_squared_error as mse
   from keras import backend as K

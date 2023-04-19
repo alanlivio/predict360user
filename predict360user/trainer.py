@@ -11,16 +11,13 @@ import pickle
 from tqdm.auto import tqdm
 
 with redirect_stderr(open(os.devnull, 'w')):
-  import tensorflow as tf
   os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-  os.environ['TF_ENABLE_ONEDNN_OPTS'] = "0"
-  os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
   from tensorflow import keras
   from keras.callbacks import CSVLogger, ModelCheckpoint
+  from .models import *
 
 from . import config
 from .dataset import (Dataset, get_class_thresholds, count_entropy)
-from .models import *
 from .fov import compute_orthodromic_distance
 
 
