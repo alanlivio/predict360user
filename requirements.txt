@@ -1,6 +1,7 @@
 jupyter
 plotly
 colour
+cv2
 scipy               # voroni tiles, entropy
 spherical_geometry  # tiles area/overlap calculation
 tqdm                # progress bar

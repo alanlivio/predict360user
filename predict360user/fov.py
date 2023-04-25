@@ -4,7 +4,8 @@ import numpy as np
 from numpy import cross, dot
 from pyquaternion import Quaternion
 from sklearn.preprocessing import normalize
-
+from scipy.spatial.transform import Rotation as R
+from scipy.spatial.transform import Slerp
 
 def degrees_to_radian(degree):
     return degree*np.pi/180.0
@@ -185,3 +186,19 @@ def calc_actual_entropy_from_ids(x_ids_t: np.ndarray, return_sub_len_t=False) ->
 def calc_actual_entropy(traces: np.array) -> float:
   fixmps_ids = calc_fixmps_ids(traces)
   return calc_actual_entropy_from_ids(fixmps_ids)
+
+# time_orig_at_zero is a flag to determine if the time must start counting from zero, if so, the trace is forced to start at 0.0
+def interpolate_quaternions(orig_times, quaternions, rate, time_orig_at_zero=True) -> np.ndarray:
+  # if the first time-stamps is greater than (half) the frame rate, put the time-stamp 0.0 and copy the first quaternion to the beginning
+  if time_orig_at_zero and (orig_times[0] > rate / 2.0):
+    orig_times = np.concatenate(([0.0], orig_times))
+    # ToDo use the quaternion rotation to predict where the position was at t=0
+    quaternions = np.concatenate(([quaternions[0]], quaternions))
+  key_rots = R.from_quat(quaternions)
+  slerp = Slerp(orig_times, key_rots)
+  # we add rate/2 to the last time-stamp so we include it in the possible interpolation time-stamps
+  times = np.arange(orig_times[0], orig_times[-1] + rate / 2.0, rate)
+  # to bound it to the maximum original-time in the case of rounding errors
+  times[-1] = min(orig_times[-1], times[-1])
+  interp_rots = slerp(times)
+  return np.concatenate((times[:, np.newaxis], interp_rots.as_quat()), axis=1)
