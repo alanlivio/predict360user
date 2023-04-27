@@ -23,5 +23,6 @@ quaternion==0.3.1   # ==0.3.1
 scikit-image        # ==0.16.2
 scikit-learn        # ==0.22.1
 xlrd                # ==1.2.0
-# https://github.com/tensorflow/tensorflow/issues/58681
+# using 2.11 to avoid warning.
+# see more details https://github.com/tensorflow/tensorflow/issues/60228#issuecomment-1496189976
 tensorflow==2.11  # tensorflow-gpu==2.1.0

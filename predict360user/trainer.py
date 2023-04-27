@@ -1,23 +1,26 @@
 import os
+import pickle
 from contextlib import redirect_stderr
-from os.path import exists, join, isdir
+from os.path import exists, isdir, join
 from typing import Generator
+
+import absl.logging
 import numpy as np
 import pandas as pd
 import plotly.express as px
 from sklearn.model_selection import train_test_split
 from sklearn.utils import shuffle
-import pickle
 from tqdm.auto import tqdm
 
 with redirect_stderr(open(os.devnull, 'w')):
+  absl.logging.set_verbosity(absl.logging.ERROR)
   os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
   from tensorflow import keras
   from keras.callbacks import CSVLogger, ModelCheckpoint
   from .models import *
 
 from . import config
-from .dataset import (Dataset, get_class_thresholds, count_entropy)
+from .dataset import Dataset, count_entropy, get_class_thresholds
 from .fov import compute_orthodromic_distance
 
 
