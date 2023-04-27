@@ -167,11 +167,12 @@ class PosOnly(ModelABC):
   def predict(self, traces: np.array, x_i) -> np.array:
     encoder_pos_inputs_for_sample = np.array([traces[x_i - self.m_window:x_i]])
     decoder_pos_inputs_for_sample = np.array([traces[x_i:x_i + 1]])
-    batchs = [
+    inputs = [
         transform_batches_cartesian_to_normalized_eulerian(encoder_pos_inputs_for_sample),
         transform_batches_cartesian_to_normalized_eulerian(decoder_pos_inputs_for_sample)
     ]
-    return self._model.predict(batchs, verbose=0)[0]
+    model_pred = self._model.predict(inputs, verbose=0)[0]
+    return transform_normalized_eulerian_to_cartesian(model_pred)
 
 
 class PosOnly_Auto(PosOnly):
