@@ -71,16 +71,13 @@ class ModelABC(ABC):
     raise NotImplementedError
 
 
-co_metric = {'metric_orth_dist': metric_orth_dist}
-
-
 class PosOnly(ModelABC):
   def __init__(self, m_window: int, h_window: int) -> None:
     self.m_window, self.h_window = m_window, h_window
 
   def load(self, model_path: str) -> keras.Model:
     assert exists(model_path)
-    self._model = keras.models.load_model(model_path, custom_objects=co_metric)
+    self._model = keras.models.load_model(model_path)
     return self._model
 
   # This way we ensure that the network learns to predict the delta angle
