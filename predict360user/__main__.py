@@ -62,6 +62,11 @@ if __name__ == '__main__':
                    help='test percetage (default: 0.2)')
 
   # train() only params
+  psr.add_argument('-gpu_id',
+                   nargs='?',
+                   type=int,
+                   default=0,
+                   help=f'gpu_id to be used (default is 0)')
   psr.add_argument('-epochs',
                    nargs='?',
                    type=int,

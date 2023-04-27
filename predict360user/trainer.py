@@ -15,6 +15,7 @@ from tqdm.auto import tqdm
 with redirect_stderr(open(os.devnull, 'w')):
   absl.logging.set_verbosity(absl.logging.ERROR)
   os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+  os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
   from tensorflow import keras
   from keras.callbacks import CSVLogger, ModelCheckpoint
   from .models import *
@@ -45,6 +46,7 @@ class Trainer():
                init_window=30,
                m_window=5,
                test_size=0.2,
+               gpu_id=0,
                train_entropy='all',
                epochs=config.DEFAULT_EPOCHS,
                dry_run=False) -> None:
@@ -58,6 +60,7 @@ class Trainer():
     self.h_window = h_window
     self.init_window = init_window
     self.m_window = m_window
+    os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu_id)
     if model_name == 'pos_only':
       self.model = PosOnly(m_window, h_window)
     elif model_name == 'pos_only_3d':
