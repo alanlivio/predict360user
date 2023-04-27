@@ -81,7 +81,7 @@ class Trainer():
       self.model_fullname = f'{self.model_name},{self.dataset_name},{self.entropy_type},{self.train_entropy}'
     self.model_dir = join(config.DATADIR, self.model_fullname)
     self.train_csv_log_f = join(self.model_dir, 'train_results.csv')
-    self.model_file = join(self.model_dir, 'model.h5')
+    self.model_path = join(self.model_dir, 'model.tf')
     self.end_window = self.h_window
     config.info(self.__str__())
 
@@ -150,14 +150,14 @@ class Trainer():
 
     # check model
     config.info('creating model ...')
-    if exists(self.model_file) and exists(self.train_csv_log_f):
+    if exists(self.model_path) and exists(self.train_csv_log_f):
       done_epochs = int(pd.read_csv(self.train_csv_log_f).iloc[-1]['epoch'])
       if done_epochs > self.epochs:
         config.info(f'{self.train_csv_log_f} has {self.epochs}>=epochs. stopping.')
         return
       else:
-        config.info(f'{self.train_csv_log_f} has {self.epochs}<epochs. continuing.')
-        self.model.load(self.model_file)
+        config.info(f'train_csv_log_f has {self.epochs}<epochs. continuing from {done_epochs}.')
+        model = self.model.load(self.model_path)
         initial_epoch = done_epochs
     else:
       model = self.model.build()
@@ -190,7 +190,7 @@ class Trainer():
         monitor='loss',
         restore_best_weights=True,
     )
-    model_checkpoint = ModelCheckpoint(self.model_file, mode='auto')
+    model_checkpoint = ModelCheckpoint(self.model_path, mode='auto')
     callbacks = [csv_logger, model_checkpoint, early_stopping_cb]
     generator = self.generate_batchs(self.x_train_wins)
     validation_data = self.generate_batchs(self.x_val_wins)
@@ -223,11 +223,11 @@ class Trainer():
     if self.using_auto:
       prefix = join(config.DATADIR, f'{self.model_name},{self.dataset_name},actS,')
       threshold_medium, threshold_hight = get_class_thresholds(self.ds.df, 'actS')
-      self.model.load_models( join(prefix + 'low', 'model.h5'), join(prefix + 'medium', 'model.h5'),
-                      join(prefix + 'hight', 'model.h5'), threshold_medium, threshold_hight)
+      self.model.load_models( join(prefix + 'low', 'model.tf'), join(prefix + 'medium', 'model.tf'),
+                      join(prefix + 'hight', 'model.tf'), threshold_medium, threshold_hight)
     elif self.model_name != 'no_motion':
-      model_file = join(self.model_dir, 'model.h5')
-      self.model.load(model_file)
+      model_path = join(self.model_dir, 'model.tf')
+      self.model.load(model_path)
 
     # predict by each x_test_wins
     self.x_test_wins = [{

@@ -1,11 +1,12 @@
-import numpy as np
-import pandas as pd
 import os
-import tensorflow as tf
+from abc import ABC
 from contextlib import redirect_stderr
 from os.path import exists
-from abc import ABC
 from typing import Tuple
+
+import numpy as np
+import pandas as pd
+import tensorflow as tf
 
 with redirect_stderr(open(os.devnull, 'w')):
   os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -16,8 +17,9 @@ with redirect_stderr(open(os.devnull, 'w')):
                             Lambda, MaxPooling2D, Reshape, TimeDistributed)
   # from tensorflow.compat.v1.keras.layers import CuDNNLSTM
 
-from .fov import (eulerian_to_cartesian, cartesian_to_eulerian, calc_actual_entropy)
 from .dataset import get_class_name
+from .fov import (calc_actual_entropy, cartesian_to_eulerian,
+                  eulerian_to_cartesian)
 
 
 def metric_orth_dist(true_position, pred_position) -> float:
@@ -59,7 +61,7 @@ class ModelABC(ABC):
   def build(self) -> keras.Model:
     raise NotImplementedError
 
-  def load(self, model_file: str) -> keras.Model:
+  def load(self, model_path: str) -> keras.Model:
     raise NotImplementedError
 
   def generate_batch(self, traces_l: list[np.array], x_i_l: list) -> Tuple[list, list]:
@@ -76,9 +78,10 @@ class PosOnly(ModelABC):
   def __init__(self, m_window: int, h_window: int) -> None:
     self.m_window, self.h_window = m_window, h_window
 
-  def load(self, model_file: str) -> keras.Model:
-    assert exists(model_file)
-    self._model = keras.models.load_model(model_file, custom_objects=co_metric)
+  def load(self, model_path: str) -> keras.Model:
+    assert exists(model_path)
+    self._model = keras.models.load_model(model_path, custom_objects=co_metric)
+    return self._model
 
   # This way we ensure that the network learns to predict the delta angle
   def toPosition(self, values):
@@ -172,14 +175,14 @@ class PosOnly(ModelABC):
 
 
 class PosOnly_Auto(PosOnly):
-  def load_models(self, model_file_low: str, model_file_medium: str, model_file_hight: str,
+  def load_models(self, model_path_low: str, model_path_medium: str, model_path_hight: str,
                   threshold_medium, threshold_hight) -> None:
-    assert exists(model_file_low)
-    assert exists(model_file_medium)
-    assert exists(model_file_hight)
-    self.model_low = keras.models.load_model(model_file_low)
-    self.model_medium = keras.models.load_model(model_file_medium)
-    self.model_hight = keras.models.load_model(model_file_hight)
+    assert exists(model_path_low)
+    assert exists(model_path_medium)
+    assert exists(model_path_hight)
+    self.model_low = keras.models.load_model(model_path_low)
+    self.model_medium = keras.models.load_model(model_path_medium)
+    self.model_hight = keras.models.load_model(model_path_hight)
     self.threshold_medium, self.threshold_hight = threshold_medium, threshold_hight
 
   def predict(
