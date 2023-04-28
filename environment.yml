@@ -2,12 +2,11 @@ name: p3u
 
 channels:
   - conda-forge
-  - anaconda
-  - defaults
 
 dependencies:
   - python=3.9
-  - cudatoolkit=11.8.0
+  - cudatoolkit=11.2
+  - cudnn=8.1
   - pip
   - pip:
-     - -r requirements.txt
+    - -r requirements.txt
