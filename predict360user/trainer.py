@@ -12,13 +12,15 @@ from sklearn.model_selection import train_test_split
 from sklearn.utils import shuffle
 from tqdm.auto import tqdm
 
-with redirect_stderr(open(os.devnull, 'w')):
-  absl.logging.set_verbosity(absl.logging.ERROR)
-  os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-  os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-  from tensorflow import keras
-  from keras.callbacks import CSVLogger, ModelCheckpoint
-  from .models import *
+from tensorflow.keras.callbacks import (CSVLogger, EarlyStopping, ModelCheckpoint,
+                             TensorBoard)
+
+absl.logging.set_verbosity(absl.logging.ERROR)
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+from tensorflow import keras
+from tensorflow.keras.callbacks import CSVLogger, ModelCheckpoint
+from .models import *
 
 from . import config
 from .dataset import Dataset, count_entropy, get_class_thresholds

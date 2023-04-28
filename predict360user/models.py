@@ -7,16 +7,13 @@ from typing import Tuple
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-
-with redirect_stderr(open(os.devnull, 'w')):
-  os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-  from tensorflow import keras
-  from keras.metrics import mean_squared_error as mse
-  from keras import backend as K
-  from keras.layers import (LSTM, Concatenate, ConvLSTM2D, Convolution2D, Dense, Flatten, Input,
-                            Lambda, MaxPooling2D, Reshape, TimeDistributed)
-  # from tensorflow.compat.v1.keras.layers import CuDNNLSTM
-
+from tensorflow import keras
+from tensorflow.keras import backend as K
+from tensorflow.keras import optimizers
+from tensorflow.keras.layers import (LSTM, Concatenate, ConvLSTM2D, Convolution2D, Dense,
+                          Flatten, Input, Lambda, MaxPooling2D, Reshape,
+                          TimeDistributed)
+from tensorflow.keras.models import Model
 from .dataset import get_class_name
 from .fov import (calc_actual_entropy, cartesian_to_eulerian,
                   eulerian_to_cartesian)
