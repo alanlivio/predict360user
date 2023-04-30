@@ -10,22 +10,18 @@ import pandas as pd
 import plotly.express as px
 from sklearn.model_selection import train_test_split
 from sklearn.utils import shuffle
+from tensorflow.keras.callbacks import (CSVLogger, EarlyStopping,
+                                        ModelCheckpoint, TensorBoard)
 from tqdm.auto import tqdm
-
-from tensorflow.keras.callbacks import (CSVLogger, EarlyStopping, ModelCheckpoint,
-                             TensorBoard)
-
-absl.logging.set_verbosity(absl.logging.ERROR)
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-from tensorflow import keras
-from tensorflow.keras.callbacks import CSVLogger, ModelCheckpoint
-from .models import *
 
 from . import config
 from .dataset import Dataset, count_entropy, get_class_thresholds
 from .fov import compute_orthodromic_distance
+from .models import *
 
+absl.logging.set_verbosity(absl.logging.ERROR)
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 
 def filter_df_by_entropy(df: pd.DataFrame, entropy_type: str, train_entropy: str) -> pd.DataFrame:
   if train_entropy == 'all':

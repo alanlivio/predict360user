@@ -1,7 +1,7 @@
 import os
 from abc import ABC
 from contextlib import redirect_stderr
-from os.path import exists
+from os.path import exists, join
 from typing import Tuple
 
 import numpy as np
@@ -9,11 +9,14 @@ import pandas as pd
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import backend as K
-from tensorflow.keras import optimizers
-from tensorflow.keras.layers import (LSTM, Concatenate, ConvLSTM2D, Convolution2D, Dense,
-                          Flatten, Input, Lambda, MaxPooling2D, Reshape,
-                          TimeDistributed)
-from tensorflow.keras.models import Model
+from tensorflow.keras.layers import (LSTM, Concatenate, ConvLSTM2D,
+                                     Convolution2D, Dense, Flatten, Input,
+                                     Lambda, MaxPooling2D, Reshape,
+                                     TimeDistributed)
+from tensorflow.keras.metrics import mean_squared_error as mse
+from tensorflow.keras.models import Model, load_model
+from tensorflow.keras.optimizers import Adam
+
 from .dataset import get_class_name
 from .fov import (calc_actual_entropy, cartesian_to_eulerian,
                   eulerian_to_cartesian)
@@ -53,12 +56,12 @@ def transform_normalized_eulerian_to_cartesian(positions) -> np.array:
 
 class ModelABC(ABC):
 
-  model: keras.models.Model
+  model: Model
 
-  def build(self) -> keras.Model:
+  def build(self) -> Model:
     raise NotImplementedError
 
-  def load(self, model_path: str) -> keras.Model:
+  def load(self, model_path: str) -> Model:
     raise NotImplementedError
 
   def generate_batch(self, traces_l: list[np.array], x_i_l: list) -> Tuple[list, list]:
@@ -72,9 +75,9 @@ class PosOnly(ModelABC):
   def __init__(self, m_window: int, h_window: int) -> None:
     self.m_window, self.h_window = m_window, h_window
 
-  def load(self, model_path: str) -> keras.Model:
+  def load(self, model_path: str) -> Model:
     assert exists(model_path)
-    self._model = keras.models.load_model(model_path)
+    self._model = load_model(model_path)
     return self._model
 
   # This way we ensure that the network learns to predict the delta angle
@@ -115,7 +118,7 @@ class PosOnly(ModelABC):
         transform_batches_cartesian_to_normalized_eulerian(decoder_pos_inputs_for_batch)
     ], transform_batches_cartesian_to_normalized_eulerian(decoder_outputs_for_batch))
 
-  def build(self) -> keras.models.Model:
+  def build(self) -> Model:
     # Defining model structure
     encoder_inputs = Input(shape=(self.m_window, 2))
     decoder_inputs = Input(shape=(1, 2))
@@ -153,8 +156,8 @@ class PosOnly(ModelABC):
     # decoder_outputs = all_outputs
 
     # Define and compile model
-    self._model = keras.models.Model([encoder_inputs, decoder_inputs], decoder_outputs)
-    model_optimizer = keras.optimizers.Adam(learning_rate=0.0005)
+    self._model = Model([encoder_inputs, decoder_inputs], decoder_outputs)
+    model_optimizer = Adam(learning_rate=0.0005)
     self._model.compile(optimizer=model_optimizer, loss=metric_orth_dist)
     return self._model
 
@@ -175,9 +178,9 @@ class PosOnly_Auto(PosOnly):
     assert exists(model_path_low)
     assert exists(model_path_medium)
     assert exists(model_path_hight)
-    self.model_low = keras.models.load_model(model_path_low)
-    self.model_medium = keras.models.load_model(model_path_medium)
-    self.model_hight = keras.models.load_model(model_path_hight)
+    self.model_low = load_model(model_path_low)
+    self.model_medium = load_model(model_path_medium)
+    self.model_hight = load_model(model_path_hight)
     self.threshold_medium, self.threshold_hight = threshold_medium, threshold_hight
 
   def predict(
@@ -237,7 +240,7 @@ class PosOnly3D(PosOnly):
     loss = xent_loss + unitary_loss
     return loss
 
-  def build(self, h_window) -> keras.models.Model:
+  def build(self, h_window) -> Model:
     # Defining model structure
     encoder_inputs = Input(shape=(None, 3))
     decoder_inputs = Input(shape=(1, 3))
@@ -282,8 +285,8 @@ class PosOnly3D(PosOnly):
       decoder_outputs = Lambda(lambda x: K.concatenate(x, axis=1))(all_outputs)
 
     # Define and compile model
-    self._model = keras.models.Model([encoder_inputs, decoder_inputs], decoder_outputs)
-    model_optimizer = keras.optmizers.Adam(lr=0.0005)
+    self._model = Model([encoder_inputs, decoder_inputs], decoder_outputs)
+    model_optimizer = Adam(lr=0.0005)
     self._model.compile(optimizer=model_optimizer,
                         loss=self.loss_function,
                         metrics=[metric_orth_dist])
