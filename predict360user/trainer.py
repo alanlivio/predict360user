@@ -82,7 +82,7 @@ class Trainer():
       self.model_fullname = f'{self.model_name},{self.dataset_name},{self.entropy_type},{self.train_entropy}'
     self.model_dir = join(config.DATADIR, self.model_fullname)
     self.train_csv_log_f = join(self.model_dir, 'train_results.csv')
-    self.model_path = join(self.model_dir, 'model.tf')
+    self.ckpt_path = join(self.model_dir, 'cp-{epoch:04d}.ckpt')
     self.end_window = self.h_window
     config.info(self.__str__())
 
@@ -151,14 +151,14 @@ class Trainer():
 
     # check model
     config.info('creating model ...')
-    if exists(self.model_path) and exists(self.train_csv_log_f):
+    if exists(self.train_csv_log_f):
       done_epochs = int(pd.read_csv(self.train_csv_log_f).iloc[-1]['epoch'])
       if done_epochs > self.epochs:
         config.info(f'{self.train_csv_log_f} has {self.epochs}>=epochs. stopping.')
         return
       else:
         config.info(f'train_csv_log_f has {self.epochs}<epochs. continuing from {done_epochs+1}.')
-        model = self.model.load(self.model_path)
+        model = self.model.load(self.ckpt_path)
         initial_epoch = done_epochs
     else:
       model = self.model.build()
@@ -185,8 +185,10 @@ class Trainer():
     steps_per_ep_train = np.ceil(len(self.x_train_wins) / config.BATCH_SIZE)
     steps_per_ep_validate = np.ceil(len(self.x_val_wins) / config.BATCH_SIZE)
     csv_logger = CSVLogger(self.train_csv_log_f, append=True)
-    # tb_callback = TensorBoard(log_dir=f'{self.model_dir}/logs')
-    model_checkpoint = ModelCheckpoint(self.model_path, mode='auto')
+    # https://www.tensorflow.org/tutorials/keras/save_and_load
+    model_checkpoint = ModelCheckpoint(self.ckpt_path,
+                                       save_weights_only=True,
+                                       verbose=1)
     callbacks = [csv_logger, model_checkpoint]
     generator = self.generate_batchs(self.x_train_wins)
     validation_data = self.generate_batchs(self.x_val_wins)
@@ -219,11 +221,11 @@ class Trainer():
     if self.using_auto:
       prefix = join(config.DATADIR, f'{self.model_name},{self.dataset_name},actS,')
       threshold_medium, threshold_hight = get_class_thresholds(self.ds.df, 'actS')
-      self.model.load_models( join(prefix + 'low', 'model.tf'), join(prefix + 'medium', 'model.tf'),
-                      join(prefix + 'hight', 'model.tf'), threshold_medium, threshold_hight)
+      self.model.load_models( join(prefix + 'low', 'saved_model'), join(prefix + 'medium', 'saved_model'),
+                      join(prefix + 'hight', 'saved_model'), threshold_medium, threshold_hight)
     elif self.model_name != 'no_motion':
-      model_path = join(self.model_dir, 'model.tf')
-      self.model.load(model_path)
+      ckpt_path = join(self.model_dir, 'cp-{epoch:04d}.ckpt')
+      self.model.load(ckpt_path)
 
     # predict by each x_test_wins
     self.x_test_wins = [{

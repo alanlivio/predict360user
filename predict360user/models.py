@@ -1,7 +1,7 @@
 import os
 from abc import ABC
 from contextlib import redirect_stderr
-from os.path import exists, join
+from os.path import dirname, exists, join
 from typing import Tuple
 
 import numpy as np
@@ -14,7 +14,7 @@ from tensorflow.keras.layers import (LSTM, Concatenate, ConvLSTM2D,
                                      Lambda, MaxPooling2D, Reshape,
                                      TimeDistributed)
 from tensorflow.keras.metrics import mean_squared_error as mse
-from tensorflow.keras.models import Model, load_model
+from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
 
 from .dataset import get_class_name
@@ -61,7 +61,7 @@ class ModelABC(ABC):
   def build(self) -> Model:
     raise NotImplementedError
 
-  def load(self, model_path: str) -> Model:
+  def load(self, ckpt_path: str) -> Model:
     raise NotImplementedError
 
   def generate_batch(self, traces_l: list[np.array], x_i_l: list) -> Tuple[list, list]:
@@ -75,9 +75,10 @@ class PosOnly(ModelABC):
   def __init__(self, m_window: int, h_window: int) -> None:
     self.m_window, self.h_window = m_window, h_window
 
-  def load(self, model_path: str) -> Model:
-    assert exists(model_path)
-    self._model = load_model(model_path)
+  def load(self, ckpt_path: str) -> Model:
+    self._model = self.build()
+    latest = tf.train.latest_checkpoint(dirname(ckpt_path))
+    self._model.load_weights(latest)
     return self._model
 
   # This way we ensure that the network learns to predict the delta angle
@@ -173,14 +174,14 @@ class PosOnly(ModelABC):
 
 
 class PosOnly_Auto(PosOnly):
-  def load_models(self, model_path_low: str, model_path_medium: str, model_path_hight: str,
-                  threshold_medium, threshold_hight) -> None:
-    assert exists(model_path_low)
-    assert exists(model_path_medium)
-    assert exists(model_path_hight)
-    self.model_low = load_model(model_path_low)
-    self.model_medium = load_model(model_path_medium)
-    self.model_hight = load_model(model_path_hight)
+  def load_weightss(self,
+                    ckpt_path_low: str,
+                    ckpt_path_medium: str,
+                    ckpt_path_hight: str,
+                    threshold_medium, threshold_hight) -> None:
+    self.model_low = self.load_weights(ckpt_path_low)
+    self.model_medium = self.load_weights(ckpt_path_medium)
+    self.model_hight = self.load_weights(ckpt_path_hight)
     self.threshold_medium, self.threshold_hight = threshold_medium, threshold_hight
 
   def predict(
