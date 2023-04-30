@@ -12,12 +12,13 @@ from sklearn.model_selection import train_test_split
 from sklearn.utils import shuffle
 from tensorflow.keras.callbacks import CSVLogger, ModelCheckpoint
 from tensorflow.keras.models import Model
+from tensorflow.train import latest_checkpoint
 from tqdm.auto import tqdm
 
 from . import config
 from .dataset import Dataset, count_entropy, get_class_thresholds
 from .fov import compute_orthodromic_distance
-from .models import *
+from .models import BaseModel, NoMotion, PosOnly, PosOnly3D
 
 absl.logging.set_verbosity(absl.logging.ERROR)
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -59,16 +60,6 @@ class Trainer():
     self.init_window = init_window
     self.m_window = m_window
     os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu_id)
-    if model_name == 'pos_only':
-      self.model = PosOnly(m_window, h_window)
-    elif model_name == 'pos_only_3d':
-      self.model = PosOnly3D(m_window, h_window)
-    elif model_name == 'no_motion':
-      self.model = NoMotion(m_window, h_window)
-    elif self.using_auto:
-      self.model = PosOnly_Auto(m_window, h_window)
-    else:
-      raise RuntimeError
     self.test_size = test_size
     self.epochs = epochs
     self.dry_run = dry_run
@@ -92,14 +83,28 @@ class Trainer():
         'train_entropy', 'epochs', 'dry_run'
     ]) + ")"
 
-  def generate_batchs(self, wins: list) -> Generator:
+  def create_model(self, ckpt_dir='') -> BaseModel:
+    if self.model_name == 'pos_only':
+      model = PosOnly(self.m_window, self.h_window)
+    elif self.model_name == 'pos_only_3d':
+      model = PosOnly3D(self.m_window, self.h_window)
+    elif self.model_name == 'no_motion':
+      model = NoMotion(self.h_window)
+    else:
+      raise RuntimeError
+    if ckpt_dir:
+      latest = latest_checkpoint(ckpt_dir)
+      model.load_weights(latest)
+    return model
+
+  def generate_batchs(self, model: BaseModel, wins: list) -> Generator:
     while True:
       shuffle(wins, random_state=1)
       for count, _ in enumerate(wins[::config.BATCH_SIZE]):
         end = count+config.BATCH_SIZE if count+config.BATCH_SIZE <= len(wins) else len(wins)
         traces_l = [self.ds.get_traces(win['video'],win['user']) for win in wins[count:end]]
         x_i_l = [win['trace_id'] for win in wins[count:end]]
-        yield self.model.generate_batch(traces_l,x_i_l)
+        yield model.generate_batch(traces_l,x_i_l)
 
   def _get_ds(self) -> None:
     if not hasattr(self, 'ds'):
@@ -158,10 +163,10 @@ class Trainer():
         return
       else:
         config.info(f'train_csv_log_f has {self.epochs}<epochs. continuing from {done_epochs+1}.')
-        model = self.model.load(self.ckpt_path)
+        model = self.create_model(self.model_dir)
         initial_epoch = done_epochs
     else:
-      model = self.model.build()
+      model = self.create_model()
       initial_epoch = 0
       if not exists(self.model_dir):
         os.makedirs(self.model_dir)
@@ -190,8 +195,8 @@ class Trainer():
                                        save_weights_only=True,
                                        verbose=1)
     callbacks = [csv_logger, model_checkpoint]
-    generator = self.generate_batchs(self.x_train_wins)
-    validation_data = self.generate_batchs(self.x_val_wins)
+    generator = self.generate_batchs(model, self.x_train_wins)
+    validation_data = self.generate_batchs(model, self.x_val_wins)
     model.fit(x=generator,
               verbose=1,
               steps_per_epoch=steps_per_ep_train,
@@ -200,9 +205,25 @@ class Trainer():
               validation_freq=config.BATCH_SIZE,
               epochs=self.epochs,
               initial_epoch=initial_epoch,
-              callbacks=callbacks,
-              # use_multiprocessing=True
-              )
+              callbacks=callbacks)
+
+  def auto_select_model(self, traces: np.array, x_i) -> Model:
+    if self.train_entropy == 'auto':
+      window = traces
+    elif self.train_entropy == 'auto_m_window':
+      window = traces[x_i - self.m_window:x_i]
+    elif self.train_entropy == 'auto_since_start':
+      window = traces[0:x_i]
+    else:
+      raise RuntimeError()
+    a_ent = calc_actual_entropy(window)
+    actS_c = get_class_name(a_ent, self.threshold_medium, self.threshold_hight)
+    if actS_c == 'low':
+      return self.model_low
+    elif actS_c == 'medium':
+      return self.model_medium
+    elif actS_c == 'hight':
+      return self.model_hight
 
   def evaluate(self) -> None:
     config.info('evaluate()')
@@ -220,12 +241,12 @@ class Trainer():
     config.info('creating model ...')
     if self.using_auto:
       prefix = join(config.DATADIR, f'{self.model_name},{self.dataset_name},actS,')
-      threshold_medium, threshold_hight = get_class_thresholds(self.ds.df, 'actS')
-      self.model.load_models( join(prefix + 'low', 'saved_model'), join(prefix + 'medium', 'saved_model'),
-                      join(prefix + 'hight', 'saved_model'), threshold_medium, threshold_hight)
+      self.threshold_medium, self.threshold_hight = get_class_thresholds(self.ds.df, 'actS')
+      self.model_low = self.create_model(join(prefix + '_low'))
+      self.model_medium = self.create_model(join(prefix + '_medium'))
+      self.model_hight = self.create_model(join(prefix + '_hight'))
     elif self.model_name != 'no_motion':
-      ckpt_path = join(self.model_dir, 'cp-{epoch:04d}.ckpt')
-      self.model.load(ckpt_path)
+      model = self.create_model(self.model_dir)
 
     # predict by each x_test_wins
     self.x_test_wins = [{
@@ -244,13 +265,16 @@ class Trainer():
       user = ids['user']
       video = ids['video']
       x_i = ids['trace_id']
+      traces = self.ds.get_traces(video, user)
       # predict
-      model_prediction = self.model.predict(self.ds.get_traces(video, user), x_i)
+      if self.using_auto:
+        model = self.auto_select_model(traces,x_i)
+      pred = model.predict_for_sample(traces, x_i)
       # save prediction
       traject_row = self.ds.df.loc[(self.ds.df['video'] == video) & (self.ds.df['user'] == user)]
       assert not traject_row.empty
       index = traject_row.index[0]
-      traject_row.loc[index, self.model_fullname][x_i] = model_prediction
+      traject_row.loc[index, self.model_fullname][x_i] = pred
 
     # save on df
     self.ds.dump_column(self.model_fullname)
