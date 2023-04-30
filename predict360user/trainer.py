@@ -190,13 +190,8 @@ class Trainer():
     steps_per_ep_validate = np.ceil(len(self.x_val_wins) / config.BATCH_SIZE)
     csv_logger = CSVLogger(self.train_csv_log_f, append=True)
     # tb_callback = TensorBoard(log_dir=f'{self.model_dir}/logs')
-    early_stopping_cb = keras.callbacks.EarlyStopping(
-        patience=10,
-        monitor='loss',
-        restore_best_weights=True,
-    )
     model_checkpoint = ModelCheckpoint(self.model_path, mode='auto')
-    callbacks = [csv_logger, model_checkpoint, early_stopping_cb]
+    callbacks = [csv_logger, model_checkpoint]
     generator = self.generate_batchs(self.x_train_wins)
     validation_data = self.generate_batchs(self.x_val_wins)
     model.fit(x=generator,
