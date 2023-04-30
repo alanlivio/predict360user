@@ -82,7 +82,7 @@ class Trainer():
       self.model_fullname = f'{self.model_name},{self.dataset_name},{self.entropy_type},{self.train_entropy}'
     self.model_dir = join(config.DATADIR, self.model_fullname)
     self.train_csv_log_f = join(self.model_dir, 'train_results.csv')
-    self.ckpt_path = join(self.model_dir, 'cp-{epoch:04d}.ckpt')
+    self.ckpt_path = join(self.model_dir, 'cp-{epoch:04d}-{loss:.2f}.ckpt')
     self.end_window = self.h_window
     config.info(self.__str__())
 
