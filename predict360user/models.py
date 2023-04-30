@@ -304,37 +304,3 @@ class PosOnly3D(PosOnly):
     }
     return pd.DataFrame(data)
 
-
-class CVPR18(ModelABC):
-  def predict(self, traces: np.array, x_i) -> np.array:
-    raise NotImplementedError
-
-
-class TrueSaliency(ModelABC):
-  def predict(self, traces: np.array, x_i) -> np.array:
-    raise NotImplementedError
-
-
-class ContentSaliency(ModelABC):
-  def predict(self, traces: np.array, x_i) -> np.array:
-    raise NotImplementedError
-
-
-class MM18(ModelABC):
-  def predict(self, traces: np.array, x_i) -> np.array:
-    raise NotImplementedError
-
-
-class TRACK(ModelABC):
-  def predict(self, traces: np.array, x_i) -> np.array:
-    raise NotImplementedError
-
-
-class PointNet(ModelABC):
-  def predict(self, traces: np.array, x_i) -> np.array:
-    raise NotImplementedError
-
-
-class GNN(ModelABC):
-  def predict(self, traces: np.array, x_i) -> np.array:
-    raise NotImplementedError
