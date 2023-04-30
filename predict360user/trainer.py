@@ -157,7 +157,7 @@ class Trainer():
         config.info(f'{self.train_csv_log_f} has {self.epochs}>=epochs. stopping.')
         return
       else:
-        config.info(f'train_csv_log_f has {self.epochs}<epochs. continuing from {done_epochs}.')
+        config.info(f'train_csv_log_f has {self.epochs}<epochs. continuing from {done_epochs+1}.')
         model = self.model.load(self.model_path)
         initial_epoch = done_epochs
     else:
