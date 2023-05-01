@@ -84,3 +84,10 @@ def delta_angle_from_ori_mot(values):
     # The network returns values between 0 and 1, we force it to be between -1/2 and 1/2
     motion = values[1]
     return (orientation + motion)
+
+def selectImageInModel(input_to_selector, curr_idx):
+    selected_image = input_to_selector[:, curr_idx:curr_idx+1]
+    return selected_image
+
+def add_timestep_axis(input):
+    return tf.expand_dims(input, 1)
