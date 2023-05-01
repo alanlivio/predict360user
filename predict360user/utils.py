@@ -3,9 +3,10 @@ from functools import cache
 import numpy as np
 from numpy import cross, dot
 from pyquaternion import Quaternion
-from sklearn.preprocessing import normalize
 from scipy.spatial.transform import Rotation as R
 from scipy.spatial.transform import Slerp
+from sklearn.preprocessing import normalize
+
 
 def degrees_to_radian(degree):
     return degree*np.pi/180.0

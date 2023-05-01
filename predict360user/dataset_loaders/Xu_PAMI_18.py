@@ -8,7 +8,7 @@ from os.path import join, exists
 from pyquaternion import Quaternion
 import scipy
 
-from ..fov import eulerian_to_cartesian, cartesian_to_eulerian, rotationBetweenVectors, interpolate_quaternions, degrees_to_radian, radian_to_degrees
+from ..utils import eulerian_to_cartesian, cartesian_to_eulerian, rotationBetweenVectors, interpolate_quaternions, degrees_to_radian, radian_to_degrees
 from .. import config
 
 ROOT_FOLDER = join(config.RAWDATADIR, 'Xu_PAMI_18/dataset/')

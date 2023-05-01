@@ -12,9 +12,9 @@ import plotly.graph_objs as go
 import scipy.stats
 from plotly.subplots import make_subplots
 
-from . import config
-from .fov import calc_actual_entropy
-from .tileset import TILESET_DEFAULT, TileSet
+from predict360user import config
+from predict360user.tileset import TILESET_DEFAULT, TileSet
+from predict360user.utils import calc_actual_entropy
 
 
 def get_class_thresholds(df, col: str) -> tuple[float, float]:

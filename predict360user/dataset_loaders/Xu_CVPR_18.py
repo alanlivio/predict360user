@@ -1,15 +1,16 @@
 import os
-import numpy as np
-import pandas as pd
 from os import makedirs
+from os.path import exists, join
+
+import cv2
 import numpy as np
 import pandas as pd
-from os.path import join, exists
 from pyquaternion import Quaternion
-import cv2
 
-from ..fov import eulerian_to_cartesian, cartesian_to_eulerian, rotationBetweenVectors, interpolate_quaternions
-from .. import config
+from predict360user import config
+from predict360user.utils import (cartesian_to_eulerian, eulerian_to_cartesian,
+                                  interpolate_quaternions,
+                                  rotationBetweenVectors)
 
 ROOT_FOLDER = join(config.RAWDATADIR, './Xu_CVPR_18/dataset/')
 GAZE_TXT_FOLDER = 'Gaze_txt_files'

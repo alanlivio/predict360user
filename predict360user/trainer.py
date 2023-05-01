@@ -17,8 +17,8 @@ from predict360user import config
 from predict360user.dataset import (Dataset, calc_actual_entropy,
                                     count_entropy, get_class_name,
                                     get_class_thresholds)
-from predict360user.fov import compute_orthodromic_distance
 from predict360user.models import BaseModel, NoMotion, PosOnly, PosOnly3D
+from predict360user.utils import compute_orthodromic_distance
 
 absl.logging.set_verbosity(absl.logging.ERROR)
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'

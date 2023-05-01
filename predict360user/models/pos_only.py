@@ -7,7 +7,7 @@ from keras.layers import LSTM, Dense, Input, Lambda
 from keras.models import Model
 from keras.optimizers import Adam
 
-from predict360user.fov import cartesian_to_eulerian, eulerian_to_cartesian
+from predict360user.utils import cartesian_to_eulerian, eulerian_to_cartesian
 from predict360user.models.base_model import BaseModel
 
 
