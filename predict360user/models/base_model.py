@@ -50,3 +50,29 @@ def metric_orth_dist_eulerian(true_position, pred_position) -> float:
       pitch_pred) * tf.cos(delta_long)
   great_circle_distance = tf.abs(tf.atan2(numerator, denominator))
   return great_circle_distance
+
+
+# This way we ensure that the network learns to predict the delta angle
+def delta_angle_from_ori_mag_dir(values):
+  orientation = values[0]
+  magnitudes = values[1] / 2.0
+  directions = values[2]
+  # The network returns values between 0 and 1, we force it to be between -2/5 and 2/5
+  motion = magnitudes * directions
+
+  yaw_pred_wo_corr = orientation[:, :, 0:1] + motion[:, :, 0:1]
+  pitch_pred_wo_corr = orientation[:, :, 1:2] + motion[:, :, 1:2]
+
+  cond_above = tf.cast(tf.greater(pitch_pred_wo_corr, 1.0), tf.float32)
+  cond_correct = tf.cast(
+      tf.logical_and(tf.less_equal(pitch_pred_wo_corr, 1.0),
+                      tf.greater_equal(pitch_pred_wo_corr, 0.0)), tf.float32)
+  cond_below = tf.cast(tf.less(pitch_pred_wo_corr, 0.0), tf.float32)
+
+  pitch_pred = cond_above * (
+      1.0 - (pitch_pred_wo_corr - 1.0)) + cond_correct * pitch_pred_wo_corr + cond_below * (
+          -pitch_pred_wo_corr)
+  yaw_pred = tf.math.mod(
+      cond_above * (yaw_pred_wo_corr - 0.5) + cond_correct * yaw_pred_wo_corr + cond_below *
+      (yaw_pred_wo_corr - 0.5), 1.0)
+  return tf.concat([yaw_pred, pitch_pred], -1)
