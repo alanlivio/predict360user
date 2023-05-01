@@ -5,7 +5,9 @@ from keras.layers import LSTM, Dense, Input, Lambda, TimeDistributed
 from keras.metrics import mean_squared_error as mse
 from keras.optimizers import Adam
 
-from predict360user.models.base_model import BaseModel, metric_orth_dist_cartesian
+from predict360user.models.base_model import (BaseModel,
+                                              delta_angle_from_ori_mot,
+                                              metric_orth_dist_cartesian)
 
 
 class PosOnly3D(BaseModel):
@@ -36,7 +38,7 @@ class PosOnly3D(BaseModel):
     decoder_dense_1 = Dense(256)
     decoder_dense_2 = Dense(256)
     decoder_dense_3 = Dense(3)
-    To_Position = Lambda(self.toPosition)
+    To_Position = Lambda(delta_angle_from_ori_mot)
 
     # Encoding
     encoder_outputs = sense_pos_1(encoder_inputs)

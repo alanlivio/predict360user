@@ -76,3 +76,11 @@ def delta_angle_from_ori_mag_dir(values):
       cond_above * (yaw_pred_wo_corr - 0.5) + cond_correct * yaw_pred_wo_corr + cond_below *
       (yaw_pred_wo_corr - 0.5), 1.0)
   return tf.concat([yaw_pred, pitch_pred], -1)
+
+
+# This way we ensure that the network learns to predict the delta angle
+def delta_angle_from_ori_mot(values):
+    orientation = values[0]
+    # The network returns values between 0 and 1, we force it to be between -1/2 and 1/2
+    motion = values[1]
+    return (orientation + motion)
