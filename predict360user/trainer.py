@@ -124,7 +124,8 @@ class Trainer():
 
   def train(self) -> None:
     config.info('train()')
-    assert not self.using_auto, "train(): train_entropy should not be auto"
+    assert not self.using_auto, "train_entropy should not be auto"
+    assert self.model_name not in config.MODELS_NAMES_NO_TRAIN, f"{self.model_name} does not need training"
     config.info('model_dir=' + self.model_dir)
 
     # partition
