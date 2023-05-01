@@ -18,7 +18,7 @@ from predict360user.dataset import (Dataset, calc_actual_entropy,
                                     count_entropy, get_class_name,
                                     get_class_thresholds)
 from predict360user.models import BaseModel, NoMotion, PosOnly, PosOnly3D
-from predict360user.utils import compute_orthodromic_distance
+from predict360user.utils import orth_dist_cartesian
 
 absl.logging.set_verbosity(absl.logging.ERROR)
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -358,7 +358,7 @@ class Trainer():
         for t in range_win:
           if t not in errors_per_timestamp:
             errors_per_timestamp[t] = []
-          errors_per_timestamp[t].append(compute_orthodromic_distance(true_win[t], pred_win[t]))
+          errors_per_timestamp[t].append(orth_dist_cartesian(true_win[t], pred_win[t]))
 
     config.info(f"compare results for models: {', '.join(models_cols)}")
     config.info(f"for each model, compare users: {config.ARGS_ENTROPY_NAMES[:6]}")

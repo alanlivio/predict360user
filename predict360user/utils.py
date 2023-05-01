@@ -25,7 +25,7 @@ def normalized(v):
     return normalize(v[:, np.newaxis], axis=0).ravel()
 
 # Compute the orthodromic distance between two points in 3d coordinates
-def compute_orthodromic_distance(true_position, pred_position):
+def orth_dist_cartesian(true_position, pred_position):
   norm_a = np.sqrt(
       np.square(true_position[0]) + np.square(true_position[1]) + np.square(true_position[2]))
   norm_b = np.sqrt(

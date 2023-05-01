@@ -117,7 +117,7 @@ class TileSet():
     fov_poly_trace = fov_poly(trace[0], trace[1], trace[2])
     for row in range(self.t_ver):
       for col in range(self.t_hor):
-        dist = compute_orthodromic_distance(trace, tile_center(self.t_ver, self.t_hor, row, col))
+        dist = orth_dist_cartesian(trace, tile_center(self.t_ver, self.t_hor, row, col))
         if dist <= HOR_MARGIN:
           heatmap[row][col] = 1
           if return_metrics:
@@ -141,7 +141,7 @@ class TileSet():
     fov_poly_trace = fov_poly(trace[0], trace[1], trace[2])
     for row in range(self.t_ver):
       for col in range(self.t_hor):
-        dist = compute_orthodromic_distance(trace, tile_center(self.t_ver, self.t_hor, row, col))
+        dist = orth_dist_cartesian(trace, tile_center(self.t_ver, self.t_hor, row, col))
         if dist >= HOR_DIST:
           continue
         try:
@@ -226,7 +226,7 @@ class TileSetVoro(TileSet):
     fov_poly_trace = fov_poly(trace[0], trace[1], trace[2])
     heatmap = np.zeros(self.n_patchs)
     for index, _ in enumerate(self.voro.regions):
-      dist = compute_orthodromic_distance(trace, self.voro.points[index])
+      dist = orth_dist_cartesian(trace, self.voro.points[index])
       if dist <= HOR_MARGIN:
         heatmap[index] += 1
         if return_metrics:
@@ -245,7 +245,7 @@ class TileSetVoro(TileSet):
     fov_poly_trace = fov_poly(trace[0], trace[1], trace[2])
     heatmap = np.zeros(self.n_patchs)
     for index, _ in enumerate(self.voro.regions):
-      dist = compute_orthodromic_distance(trace, self.voro.points[index])
+      dist = orth_dist_cartesian(trace, self.voro.points[index])
       if dist >= HOR_DIST:
         continue
       poly = voro_poly(self.n_patchs, index)
