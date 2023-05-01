@@ -1,6 +1,5 @@
 import os
 import pickle
-from contextlib import redirect_stderr
 from os.path import exists, isdir, join
 from typing import Generator
 
@@ -8,17 +7,18 @@ import absl.logging
 import numpy as np
 import pandas as pd
 import plotly.express as px
+import tensorflow as tf
+from keras.callbacks import CSVLogger, ModelCheckpoint
 from sklearn.model_selection import train_test_split
 from sklearn.utils import shuffle
-from keras.callbacks import CSVLogger, ModelCheckpoint
-from keras.models import Model
-from tensorflow.train import latest_checkpoint
 from tqdm.auto import tqdm
 
-from . import config
-from .dataset import Dataset, count_entropy, get_class_thresholds
-from .fov import compute_orthodromic_distance
-from .models import BaseModel, NoMotion, PosOnly, PosOnly3D
+from predict360user import config
+from predict360user.dataset import (Dataset, calc_actual_entropy,
+                                    count_entropy, get_class_name,
+                                    get_class_thresholds)
+from predict360user.fov import compute_orthodromic_distance
+from predict360user.models import BaseModel, NoMotion, PosOnly, PosOnly3D
 
 absl.logging.set_verbosity(absl.logging.ERROR)
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -93,7 +93,7 @@ class Trainer():
     else:
       raise RuntimeError
     if ckpt_dir:
-      latest = latest_checkpoint(ckpt_dir)
+      latest = tf.train.latest_checkpoint(ckpt_dir)
       model.load_weights(latest)
     return model
 
@@ -198,7 +198,7 @@ class Trainer():
     generator = self.generate_batchs(model, self.x_train_wins)
     validation_data = self.generate_batchs(model, self.x_val_wins)
     model.fit(x=generator,
-              verbose=1,
+              verbose="1",
               steps_per_epoch=steps_per_ep_train,
               validation_data=validation_data,
               validation_steps=steps_per_ep_validate,
@@ -207,7 +207,7 @@ class Trainer():
               initial_epoch=initial_epoch,
               callbacks=callbacks)
 
-  def auto_select_model(self, traces: np.array, x_i) -> Model:
+  def auto_select_model(self, traces: np.array, x_i) -> BaseModel:
     if self.train_entropy == 'auto':
       window = traces
     elif self.train_entropy == 'auto_m_window':
