@@ -1,12 +1,12 @@
 import numpy as np
 import pandas as pd
 from keras import backend as K
-from keras.layers import (LSTM, Dense, Input, Lambda, TimeDistributed)
+from keras.layers import LSTM, Dense, Input, Lambda, TimeDistributed
 from keras.metrics import mean_squared_error as mse
-from tensorflow.keras.optimizers import Adam
+from keras.optimizers import Adam
 
-from .pos_only import metric_orth_dist
-from .base_model import BaseModel
+from predict360user.models.base_model import BaseModel
+from predict360user.models.pos_only import metric_orth_dist
 
 
 class PosOnly3D(BaseModel):
@@ -84,5 +84,4 @@ class PosOnly3D(BaseModel):
         'y': pred[0, :, 1] / norm_factor,
         'z': pred[0, :, 2] / norm_factor
     }
-    return pd.DataFrame(data)
     return pd.DataFrame(data)

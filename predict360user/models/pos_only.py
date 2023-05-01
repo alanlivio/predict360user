@@ -3,12 +3,12 @@ from typing import Tuple
 import numpy as np
 import tensorflow as tf
 from keras import backend as K
-from keras.layers import (LSTM, Dense, Input, Lambda)
+from keras.layers import LSTM, Dense, Input, Lambda
 from keras.models import Model
-from tensorflow.keras.optimizers import Adam
+from keras.optimizers import Adam
 
-from ..fov import cartesian_to_eulerian, eulerian_to_cartesian
-from .base_model import BaseModel
+from predict360user.fov import cartesian_to_eulerian, eulerian_to_cartesian
+from predict360user.models.base_model import BaseModel
 
 
 def metric_orth_dist(true_position, pred_position) -> float:
@@ -43,6 +43,30 @@ def transform_normalized_eulerian_to_cartesian(positions) -> np.array:
   return np.array(eulerian_samples)
 
 class PosOnly(BaseModel):
+
+  def generate_batch(self, traces_l: list[np.array], x_i_l: list) -> Tuple[list, list]:
+    encoder_pos_inputs_for_batch = []
+    decoder_pos_inputs_for_batch = []
+    decoder_outputs_for_batch = []
+    for traces, x_i in zip(traces_l, x_i_l):
+      encoder_pos_inputs_for_batch.append(traces[x_i - self.m_window:x_i])
+      decoder_pos_inputs_for_batch.append(traces[x_i:x_i + 1])
+      decoder_outputs_for_batch.append(traces[x_i + 1:x_i + self.h_window + 1])
+    return ([
+        transform_batches_cartesian_to_normalized_eulerian(encoder_pos_inputs_for_batch),
+        transform_batches_cartesian_to_normalized_eulerian(decoder_pos_inputs_for_batch)
+    ], transform_batches_cartesian_to_normalized_eulerian(decoder_outputs_for_batch))
+
+  def predict_for_sample(self, traces: np.array, x_i) -> np.array:
+    encoder_pos_inputs_for_sample = np.array([traces[x_i - self.m_window:x_i]])
+    decoder_pos_inputs_for_sample = np.array([traces[x_i:x_i + 1]])
+    inputs = [
+        transform_batches_cartesian_to_normalized_eulerian(encoder_pos_inputs_for_sample),
+        transform_batches_cartesian_to_normalized_eulerian(decoder_pos_inputs_for_sample)
+    ]
+    model_pred = super().predict(inputs, verbose=0)[0]
+    return transform_normalized_eulerian_to_cartesian(model_pred)
+
   def __init__(self, m_window: int, h_window: int) -> None:
     self.m_window, self.h_window = m_window, h_window
 
@@ -111,29 +135,6 @@ class PosOnly(BaseModel):
         cond_above * (yaw_pred_wo_corr - 0.5) + cond_correct * yaw_pred_wo_corr + cond_below *
         (yaw_pred_wo_corr - 0.5), 1.0)
     return tf.concat([yaw_pred, pitch_pred], -1)
-
-  def generate_batch(self, traces_l: list[np.array], x_i_l: list) -> Tuple[list, list]:
-    encoder_pos_inputs_for_batch = []
-    decoder_pos_inputs_for_batch = []
-    decoder_outputs_for_batch = []
-    for traces, x_i in zip(traces_l, x_i_l):
-      encoder_pos_inputs_for_batch.append(traces[x_i - self.m_window:x_i])
-      decoder_pos_inputs_for_batch.append(traces[x_i:x_i + 1])
-      decoder_outputs_for_batch.append(traces[x_i + 1:x_i + self.h_window + 1])
-    return ([
-        transform_batches_cartesian_to_normalized_eulerian(encoder_pos_inputs_for_batch),
-        transform_batches_cartesian_to_normalized_eulerian(decoder_pos_inputs_for_batch)
-    ], transform_batches_cartesian_to_normalized_eulerian(decoder_outputs_for_batch))
-
-  def predict_for_sample(self, traces: np.array, x_i) -> np.array:
-    encoder_pos_inputs_for_sample = np.array([traces[x_i - self.m_window:x_i]])
-    decoder_pos_inputs_for_sample = np.array([traces[x_i:x_i + 1]])
-    inputs = [
-        transform_batches_cartesian_to_normalized_eulerian(encoder_pos_inputs_for_sample),
-        transform_batches_cartesian_to_normalized_eulerian(decoder_pos_inputs_for_sample)
-    ]
-    model_pred = super().predict(inputs, verbose=0)[0]
-    return transform_normalized_eulerian_to_cartesian(model_pred)
 
 
 class NoMotion(Model):

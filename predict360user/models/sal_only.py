@@ -1,7 +1,8 @@
-import numpy as np
 from typing import Tuple
 
-from .base_model import BaseModel
+import numpy as np
+
+from predict360user.models.base_model import BaseModel
 
 
 class TrueSaliency(BaseModel):
