@@ -96,6 +96,9 @@ class PosOnly(BaseModel):
 
 class NoMotion(Model):
 
+  def __init__(self, h_window) -> None:
+    self.h_window = h_window
+
   def generate_batch(self, traces_l: list[np.array], x_i_l: list) -> Tuple[list, list]:
     raise NotImplementedError
 

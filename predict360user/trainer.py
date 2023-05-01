@@ -89,7 +89,7 @@ class Trainer():
     elif self.model_name == 'pos_only_3d':
       model = PosOnly3D(self.m_window, self.h_window)
     elif self.model_name == 'no_motion':
-      model = NoMotion(self.h_window)
+      return NoMotion(self.h_window) # does not need training
     else:
       raise RuntimeError
     if ckpt_dir:
@@ -248,7 +248,7 @@ class Trainer():
       self.model_low = self.create_model(join(prefix + '_low'))
       self.model_medium = self.create_model(join(prefix + '_medium'))
       self.model_hight = self.create_model(join(prefix + '_hight'))
-    elif self.model_name != 'no_motion':
+    else:
       model = self.create_model(self.model_dir)
 
     # predict by each x_test_wins
