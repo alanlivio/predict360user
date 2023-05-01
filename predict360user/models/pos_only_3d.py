@@ -1,23 +1,11 @@
-import os
-from abc import ABC
-from contextlib import redirect_stderr
-from os.path import dirname, exists, join
-from typing import Tuple
-
 import numpy as np
 import pandas as pd
-import tensorflow as tf
-from tensorflow import keras
-from tensorflow.keras import backend as K
-from tensorflow.keras.layers import (LSTM, Concatenate, ConvLSTM2D,
-                                     Convolution2D, Dense, Flatten, Input,
-                                     Lambda, MaxPooling2D, Reshape,
-                                     TimeDistributed)
-from tensorflow.keras.metrics import mean_squared_error as mse
-from tensorflow.keras.models import Model
+from keras import backend as K
+from keras.layers import (LSTM, Dense, Input, Lambda, TimeDistributed)
+from keras.metrics import mean_squared_error as mse
 from tensorflow.keras.optimizers import Adam
 
-from .pos_only import PosOnly, metric_orth_dist
+from .pos_only import metric_orth_dist
 from .base_model import BaseModel
 
 

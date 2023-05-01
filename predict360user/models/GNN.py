@@ -1,5 +1,5 @@
 import numpy as np
-from tensorflow.keras.models import Model
+from keras.models import Model
 
 from .base_model import BaseModel
 

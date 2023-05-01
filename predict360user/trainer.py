@@ -10,8 +10,8 @@ import pandas as pd
 import plotly.express as px
 from sklearn.model_selection import train_test_split
 from sklearn.utils import shuffle
-from tensorflow.keras.callbacks import CSVLogger, ModelCheckpoint
-from tensorflow.keras.models import Model
+from keras.callbacks import CSVLogger, ModelCheckpoint
+from keras.models import Model
 from tensorflow.train import latest_checkpoint
 from tqdm.auto import tqdm
 
