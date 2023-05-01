@@ -5,8 +5,7 @@ from keras.layers import LSTM, Dense, Input, Lambda, TimeDistributed
 from keras.metrics import mean_squared_error as mse
 from keras.optimizers import Adam
 
-from predict360user.models.base_model import BaseModel
-from predict360user.models.pos_only import metric_orth_dist
+from predict360user.models.base_model import BaseModel, metric_orth_dist_cartesian
 
 
 class PosOnly3D(BaseModel):
@@ -73,7 +72,7 @@ class PosOnly3D(BaseModel):
     model_optimizer = Adam(lr=0.0005)
     self.compile(optimizer=model_optimizer,
                         loss=self.loss_function,
-                        metrics=[metric_orth_dist])
+                        metrics=[metric_orth_dist_cartesian])
 
   def predict_for_sample(self, pos_inputs) -> np.array:
     pred = super.predict([np.array([pos_inputs[:-1]]), np.array([pos_inputs[-1:]])])

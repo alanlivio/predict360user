@@ -7,26 +7,8 @@ from keras.layers import LSTM, Dense, Input, Lambda
 from keras.models import Model
 from keras.optimizers import Adam
 
+from predict360user.models.base_model import BaseModel, metric_orth_dist_eulerian
 from predict360user.utils import cartesian_to_eulerian, eulerian_to_cartesian
-from predict360user.models.base_model import BaseModel
-
-
-def metric_orth_dist(true_position, pred_position) -> float:
-  yaw_true = (true_position[:, :, 0:1] - 0.5) * 2 * np.pi
-  pitch_true = (true_position[:, :, 1:2] - 0.5) * np.pi
-  # Transform it to range -pi, pi for yaw and -pi/2, pi/2 for pitch
-  yaw_pred = (pred_position[:, :, 0:1] - 0.5) * 2 * np.pi
-  pitch_pred = (pred_position[:, :, 1:2] - 0.5) * np.pi
-  # Finally compute orthodromic distance
-  delta_long = tf.abs(tf.atan2(tf.sin(yaw_true - yaw_pred), tf.cos(yaw_true - yaw_pred)))
-  numerator = tf.sqrt(
-      tf.pow(tf.cos(pitch_pred) * tf.sin(delta_long), 2.0) + tf.pow(
-          tf.cos(pitch_true) * tf.sin(pitch_pred) -
-          tf.sin(pitch_true) * tf.cos(pitch_pred) * tf.cos(delta_long), 2.0))
-  denominator = tf.sin(pitch_true) * tf.sin(pitch_pred) + tf.cos(pitch_true) * tf.cos(
-      pitch_pred) * tf.cos(delta_long)
-  great_circle_distance = tf.abs(tf.atan2(numerator, denominator))
-  return great_circle_distance
 
 
 def transform_batches_cartesian_to_normalized_eulerian(positions_in_batch) -> np.array:
@@ -109,7 +91,7 @@ class PosOnly(BaseModel):
     # Define and compile model
     super().__init__([encoder_inputs, decoder_inputs], decoder_outputs)
     model_optimizer = Adam(learning_rate=0.0005)
-    self.compile(optimizer=model_optimizer, loss=metric_orth_dist)
+    self.compile(optimizer=model_optimizer, loss=metric_orth_dist_eulerian)
 
   # This way we ensure that the network learns to predict the delta angle
   def toPosition(self, values):
