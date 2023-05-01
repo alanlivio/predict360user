@@ -1,5 +1,5 @@
 import numpy as np
-from keras.models import Model
+from typing import Tuple
 
 from .base_model import BaseModel
 
