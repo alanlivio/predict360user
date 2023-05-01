@@ -3,7 +3,7 @@ import pandas as pd
 from keras import backend as K
 from keras.layers import LSTM, Dense, Input, Lambda, TimeDistributed
 from keras.metrics import mean_squared_error as mse
-from keras.optimizers import Adam
+from tensorflow import keras
 
 from predict360user.models.base_model import (BaseModel,
                                               delta_angle_from_ori_mot,
@@ -71,7 +71,7 @@ class PosOnly3D(BaseModel):
 
     # Define and compile model
     super().__init__([encoder_inputs, decoder_inputs], decoder_outputs)
-    model_optimizer = Adam(lr=0.0005)
+    model_optimizer = keras.optimizers.Adam(lr=0.0005)
     self.compile(optimizer=model_optimizer,
                         loss=self.loss_function,
                         metrics=[metric_orth_dist_cartesian])
