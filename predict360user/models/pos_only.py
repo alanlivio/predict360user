@@ -9,7 +9,8 @@ from tensorflow import keras
 from predict360user.models.base_model import (BaseModel,
                                               delta_angle_from_ori_mag_dir,
                                               metric_orth_dist_eulerian)
-from predict360user.utils import cartesian_to_eulerian, eulerian_to_cartesian
+from predict360user.utils import (cartesian_to_eulerian, eulerian_to_cartesian,
+                                  rotationBetweenVectors)
 
 
 def transform_batches_cartesian_to_normalized_eulerian(positions_in_batch) -> np.array:
@@ -94,7 +95,7 @@ class PosOnly(BaseModel):
     model_optimizer = keras.optimizers.Adam(learning_rate=0.0005)
     self.compile(optimizer=model_optimizer, loss=metric_orth_dist_eulerian)
 
-class NoMotion(Model):
+class NoMotion(BaseModel):
 
   def __init__(self, h_window) -> None:
     self.h_window = h_window
@@ -106,12 +107,14 @@ class NoMotion(Model):
     model_pred = np.repeat(traces[x_i:x_i + 1], self.h_window, axis=0)
     return model_pred
 
-class Interpolation(Model):
+class Interpolation(BaseModel):
+
   def generate_batch(self, traces_l: list[np.array], x_i_l: list) -> Tuple[list, list]:
     raise NotImplementedError
 
   def predict_for_sample(self, traces: np.array, x_i) -> np.array:
-    raise NotImplementedError
+    rotation = rotationBetweenVectors(traces[-2], traces[-1])
+    return rotation.rotate(traces[-1]),
 
 class Regression(Model):
   def generate_batch(self, traces_l: list[np.array], x_i_l: list) -> Tuple[list, list]:

@@ -17,7 +17,8 @@ from predict360user import config
 from predict360user.dataset import (Dataset, calc_actual_entropy,
                                     count_entropy, get_class_name,
                                     get_class_thresholds)
-from predict360user.models import BaseModel, NoMotion, PosOnly, PosOnly3D
+from predict360user.models import (BaseModel, Interpolation, NoMotion, PosOnly,
+                                   PosOnly3D)
 from predict360user.utils import orth_dist_cartesian
 
 absl.logging.set_verbosity(absl.logging.ERROR)
@@ -90,6 +91,8 @@ class Trainer():
       model = PosOnly(self.m_window, self.h_window)
     elif self.model_name == 'pos_only_3d':
       model = PosOnly3D(self.m_window, self.h_window)
+    elif self.model_name == 'interpolation':
+      return Interpolation() # does not need training
     elif self.model_name == 'no_motion':
       return NoMotion(self.h_window) # does not need training
     else:

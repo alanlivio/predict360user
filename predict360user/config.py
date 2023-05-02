@@ -11,8 +11,8 @@ import plotly.graph_objs as go
 RAWDATADIR = f"{pathlib.Path(__file__).parent.parent / 'dataraw/'}"
 DATADIR = f"{pathlib.Path(__file__).parent.parent / 'data/'}"
 HMDDIR = f"{pathlib.Path(__file__).parent / 'head_motion_prediction/'}"
-ARGS_MODEL_NAMES = ['pos_only', 'pos_only_3d', 'no_motion',  'TRACK', 'CVPR18', 'MM18', 'most_salient_point']
-MODELS_NAMES_NO_TRAIN = ['no_motion']
+ARGS_MODEL_NAMES = ['pos_only', 'pos_only_3d', 'no_motion', 'interpolation', 'TRACK', 'CVPR18', 'MM18', 'most_salient_point']
+MODELS_NAMES_NO_TRAIN = ['no_motion', 'interpolation']
 ARGS_DS_NAMES = ['all', 'david', 'fan', 'nguyen', 'xucvpr', 'xupami']
 ARGS_ENTROPY_NAMES = [ 'all', 'low', 'medium', 'hight', 'nohight', 'nolow', 'low_hmp', 'medium_hmp', 'hight_hmp', 'nohight_hmp', 'nolow_hmp' ]
 ARGS_ENTROPY_AUTO_NAMES = ['auto', 'auto_m_window', 'auto_since_start']
