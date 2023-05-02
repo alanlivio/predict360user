@@ -81,6 +81,7 @@ if __name__ == '__main__':
       'dry_run': args.dry_run,
       'epochs': args.epochs,
       'test_size': args.test_size,
+      'gpu_id': args.gpu_id,
       # 'init_window': args.init_window,
       # 'm_window': args.m_window,
       # 'h_window': args.h_window,

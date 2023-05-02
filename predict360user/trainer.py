@@ -60,6 +60,8 @@ class Trainer():
     self.init_window = init_window
     self.m_window = m_window
     os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu_id)
+    if gpu_id:
+      config.info(f"set visible cpu to {gpu_id}")
     self.test_size = test_size
     self.epochs = epochs
     self.dry_run = dry_run
