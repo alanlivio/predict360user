@@ -128,6 +128,26 @@ class Trainer():
     assert self.model_name not in config.MODELS_NAMES_NO_TRAIN, f"{self.model_name} does not need training"
     config.info('model_dir=' + self.model_dir)
 
+    # check model
+    config.info('creating model ...')
+    if exists(self.train_csv_log_f):
+      lines = pd.read_csv(self.train_csv_log_f)
+      lines.dropna(how="all", inplace=True)
+      done_epochs = int(lines.iloc[-1]['epoch']) + 1
+      if done_epochs >= self.epochs:
+        config.info(f'train_csv_log_f has {done_epochs}>=epochs. stopping.')
+        return
+      else:
+        config.info(f'train_csv_log_f has {self.epochs}<epochs. continuing from {done_epochs}.')
+        model = self.create_model(self.model_dir)
+        initial_epoch = done_epochs
+    else:
+      model = self.create_model()
+      initial_epoch = 0
+      if not exists(self.model_dir):
+        os.makedirs(self.model_dir)
+    assert model
+
     # partition
     self.partition()
     if self.train_entropy != 'all':
@@ -154,26 +174,6 @@ class Trainer():
 
     if self.dry_run:
       return
-
-    # check model
-    config.info('creating model ...')
-    if exists(self.train_csv_log_f):
-      lines = pd.read_csv(self.train_csv_log_f)
-      lines.dropna(how="all", inplace=True)
-      done_epochs = int(lines.iloc[-1]['epoch']) + 1
-      if done_epochs >= self.epochs:
-        config.info(f'train_csv_log_f has {done_epochs}>=epochs. stopping.')
-        return
-      else:
-        config.info(f'train_csv_log_f has {self.epochs}<epochs. continuing from {done_epochs}.')
-        model = self.create_model(self.model_dir)
-        initial_epoch = done_epochs
-    else:
-      model = self.create_model()
-      initial_epoch = 0
-      if not exists(self.model_dir):
-        os.makedirs(self.model_dir)
-    assert model
 
     # create x_train_wins, x_val_wins
     self.x_train_wins = [{
