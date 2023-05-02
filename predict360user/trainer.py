@@ -307,13 +307,6 @@ class Trainer():
                   title='compare_train_loss',
                   width=800)
     config.show_or_save(fig)
-    fig = px.line(df_compare,
-                  x='epoch',
-                  y='val_loss',
-                  color='model',
-                  title='compare_train_val_loss',
-                  width=800)
-    config.show_or_save(fig)
 
   def compare_evaluate(self, load_saved=False) -> None:
     # horizon timestamps to be calculated
