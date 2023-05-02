@@ -12,7 +12,7 @@ from predict360user.models.base_model import (BaseModel, add_timestep_axis,
                                               selectImageInModel)
 
 
-class Xu_CVPR_18(BaseModel):
+class CVPR18(BaseModel):
 
   def generate_batch(self, traces_l: list[np.array], x_i_l: list) -> Tuple[list, list]:
     raise NotImplementedError
