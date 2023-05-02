@@ -3,7 +3,8 @@ import unittest
 from predict360user.dataset import Dataset
 from predict360user.tileset import *
 
-class Test(unittest.TestCase):
+
+class TileSetTestCase(unittest.TestCase):
 
   def test_tileset_polys(self) -> None:
     tile_area_6x4_equator = 0.927295

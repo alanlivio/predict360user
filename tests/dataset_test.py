@@ -3,7 +3,7 @@ import unittest
 from predict360user.dataset import Dataset
 
 
-class Test(unittest.TestCase):
+class DatasetTestCase(unittest.TestCase):
 
   def setUp(self) -> None:
     self.ds = Dataset()

@@ -5,7 +5,7 @@ import numpy as np
 from predict360user.utils import calc_actual_entropy_from_ids
 
 
-class Test(unittest.TestCase):
+class UtilsTestCase(unittest.TestCase):
 
   def test_actual_entropy(self) -> None:
     ids = np.array([1, 2, 3, 4, 5, 6, 7])

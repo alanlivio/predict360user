@@ -8,7 +8,7 @@ from predict360user.tileset import tile_points
 
 pio.renderers.default = None
 
-class Test(unittest.TestCase):
+class Plot360TestCase(unittest.TestCase):
 
   def test_polygons(self) -> None:
     plot = Plot360()
