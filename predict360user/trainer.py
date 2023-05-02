@@ -7,7 +7,6 @@ import absl.logging
 import numpy as np
 import pandas as pd
 import plotly.express as px
-import tensorflow as tf
 from keras.callbacks import CSVLogger, ModelCheckpoint
 from sklearn.model_selection import train_test_split
 from sklearn.utils import shuffle
@@ -76,7 +75,7 @@ class Trainer():
       self.model_fullname = f'{self.model_name},{self.dataset_name},{self.entropy_type},{self.train_entropy}'
     self.model_dir = join(config.DATADIR, self.model_fullname)
     self.train_csv_log_f = join(self.model_dir, 'train_results.csv')
-    self.ckpt_path = join(self.model_dir, 'cp-{epoch:04d}-{loss:.2f}.ckpt')
+    self.model_path = join(self.model_dir, 'model.h5')
     self.end_window = self.h_window
     config.info(self.__str__())
 
@@ -86,7 +85,7 @@ class Trainer():
         'train_entropy', 'epochs', 'dry_run'
     ]) + ")"
 
-  def create_model(self, ckpt_dir='') -> BaseModel:
+  def create_model(self, model_path='') -> BaseModel:
     if self.model_name == 'pos_only':
       model = PosOnly(self.m_window, self.h_window)
     elif self.model_name == 'pos_only_3d':
@@ -97,9 +96,8 @@ class Trainer():
       return NoMotion(self.h_window) # does not need training
     else:
       raise RuntimeError
-    if ckpt_dir:
-      latest = tf.train.latest_checkpoint(ckpt_dir)
-      model.load_weights(latest)
+    if model_path:
+      model.load_weights(model_path)
     return model
 
   def generate_batchs(self, model: BaseModel, wins: list) -> Generator:
@@ -144,7 +142,7 @@ class Trainer():
         return
       else:
         config.info(f'train_csv_log_f has {self.epochs}<epochs. continuing from {done_epochs}.')
-        model = self.create_model(self.model_dir)
+        model = self.create_model(self.model_path)
         initial_epoch = done_epochs
     else:
       model = self.create_model()
@@ -199,7 +197,7 @@ class Trainer():
     steps_per_ep_validate = np.ceil(len(self.x_val_wins) / config.BATCH_SIZE)
     csv_logger = CSVLogger(self.train_csv_log_f, append=True)
     # https://www.tensorflow.org/tutorials/keras/save_and_load
-    model_checkpoint = ModelCheckpoint(self.ckpt_path,
+    model_checkpoint = ModelCheckpoint(self.model_path,
                                        save_weights_only=True,
                                        verbose=1)
     callbacks = [csv_logger, model_checkpoint]
