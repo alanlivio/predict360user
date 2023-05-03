@@ -12,7 +12,7 @@ from predict360user.utils import (cartesian_to_eulerian, eulerian_to_cartesian,
                                   interpolate_quaternions,
                                   rotationBetweenVectors)
 
-ROOT_FOLDER = join(config.RAWDATADIR, './Xu_CVPR_18/dataset/')
+ROOT_FOLDER = join(config.RAWDIR, './Xu_CVPR_18/dataset/')
 GAZE_TXT_FOLDER = 'Gaze_txt_files'
 OUTPUT_GAZE_FOLDER = join(config.DATADIR, './Xu_CVPR_18/sampled_dataset_replica')
 OUTPUT_FOLDER = join(config.DATADIR, './Xu_CVPR_18/sampled_dataset')

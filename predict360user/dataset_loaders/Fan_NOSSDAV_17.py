@@ -14,9 +14,9 @@ from predict360user.utils import (cartesian_to_eulerian, eulerian_to_cartesian,
                                   interpolate_quaternions,
                                   rotationBetweenVectors)
 
-ROOT_FOLDER = join(config.RAWDATADIR, 'Fan_NOSSDAV_17/dataset/')
-FOLDER_IMAGES_SAL = join(config.RAWDATADIR, 'content/saliency')
-FOLDER_IMAGES_MOT = join(config.RAWDATADIR, 'content/motion')
+ROOT_FOLDER = join(config.RAWDIR, 'Fan_NOSSDAV_17/dataset/')
+FOLDER_IMAGES_SAL = join(config.RAWDIR, 'content/saliency')
+FOLDER_IMAGES_MOT = join(config.RAWDIR, 'content/motion')
 OUTPUT_FOLDER = join(config.DATADIR, 'Fan_NOSSDAV_17/sampled_dataset')
 OUTPUT_TILE_PROB_FOLDER = join(config.DATADIR, 'Fan_NOSSDAV_17/dataset/sensory/tile_replica')
 OUTPUT_SALIENCY_FOLDER = join(config.DATADIR, 'Fan_NOSSDAV_17/extract_saliency/saliency')

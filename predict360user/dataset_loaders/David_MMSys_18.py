@@ -12,7 +12,7 @@ from predict360user.utils import (cartesian_to_eulerian, eulerian_to_cartesian,
                                   interpolate_quaternions,
                                   rotationBetweenVectors)
 
-ROOT_FOLDER = join(config.RAWDATADIR, 'David_MMSys_18/dataset/')
+ROOT_FOLDER = join(config.RAWDIR, 'David_MMSys_18/dataset/')
 OUTPUT_FOLDER = join(config.DATADIR, 'David_MMSys_18/sampled_dataset')
 OUTPUT_TRUE_SALIENCY_FOLDER = join(config.DATADIR, 'David_MMSys_18/true_saliency')
 SAMPLING_RATE = 0.2

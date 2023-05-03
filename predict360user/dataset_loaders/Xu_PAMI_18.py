@@ -1,17 +1,19 @@
 import os
-import numpy as np
-import pandas as pd
-from os import makedirs
-import numpy as np
-import pandas as pd
-from os.path import join, exists
-from pyquaternion import Quaternion
-import scipy
+from os.path import join
 
-from ..utils import eulerian_to_cartesian, cartesian_to_eulerian, rotationBetweenVectors, interpolate_quaternions, degrees_to_radian, radian_to_degrees
+import numpy as np
+import pandas as pd
+import scipy
+from pyquaternion import Quaternion
+
+from predict360user.utils import (cartesian_to_eulerian, degrees_to_radian,
+                                  eulerian_to_cartesian,
+                                  interpolate_quaternions, radian_to_degrees,
+                                  rotationBetweenVectors)
+
 from .. import config
 
-ROOT_FOLDER = join(config.RAWDATADIR, 'Xu_PAMI_18/dataset/')
+ROOT_FOLDER = join(config.RAWDIR, 'Xu_PAMI_18/dataset/')
 DATA_FILENAME = 'FULLdata_per_video_frame.mat'
 OUTPUT_FOLDER = join(config.DATADIR, 'Xu_PAMI_18/sampled_dataset')
 OUTPUT_TRUE_SALIENCY_FOLDER = 'Xu_PAMI_18/true_saliency'

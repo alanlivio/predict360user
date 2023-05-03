@@ -13,7 +13,7 @@ from predict360user.utils import (cartesian_to_eulerian, eulerian_to_cartesian,
                                   interpolate_quaternions,
                                   rotationBetweenVectors)
 
-ROOT_FOLDER = join(config.RAWDATADIR, 'Nguyen_MM_18/dataset/')
+ROOT_FOLDER = join(config.RAWDIR, 'Nguyen_MM_18/dataset/')
 OUTPUT_FOLDER = join(config.DATADIR, 'Nguyen_MM_18/sampled_dataset')
 OUTPUT_SALIENCY_FOLDER = join(config.DATADIR, 'Nguyen_MM_18/extract_saliency/saliency')
 OUTPUT_TRUE_SALIENCY_FOLDER = join(config.DATADIR, 'Nguyen_MM_18/true_saliency')

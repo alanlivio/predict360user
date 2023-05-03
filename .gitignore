@@ -172,7 +172,7 @@ output
 data/*
 .run/
 data-*
-dataraw/model3_360net_128_w16_h9_8000
+rawdata/model3_360net_128_w16_h9_8000
 Graph/*
 logs/*
 bkp*

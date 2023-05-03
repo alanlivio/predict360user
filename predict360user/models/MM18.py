@@ -19,5 +19,5 @@ class MM18(BaseModel):
 
   def __init__(self, m_window: int, h_window: int) -> None:
     self.m_window, self.h_window = m_window, h_window
-    saved_model = load_model(join(config.RAWDATADIR ,'model3_360net_128_w16_h9_8000'))
+    saved_model = load_model(join(config.RAWDIR ,'model3_360net_128_w16_h9_8000'))
     self = copy.copy(saved_model)

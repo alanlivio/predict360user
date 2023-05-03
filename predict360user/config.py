@@ -8,7 +8,7 @@ import IPython
 import plotly.graph_objs as go
 
 # global constants
-RAWDATADIR = f"{pathlib.Path(__file__).parent.parent / 'dataraw/'}"
+RAWDIR = f"{pathlib.Path(__file__).parent.parent / 'rawdata/'}"
 DATADIR = f"{pathlib.Path(__file__).parent.parent / 'data/'}"
 HMDDIR = f"{pathlib.Path(__file__).parent / 'head_motion_prediction/'}"
 ARGS_MODEL_NAMES = ['pos_only', 'pos_only_3d', 'no_motion', 'interpolation', 'TRACK', 'CVPR18', 'MM18', 'most_salient_point']
