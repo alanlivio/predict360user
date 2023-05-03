@@ -45,12 +45,12 @@ class Dataset:
   def __init__(self, savedir=config.DEFAULT_SAVEDIR) -> None:
     self.savedir = savedir
     self.pickle_file = os.path.join(savedir, 'df_trajects.pickle')
-    if exists(self.self.pickle_file):
-      with open(self.self.pickle_file, 'rb') as f:
-        config.info(f'loading df from {self.self.pickle_file}')
+    if exists(self.pickle_file):
+      with open(self.pickle_file, 'rb') as f:
+        config.info(f'loading df from {self.pickle_file}')
         self.df = pickle.load(f)
     else:
-      config.info(f'there is no {self.self.pickle_file}')
+      config.info(f'there is no {self.pickle_file}')
       config.info(f'loading df from {config.HMDDIR}')
       self.df = self._load_df_trajects_from_hmp()
       config.info(f'calculating entropy')
@@ -114,17 +114,17 @@ class Dataset:
     return df
 
   def dump(self) -> None:
-    config.info(f'saving df to {self.self.pickle_file}')
-    with open(self.self.pickle_file, 'wb') as f:
+    config.info(f'saving df to {self.pickle_file}')
+    with open(self.pickle_file, 'wb') as f:
       pickle.dump(self.df, f)
 
   def dump_column(self, column) -> None:
-    if exists(self.self.pickle_file):
+    if exists(self.pickle_file):
       with multiprocessing.Lock():
-        with open(self.self.pickle_file, 'rb') as f:
+        with open(self.pickle_file, 'rb') as f:
           tmpdf = pickle.load(f)
         tmpdf[column] = self.df[column]
-        with open(self.self.pickle_file, 'wb') as f:
+        with open(self.pickle_file, 'wb') as f:
           pickle.dump(tmpdf, f)
     else:
       self.dump()
