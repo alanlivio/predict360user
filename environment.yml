@@ -1,7 +1,9 @@
+# this environment follow https://www.tensorflow.org/install/pip
 name: p3u
 
 channels:
   - conda-forge
+  - defaults
 
 dependencies:
   - python=3.9
