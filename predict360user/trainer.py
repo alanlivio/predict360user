@@ -201,7 +201,9 @@ class Trainer():
     csv_logger = CSVLogger(self.train_csv_log_f, append=True)
     # https://www.tensorflow.org/tutorials/keras/save_and_load
     model_checkpoint = ModelCheckpoint(self.model_path,
+                                       save_best_only=True,
                                        save_weights_only=True,
+                                       mode='auto',
                                        verbose=1)
     callbacks = [csv_logger, model_checkpoint]
     generator = self.generate_batchs(model, self.x_train_wins)
