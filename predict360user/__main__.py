@@ -1,5 +1,3 @@
-#!env python
-
 import argparse
 import sys
 
@@ -39,22 +37,22 @@ if __name__ == '__main__':
                   action='store_true',
                   help='show train/test info but stop before perform')
 
-  # psr.add_argument('-init_window',
-  #                  nargs='?',
-  #                  type=int,
-  #                  default=30,
-  #                  help='initial buffer to avoid stationary part (default: 30)')
-  # psr.add_argument('-m_window',
-  #                  nargs='?',
-  #                  type=int,
-  #                  default=5,
-  #                  help='buffer window in timesteps (default: 5)')
-  # psr.add_argument('-h_window',
-  #                  nargs='?',
-  #                  type=int,
-  #                  default=25,
-  #                  help='''forecast window in timesteps (5 timesteps = 1 second)
-  #                          used to predict (default: 25)''')
+  psr.add_argument('-init_window',
+                   nargs='?',
+                   type=int,
+                   default=30,
+                   help='initial buffer to avoid stationary part (default: 30)')
+  psr.add_argument('-m_window',
+                   nargs='?',
+                   type=int,
+                   default=5,
+                   help='buffer window in timesteps (default: 5)')
+  psr.add_argument('-h_window',
+                   nargs='?',
+                   type=int,
+                   default=25,
+                   help='''forecast window in timesteps (5 timesteps = 1 second)
+                           used to predict (default: 25)''')
   psr.add_argument('-test_size',
                    nargs='?',
                    type=float,
@@ -82,9 +80,9 @@ if __name__ == '__main__':
       'epochs': args.epochs,
       'test_size': args.test_size,
       'gpu_id': args.gpu_id,
-      # 'init_window': args.init_window,
-      # 'm_window': args.m_window,
-      # 'h_window': args.h_window,
+      'init_window': args.init_window,
+      'm_window': args.m_window,
+      'h_window': args.h_window,
   }
   trn = Trainer(**trn_args)
   if args.train:
