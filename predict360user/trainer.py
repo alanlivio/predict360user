@@ -399,13 +399,13 @@ class Trainer():
     self._show_compare_evaluate()
 
   def _save_compare_evaluate(self) -> None:
-    with open(self.self.compare_eval_pickle, 'wb') as f:
-      config.info(f'saving df_res to {self.self.compare_eval_pickle}')
+    with open(self.compare_eval_pickle, 'wb') as f:
+      config.info(f'saving df_res to {self.compare_eval_pickle}')
       pickle.dump(self.df_res, f)
 
   def _load_compare_evaluate(self) -> None:
-    with open(self.self.compare_eval_pickle, 'rb') as f:
-      config.info(f'loading df_res from {self.self.compare_eval_pickle}')
+    with open(self.compare_eval_pickle, 'rb') as f:
+      config.info(f'loading df_res from {self.compare_eval_pickle}')
       self.df_res = pickle.load(f)
 
   def _show_compare_evaluate(self, df_res=None) -> None:
