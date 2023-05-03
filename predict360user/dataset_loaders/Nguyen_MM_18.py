@@ -14,9 +14,9 @@ from predict360user.utils import (cartesian_to_eulerian, eulerian_to_cartesian,
                                   rotationBetweenVectors)
 
 ROOT_FOLDER = join(config.RAWDIR, 'Nguyen_MM_18/dataset/')
-OUTPUT_FOLDER = join(config.DATADIR, 'Nguyen_MM_18/sampled_dataset')
-OUTPUT_SALIENCY_FOLDER = join(config.DATADIR, 'Nguyen_MM_18/extract_saliency/saliency')
-OUTPUT_TRUE_SALIENCY_FOLDER = join(config.DATADIR, 'Nguyen_MM_18/true_saliency')
+OUTPUT_FOLDER = join(config.SAVEDIR, 'Nguyen_MM_18/sampled_dataset')
+OUTPUT_SALIENCY_FOLDER = join(config.SAVEDIR, 'Nguyen_MM_18/extract_saliency/saliency')
+OUTPUT_TRUE_SALIENCY_FOLDER = join(config.SAVEDIR, 'Nguyen_MM_18/true_saliency')
 NUM_TILES_WIDTH_TRUE_SAL = 256
 NUM_TILES_HEIGHT_TRUE_SAL = 256
 ORIGINAL_SAMPLING_RATE = 0.063

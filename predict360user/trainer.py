@@ -73,7 +73,7 @@ class Trainer():
     else:
       self.train_entropy = self.train_entropy.removesuffix('_hmp')
       self.model_fullname = f'{self.model_name},{self.dataset_name},{self.entropy_type},{self.train_entropy}'
-    self.model_dir = join(config.DATADIR, self.model_fullname)
+    self.model_dir = join(config.SAVEDIR, self.model_fullname)
     self.train_csv_log_f = join(self.model_dir, 'train_results.csv')
     self.model_path = join(self.model_dir, 'model.h5')
     self.end_window = self.h_window
@@ -246,7 +246,7 @@ class Trainer():
     # create model
     config.info('creating model ...')
     if self.using_auto:
-      prefix = join(config.DATADIR, f'{self.model_name},{self.dataset_name},actS,')
+      prefix = join(config.SAVEDIR, f'{self.model_name},{self.dataset_name},actS,')
       self.threshold_medium, self.threshold_hight = get_class_thresholds(self.ds.df, 'actS')
       self.model_low = self.create_model(join(prefix + 'low'))
       self.model_medium = self.create_model(join(prefix + 'medium'))
@@ -288,10 +288,10 @@ class Trainer():
   def compare_train(self) -> None:
     result_csv = 'train_results.csv'
     # find result_csv files
-    csv_df_l = [(dir_name, pd.read_csv(join(config.DATADIR, dir_name, file_name)))
-                for dir_name in os.listdir(config.DATADIR)
-                if isdir(join(config.DATADIR, dir_name))
-                for file_name in os.listdir(join(config.DATADIR, dir_name))
+    csv_df_l = [(dir_name, pd.read_csv(join(config.SAVEDIR, dir_name, file_name)))
+                for dir_name in os.listdir(config.SAVEDIR)
+                if isdir(join(config.SAVEDIR, dir_name))
+                for file_name in os.listdir(join(config.SAVEDIR, dir_name))
                 if file_name == result_csv]
     csv_df_l = [df.assign(model=dir_name) for (dir_name, df) in csv_df_l]
     assert csv_df_l, f'no data/<model>/{result_csv} files, run -train'
@@ -379,7 +379,7 @@ class Trainer():
       self.df_res.loc[newid, range_win] = avg_error_per_timestamp
     self._show_compare_evaluate()
 
-  RES_EVALUATE = os.path.join(config.DATADIR, 'df_res_evaluate.pickle')
+  RES_EVALUATE = os.path.join(config.SAVEDIR, 'df_res_evaluate.pickle')
 
   def _save_compare_evaluate(self) -> None:
     with open(self.RES_EVALUATE, 'wb') as f:

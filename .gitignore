@@ -169,9 +169,8 @@ typings
 ### Added ###
 output
 .tmp*
-data/*
-.run/
-data-*
+saved/*
+saved-*
 rawdata/model3_360net_128_w16_h9_8000
 Graph/*
 logs/*

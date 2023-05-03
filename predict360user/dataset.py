@@ -41,7 +41,7 @@ class Dataset:
     Attributes:
         df (str): pandas.DataFrame.
     """
-  PICKLE_FILE = os.path.join(config.DATADIR, 'df_trajects.pickle')
+  PICKLE_FILE = os.path.join(config.SAVEDIR, 'df_trajects.pickle')
 
   def __init__(self) -> None:
     if exists(self.PICKLE_FILE):

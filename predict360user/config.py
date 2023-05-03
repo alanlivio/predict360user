@@ -9,7 +9,7 @@ import plotly.graph_objs as go
 
 # global constants
 RAWDIR = f"{pathlib.Path(__file__).parent.parent / 'rawdata/'}"
-DATADIR = f"{pathlib.Path(__file__).parent.parent / 'data/'}"
+SAVEDIR = f"{pathlib.Path(__file__).parent.parent / 'saved/'}"
 HMDDIR = f"{pathlib.Path(__file__).parent / 'head_motion_prediction/'}"
 ARGS_MODEL_NAMES = ['pos_only', 'pos_only_3d', 'no_motion', 'interpolation', 'TRACK', 'CVPR18', 'MM18', 'most_salient_point']
 MODELS_NAMES_NO_TRAIN = ['no_motion', 'interpolation']
@@ -38,7 +38,7 @@ def show_or_save(output, title = '') -> None:
         title = output.layout.title.text
       else:
         title = datetime.datetime.now().strftime("%y%m%d_%H%M%S")
-    html_file = join(DATADIR, title +'.html')
+    html_file = join(SAVEDIR, title +'.html')
     if isinstance(output, go.Figure):
       output.write_html(html_file)
     else:
