@@ -330,22 +330,29 @@ class Trainer():
     # horizon timestamps to be calculated
     range_win = range(self.h_window)[::4]
 
-    # create df_res
+    # create df_compare_evaluate
     columns = ['model_name', 'S_type', 'S_class']
     if not hasattr(self, 'df_res'):
-      self._load_compare_evaluate()
-    else:
-      self.df_res = pd.DataFrame(columns=columns + list(range_win), dtype=np.float32)
+      if exists(self.compare_eval_pickle):
+        with open(self.compare_eval_pickle, 'rb') as f:
+          config.info(f'loading df_compare_evaluate from {self.compare_eval_pickle}')
+          self.df_compare_evaluate = pickle.load(f)
+      else:
+        self.df_compare_evaluate = pd.DataFrame(columns=columns + list(range_win), dtype=np.float32)
 
-    # create targets in format (model, s_type, s_class, mask)
     self.partition()
+
+    # models_cols
     models_cols = sorted([
       col for col in self.x_test.columns \
       if any(m_name in col for m_name in config.ARGS_MODEL_NAMES)\
       and not any(ds_name in col for ds_name in config.ARGS_DS_NAMES[1:])\
-      and not any(self.df_res['model_name'] == col) # already calculated
+      and not any(self.df_compare_evaluate['model_name'] == col) # already calculated
       ])
-    # models_cols = ['no_motion']
+    config.info(f"compare evaluate for models: {', '.join(models_cols)}")
+    config.info(f"for each model, compare users: {config.ARGS_ENTROPY_NAMES[:6]}")
+
+    # create targets in format (model, s_type, s_class, mask)
     targets = []
     for model in models_cols:
       assert len(self.x_test) == len(self.x_test[model].apply(lambda x: len(x) != 0))
@@ -361,24 +368,20 @@ class Trainer():
       targets.append(
           (model, self.entropy_type, 'hight', self.x_test[self.entropy_type + '_c'] == 'hight'))
 
-    # fill df_res from moldel results column at df
+    # fill df_compare_evaluate from moldel results column at df
     def _calc_wins_error(df_wins_cols, errors_per_timestamp) -> None:
       traject_index = df_wins_cols.name
       traject = self.x_test.loc[traject_index, 'traces']
       win_pos_l = df_wins_cols.index
       for win_pos in win_pos_l:
-        pred_win = df_wins_cols[win_pos]
         if isinstance(df_wins_cols[win_pos], float):
           break  # TODO: review why some pred ends at 51
         true_win = traject[win_pos + 1:win_pos + self.h_window + 1]
+        pred_win = df_wins_cols[win_pos]
         for t in range_win:
-          if t not in errors_per_timestamp:
-            errors_per_timestamp[t] = []
           errors_per_timestamp[t].append(orth_dist_cartesian(true_win[t], pred_win[t]))
 
-    config.info(f"compare results for models: {', '.join(models_cols)}")
-    config.info(f"for each model, compare users: {config.ARGS_ENTROPY_NAMES[:6]}")
-    for model, s_type, s_class, mask in tqdm(targets):
+    for model, s_type, s_class, mask in tqdm(targets, desc='compare evaluate'):
       # print(model, s_type, s_class, mask.values.sum(), type(mask))
       # create df_win with columns as timestamps
       model_srs = self.x_test.loc[mask, model]
@@ -389,38 +392,31 @@ class Trainer():
       # calc errors_per_timestamp from df_wins
       errors_per_timestamp = {idx: [] for idx in range_win}
       model_df_wins.apply(_calc_wins_error, axis=1, args=(errors_per_timestamp, ))
-      newid = len(self.df_res)
+      newid = len(self.df_compare_evaluate)
       avg_error_per_timestamp = [
           np.mean(errors_per_timestamp[t]) if len(errors_per_timestamp[t]) else np.nan
           for t in range_win
       ]
-      self.df_res.loc[newid, ['model_name', 'S_type', 'S_class']] = [model, s_type, s_class]
-      self.df_res.loc[newid, range_win] = avg_error_per_timestamp
-    self._show_compare_evaluate()
+      self.df_compare_evaluate.loc[newid, ['model_name', 'S_type', 'S_class']] = [model, s_type, s_class]
+      self.df_compare_evaluate.loc[newid, range_win] = avg_error_per_timestamp
 
-  def _save_compare_evaluate(self) -> None:
-    with open(self.compare_eval_pickle, 'wb') as f:
-      config.info(f'saving df_res to {self.compare_eval_pickle}')
-      pickle.dump(self.df_res, f)
-
-  def _load_compare_evaluate(self) -> None:
-    with open(self.compare_eval_pickle, 'rb') as f:
-      config.info(f'loading df_res from {self.compare_eval_pickle}')
-      self.df_res = pickle.load(f)
-
-  def _show_compare_evaluate(self, df_res=None) -> None:
-    df_res = self.df_res if df_res is None else df_res
-    range_win = range(self.h_window)[::4]
     # create vis table
-    assert len(df_res), 'run -evaluate first'
+    assert len(self.df_compare_evaluate), 'run -evaluate first'
     props = 'text-decoration: underline'
-    output = df_res.dropna()\
+    output = self.df_compare_evaluate.dropna()\
       .sort_values(by=list(range_win))\
       .style\
       .background_gradient(axis=0, cmap='coolwarm')\
       .highlight_min(subset=list(range_win), props=props)\
       .highlight_max(subset=list(range_win), props=props)
     config.show_or_save(output, self.savedir, 'compare_evaluate')
+
+  def compare_evaluate_save(self) -> None:
+    assert self.df_compare_evaluate
+    with open(self.compare_eval_pickle, 'wb') as f:
+      config.info(f'saving df_compare_evaluate to {self.compare_eval_pickle}')
+      pickle.dump(self.df_compare_evaluate, f)
+
 
   def show_train_test_split(self) -> None:
     self.partition()
