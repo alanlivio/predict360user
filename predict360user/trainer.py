@@ -94,7 +94,7 @@ class Trainer():
     elif self.model_name == 'pos_only_3d':
       model = PosOnly3D(self.m_window, self.h_window)
     elif self.model_name == 'interpolation':
-      return Interpolation() # does not need training
+      return Interpolation(self.h_window) # does not need training
     elif self.model_name == 'no_motion':
       return NoMotion(self.h_window) # does not need training
     else:

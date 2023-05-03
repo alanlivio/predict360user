@@ -109,12 +109,15 @@ class NoMotion(BaseModel):
 
 class Interpolation(BaseModel):
 
+  def __init__(self, h_window) -> None:
+    self.h_window = h_window
+
   def generate_batch(self, traces_l: list[np.array], x_i_l: list) -> Tuple[list, list]:
     raise NotImplementedError
 
   def predict_for_sample(self, traces: np.array, x_i) -> np.array:
     rotation = rotationBetweenVectors(traces[-2], traces[-1])
-    return rotation.rotate(traces[-1]),
+    return [rotation.rotate(trace) for trace in traces[x_i:x_i + self.h_window]]
 
 class Regression(Model):
   def generate_batch(self, traces_l: list[np.array], x_i_l: list) -> Tuple[list, list]:
