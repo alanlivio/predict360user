@@ -119,6 +119,7 @@ class Dataset:
       pickle.dump(self.df, f)
 
   def dump_column(self, column) -> None:
+    config.info(f'update column {column} to {self.pickle_file}')
     if exists(self.pickle_file):
       with multiprocessing.Lock():
         with open(self.pickle_file, 'rb') as f:

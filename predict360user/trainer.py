@@ -272,7 +272,7 @@ class Trainer():
       empty = pd.Series([{} for _ in range(len(self.ds.df))]).astype(object)
       self.ds.df[self.model_fullname] = empty
 
-    for ids in tqdm(self.x_test_wins, desc='position predictions'):
+    for ids in tqdm(self.x_test_wins, desc=f'evaluate model {self.model_fullname}'):
       user = ids['user']
       video = ids['video']
       x_i = ids['trace_id']
