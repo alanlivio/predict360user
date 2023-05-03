@@ -85,7 +85,7 @@ class Trainer():
   def __str__(self) -> str:
     return "Trainer(" + ", ".join(f'{elem}={getattr(self, elem)}' for elem in [
         'model_name', 'dataset_name', 'h_window', 'init_window', 'm_window', 'test_size',
-        'train_entropy', 'epochs', 'dry_run'
+        'train_entropy', 'epochs', 'savedir'
     ]) + ")"
 
   def create_model(self, model_path='') -> BaseModel:
@@ -289,6 +289,7 @@ class Trainer():
     self.ds.dump_column(self.model_fullname)
 
   def compare_train(self) -> None:
+    assert exists(self.savedir)
     result_csv = 'train_results.csv'
     # find result_csv files
     csv_df_l = [(dir_name, pd.read_csv(join(self.savedir, dir_name, file_name)))
@@ -297,7 +298,7 @@ class Trainer():
                 for file_name in os.listdir(join(self.savedir, dir_name))
                 if file_name == result_csv]
     csv_df_l = [df.assign(model=dir_name) for (dir_name, df) in csv_df_l]
-    assert csv_df_l, f'no data/<model>/{result_csv} files, run -train'
+    assert csv_df_l, f'no <savedir>/<model>/{result_csv} files, run -train'
 
     # plot
     df_compare = pd.concat(csv_df_l)
