@@ -310,17 +310,30 @@ class Trainer():
                   width=800)
     config.show_or_save(fig, self.savedir, 'compare_train')
 
-  def compare_evaluate(self, load_saved=False) -> None:
+  def list_done_evaluate(self) -> None:
+    self._get_ds()
+    models_cols = sorted([
+      col for col in self.ds.df.columns \
+      if any(m_name in col for m_name in config.ARGS_MODEL_NAMES)\
+      and not any(ds_name in col for ds_name in config.ARGS_DS_NAMES[1:]) # already calculated
+      ])
+    if models_cols:
+      for model in models_cols:
+        preds = len(self.ds.df[model].apply(lambda x: len(x) != 0))
+        config.info(f"{model} has {preds} predict wins calculated")
+    else:
+      config.error('no evaluate done')
+
+  def compare_evaluate(self) -> None:
     # horizon timestamps to be calculated
     range_win = range(self.h_window)[::4]
 
     # create df_res
     columns = ['model_name', 'S_type', 'S_class']
     if not hasattr(self, 'df_res'):
-      if load_saved:
-        self._load_compare_evaluate()
-      else:
-        self.df_res = pd.DataFrame(columns=columns + list(range_win), dtype=np.float32)
+      self._load_compare_evaluate()
+    else:
+      self.df_res = pd.DataFrame(columns=columns + list(range_win), dtype=np.float32)
 
     # create targets in format (model, s_type, s_class, mask)
     self.partition()
