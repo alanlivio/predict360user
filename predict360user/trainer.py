@@ -48,10 +48,13 @@ class Trainer():
                gpu_id=0,
                train_entropy='all',
                epochs=config.DEFAULT_EPOCHS,
+               savedir=config.DEFAULT_SAVEDIR,
                dry_run=False) -> None:
     self.model_name = model_name
     self.dataset_name = dataset_name
     self.train_entropy = train_entropy
+    self.savedir = savedir
+    self.compare_eval_pickle = join(self.savedir, 'df_compare_evaluate.pickle')
     assert self.model_name in config.ARGS_MODEL_NAMES
     assert self.dataset_name in config.ARGS_DS_NAMES
     assert self.train_entropy in config.ARGS_ENTROPY_NAMES + config.ARGS_ENTROPY_AUTO_NAMES
@@ -73,7 +76,7 @@ class Trainer():
     else:
       self.train_entropy = self.train_entropy.removesuffix('_hmp')
       self.model_fullname = f'{self.model_name},{self.dataset_name},{self.entropy_type},{self.train_entropy}'
-    self.model_dir = join(config.SAVEDIR, self.model_fullname)
+    self.model_dir = join(self.savedir, self.model_fullname)
     self.train_csv_log_f = join(self.model_dir, 'train_results.csv')
     self.model_path = join(self.model_dir, 'model.h5')
     self.end_window = self.h_window
@@ -246,7 +249,7 @@ class Trainer():
     # create model
     config.info('creating model ...')
     if self.using_auto:
-      prefix = join(config.SAVEDIR, f'{self.model_name},{self.dataset_name},actS,')
+      prefix = join(self.savedir, f'{self.model_name},{self.dataset_name},actS,')
       self.threshold_medium, self.threshold_hight = get_class_thresholds(self.ds.df, 'actS')
       self.model_low = self.create_model(join(prefix + 'low'))
       self.model_medium = self.create_model(join(prefix + 'medium'))
@@ -288,10 +291,10 @@ class Trainer():
   def compare_train(self) -> None:
     result_csv = 'train_results.csv'
     # find result_csv files
-    csv_df_l = [(dir_name, pd.read_csv(join(config.SAVEDIR, dir_name, file_name)))
-                for dir_name in os.listdir(config.SAVEDIR)
-                if isdir(join(config.SAVEDIR, dir_name))
-                for file_name in os.listdir(join(config.SAVEDIR, dir_name))
+    csv_df_l = [(dir_name, pd.read_csv(join(self.savedir, dir_name, file_name)))
+                for dir_name in os.listdir(self.savedir)
+                if isdir(join(self.savedir, dir_name))
+                for file_name in os.listdir(join(self.savedir, dir_name))
                 if file_name == result_csv]
     csv_df_l = [df.assign(model=dir_name) for (dir_name, df) in csv_df_l]
     assert csv_df_l, f'no data/<model>/{result_csv} files, run -train'
@@ -304,7 +307,7 @@ class Trainer():
                   color='model',
                   title='compare_train_loss',
                   width=800)
-    config.show_or_save(fig)
+    config.show_or_save(fig, self.savedir, 'compare_train')
 
   def compare_evaluate(self, load_saved=False) -> None:
     # horizon timestamps to be calculated
@@ -379,16 +382,14 @@ class Trainer():
       self.df_res.loc[newid, range_win] = avg_error_per_timestamp
     self._show_compare_evaluate()
 
-  RES_EVALUATE = os.path.join(config.SAVEDIR, 'df_res_evaluate.pickle')
-
   def _save_compare_evaluate(self) -> None:
-    with open(self.RES_EVALUATE, 'wb') as f:
-      config.info(f'saving df_res to {self.RES_EVALUATE}')
+    with open(self.self.compare_eval_pickle, 'wb') as f:
+      config.info(f'saving df_res to {self.self.compare_eval_pickle}')
       pickle.dump(self.df_res, f)
 
   def _load_compare_evaluate(self) -> None:
-    with open(self.RES_EVALUATE, 'rb') as f:
-      config.info(f'loading df_res from {self.RES_EVALUATE}')
+    with open(self.self.compare_eval_pickle, 'rb') as f:
+      config.info(f'loading df_res from {self.self.compare_eval_pickle}')
       self.df_res = pickle.load(f)
 
   def _show_compare_evaluate(self, df_res=None) -> None:
@@ -403,7 +404,7 @@ class Trainer():
       .background_gradient(axis=0, cmap='coolwarm')\
       .highlight_min(subset=list(range_win), props=props)\
       .highlight_max(subset=list(range_win), props=props)
-    config.show_or_save(output, 'compare_evaluate')
+    config.show_or_save(output, self.savedir, 'compare_evaluate')
 
   def show_train_test_split(self) -> None:
     self.partition()

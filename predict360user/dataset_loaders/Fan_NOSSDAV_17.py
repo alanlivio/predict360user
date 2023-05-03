@@ -17,10 +17,10 @@ from predict360user.utils import (cartesian_to_eulerian, eulerian_to_cartesian,
 ROOT_FOLDER = join(config.RAWDIR, 'Fan_NOSSDAV_17/dataset/')
 FOLDER_IMAGES_SAL = join(config.RAWDIR, 'content/saliency')
 FOLDER_IMAGES_MOT = join(config.RAWDIR, 'content/motion')
-OUTPUT_FOLDER = join(config.SAVEDIR, 'Fan_NOSSDAV_17/sampled_dataset')
-OUTPUT_TILE_PROB_FOLDER = join(config.SAVEDIR, 'Fan_NOSSDAV_17/dataset/sensory/tile_replica')
-OUTPUT_SALIENCY_FOLDER = join(config.SAVEDIR, 'Fan_NOSSDAV_17/extract_saliency/saliency')
-OUTPUT_TRUE_SALIENCY_FOLDER = join(config.SAVEDIR, 'Fan_NOSSDAV_17/true_saliency')
+OUTPUT_FOLDER = join(config.DEFAULT_SAVEDIR, 'Fan_NOSSDAV_17/sampled_dataset')
+OUTPUT_TILE_PROB_FOLDER = join(config.DEFAULT_SAVEDIR, 'Fan_NOSSDAV_17/dataset/sensory/tile_replica')
+OUTPUT_SALIENCY_FOLDER = join(config.DEFAULT_SAVEDIR, 'Fan_NOSSDAV_17/extract_saliency/saliency')
+OUTPUT_TRUE_SALIENCY_FOLDER = join(config.DEFAULT_SAVEDIR, 'Fan_NOSSDAV_17/true_saliency')
 NUM_TILES_WIDTH_TRUE_SAL = 256
 NUM_TILES_HEIGHT_TRUE_SAL = 256
 

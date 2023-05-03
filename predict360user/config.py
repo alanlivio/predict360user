@@ -9,7 +9,7 @@ import plotly.graph_objs as go
 
 # global constants
 RAWDIR = f"{pathlib.Path(__file__).parent.parent / 'rawdata/'}"
-SAVEDIR = f"{pathlib.Path(__file__).parent.parent / 'saved/'}"
+DEFAULT_SAVEDIR = f"{pathlib.Path().resolve() / 'saved'}"
 HMDDIR = f"{pathlib.Path(__file__).parent / 'head_motion_prediction/'}"
 ARGS_MODEL_NAMES = ['pos_only', 'pos_only_3d', 'no_motion', 'interpolation', 'TRACK', 'CVPR18', 'MM18', 'most_salient_point']
 MODELS_NAMES_NO_TRAIN = ['no_motion', 'interpolation']
@@ -29,7 +29,7 @@ logging.basicConfig(level=logging.INFO, format='-- predict360user: %(message)s')
 info = logging.getLogger(__name__).info
 error = logging.getLogger(__name__).error
 
-def show_or_save(output, title = '') -> None:
+def show_or_save(output, savedir, title = '') -> None:
   if 'ipykernel' in sys.modules:
     IPython.display.display(output)
   else:
@@ -38,7 +38,7 @@ def show_or_save(output, title = '') -> None:
         title = output.layout.title.text
       else:
         title = datetime.datetime.now().strftime("%y%m%d_%H%M%S")
-    html_file = join(SAVEDIR, title +'.html')
+    html_file = join(savedir, title +'.html')
     if isinstance(output, go.Figure):
       output.write_html(html_file)
     else:

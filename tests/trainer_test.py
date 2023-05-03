@@ -10,7 +10,7 @@ class TrainerTestCase(unittest.TestCase):
   def test_init(self) -> None:
     trn = Trainer()
     self.assertEqual(trn.model_fullname, 'pos_only')
-    self.assertEqual(trn.model_dir, join(config.SAVEDIR, trn.model_fullname))
+    self.assertEqual(trn.model_dir, join(config.DEFAULT_SAVEDIR, trn.model_fullname))
     self.assertEqual(trn.using_auto, False)
     trn = Trainer(dataset_name='david')
     self.assertEqual(trn.model_fullname, 'pos_only,david,,')
@@ -21,7 +21,7 @@ class TrainerTestCase(unittest.TestCase):
       train_entropy = train_entropy.removesuffix('_hmp')
       model_fullname = f'pos_only,all,{entropy_type},{train_entropy}'
       self.assertEqual(trn.model_fullname, model_fullname)
-      self.assertEqual(trn.model_dir, join(config.SAVEDIR, model_fullname))
+      self.assertEqual(trn.model_dir, join(config.DEFAULT_SAVEDIR, model_fullname))
       self.assertEqual(trn.using_auto, train_entropy.startswith('auto'))
 
   # def test_train(self) -> None:

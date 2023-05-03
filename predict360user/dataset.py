@@ -41,15 +41,16 @@ class Dataset:
     Attributes:
         df (str): pandas.DataFrame.
     """
-  PICKLE_FILE = os.path.join(config.SAVEDIR, 'df_trajects.pickle')
 
-  def __init__(self) -> None:
-    if exists(self.PICKLE_FILE):
-      with open(self.PICKLE_FILE, 'rb') as f:
-        config.info(f'loading df from {self.PICKLE_FILE}')
+  def __init__(self, savedir=config.DEFAULT_SAVEDIR) -> None:
+    self.savedir = savedir
+    self.pickle_file = os.path.join(savedir, 'df_trajects.pickle')
+    if exists(self.self.pickle_file):
+      with open(self.self.pickle_file, 'rb') as f:
+        config.info(f'loading df from {self.self.pickle_file}')
         self.df = pickle.load(f)
     else:
-      config.info(f'there is no {self.PICKLE_FILE}')
+      config.info(f'there is no {self.self.pickle_file}')
       config.info(f'loading df from {config.HMDDIR}')
       self.df = self._load_df_trajects_from_hmp()
       config.info(f'calculating entropy')
@@ -113,17 +114,17 @@ class Dataset:
     return df
 
   def dump(self) -> None:
-    config.info(f'saving df to {self.PICKLE_FILE}')
-    with open(self.PICKLE_FILE, 'wb') as f:
+    config.info(f'saving df to {self.self.pickle_file}')
+    with open(self.self.pickle_file, 'wb') as f:
       pickle.dump(self.df, f)
 
   def dump_column(self, column) -> None:
-    if exists(self.PICKLE_FILE):
+    if exists(self.self.pickle_file):
       with multiprocessing.Lock():
-        with open(self.PICKLE_FILE, 'rb') as f:
+        with open(self.self.pickle_file, 'rb') as f:
           tmpdf = pickle.load(f)
         tmpdf[column] = self.df[column]
-        with open(self.PICKLE_FILE, 'wb') as f:
+        with open(self.self.pickle_file, 'wb') as f:
           pickle.dump(tmpdf, f)
     else:
       self.dump()

@@ -14,9 +14,9 @@ from predict360user.utils import (cartesian_to_eulerian, eulerian_to_cartesian,
 
 ROOT_FOLDER = join(config.RAWDIR, './Xu_CVPR_18/dataset/')
 GAZE_TXT_FOLDER = 'Gaze_txt_files'
-OUTPUT_GAZE_FOLDER = join(config.SAVEDIR, './Xu_CVPR_18/sampled_dataset_replica')
-OUTPUT_FOLDER = join(config.SAVEDIR, './Xu_CVPR_18/sampled_dataset')
-OUTPUT_TRUE_SALIENCY_FOLDER = join(config.SAVEDIR, './Xu_CVPR_18/true_saliency')
+OUTPUT_GAZE_FOLDER = join(config.DEFAULT_SAVEDIR, './Xu_CVPR_18/sampled_dataset_replica')
+OUTPUT_FOLDER = join(config.DEFAULT_SAVEDIR, './Xu_CVPR_18/sampled_dataset')
+OUTPUT_TRUE_SALIENCY_FOLDER = join(config.DEFAULT_SAVEDIR, './Xu_CVPR_18/true_saliency')
 SAMPLING_RATE = 0.2
 NUM_TILES_WIDTH_TRUE_SAL = 256
 NUM_TILES_HEIGHT_TRUE_SAL = 256

@@ -58,6 +58,11 @@ if __name__ == '__main__':
                    type=float,
                    default=0.2,
                    help='test percetage (default: 0.2)')
+  psr.add_argument('-savedir',
+                   nargs='?',
+                   default="saved",
+                   type=str,
+                   help='dir to save models, processed data and results (default: saved/)')
 
   # train() only params
   psr.add_argument('-gpu_id',
@@ -72,6 +77,7 @@ if __name__ == '__main__':
                    help=f'epochs numbers (default is {config.DEFAULT_EPOCHS})')
 
   args = psr.parse_args()
+  # create Trainer
   trn_args = {
       'dataset_name': args.dataset_name,
       'model_name': args.model_name,
@@ -83,8 +89,10 @@ if __name__ == '__main__':
       'init_window': args.init_window,
       'm_window': args.m_window,
       'h_window': args.h_window,
+      'savedir' : args.savedir
   }
   trn = Trainer(**trn_args)
+  # perform action
   if args.train:
     trn.train()
   elif args.evaluate:
