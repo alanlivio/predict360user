@@ -114,7 +114,7 @@ class Trainer():
 
   def _get_ds(self) -> None:
     if not hasattr(self, 'ds'):
-      self.ds = Dataset()
+      self.ds = Dataset(savedir=self.savedir)
 
   def partition(self) -> None:
     config.info('partitioning...')
