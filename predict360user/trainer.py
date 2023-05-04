@@ -328,7 +328,7 @@ class Trainer():
 
   def compare_evaluate(self) -> None:
     # horizon timestamps to be calculated
-    range_win = range(self.h_window)[::4]
+    self.range_win = range(self.h_window)[::4]
 
     # create df_compare_evaluate
     columns = ['model_name', 'S_type', 'S_class']
@@ -338,7 +338,7 @@ class Trainer():
           config.info(f'loading df_compare_evaluate from {self.compare_eval_pickle}')
           self.df_compare_evaluate = pickle.load(f)
       else:
-        self.df_compare_evaluate = pd.DataFrame(columns=columns + list(range_win), dtype=np.float32)
+        self.df_compare_evaluate = pd.DataFrame(columns=columns + list(self.range_win), dtype=np.float32)
 
     self.partition()
 
@@ -349,8 +349,11 @@ class Trainer():
       and not any(ds_name in col for ds_name in config.ARGS_DS_NAMES[1:])\
       and not any(self.df_compare_evaluate['model_name'] == col) # already calculated
       ])
-    config.info(f"compare evaluate for models: {', '.join(models_cols)}")
-    config.info(f"for each model, compare users: {config.ARGS_ENTROPY_NAMES[:6]}")
+    if models_cols:
+      config.info(f"compare evaluate for models: {', '.join(models_cols)}")
+      config.info(f"for each model, compare users: {config.ARGS_ENTROPY_NAMES[:6]}")
+    else:
+      config.info(f"evaluate models already calculated. skip to visualize")
 
     # create targets in format (model, s_type, s_class, mask)
     targets = []
@@ -368,8 +371,8 @@ class Trainer():
       targets.append(
           (model, self.entropy_type, 'hight', self.x_test[self.entropy_type + '_c'] == 'hight'))
 
-    # fill df_compare_evaluate from moldel results column at df
-    def _calc_wins_error(df_wins_cols, errors_per_timestamp) -> None:
+    # function to fill self.df_compare_evaluate from each moldel column at self.df
+    def _evaluate_model_wins(df_wins_cols, errors_per_timestamp) -> None:
       traject_index = df_wins_cols.name
       traject = self.x_test.loc[traject_index, 'traces']
       win_pos_l = df_wins_cols.index
@@ -378,11 +381,10 @@ class Trainer():
           break  # TODO: review why some pred ends at 51
         true_win = traject[win_pos + 1:win_pos + self.h_window + 1]
         pred_win = df_wins_cols[win_pos]
-        for t in range_win:
+        for t in self.range_win:
           errors_per_timestamp[t].append(orth_dist_cartesian(true_win[t], pred_win[t]))
 
     for model, s_type, s_class, mask in tqdm(targets, desc='compare evaluate'):
-      # print(model, s_type, s_class, mask.values.sum(), type(mask))
       # create df_win with columns as timestamps
       model_srs = self.x_test.loc[mask, model]
       if len(model_srs) == 0:
@@ -390,25 +392,32 @@ class Trainer():
       model_df_wins = pd.DataFrame.from_dict(model_srs.values.tolist())
       model_df_wins.index = model_srs.index
       # calc errors_per_timestamp from df_wins
-      errors_per_timestamp = {idx: [] for idx in range_win}
-      model_df_wins.apply(_calc_wins_error, axis=1, args=(errors_per_timestamp, ))
+      errors_per_timestamp = {idx: [] for idx in self.range_win}
+      model_df_wins.apply(_evaluate_model_wins, axis=1, args=(errors_per_timestamp, ))
       newid = len(self.df_compare_evaluate)
       avg_error_per_timestamp = [
           np.mean(errors_per_timestamp[t]) if len(errors_per_timestamp[t]) else np.nan
-          for t in range_win
+          for t in self.range_win
       ]
       self.df_compare_evaluate.loc[newid, ['model_name', 'S_type', 'S_class']] = [model, s_type, s_class]
-      self.df_compare_evaluate.loc[newid, range_win] = avg_error_per_timestamp
+      self.df_compare_evaluate.loc[newid, self.range_win] = avg_error_per_timestamp
 
+    self.compare_evaluate_show()
+
+  def compare_evaluate_show(self, model_filter=[], entropy_filter=[]) -> None:
     # create vis table
     assert len(self.df_compare_evaluate), 'run -evaluate first'
     props = 'text-decoration: underline'
-    output = self.df_compare_evaluate.dropna()\
-      .sort_values(by=list(range_win))\
+    df = self.df_compare_evaluate
+    if model_filter or entropy_filter:
+      df = df.loc[(df['model_name'].isin(['no_motion']))
+                                        & (df['S_class'].isin([('low')]))]
+    output = df.dropna()\
+      .sort_values(by=list(self.range_win))\
       .style\
       .background_gradient(axis=0, cmap='coolwarm')\
-      .highlight_min(subset=list(range_win), props=props)\
-      .highlight_max(subset=list(range_win), props=props)
+      .highlight_min(subset=list(self.range_win), props=props)\
+      .highlight_max(subset=list(self.range_win), props=props)
     config.show_or_save(output, self.savedir, 'compare_evaluate')
 
   def compare_evaluate_save(self) -> None:
