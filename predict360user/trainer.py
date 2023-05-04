@@ -317,8 +317,7 @@ class Trainer():
     models_cols = sorted([
       col for col in self.ds.df.columns \
       if any(m_name in col for m_name in config.ARGS_MODEL_NAMES)\
-      and not any(ds_name in col for ds_name in config.ARGS_DS_NAMES[1:]) # already calculated
-      ])
+      and not any(ds_name in col for ds_name in config.ARGS_DS_NAMES[1:])])
     if models_cols:
       for model in models_cols:
         preds = len(self.ds.df[model].apply(lambda x: len(x) != 0))

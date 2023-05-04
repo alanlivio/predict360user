@@ -116,8 +116,11 @@ class Interpolation(BaseModel):
     raise NotImplementedError
 
   def predict_for_sample(self, traces: np.array, x_i) -> np.array:
-    rotation = rotationBetweenVectors(traces[-2], traces[-1])
-    return [rotation.rotate(trace) for trace in traces[x_i:x_i + self.h_window]]
+    rotation = rotationBetweenVectors(traces[x_i-2], traces[x_i-1])
+    prediction = [rotation.rotate(traces[x_i])]
+    for _ in range(self.h_window-1):
+      prediction.append(rotation.rotate(prediction[-1]))
+    return prediction
 
 class Regression(Model):
   def generate_batch(self, traces_l: list[np.array], x_i_l: list) -> Tuple[list, list]:
