@@ -332,7 +332,7 @@ class Trainer():
 
     # create df_compare_evaluate
     columns = ['model_name', 'S_type', 'S_class']
-    if not hasattr(self, 'df_res'):
+    if not hasattr(self, 'df_compare_evaluate'):
       if exists(self.compare_eval_pickle):
         with open(self.compare_eval_pickle, 'rb') as f:
           config.info(f'loading df_compare_evaluate from {self.compare_eval_pickle}')
@@ -409,9 +409,10 @@ class Trainer():
     assert len(self.df_compare_evaluate), 'run -evaluate first'
     props = 'text-decoration: underline'
     df = self.df_compare_evaluate
-    if model_filter or entropy_filter:
-      df = df.loc[(df['model_name'].isin(['no_motion']))
-                                        & (df['S_class'].isin([('low')]))]
+    if model_filter:
+      df = df.loc[df['model_name'].isin(model_filter)]
+    if entropy_filter:
+      df = df.loc[df['S_class'].isin(entropy_filter)]
     output = df.dropna()\
       .sort_values(by=list(self.range_win))\
       .style\
@@ -421,7 +422,7 @@ class Trainer():
     config.show_or_save(output, self.savedir, 'compare_evaluate')
 
   def compare_evaluate_save(self) -> None:
-    assert self.df_compare_evaluate
+    assert hasattr(self, 'df_compare_evaluate')
     with open(self.compare_eval_pickle, 'wb') as f:
       config.info(f'saving df_compare_evaluate to {self.compare_eval_pickle}')
       pickle.dump(self.df_compare_evaluate, f)
