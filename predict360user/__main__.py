@@ -33,9 +33,6 @@ if __name__ == '__main__':
                    choices=config.ARGS_ENTROPY_NAMES + config.ARGS_ENTROPY_AUTO_NAMES,
                    help='''entropy to filter train data (default all).
                            -evaluate accepts auto, auto_m_window, auto_since_start''')
-  psr.add_argument('-dry_run',
-                  action='store_true',
-                  help='show train/test info but stop before perform')
 
   psr.add_argument('-init_window',
                    nargs='?',
@@ -82,7 +79,6 @@ if __name__ == '__main__':
       'dataset_name': args.dataset_name,
       'model_name': args.model_name,
       'train_entropy': args.train_entropy,
-      'dry_run': args.dry_run,
       'epochs': args.epochs,
       'test_size': args.test_size,
       'gpu_id': args.gpu_id,
