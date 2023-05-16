@@ -76,7 +76,7 @@ class Trainer():
       self.model_fullname = f'{self.model_name},{self.dataset_name},{self.entropy_type},{self.train_entropy}'
     self.model_dir = join(self.savedir, self.model_fullname)
     self.train_csv_log_f = join(self.model_dir, 'train_results.csv')
-    self.model_path = join(self.model_dir, 'model.h5')
+    self.model_path = join(self.model_dir, 'weights.hdf5')
     self.end_window = self.h_window
     config.info(self.__str__())
 
