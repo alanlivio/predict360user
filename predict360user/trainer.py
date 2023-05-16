@@ -110,9 +110,11 @@ class Trainer():
         x_i_l = [win['trace_id'] for win in wins[count:end]]
         yield model.generate_batch(traces_l,x_i_l)
 
-  def _get_ds(self) -> None:
-    if not hasattr(self, 'ds'):
-      self.ds = Dataset(savedir=self.savedir)
+  @property
+  def ds(self) -> Dataset:
+    if not hasattr(self, '_ds'):
+      self._ds = Dataset(savedir=self.savedir)
+    return self._ds
 
   def _train_partition(self) -> None:
     config.info('partitioning...')
@@ -315,7 +317,7 @@ class Trainer():
     config.show_or_save(fig, self.savedir, 'compare_train')
 
   def list_done_evaluate(self) -> None:
-    self._get_ds()
+    self.ds
     models_cols = sorted([
       col for col in self.ds.df.columns \
       if any(m_name in col for m_name in config.ARGS_MODEL_NAMES)\
