@@ -104,7 +104,7 @@ HOR_DIST = degrees_to_radian(110)
 HOR_MARGIN = degrees_to_radian(110 / 2)
 VER_MARGIN = degrees_to_radian(90 / 2)
 RES_WIDTH = 3840
-RES_HIGHT = 2160
+RES_HEIGHT = 2160
 
 _fov_x1y0z0_fov_points_euler = np.array([
     eulerian_in_range(-HOR_MARGIN, VER_MARGIN),
@@ -122,7 +122,7 @@ _fov_x1y0z0_points = np.array([
 def calc_fixmps_ids(traces: np.array) -> np.array:
   # calc fixation_ids
   scale = 0.025
-  n_height = int(scale * RES_HIGHT)
+  n_height = int(scale * RES_HEIGHT)
   n_width = int(scale * RES_WIDTH)
   im_theta = np.linspace(0, 2 * np.pi - 2 * np.pi / n_width, n_width, endpoint=True)
   im_phi = np.linspace(0 + np.pi / (2 * n_height),
