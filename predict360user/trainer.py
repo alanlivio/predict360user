@@ -270,7 +270,7 @@ class Trainer():
       self.model_medium = self.create_model(join(prefix + 'medium'))
       self.model_high = self.create_model(join(prefix + 'high'))
     else:
-      model = self.create_model(self.model_dir)
+      model = self.create_model(self.model_path)
 
     if not self.model_fullname in self.ds.df.columns:
       empty = pd.Series([{} for _ in range(len(self.ds.df))]).astype(object)
