@@ -14,7 +14,7 @@ HMDDIR = f"{pathlib.Path(__file__).parent / 'head_motion_prediction/'}"
 ARGS_MODEL_NAMES = ['pos_only', 'pos_only_3d', 'no_motion', 'interpolation', 'TRACK', 'CVPR18', 'MM18', 'most_salient_point']
 MODELS_NAMES_NO_TRAIN = ['no_motion', 'interpolation']
 ARGS_DS_NAMES = ['all', 'david', 'fan', 'nguyen', 'xucvpr', 'xupami']
-ARGS_ENTROPY_NAMES = [ 'all', 'low', 'medium', 'hight', 'nohight', 'nolow', 'low_hmp', 'medium_hmp', 'hight_hmp', 'nohight_hmp', 'nolow_hmp' ]
+ARGS_ENTROPY_NAMES = [ 'all', 'low', 'medium', 'high', 'nohigh', 'nolow', 'low_hmp', 'medium_hmp', 'high_hmp', 'nohigh_hmp', 'nolow_hmp' ]
 ARGS_ENTROPY_AUTO_NAMES = ['auto', 'auto_m_window', 'auto_since_start']
 BATCH_SIZE = 128
 DEFAULT_EPOCHS = 30
@@ -22,7 +22,7 @@ RATE = 0.2
 DS_NAMES = ['david', 'fan', 'nguyen', 'xucvpr', 'xupami']
 DS_SIZES = [1083, 300, 432, 6654, 4408]
 # DS_SIZES = [1083, 300, 432, 7106, 4543] # TODO: check sample_dataset folders
-ENTROPY_CLASS_COLORS = {'low': 'blue', 'medium': 'green', 'hight': 'red'}
+ENTROPY_CLASS_COLORS = {'low': 'blue', 'medium': 'green', 'high': 'red'}
 
 # global funcs
 logging.basicConfig(level=logging.INFO, format='-- predict360user: %(message)s')

@@ -31,11 +31,11 @@ class TrainerTestCase(unittest.TestCase):
     trn._train_partition()
     self.assertGreater(len(trn.x_train), len(trn.x_val))
     classes = set(trn.x_train['actS_c'].unique())
-    self.assertSequenceEqual(classes, set(['low', 'medium', 'hight']))
+    self.assertSequenceEqual(classes, set(['low', 'medium', 'high']))
     classes = set(trn.x_train['actS_c'].unique())
-    self.assertSequenceEqual(classes, set(['low', 'medium', 'hight']))
+    self.assertSequenceEqual(classes, set(['low', 'medium', 'high']))
     classes = set(trn.x_test['actS_c'].unique())
-    self.assertSequenceEqual(classes, set(['low', 'medium', 'hight']))
+    self.assertSequenceEqual(classes, set(['low', 'medium', 'high']))
     # low
     trn.train_entropy = 'low'
     trn._train_partition()
@@ -45,7 +45,7 @@ class TrainerTestCase(unittest.TestCase):
     classes = set(trn.x_val['actS_c'].unique())
     self.assertSequenceEqual(classes, set(['low']))
     classes = set(trn.x_test['actS_c'].unique())
-    self.assertSequenceEqual(classes, set(['low', 'medium', 'hight']))
+    self.assertSequenceEqual(classes, set(['low', 'medium', 'high']))
     # medium
     trn.train_entropy = 'medium'
     trn._train_partition()
@@ -55,19 +55,19 @@ class TrainerTestCase(unittest.TestCase):
     classes = set(trn.x_val['actS_c'].unique())
     self.assertSequenceEqual(classes, set(['medium']))
     classes = set(trn.x_test['actS_c'].unique())
-    self.assertSequenceEqual(classes, set(['low', 'medium', 'hight']))
+    self.assertSequenceEqual(classes, set(['low', 'medium', 'high']))
     # nolow
     trn.train_entropy = 'nolow'
     trn._train_partition()
     self.assertGreater(len(trn.x_train), len(trn.x_val))
     classes = set(trn.x_train['actS_c'].unique())
-    self.assertSequenceEqual(classes, set(['medium','hight']))
+    self.assertSequenceEqual(classes, set(['medium','high']))
     classes = set(trn.x_val['actS_c'].unique())
-    self.assertSequenceEqual(classes, set(['medium','hight']))
+    self.assertSequenceEqual(classes, set(['medium','high']))
     classes = set(trn.x_test['actS_c'].unique())
-    self.assertSequenceEqual(classes, set(['low', 'medium', 'hight']))
-    # nohight
-    trn.train_entropy = 'nohight'
+    self.assertSequenceEqual(classes, set(['low', 'medium', 'high']))
+    # nohigh
+    trn.train_entropy = 'nohigh
     trn._train_partition()
     self.assertGreater(len(trn.x_train), len(trn.x_val))
     classes = set(trn.x_train['actS_c'].unique())
@@ -75,14 +75,14 @@ class TrainerTestCase(unittest.TestCase):
     classes = set(trn.x_val['actS_c'].unique())
     self.assertSequenceEqual(classes, set(['low','medium']))
     classes = set(trn.x_test['actS_c'].unique())
-    self.assertSequenceEqual(classes, set(['low', 'medium', 'hight']))
-    # hight
-    trn.train_entropy = 'hight'
+    self.assertSequenceEqual(classes, set(['low', 'medium', 'high']))
+    # high
+    trn.train_entropy = 'high'
     trn._train_partition()
     self.assertGreater(len(trn.x_train), len(trn.x_val))
     classes = set(trn.x_train['actS_c'].unique())
-    self.assertSequenceEqual(classes, set(['hight']))
+    self.assertSequenceEqual(classes, set(['high']))
     classes = set(trn.x_val['actS_c'].unique())
-    self.assertSequenceEqual(classes, set(['hight']))
+    self.assertSequenceEqual(classes, set(['high']))
     classes = set(trn.x_test['actS_c'].unique())
-    self.assertSequenceEqual(classes, set(['low', 'medium', 'hight']))
+    self.assertSequenceEqual(classes, set(['low', 'medium', 'high']))

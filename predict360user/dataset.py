@@ -18,20 +18,20 @@ from predict360user.utils import calc_actual_entropy
 
 
 def get_class_thresholds(df, col: str) -> tuple[float, float]:
-  _, threshold_medium, threshold_hight, _ = jenkspy.jenks_breaks(df[col], n_classes=3)
-  return threshold_medium, threshold_hight
+  _, threshold_medium, threshold_high, _ = jenkspy.jenks_breaks(df[col], n_classes=3)
+  return threshold_medium, threshold_high
 
 
 def get_class_name(x: float, threshold_medium: float,
-                   threshold_hight: float) -> Literal['low', 'medium', 'hight']:
-  return 'low' if x < threshold_medium else ('medium' if x < threshold_hight else 'hight')
+                   threshold_high: float) -> Literal['low', 'medium', 'high']:
+  return 'low' if x < threshold_medium else ('medium' if x < threshold_high else 'high')
 
 
 def count_entropy(df: pd.DataFrame, entropy_type: str) -> tuple[int, int, int, int]:
   a_len = len(df)
   l_len = len(df[df[entropy_type + '_c'] == 'low'])
   m_len = len(df[df[entropy_type + '_c'] == 'medium'])
-  h_len = len(df[df[entropy_type + '_c'] == 'hight'])
+  h_len = len(df[df[entropy_type + '_c'] == 'high'])
   return a_len, l_len, m_len, h_len
 
 class Dataset:
@@ -167,9 +167,9 @@ class Dataset:
     self.df['actS'] = self.df['traces'].progress_apply(calc_actual_entropy)
     assert not self.df['actS'].isnull().any()
     # calc trajects_entropy_class
-    threshold_medium, threshold_hight = get_class_thresholds(self.df, 'actS')
+    threshold_medium, threshold_high = get_class_thresholds(self.df, 'actS')
     self.df['actS_c'] = self.df['actS'].progress_apply(get_class_name,
-                                                       args=(threshold_medium, threshold_hight))
+                                                       args=(threshold_medium, threshold_high))
     assert not self.df['actS_c'].isnull().any()
 
   def calc_traces_entropy_hmp(self) -> None:
@@ -192,9 +192,9 @@ class Dataset:
     assert not self.df['hmpS'].isnull().any()
 
     # calc hmpS_c
-    threshold_medium, threshold_hight = get_class_thresholds(self.df, 'hmpS')
+    threshold_medium, threshold_high = get_class_thresholds(self.df, 'hmpS')
     self.df['hmpS_c'] = self.df['hmpS'].progress_apply(get_class_name,
-                                                       args=(threshold_medium, threshold_hight))
+                                                       args=(threshold_medium, threshold_high))
     assert not self.df['hmpS_c'].isnull().any()
 
   def calc_traces_poles_prc(self) -> None:
@@ -207,14 +207,14 @@ class Dataset:
     self.df['poles_prc'] = pd.Series(self.df['traces'].progress_apply(_calc_poles_prc))
 
     # calc poles_prc_c
-    threshold_medium, threshold_hight = get_class_thresholds(self.df, 'poles_prc')
+    threshold_medium, threshold_high = get_class_thresholds(self.df, 'poles_prc')
     self.df['poles_prc_c'] = self.df['poles_prc'].progress_apply(get_class_name,
                                                                  args=(threshold_medium,
-                                                                       threshold_hight))
+                                                                       threshold_high))
     assert not self.df['poles_prc_c'].isna().any()
 
   def show_entropy_counts(self) -> None:
-    fmt = '''df has {} trajectories with entropy: {} low, {} medium, {} hight'''
+    fmt = '''df has {} trajectories with entropy: {} low, {} medium, {} high'''
     config.info(fmt.format(*count_entropy(self.df, 'actS')))
     config.info(f"df['actS'].max()={self.df['actS'].max()=}")
     config.info(f"df['actS'].min()={self.df['actS'].min()=}")

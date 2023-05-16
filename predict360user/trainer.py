@@ -27,8 +27,8 @@ os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 def filter_df_by_entropy(df: pd.DataFrame, entropy_type: str, train_entropy: str) -> pd.DataFrame:
   if train_entropy == 'all':
     filter_df = df
-  elif train_entropy == 'nohight':
-    filter_df = df[df[entropy_type + '_c'] != 'hight']
+  elif train_entropy == 'nohigh':
+    filter_df = df[df[entropy_type + '_c'] != 'high']
   elif train_entropy == 'nolow':
     filter_df = df[df[entropy_type + '_c'] != 'low']
   else:
@@ -116,7 +116,6 @@ class Trainer():
 
   def _train_partition(self) -> None:
     config.info('partitioning...')
-    self._get_ds()
     df = self.ds.df if self.dataset_name == 'all' \
        else self.ds.df[self.ds.df['ds'] == self.dataset_name]
     # split x_train, x_test (0.2)
@@ -132,9 +131,9 @@ class Trainer():
       config.info('train_entropy != all, so filtering x_train, x_val')
       self.x_train = filter_df_by_entropy(self.x_train, self.entropy_type, self.train_entropy)
       self.x_val = filter_df_by_entropy(self.x_val, self.entropy_type, self.train_entropy)
-      config.info('x_train filtred has {} trajectories: {} low, {} medium, {} hight'.format(
+      config.info('x_train filtred has {} trajectories: {} low, {} medium, {} high'.format(
           *count_entropy(self.x_train, self.entropy_type)))
-      config.info('x_val filtred has {} trajectories: {} low, {} medium, {} hight'.format(
+      config.info('x_val filtred has {} trajectories: {} low, {} medium, {} high'.format(
           *count_entropy(self.x_val, self.entropy_type)))
       pos_filter_x_train_len = len(self.x_train)
       # given pre_filter_x_train_len < pos_filter_x_train_len, increase epochs
@@ -143,9 +142,9 @@ class Trainer():
       config.info('given x_train filtred, compensate by changing epochs from {} to {} '.format(
           pre_filter_epochs, self.epochs))
     else:
-      config.info('x_train has {} trajectories: {} low, {} medium, {} hight'.format(
+      config.info('x_train has {} trajectories: {} low, {} medium, {} high'.format(
           *count_entropy(self.x_train, self.entropy_type)))
-      config.info('x_val has {} trajectories: {} low, {} medium, {} hight'.format(
+      config.info('x_val has {} trajectories: {} low, {} medium, {} high'.format(
           *count_entropy(self.x_val, self.entropy_type)))
 
     # create x_train_wins, x_val_wins
@@ -164,14 +163,14 @@ class Trainer():
 
   def _evaluate_partition(self) -> None:
     config.info('partitioning...')
-    self._get_ds()
+    self.ds
     df = self.ds.df if self.dataset_name == 'all' \
        else self.ds.df[self.ds.df['ds'] == self.dataset_name]
     # split x_train, x_test (0.2)
     self.x_train, self.x_test = \
       train_test_split(df, random_state=1, test_size=self.test_size, stratify=df[self.entropy_type + '_c'])
 
-    config.info('x_test has {} trajectories: {} low, {} medium, {} hight'.format(
+    config.info('x_test has {} trajectories: {} low, {} medium, {} high'.format(
         *count_entropy(self.x_test, self.entropy_type)))
 
     # predict by each x_test_wins
@@ -245,13 +244,13 @@ class Trainer():
     else:
       raise RuntimeError()
     a_ent = calc_actual_entropy(window)
-    actS_c = get_class_name(a_ent, self.threshold_medium, self.threshold_hight)
+    actS_c = get_class_name(a_ent, self.threshold_medium, self.threshold_high)
     if actS_c == 'low':
       return self.model_low
     elif actS_c == 'medium':
       return self.model_medium
-    elif actS_c == 'hight':
-      return self.model_hight
+    elif actS_c == 'high':
+      return self.model_high
 
   def evaluate(self) -> None:
     config.info('evaluate()')
@@ -264,10 +263,10 @@ class Trainer():
     config.info('creating model ...')
     if self.using_auto:
       prefix = join(self.savedir, f'{self.model_name},{self.dataset_name},actS,')
-      self.threshold_medium, self.threshold_hight = get_class_thresholds(self.ds.df, 'actS')
+      self.threshold_medium, self.threshold_high = get_class_thresholds(self.ds.df, 'actS')
       self.model_low = self.create_model(join(prefix + 'low'))
       self.model_medium = self.create_model(join(prefix + 'medium'))
-      self.model_hight = self.create_model(join(prefix + 'hight'))
+      self.model_high = self.create_model(join(prefix + 'high'))
     else:
       model = self.create_model(self.model_dir)
 
@@ -369,9 +368,9 @@ class Trainer():
       targets.append(
           (model, self.entropy_type, 'medium', self.x_test[self.entropy_type + '_c'] == 'medium'))
       targets.append(
-          (model, self.entropy_type, 'nohight', self.x_test[self.entropy_type + '_c'] != 'hight'))
+          (model, self.entropy_type, 'nohigh', self.x_test[self.entropy_type + '_c'] != 'high'))
       targets.append(
-          (model, self.entropy_type, 'hight', self.x_test[self.entropy_type + '_c'] == 'hight'))
+          (model, self.entropy_type, 'high', self.x_test[self.entropy_type + '_c'] == 'high'))
 
     # function to fill self.df_compare_evaluate from each moldel column at self.df
     def _evaluate_model_wins(df_wins_cols, errors_per_timestamp) -> None:
