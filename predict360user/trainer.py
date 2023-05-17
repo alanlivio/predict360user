@@ -49,23 +49,26 @@ class Trainer():
                train_entropy='all',
                epochs=config.DEFAULT_EPOCHS,
                savedir=config.DEFAULT_SAVEDIR) -> None:
+    # properties from constructor
+    assert model_name in config.ARGS_MODEL_NAMES
+    assert dataset_name in config.ARGS_DS_NAMES
+    assert train_entropy in config.ARGS_ENTROPY_NAMES + config.ARGS_ENTROPY_AUTO_NAMES
     self.model_name = model_name
     self.dataset_name = dataset_name
     self.train_entropy = train_entropy
     self.savedir = savedir
-    self.compare_eval_pickle = join(self.savedir, 'df_compare_evaluate.pickle')
-    assert self.model_name in config.ARGS_MODEL_NAMES
-    assert self.dataset_name in config.ARGS_DS_NAMES
-    assert self.train_entropy in config.ARGS_ENTROPY_NAMES + config.ARGS_ENTROPY_AUTO_NAMES
-    self.using_auto = self.train_entropy.startswith('auto')
     self.h_window = h_window
     self.init_window = init_window
     self.m_window = m_window
-    os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu_id)
-    if gpu_id:
-      config.info(f"set visible cpu to {gpu_id}")
     self.test_size = test_size
     self.epochs = epochs
+    self.end_window = self.h_window
+    if gpu_id:
+      os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu_id)
+      config.info(f"set visible cpu to {gpu_id}")
+    # properties others
+    self.compare_eval_pickle = join(self.savedir, 'df_compare_evaluate.pickle')
+    self.using_auto = self.train_entropy.startswith('auto')
     self.entropy_type = 'hmpS' if self.train_entropy.endswith('hmp') else 'actS'
     if self.dataset_name == 'all' and self.train_entropy == 'all':
       self.model_fullname = self.model_name
@@ -77,7 +80,6 @@ class Trainer():
     self.model_dir = join(self.savedir, self.model_fullname)
     self.train_csv_log_f = join(self.model_dir, 'train_results.csv')
     self.model_path = join(self.model_dir, 'weights.hdf5')
-    self.end_window = self.h_window
     config.info(self.__str__())
 
   def __str__(self) -> str:
