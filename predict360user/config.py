@@ -2,14 +2,14 @@ import datetime
 import logging
 import pathlib
 import sys
-from os.path import join
+from os.path import isabs, join
 
 import IPython
 import plotly.graph_objs as go
 
 # global constants
 RAWDIR = f"{pathlib.Path(__file__).parent.parent / 'rawdata/'}"
-DEFAULT_SAVEDIR = f"{pathlib.Path().resolve() / 'saved'}"
+DEFAULT_SAVEDIR = f"{pathlib.Path('saved/').resolve()}"
 HMDDIR = f"{pathlib.Path(__file__).parent / 'head_motion_prediction/'}"
 ARGS_MODEL_NAMES = ['pos_only', 'pos_only_3d', 'no_motion', 'interpolation', 'TRACK', 'CVPR18', 'MM18', 'most_salient_point']
 MODELS_NAMES_NO_TRAIN = ['no_motion', 'interpolation']
@@ -43,4 +43,5 @@ def show_or_save(output, savedir, title = '') -> None:
       output.write_html(html_file)
     else:
       output.to_html(html_file)
+    assert isabs(html_file)
     print(pathlib.Path(html_file).as_uri())

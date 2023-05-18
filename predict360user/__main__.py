@@ -57,7 +57,7 @@ if __name__ == '__main__':
                    help='test percetage (default: 0.2)')
   psr.add_argument('-savedir',
                    nargs='?',
-                   default="saved",
+                   default=config.DEFAULT_SAVEDIR,
                    type=str,
                    help='dir to save models, processed data and results (default: saved/)')
 
