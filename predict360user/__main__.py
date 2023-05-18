@@ -62,6 +62,9 @@ if __name__ == '__main__':
                    help='dir to save models, processed data and results (default: saved/)')
 
   # train() only params
+  psr.add_argument('-lr',
+                   type=float,
+                   help=f'learning rate (default is {config.LEARNING_RATE})')
   psr.add_argument('-gpu_id',
                    nargs='?',
                    type=int,
@@ -87,6 +90,8 @@ if __name__ == '__main__':
       'h_window': args.h_window,
       'savedir' : args.savedir
   }
+  if args.lr  is not None:
+    config.LEARNING_RATE = args.lr
   trn = Trainer(**trn_args)
   # perform action
   if args.train:

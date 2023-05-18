@@ -6,6 +6,7 @@ from keras.layers import LSTM, Dense, Input, Lambda
 from keras.models import Model
 from tensorflow import keras
 
+from predict360user import config
 from predict360user.models.base_model import (BaseModel,
                                               delta_angle_from_ori_mag_dir,
                                               metric_orth_dist_eulerian)
@@ -92,7 +93,7 @@ class PosOnly(BaseModel):
 
     # Define and compile model
     super().__init__([encoder_inputs, decoder_inputs], decoder_outputs)
-    model_optimizer = keras.optimizers.Adam(learning_rate=0.0005)
+    model_optimizer = keras.optimizers.Adam(learning_rate=config.LEARNING_RATE)
     self.compile(optimizer=model_optimizer, loss=metric_orth_dist_eulerian)
 
 class NoMotion(BaseModel):
