@@ -202,7 +202,7 @@ class Trainer():
     generator = self.generate_batchs(model, self.x_train_wins)
     validation_data = self.generate_batchs(model, self.x_val_wins)
     model.fit(x=generator,
-              verbose="1",
+              verbose=1,
               steps_per_epoch=steps_per_ep_train,
               validation_data=validation_data,
               validation_steps=steps_per_ep_validate,
