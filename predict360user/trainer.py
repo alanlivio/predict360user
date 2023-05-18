@@ -137,7 +137,7 @@ class Trainer():
     config.info('x_test has {} trajectories: {} low, {} medium, {} high'.format(
         *count_entropy(self.x_test, self.entropy_type)))
 
-    if self.train_entropy != 'all':
+    if self.train_entropy != 'all' and not self.using_auto:
       config.info('train_entropy != all, so filtering x_train, x_val')
       self.x_train = filter_df_by_entropy(self.x_train, self.entropy_type, self.train_entropy)
       self.x_val = filter_df_by_entropy(self.x_val, self.entropy_type, self.train_entropy)
