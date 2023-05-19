@@ -246,9 +246,9 @@ class Trainer():
     if self.using_auto:
       prefix = join(self.savedir, f'{self.model_name},{self.dataset_name},actS,')
       self.threshold_medium, self.threshold_high = get_class_thresholds(self.ds.df, 'actS')
-      self.model_low = self.create_model(join(prefix + 'low'))
-      self.model_medium = self.create_model(join(prefix + 'medium'))
-      self.model_high = self.create_model(join(prefix + 'high'))
+      self.model_low = self.create_model(join(prefix + 'low', 'weights.hdf5'))
+      self.model_medium = self.create_model(join(prefix + 'medium', 'weights.hdf5'))
+      self.model_high = self.create_model(join(prefix + 'high','weights.hdf5'))
     else:
       model = self.create_model(self.model_path)
 
