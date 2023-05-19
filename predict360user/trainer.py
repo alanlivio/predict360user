@@ -323,7 +323,7 @@ class Trainer():
       else:
         self.df_compare_evaluate = pd.DataFrame(columns=columns + list(self.range_win), dtype=np.float32)
 
-    self.partition()
+    self._partition()
 
     # models_cols
     models_cols = sorted([
