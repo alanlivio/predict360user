@@ -120,23 +120,24 @@ class Trainer():
   @property
   def ds(self) -> Dataset:
     if not hasattr(self, '_ds'):
+      # TODO: filter by dataset name
       self._ds = Dataset(savedir=self.savedir)
     return self._ds
 
-  def _train_partition(self) -> None:
+  def _partition(self) -> None:
     config.info('partitioning...')
-    df = self.ds.df if self.dataset_name == 'all' \
-       else self.ds.df[self.ds.df['ds'] == self.dataset_name]
     # split x_train, x_test (0.2)
     self.x_train, self.x_test = \
-      train_test_split(df, random_state=1, test_size=self.test_size, stratify=df[self.entropy_type + '_c'])
+      train_test_split(self.ds.df, random_state=1, test_size=self.test_size, stratify=self.ds.df[self.entropy_type + '_c'])
     # split x_train, x_val (0.125 * 0.8 = 0.1)
     self.x_train, self.x_val = \
       train_test_split(self.x_train,random_state=1, test_size=0.125, stratify=self.x_train[self.entropy_type + '_c'])
+    config.info('x_train has {} trajectories: {} low, {} medium, {} high'.format(
+        *count_entropy(self.x_train, self.entropy_type)))
+    config.info('x_test has {} trajectories: {} low, {} medium, {} high'.format(
+        *count_entropy(self.x_test, self.entropy_type)))
 
     if self.train_entropy != 'all':
-      pre_filter_x_train_len = len(self.x_train)
-      pre_filter_epochs = self.epochs
       config.info('train_entropy != all, so filtering x_train, x_val')
       self.x_train = filter_df_by_entropy(self.x_train, self.entropy_type, self.train_entropy)
       self.x_val = filter_df_by_entropy(self.x_val, self.entropy_type, self.train_entropy)
@@ -144,52 +145,6 @@ class Trainer():
           *count_entropy(self.x_train, self.entropy_type)))
       config.info('x_val filtred has {} trajectories: {} low, {} medium, {} high'.format(
           *count_entropy(self.x_val, self.entropy_type)))
-      pos_filter_x_train_len = len(self.x_train)
-      # given pre_filter_x_train_len < pos_filter_x_train_len, increase epochs
-      self.epochs = self.epochs + round(
-          0.1 * self.epochs * pre_filter_x_train_len / pos_filter_x_train_len)
-      config.info('given x_train filtred, compensate by changing epochs from {} to {} '.format(
-          pre_filter_epochs, self.epochs))
-    else:
-      config.info('x_train has {} trajectories: {} low, {} medium, {} high'.format(
-          *count_entropy(self.x_train, self.entropy_type)))
-      config.info('x_val has {} trajectories: {} low, {} medium, {} high'.format(
-          *count_entropy(self.x_val, self.entropy_type)))
-
-    # create x_train_wins, x_val_wins
-    self.x_train_wins = [{
-        'video': row[1]['video'],
-        'user': row[1]['user'],
-        'trace_id': trace_id
-    } for row in self.x_train.iterrows()\
-      for trace_id in range(self.init_window, row[1]['traces'].shape[0] -self.end_window)]
-    self.x_val_wins = [{
-        'video': row[1]['video'],
-        'user': row[1]['user'],
-        'trace_id': trace_id,
-    } for row in self.x_val.iterrows()\
-      for trace_id in range(self.init_window, row[1]['traces'].shape[0] -self.end_window)]
-
-  def _evaluate_partition(self) -> None:
-    config.info('partitioning...')
-    self.ds
-    df = self.ds.df if self.dataset_name == 'all' \
-       else self.ds.df[self.ds.df['ds'] == self.dataset_name]
-    # split x_train, x_test (0.2)
-    self.x_train, self.x_test = \
-      train_test_split(df, random_state=1, test_size=self.test_size, stratify=df[self.entropy_type + '_c'])
-
-    config.info('x_test has {} trajectories: {} low, {} medium, {} high'.format(
-        *count_entropy(self.x_test, self.entropy_type)))
-
-    # predict by each x_test_wins
-    self.x_test_wins = [{
-        'video': row[1]['video'],
-        'user': row[1]['user'],
-        'trace_id': trace_id,
-        'actS_c': row[1]['actS_c']
-    } for row in self.x_test.iterrows()\
-      for trace_id in range(self.init_window, row[1]['traces'].shape[0] -self.end_window)]
 
   def train(self) -> None:
     config.info('train()')
@@ -218,7 +173,20 @@ class Trainer():
     assert model
 
     # partition
-    self._train_partition()
+    self._partition()
+    # create x_train_wins, x_val_wins
+    self.x_train_wins = [{
+        'video': row[1]['video'],
+        'user': row[1]['user'],
+        'trace_id': trace_id
+    } for row in self.x_train.iterrows()\
+      for trace_id in range(self.init_window, row[1]['traces'].shape[0] -self.end_window)]
+    self.x_val_wins = [{
+        'video': row[1]['video'],
+        'user': row[1]['user'],
+        'trace_id': trace_id,
+    } for row in self.x_val.iterrows()\
+      for trace_id in range(self.init_window, row[1]['traces'].shape[0] -self.end_window)]
 
     # fit
     steps_per_ep_train = np.ceil(len(self.x_train_wins) / config.BATCH_SIZE)
@@ -266,7 +234,14 @@ class Trainer():
     config.info('model_dir=' + self.model_dir)
 
     # partition
-    self._evaluate_partition()
+    self._partition()
+    self.x_test_wins = [{
+        'video': row[1]['video'],
+        'user': row[1]['user'],
+        'trace_id': trace_id,
+        'actS_c': row[1]['actS_c']
+    } for row in self.x_test.iterrows()\
+      for trace_id in range(self.init_window, row[1]['traces'].shape[0] -self.end_window)]
 
     # create model
     config.info('creating model ...')
@@ -439,7 +414,7 @@ class Trainer():
 
 
   def show_train_test_split(self) -> None:
-    self.partition()
+    self._partition()
     self.x_train['partition'] = 'train'
     self.x_test['partition'] = 'test'
     self.ds.df = pd.concat([self.x_train, self.x_test])
