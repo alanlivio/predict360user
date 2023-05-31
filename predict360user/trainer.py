@@ -26,14 +26,19 @@ os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 
 def filter_df_by_entropy(df: pd.DataFrame, entropy_type: str, train_entropy: str) -> pd.DataFrame:
   if train_entropy == 'all':
+    return df
+  min_size = df[entropy_type + '_c'].value_counts().min()
+  if train_entropy == 'allminsize':  # 3 classes-> n = min_size/3
     filter_df = df
-  elif train_entropy == 'nohigh':
+  elif train_entropy == 'nohigh':  # 2 classes-> n = min_size/2
     filter_df = df[df[entropy_type + '_c'] != 'high']
-  elif train_entropy == 'nolow':
+  elif train_entropy == 'nolow':  # 2 classes-> n = min_size/2
     filter_df = df[df[entropy_type + '_c'] != 'low']
-  else:
+  else:  # 1 class-> n = min_size
     filter_df = df[df[entropy_type + '_c'] == train_entropy]
-  return filter_df
+  nunique = len(filter_df[entropy_type + '_c'].unique())
+  n = int(min_size / nunique)
+  return filter_df.groupby(entropy_type + '_c').apply(lambda x: x.sample(n=n, random_state=1))
 
 
 class Trainer():

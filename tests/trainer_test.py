@@ -1,8 +1,8 @@
 import unittest
 from os.path import join
 
-from predict360user import config
-from predict360user.trainer import Trainer
+from predict360user import Dataset, Trainer, config
+from predict360user.trainer import filter_df_by_entropy
 
 
 class TrainerTestCase(unittest.TestCase):
@@ -23,6 +23,14 @@ class TrainerTestCase(unittest.TestCase):
       self.assertEqual(trn.model_fullname, model_fullname)
       self.assertEqual(trn.model_dir, join(config.DEFAULT_SAVEDIR, model_fullname))
       self.assertEqual(trn.using_auto, train_entropy.startswith('auto'))
+
+  def test_filter_df_by_entropy(self) -> None:
+    ds = Dataset()
+    self.assertFalse(ds.df.empty)
+    min_size = ds.df['actS_c'].value_counts().min()
+    for train_entropy in ['allminsize', 'nohigh', 'nolow', 'medium', 'low', 'high']:
+      fdf = filter_df_by_entropy(df=ds.df, entropy_type='actS', train_entropy=train_entropy)
+      self.assertAlmostEqual(min_size, len(fdf), delta=2)
 
   def test_train_partition(self) -> None:
     trn = Trainer(train_entropy='all')
@@ -67,7 +75,7 @@ class TrainerTestCase(unittest.TestCase):
     classes = set(trn.x_test['actS_c'].unique())
     self.assertSequenceEqual(classes, set(['low', 'medium', 'high']))
     # nohigh
-    trn.train_entropy = 'nohigh
+    trn.train_entropy = 'nohigh'
     trn._train_partition()
     self.assertGreater(len(trn.x_train), len(trn.x_val))
     classes = set(trn.x_train['actS_c'].unique())
