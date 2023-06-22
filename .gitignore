@@ -170,6 +170,7 @@ typings
 output
 .tmp*
 saved/*
+saved_*
 saved-*
 rawdata/model3_360net_128_w16_h9_8000
 Graph/*

@@ -297,7 +297,6 @@ class Trainer():
     config.show_or_save(fig, self.savedir, 'compare_train')
 
   def list_done_evaluate(self) -> None:
-    self.ds
     models_cols = sorted([
       col for col in self.ds.df.columns \
       if any(m_name in col for m_name in config.ARGS_MODEL_NAMES)\
