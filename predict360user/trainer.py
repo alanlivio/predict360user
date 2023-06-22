@@ -24,6 +24,7 @@ absl.logging.set_verbosity(absl.logging.ERROR)
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 
+
 def filter_df_by_entropy(df: pd.DataFrame, entropy_type: str, train_entropy: str) -> pd.DataFrame:
   if train_entropy == 'all':
     return df
@@ -99,9 +100,9 @@ class Trainer():
     elif self.model_name == 'pos_only_3d':
       model = PosOnly3D(self.m_window, self.h_window)
     elif self.model_name == 'interpolation':
-      return Interpolation(self.h_window) # does not need training
+      return Interpolation(self.h_window)  # does not need training
     elif self.model_name == 'no_motion':
-      return NoMotion(self.h_window) # does not need training
+      return NoMotion(self.h_window)  # does not need training
     else:
       raise RuntimeError
     if model_path:
@@ -112,10 +113,10 @@ class Trainer():
     while True:
       shuffle(wins, random_state=1)
       for count, _ in enumerate(wins[::config.BATCH_SIZE]):
-        end = count+config.BATCH_SIZE if count+config.BATCH_SIZE <= len(wins) else len(wins)
-        traces_l = [self.ds.get_traces(win['video'],win['user']) for win in wins[count:end]]
+        end = count + config.BATCH_SIZE if count + config.BATCH_SIZE <= len(wins) else len(wins)
+        traces_l = [self.ds.get_traces(win['video'], win['user']) for win in wins[count:end]]
         x_i_l = [win['trace_id'] for win in wins[count:end]]
-        yield model.generate_batch(traces_l,x_i_l)
+        yield model.generate_batch(traces_l, x_i_l)
 
   @property
   def ds(self) -> Dataset:
@@ -248,7 +249,7 @@ class Trainer():
       self.threshold_medium, self.threshold_high = get_class_thresholds(self.ds.df, 'actS')
       self.model_low = self.create_model(join(prefix + 'low', 'weights.hdf5'))
       self.model_medium = self.create_model(join(prefix + 'medium', 'weights.hdf5'))
-      self.model_high = self.create_model(join(prefix + 'high','weights.hdf5'))
+      self.model_high = self.create_model(join(prefix + 'high', 'weights.hdf5'))
     else:
       model = self.create_model(self.model_path)
 
@@ -263,7 +264,7 @@ class Trainer():
       traces = self.ds.get_traces(video, user)
       # predict
       if self.using_auto:
-        model = self._auto_select_model(traces,x_i)
+        model = self._auto_select_model(traces, x_i)
       pred = model.predict_for_sample(traces, x_i)
       # save prediction
       traject_row = self.ds.df.loc[(self.ds.df['video'] == video) & (self.ds.df['user'] == user)]
@@ -279,8 +280,7 @@ class Trainer():
     result_csv = 'train_results.csv'
     # find result_csv files
     csv_df_l = [(dir_name, pd.read_csv(join(self.savedir, dir_name, file_name)))
-                for dir_name in os.listdir(self.savedir)
-                if isdir(join(self.savedir, dir_name))
+                for dir_name in os.listdir(self.savedir) if isdir(join(self.savedir, dir_name))
                 for file_name in os.listdir(join(self.savedir, dir_name))
                 if file_name == result_csv]
     csv_df_l = [df.assign(model=dir_name) for (dir_name, df) in csv_df_l]
@@ -321,7 +321,8 @@ class Trainer():
           config.info(f'loading df_compare_evaluate from {self.compare_eval_pickle}')
           self.df_compare_evaluate = pickle.load(f)
       else:
-        self.df_compare_evaluate = pd.DataFrame(columns=columns + list(self.range_win), dtype=np.float32)
+        self.df_compare_evaluate = pd.DataFrame(columns=columns + list(self.range_win),
+                                                dtype=np.float32)
 
     self._partition()
 
@@ -345,12 +346,12 @@ class Trainer():
       targets.append((model, 'all', 'all', pd.Series(True, index=self.x_test.index)))
       targets.append(
           (model, self.entropy_type, 'low', self.x_test[self.entropy_type + '_c'] == 'low'))
-      targets.append(
-          (model, self.entropy_type, 'nolow', self.x_test[self.entropy_type + '_c'] != 'low'))
+      targets.append((model, self.entropy_type, 'nolow', self.x_test[self.entropy_type + '_c']
+                      != 'low'))
       targets.append(
           (model, self.entropy_type, 'medium', self.x_test[self.entropy_type + '_c'] == 'medium'))
-      targets.append(
-          (model, self.entropy_type, 'nohigh', self.x_test[self.entropy_type + '_c'] != 'high'))
+      targets.append((model, self.entropy_type, 'nohigh', self.x_test[self.entropy_type + '_c']
+                      != 'high'))
       targets.append(
           (model, self.entropy_type, 'high', self.x_test[self.entropy_type + '_c'] == 'high'))
 
@@ -382,7 +383,8 @@ class Trainer():
           np.mean(errors_per_timestamp[t]) if len(errors_per_timestamp[t]) else np.nan
           for t in self.range_win
       ]
-      self.df_compare_evaluate.loc[newid, ['model_name', 'S_type', 'S_class']] = [model, s_type, s_class]
+      self.df_compare_evaluate.loc[newid,
+                                   ['model_name', 'S_type', 'S_class']] = [model, s_type, s_class]
       self.df_compare_evaluate.loc[newid, self.range_win] = avg_error_per_timestamp
 
     self.compare_evaluate_show()
@@ -409,7 +411,6 @@ class Trainer():
     with open(self.compare_eval_pickle, 'wb') as f:
       config.info(f'saving df_compare_evaluate to {self.compare_eval_pickle}')
       pickle.dump(self.df_compare_evaluate, f)
-
 
   def show_train_test_split(self) -> None:
     self._partition()
