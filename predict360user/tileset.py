@@ -8,7 +8,7 @@ from spherical_geometry import polygon
 from spherical_geometry.polygon import SphericalPolygon
 from tqdm.auto import tqdm
 
-from predict360user import config
+from predict360user.config import logger
 from predict360user.utils import *
 
 tqdm.pandas()
@@ -125,7 +125,7 @@ class TileSet():
               poly_rc = tile_poly(self.t_ver, self.t_hor, row, col)
               view_ratio = poly_rc.overlap(fov_poly_trace)
             except Exception:
-              config.error(f'request error for row,col,trace={row},{col},{repr(trace)}')
+              logger.error(f'request error for row,col,trace={row},{col},{repr(trace)}')
               continue
             areas_out.append(1 - view_ratio)
             vp_quality += fov_poly_trace.overlap(poly_rc)
@@ -148,7 +148,7 @@ class TileSet():
           poly_rc = tile_poly(self.t_ver, self.t_hor, row, col)
           view_ratio = poly_rc.overlap(fov_poly_trace)
         except Exception:
-          config.error(f'request error for row,col,trace={row},{col},{repr(trace)}')
+          logger.error(f'request error for row,col,trace={row},{col},{repr(trace)}')
           continue
         if view_ratio > required_cover:
           heatmap[row][col] = 1

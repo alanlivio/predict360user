@@ -13,6 +13,7 @@ import scipy.stats
 from plotly.subplots import make_subplots
 
 from predict360user import config
+from predict360user.config import logger
 from predict360user.tileset import TILESET_DEFAULT, TileSet
 from predict360user.utils import calc_actual_entropy
 
@@ -47,13 +48,13 @@ class Dataset:
     self.pickle_file = os.path.join(savedir, 'df_trajects.pickle')
     if exists(self.pickle_file):
       with open(self.pickle_file, 'rb') as f:
-        config.info(f'loading df from {self.pickle_file}')
+        logger.info(f'loading df from {self.pickle_file}')
         self.df = pickle.load(f)
     else:
-      config.info(f'there is no {self.pickle_file}')
-      config.info(f'loading df from {config.HMDDIR}')
+      logger.info(f'there is no {self.pickle_file}')
+      logger.info(f'loading df from {config.HMDDIR}')
       self.df = self._load_df_trajects_from_hmp()
-      config.info(f'calculating entropy')
+      logger.info(f'calculating entropy')
       self.calc_traces_entropy()
       self.dump()
 
@@ -114,12 +115,12 @@ class Dataset:
     return df
 
   def dump(self) -> None:
-    config.info(f'saving df to {self.pickle_file}')
+    logger.info(f'saving df to {self.pickle_file}')
     with open(self.pickle_file, 'wb') as f:
       pickle.dump(self.df, f)
 
   def dump_column(self, column) -> None:
-    config.info(f'update column {column} to {self.pickle_file}')
+    logger.info(f'update column {column} to {self.pickle_file}')
     if exists(self.pickle_file):
       with multiprocessing.Lock():
         with open(self.pickle_file, 'rb') as f:
@@ -215,9 +216,9 @@ class Dataset:
 
   def show_entropy_counts(self) -> None:
     fmt = '''df has {} trajectories with entropy: {} low, {} medium, {} high'''
-    config.info(fmt.format(*count_entropy(self.df, 'actS')))
-    config.info(f"df['actS'].max()={self.df['actS'].max()=}")
-    config.info(f"df['actS'].min()={self.df['actS'].min()=}")
+    logger.info(fmt.format(*count_entropy(self.df, 'actS')))
+    logger.info(f"df['actS'].max()={self.df['actS'].max()=}")
+    logger.info(f"df['actS'].min()={self.df['actS'].min()=}")
 
   def show_histogram(self, cols: list, facet=None) -> None:
     if not cols:

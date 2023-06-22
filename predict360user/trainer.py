@@ -13,6 +13,7 @@ from sklearn.utils import shuffle
 from tqdm.auto import tqdm
 
 from predict360user import config
+from predict360user.config import logger
 from predict360user.dataset import (Dataset, calc_actual_entropy,
                                     count_entropy, get_class_name,
                                     get_class_thresholds)
@@ -71,7 +72,7 @@ class Trainer():
     self.end_window = self.h_window
     if gpu_id:
       os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu_id)
-      config.info(f"set visible cpu to {gpu_id}")
+      logger.info(f"set visible cpu to {gpu_id}")
     # properties others
     self.compare_eval_pickle = join(self.savedir, 'df_compare_evaluate.pickle')
     self.using_auto = self.train_entropy.startswith('auto')
@@ -86,7 +87,7 @@ class Trainer():
     self.model_dir = join(self.savedir, self.model_fullname)
     self.train_csv_log_f = join(self.model_dir, 'train_results.csv')
     self.model_path = join(self.model_dir, 'weights.hdf5')
-    config.info(self.__str__())
+    logger.info(self.__str__())
 
   def __str__(self) -> str:
     return "Trainer(" + ", ".join(f'{elem}={getattr(self, elem)}' for elem in [
@@ -126,43 +127,43 @@ class Trainer():
     return self._ds
 
   def _partition(self) -> None:
-    config.info('partitioning...')
+    logger.info('partitioning...')
     # split x_train, x_test (0.2)
     self.x_train, self.x_test = \
       train_test_split(self.ds.df, random_state=1, test_size=self.test_size, stratify=self.ds.df[self.entropy_type + '_c'])
     # split x_train, x_val (0.125 * 0.8 = 0.1)
     self.x_train, self.x_val = \
       train_test_split(self.x_train,random_state=1, test_size=0.125, stratify=self.x_train[self.entropy_type + '_c'])
-    config.info('x_train has {} trajectories: {} low, {} medium, {} high'.format(
+    logger.info('x_train has {} trajectories: {} low, {} medium, {} high'.format(
         *count_entropy(self.x_train, self.entropy_type)))
-    config.info('x_test has {} trajectories: {} low, {} medium, {} high'.format(
+    logger.info('x_test has {} trajectories: {} low, {} medium, {} high'.format(
         *count_entropy(self.x_test, self.entropy_type)))
 
     if self.train_entropy != 'all' and not self.using_auto:
-      config.info('train_entropy != all, so filtering x_train, x_val')
+      logger.info('train_entropy != all, so filtering x_train, x_val')
       self.x_train = filter_df_by_entropy(self.x_train, self.entropy_type, self.train_entropy)
       self.x_val = filter_df_by_entropy(self.x_val, self.entropy_type, self.train_entropy)
-      config.info('x_train filtred has {} trajectories: {} low, {} medium, {} high'.format(
+      logger.info('x_train filtred has {} trajectories: {} low, {} medium, {} high'.format(
           *count_entropy(self.x_train, self.entropy_type)))
-      config.info('x_val filtred has {} trajectories: {} low, {} medium, {} high'.format(
+      logger.info('x_val filtred has {} trajectories: {} low, {} medium, {} high'.format(
           *count_entropy(self.x_val, self.entropy_type)))
 
   def train(self) -> None:
-    config.info('train()')
+    logger.info('train()')
     assert not self.using_auto, "train_entropy should not be auto"
     assert self.model_name not in config.MODELS_NAMES_NO_TRAIN, f"{self.model_name} does not need training"
-    config.info('model_dir=' + self.model_dir)
+    logger.info('model_dir=' + self.model_dir)
 
     # check model
-    config.info('creating model ...')
+    logger.info('creating model ...')
     if exists(self.train_csv_log_f):
       lines = pd.read_csv(self.train_csv_log_f)
       lines.dropna(how="all", inplace=True)
       done_epochs = int(lines.iloc[-1]['epoch']) + 1
       if done_epochs >= self.epochs:
-        config.info(f'train_csv_log_f has {done_epochs}>=epochs. stopping.')
+        logger.info(f'train_csv_log_f has {done_epochs}>=epochs. stopping.')
         return
-      config.info(f'train_csv_log_f has {self.epochs}<epochs. continuing from {done_epochs}.')
+      logger.info(f'train_csv_log_f has {self.epochs}<epochs. continuing from {done_epochs}.')
       model = self.create_model(self.model_path)
       initial_epoch = done_epochs
     else:
@@ -229,8 +230,8 @@ class Trainer():
     raise RuntimeError()
 
   def evaluate(self) -> None:
-    config.info('evaluate()')
-    config.info('model_dir=' + self.model_dir)
+    logger.info('evaluate()')
+    logger.info('model_dir=' + self.model_dir)
 
     # partition
     self._partition()
@@ -243,7 +244,7 @@ class Trainer():
       for trace_id in range(self.init_window, row[1]['traces'].shape[0] -self.end_window)]
 
     # create model
-    config.info('creating model ...')
+    logger.info('creating model ...')
     if self.using_auto:
       prefix = join(self.savedir, f'{self.model_name},{self.dataset_name},actS,')
       self.threshold_medium, self.threshold_high = get_class_thresholds(self.ds.df, 'actS')
@@ -304,9 +305,9 @@ class Trainer():
     if models_cols:
       for model in models_cols:
         preds = len(self.ds.df[model].apply(lambda x: len(x) != 0))
-        config.info(f"{model} has {preds} predict wins calculated")
+        logger.info(f"{model} has {preds} predict wins calculated")
     else:
-      config.error('no evaluate done')
+      logger.error('no evaluate done')
 
   def compare_evaluate(self) -> None:
     # horizon timestamps to be calculated
@@ -317,7 +318,7 @@ class Trainer():
     if not hasattr(self, 'df_compare_evaluate'):
       if exists(self.compare_eval_pickle):
         with open(self.compare_eval_pickle, 'rb') as f:
-          config.info(f'loading df_compare_evaluate from {self.compare_eval_pickle}')
+          logger.info(f'loading df_compare_evaluate from {self.compare_eval_pickle}')
           self.df_compare_evaluate = pickle.load(f)
       else:
         self.df_compare_evaluate = pd.DataFrame(columns=columns + list(self.range_win),
@@ -333,10 +334,10 @@ class Trainer():
       and not any(self.df_compare_evaluate['model_name'] == col) # already calculated
       ])
     if models_cols:
-      config.info(f"compare evaluate for models: {', '.join(models_cols)}")
-      config.info(f"for each model, compare users: {config.ARGS_ENTROPY_NAMES[:6]}")
+      logger.info(f"compare evaluate for models: {', '.join(models_cols)}")
+      logger.info(f"for each model, compare users: {config.ARGS_ENTROPY_NAMES[:6]}")
     else:
-      config.info(f"evaluate models already calculated. skip to visualize")
+      logger.info(f"evaluate models already calculated. skip to visualize")
 
     # create targets in format (model, s_type, s_class, mask)
     targets = []
@@ -408,7 +409,7 @@ class Trainer():
   def compare_evaluate_save(self) -> None:
     assert hasattr(self, 'df_compare_evaluate')
     with open(self.compare_eval_pickle, 'wb') as f:
-      config.info(f'saving df_compare_evaluate to {self.compare_eval_pickle}')
+      logger.info(f'saving df_compare_evaluate to {self.compare_eval_pickle}')
       pickle.dump(self.df_compare_evaluate, f)
 
   def show_train_test_split(self) -> None:

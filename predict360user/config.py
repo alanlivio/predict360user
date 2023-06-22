@@ -26,8 +26,7 @@ ENTROPY_CLASS_COLORS = {'low': 'blue', 'medium': 'green', 'high': 'red'}
 
 # global funcs
 logging.basicConfig(level=logging.INFO, format='-- predict360user: %(message)s')
-info = logging.getLogger(__name__).info
-error = logging.getLogger(__name__).error
+logger = logging.getLogger(__name__)
 
 def show_or_save(output, savedir, title = '') -> None:
   if 'ipykernel' in sys.modules:
