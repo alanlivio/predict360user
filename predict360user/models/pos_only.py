@@ -99,6 +99,7 @@ class PosOnly(BaseModel):
 class NoMotion(BaseModel):
 
   def __init__(self, h_window) -> None:
+    super().__init__()
     self.h_window = h_window
 
   def generate_batch(self, traces_l: list[np.array], x_i_l: list) -> Tuple[list, list]:
@@ -111,6 +112,7 @@ class NoMotion(BaseModel):
 class Interpolation(BaseModel):
 
   def __init__(self, h_window) -> None:
+    super().__init__()
     self.h_window = h_window
 
   def generate_batch(self, traces_l: list[np.array], x_i_l: list) -> Tuple[list, list]:

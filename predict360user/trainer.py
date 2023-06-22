@@ -162,10 +162,9 @@ class Trainer():
       if done_epochs >= self.epochs:
         config.info(f'train_csv_log_f has {done_epochs}>=epochs. stopping.')
         return
-      else:
-        config.info(f'train_csv_log_f has {self.epochs}<epochs. continuing from {done_epochs}.')
-        model = self.create_model(self.model_path)
-        initial_epoch = done_epochs
+      config.info(f'train_csv_log_f has {self.epochs}<epochs. continuing from {done_epochs}.')
+      model = self.create_model(self.model_path)
+      initial_epoch = done_epochs
     else:
       model = self.create_model()
       initial_epoch = 0
@@ -223,10 +222,11 @@ class Trainer():
     actS_c = get_class_name(a_ent, self.threshold_medium, self.threshold_high)
     if actS_c == 'low':
       return self.model_low
-    elif actS_c == 'medium':
+    if actS_c == 'medium':
       return self.model_medium
-    elif actS_c == 'high':
+    if actS_c == 'high':
       return self.model_high
+    raise RuntimeError()
 
   def evaluate(self) -> None:
     config.info('evaluate()')
@@ -389,7 +389,7 @@ class Trainer():
 
     self.compare_evaluate_show()
 
-  def compare_evaluate_show(self, model_filter=[], entropy_filter=[]) -> None:
+  def compare_evaluate_show(self, model_filter=None, entropy_filter=None) -> None:
     # create vis table
     assert len(self.df_compare_evaluate), 'run -evaluate first'
     props = 'text-decoration: underline'
