@@ -2,7 +2,7 @@ import datetime
 import logging
 import pathlib
 import sys
-from os.path import isabs, join
+from os.path import abspath, isabs, join
 
 import IPython
 import plotly.graph_objs as go
@@ -42,5 +42,6 @@ def show_or_save(output, savedir, title = '') -> None:
       output.write_html(html_file)
     else:
       output.to_html(html_file)
-    assert isabs(html_file)
-    print(pathlib.Path(html_file).as_uri())
+    if not isabs(html_file):
+      html_file = abspath(html_file)
+    logger.info(f'compare_train saved on {html_file}')
