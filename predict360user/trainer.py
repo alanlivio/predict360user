@@ -277,7 +277,7 @@ class Trainer():
     self.ds.dump_column(self.model_fullname)
 
   def compare_train(self) -> None:
-    assert exists(self.savedir)
+    assert exists(self.savedir), f'the save folder {self.savedir} does not exist. do -train call'
     result_csv = 'train_results.csv'
     # find result_csv files
     csv_df_l = [(dir_name, pd.read_csv(join(self.savedir, dir_name, file_name)))
