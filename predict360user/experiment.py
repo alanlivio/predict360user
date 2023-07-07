@@ -279,6 +279,10 @@ class Experiment():
     # save on df
     self.ds.dump_column(self.model_fullname)
 
+  def run(self) -> None:
+    self.train()
+    self.evaluate()
+
   def compare_train(self) -> None:
     assert exists(self.savedir), f'the save folder {self.savedir} does not exist. do -train call'
     result_csv = 'train_results.csv'
@@ -426,14 +430,12 @@ class Experiment():
 if __name__ == '__main__':
   # argparse
   psr = argparse.ArgumentParser()
-  psr.description = 'train or evaluate users360 models and datasets'
+  psr.description = 'experiment on predict user behaviour in 360 videos'
 
   # actions params
-  grp = psr.add_mutually_exclusive_group(required=True)
-  grp.add_argument('-train', action='store_true', help='train model')
-  grp.add_argument('-compare_train', action='store_true', help='compare -train results')
-  grp.add_argument('-evaluate', action='store_true', help='evaluate model')
-  grp.add_argument('-compare_evaluate', action='store_true', help='compare -evaluate results')
+  grp = psr.add_mutually_exclusive_group()
+  grp.add_argument('-compare_train', action='store_true', help='do only compare training results')
+  grp.add_argument('-compare_evaluate', action='store_true', help='do only compare evaluation results')
 
   # Experiment params
   psr.add_argument('-model_name',
@@ -513,13 +515,10 @@ if __name__ == '__main__':
   if args.lr  is not None:
     config.LEARNING_RATE = args.lr
   exp = Experiment(**exp_args)
-  # perform action
-  if args.train:
-    exp.train()
-  elif args.evaluate:
-    exp.evaluate()
-  elif args.compare_train:
+  if args.compare_train:
     exp.compare_train()
   elif args.compare_evaluate:
     exp.compare_evaluate()
+  else:
+    exp.run()
   sys.exit()
