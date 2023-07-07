@@ -1,6 +1,6 @@
 # predict360user
 
-Python library to predict user navigation in 360 videos. It extends [Rondon 360-videos models/dataset collection](https://gitlab.com/miguelfromeror/head-motion-prediction). The library's main classes are:
+Library to predict user behavior in 360 videos. It extends [Rondon 360-videos models/dataset collection](https://gitlab.com/miguelfromeror/head-motion-prediction). The library's main classes are:
 
 * `Dataset`: stores the dataset in memory as a pandas.DataFrame and provides functions for data preprocessing, such as user clustering by entropy.
 
