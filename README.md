@@ -73,8 +73,8 @@ conda activate p3u
 To illustrate usage, the code below shows how to train/evaluate `pos_only` model.
 
 ```bash
-python -m predict360user -train -dataset_name david -model_name pos_only
-python -m predict360user -evaluate -dataset_name david -model_name pos_only
+python -m predict360user.experiment -train -dataset_name david -model_name pos_only
+python -m predict360user.experiment -evaluate -dataset_name david -model_name pos_only
 ```
 
 #### Documentation
