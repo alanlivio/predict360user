@@ -234,7 +234,7 @@ class Dataset:
 
   def calc_tileset_reqs_metrics(self, tileset_l: list[TileSet]) -> None:
     if len(self.df) >= 4:
-      config.log("df.size >= 4, it will take for some time")
+      logger.info("df.size >= 4, it will take for some time")
 
     def _trace_mestrics_np(trace, tileset) -> np.array:
       heatmap, vp_quality, area_out = tileset.request(trace, return_metrics=True)
