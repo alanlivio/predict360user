@@ -43,7 +43,7 @@ def filter_df_by_entropy(df: pd.DataFrame, entropy_type: str, train_entropy: str
   return filter_df.groupby(entropy_type + '_c').apply(lambda x: x.sample(n=n, random_state=1))
 
 
-class Trainer():
+class Experiment():
 
   def __init__(self,
                model_name='pos_only',
@@ -90,7 +90,7 @@ class Trainer():
     logger.info(self.__str__())
 
   def __str__(self) -> str:
-    return "Trainer(" + ", ".join(f'{elem}={getattr(self, elem)}' for elem in [
+    return "Experiment(" + ", ".join(f'{elem}={getattr(self, elem)}' for elem in [
         'model_name', 'dataset_name', 'h_window', 'init_window', 'm_window', 'test_size',
         'train_entropy', 'epochs', 'savedir'
     ]) + ")"

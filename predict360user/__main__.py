@@ -1,7 +1,7 @@
 import argparse
 import sys
 
-from predict360user import Trainer, config
+from predict360user import Experiment, config
 
 if __name__ == '__main__':
   # argparse
@@ -15,7 +15,7 @@ if __name__ == '__main__':
   grp.add_argument('-evaluate', action='store_true', help='evaluate model')
   grp.add_argument('-compare_evaluate', action='store_true', help='compare -evaluate results')
 
-  # Trainer params
+  # Experiment params
   psr.add_argument('-model_name',
                    nargs='?',
                    choices=config.ARGS_MODEL_NAMES,
@@ -77,8 +77,8 @@ if __name__ == '__main__':
                    help=f'epochs numbers (default is {config.DEFAULT_EPOCHS})')
 
   args = psr.parse_args()
-  # create Trainer
-  trn_args = {
+  # create Experiment
+  exp_args = {
       'dataset_name': args.dataset_name,
       'model_name': args.model_name,
       'train_entropy': args.train_entropy,
@@ -92,14 +92,14 @@ if __name__ == '__main__':
   }
   if args.lr  is not None:
     config.LEARNING_RATE = args.lr
-  trn = Trainer(**trn_args)
+  exp = Experiment(**exp_args)
   # perform action
   if args.train:
-    trn.train()
+    exp.train()
   elif args.evaluate:
-    trn.evaluate()
+    exp.evaluate()
   elif args.compare_train:
-    trn.compare_train()
+    exp.compare_train()
   elif args.compare_evaluate:
-    trn.compare_evaluate()
+    exp.compare_evaluate()
   sys.exit()

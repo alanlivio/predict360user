@@ -8,7 +8,7 @@ Library to predict user behavior in 360 videos. It extends [Rondon 360-videos mo
   | --- | ----- | ------- | ------------- | ------------- |
   | 0   | david | david_0 | david_10_Cows | [[x,y,z],...] |
 
-* `Trainer`: train and evaluate prediction models
+* `Experiment`: train and evaluate prediction models
 * `Plot360`: plot viewport, trajectory or predictions for users using 3D visualization
 
 ### Datasets

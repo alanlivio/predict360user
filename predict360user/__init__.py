@@ -1,4 +1,4 @@
 from . import dataset_loaders, models
 from .dataset import Dataset
 from .plot360 import Plot360
-from .trainer import Trainer
+from .experiment import Experiment
