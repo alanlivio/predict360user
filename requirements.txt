@@ -1,5 +1,4 @@
 # commented versions are from head_motion_prediction/README.md
-gpustat
 jupyter
 plotly
 colour

@@ -61,12 +61,25 @@ Library to predict user behavior in 360 videos. It extends [Rondon 360-videos mo
 
 #### Requirements
 
-The project was tested in linux and Windows-WSL. First follow [TensorFlow pip installation tutorial](https://www.tensorflow.org/install/pip). 
-The use conda to dependencies described [environment.yml](environment.yml) as follow. 
+The project requirements are in [requirements.txt](requirements.txt). It target tensorflow==2.8 so [so will need cuda>=11.2 and cuDNN==8.1](https://www.tensorflow.org/install/source#gpu). First check the avaliable cuda version for you GPU and follow one of the guides bellow based on [TensorFlow pip installation tutorial](https://www.tensorflow.org/install/pip). 
+
+For GPUs with cuda 11.2, you can:
 ```bash
-conda env create -f environment.yml
+conda create -n p3u python==3.9 -c conda-forge
 conda activate p3u
+conda install -c conda-forge cudatoolkit=11.2.0 
+pip install nvidia-cudnn-cu11==8.1.*  -r requirements.txt
 ```
+
+For GPUs with cuda 11.8, you can:
+```bash
+conda create -n p3u python==3.9 -c conda-forge
+conda activate p3u
+conda install -c conda-forge cudatoolkit=11.8.0 
+pip install nvidia-cudnn-cu11==8.6.* -r requirements.txt
+```
+
+OBS: To install drivers in Windows-WSL, you can use [this tutorial](https://ubuntu.com/tutorials/enabling-gpu-acceleration-on-ubuntu-on-wsl2-with-the-nvidia-cuda-platform#3-install-nvidia-cuda-on-ubuntu) to install cuda==11.8.
 
 #### Train and evaluate
 
