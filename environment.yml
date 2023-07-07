@@ -1,4 +1,5 @@
-# this environment follow https://www.tensorflow.org/install/pip
+# environment created from https://docs.anaconda.com/free/anaconda/applications/tensorflow/
+# and then exported by `conda env export environment.yml`
 name: p3u
 
 channels:
@@ -6,9 +7,10 @@ channels:
   - defaults
 
 dependencies:
+  - tensorflow-gpu
+  - cudatoolkit=10.1.243=h6bb024c_0
+  - cudnn=7.6.5=cuda10.1_0
   - python=3.9
-  - cudatoolkit=11.2
-  - cudnn=8.1
   - pip
   - pip:
-    - -r requirements.txt
+     - -r requirements.txt
