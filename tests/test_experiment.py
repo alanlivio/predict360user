@@ -1,8 +1,9 @@
 import unittest
 from os.path import join
 
-from predict360user import Dataset, Experiment, config
-from predict360user.experiment import filter_df_by_entropy
+from predict360user import Dataset
+from predict360user.experiment import *
+from predict360user.utils import RAWDIR, DEFAULT_SAVEDIR, calc_actual_entropy
 
 
 class ExperimentTestCase(unittest.TestCase):
@@ -10,18 +11,18 @@ class ExperimentTestCase(unittest.TestCase):
   def test_init(self) -> None:
     exp = Experiment()
     self.assertEqual(exp.model_fullname, 'pos_only')
-    self.assertEqual(exp.model_dir, join(config.DEFAULT_SAVEDIR, exp.model_fullname))
+    self.assertEqual(exp.model_dir, join(DEFAULT_SAVEDIR, exp.model_fullname))
     self.assertEqual(exp.using_auto, False)
     exp = Experiment(dataset_name='david')
     self.assertEqual(exp.model_fullname, 'pos_only,david,,')
     self.assertEqual(exp.using_auto, False)
-    for train_entropy in config.ARGS_ENTROPY_NAMES[1:] + config.ARGS_ENTROPY_AUTO_NAMES:
+    for train_entropy in ARGS_ENTROPY_NAMES[1:] + ARGS_ENTROPY_AUTO_NAMES:
       exp = Experiment(train_entropy=train_entropy)
       entropy_type = 'hmpS' if train_entropy.endswith('hmp') else 'actS'
       train_entropy = train_entropy.removesuffix('_hmp')
       model_fullname = f'pos_only,all,{entropy_type},{train_entropy}'
       self.assertEqual(exp.model_fullname, model_fullname)
-      self.assertEqual(exp.model_dir, join(config.DEFAULT_SAVEDIR, model_fullname))
+      self.assertEqual(exp.model_dir, join(DEFAULT_SAVEDIR, model_fullname))
       self.assertEqual(exp.using_auto, train_entropy.startswith('auto'))
 
   def test_filter_df_by_entropy(self) -> None:

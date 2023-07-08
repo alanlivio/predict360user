@@ -10,7 +10,7 @@ from spherical_geometry.polygon import SphericalPolygon
 
 from predict360user.tileset import (TILESET_DEFAULT, TileSet, TileSetVoro,
                                     tile_points)
-from predict360user.utils import fov_points
+from predict360user.utils import *
 
 
 class Plot360():
@@ -254,7 +254,7 @@ class Plot360():
     for t in erp_heatmap['data']:
       fig.append_trace(t, row=1, col=2)
     if isinstance(self.tileset, TileSet):
-      # fix given phi 0 being the north pole at Utils.cartesian_to_eulerian
+      # fix given phi 0 being the north pole at cartesian_to_eulerian
       fig.update_yaxes(autorange='reversed')
 
     title = f'trace_[{trace[0]:.2},{trace[1]:.2},{trace[2]:.2}]_{self.tileset.prefix}'
@@ -285,7 +285,7 @@ class Plot360():
       erp_heatmap.update_layout(width=100, height=100)
       fig.append_trace(erp_heatmap.data[0], row=1, col=2)
       if isinstance(self.tileset, TileSet):
-        # fix given phi 0 being the north pole at Utils.cartesian_to_eulerian
+        # fix given phi 0 being the north pole at cartesian_to_eulerian
         fig.update_yaxes(autorange='reversed')
 
     title = f'{str(row.shape[0])}_trajects_{self.tileset.prefix}'
@@ -308,7 +308,7 @@ class Plot360():
       erp_heatmap = self._get_imshow_from_trajects_hmps(df)
       fig.append_trace(erp_heatmap.data[0], row=1, col=2)
       if isinstance(self.tileset, TileSet):
-        # fix given phi 0 being the north pole at Utils.cartesian_to_eulerian
+        # fix given phi 0 being the north pole at cartesian_to_eulerian
         fig.update_yaxes(autorange='reversed')
 
     title = f'{str(df.shape[0])}_trajects_{self.tileset.prefix}'

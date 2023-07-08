@@ -7,14 +7,11 @@ import numpy as np
 import pandas as pd
 from pyquaternion import Quaternion
 
-from predict360user import config
-from predict360user.utils import (cartesian_to_eulerian, eulerian_to_cartesian,
-                                  interpolate_quaternions,
-                                  rotationBetweenVectors)
+from predict360user.utils import RAWDIR, DEFAULT_SAVEDIR
 
-ROOT_FOLDER = join(config.RAWDIR, 'David_MMSys_18/dataset/')
-OUTPUT_FOLDER = join(config.DEFAULT_SAVEDIR, 'David_MMSys_18/sampled_dataset')
-OUTPUT_TRUE_SALIENCY_FOLDER = join(config.DEFAULT_SAVEDIR, 'David_MMSys_18/true_saliency')
+ROOT_FOLDER = join(RAWDIR, 'David_MMSys_18/dataset/')
+OUTPUT_FOLDER = join(DEFAULT_SAVEDIR, 'David_MMSys_18/sampled_dataset')
+OUTPUT_TRUE_SALIENCY_FOLDER = join(DEFAULT_SAVEDIR, 'David_MMSys_18/true_saliency')
 SAMPLING_RATE = 0.2
 NUM_TILES_WIDTH_TRUE_SAL = 256
 NUM_TILES_HEIGHT_TRUE_SAL = 256

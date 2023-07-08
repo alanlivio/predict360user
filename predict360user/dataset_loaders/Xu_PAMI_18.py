@@ -6,16 +6,11 @@ import pandas as pd
 import scipy
 from pyquaternion import Quaternion
 
-from predict360user.utils import (cartesian_to_eulerian, degrees_to_radian,
-                                  eulerian_to_cartesian,
-                                  interpolate_quaternions, radian_to_degrees,
-                                  rotationBetweenVectors)
+from predict360user.utils import RAWDIR, DEFAULT_SAVEDIR
 
-from .. import config
-
-ROOT_FOLDER = join(config.RAWDIR, 'Xu_PAMI_18/dataset/')
+ROOT_FOLDER = join(RAWDIR, 'Xu_PAMI_18/dataset/')
 DATA_FILENAME = 'FULLdata_per_video_frame.mat'
-OUTPUT_FOLDER = join(config.DEFAULT_SAVEDIR, 'Xu_PAMI_18/sampled_dataset')
+OUTPUT_FOLDER = join(DEFAULT_SAVEDIR, 'Xu_PAMI_18/sampled_dataset')
 OUTPUT_TRUE_SALIENCY_FOLDER = 'Xu_PAMI_18/true_saliency'
 NUM_TILES_WIDTH_TRUE_SAL = 256
 NUM_TILES_HEIGHT_TRUE_SAL = 256

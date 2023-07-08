@@ -15,14 +15,22 @@ from sklearn.model_selection import train_test_split
 from sklearn.utils import shuffle
 from tqdm.auto import tqdm
 
-from predict360user import config
-from predict360user.config import logger
 from predict360user.dataset import (Dataset, calc_actual_entropy,
                                     count_entropy, get_class_name,
                                     get_class_thresholds)
 from predict360user.models import (BaseModel, Interpolation, NoMotion, PosOnly,
                                    PosOnly3D)
-from predict360user.utils import orth_dist_cartesian
+from predict360user.utils import RAWDIR, DEFAULT_SAVEDIR, calc_actual_entropy, logger
+
+
+ARGS_MODEL_NAMES = ['pos_only', 'pos_only_3d', 'no_motion', 'interpolation', 'TRACK', 'CVPR18', 'MM18', 'most_salient_point']
+MODELS_NAMES_NO_TRAIN = ['no_motion', 'interpolation']
+ARGS_DS_NAMES = ['all', 'david', 'fan', 'nguyen', 'xucvpr', 'xupami']
+ARGS_ENTROPY_NAMES = [ 'all', 'low', 'medium', 'high', 'nohigh', 'nolow', 'allminsize', 'low_hmp', 'medium_hmp', 'high_hmp', 'nohigh_hmp', 'nolow_hmp' ]
+ARGS_ENTROPY_AUTO_NAMES = ['auto', 'auto_m_window', 'auto_since_start']
+BATCH_SIZE = 128
+DEFAULT_EPOCHS = 30
+LEARNING_RATE = 0.0005
 
 absl.logging.set_verbosity(absl.logging.ERROR)
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -57,12 +65,12 @@ class Experiment():
                test_size=0.2,
                gpu_id=0,
                train_entropy='all',
-               epochs=config.DEFAULT_EPOCHS,
-               savedir=config.DEFAULT_SAVEDIR) -> None:
+               epochs=DEFAULT_EPOCHS,
+               savedir=DEFAULT_SAVEDIR) -> None:
     # properties from constructor
-    assert model_name in config.ARGS_MODEL_NAMES
-    assert dataset_name in config.ARGS_DS_NAMES
-    assert train_entropy in config.ARGS_ENTROPY_NAMES + config.ARGS_ENTROPY_AUTO_NAMES
+    assert model_name in ARGS_MODEL_NAMES
+    assert dataset_name in ARGS_DS_NAMES
+    assert train_entropy in ARGS_ENTROPY_NAMES + ARGS_ENTROPY_AUTO_NAMES
     self.model_name = model_name
     self.dataset_name = dataset_name
     self.train_entropy = train_entropy
@@ -116,11 +124,15 @@ class Experiment():
   def generate_batchs(self, model: BaseModel, wins: list) -> Generator:
     while True:
       shuffle(wins, random_state=1)
-      for count, _ in enumerate(wins[::config.BATCH_SIZE]):
-        end = count + config.BATCH_SIZE if count + config.BATCH_SIZE <= len(wins) else len(wins)
+      for count, _ in enumerate(wins[::BATCH_SIZE]):
+        end = count + BATCH_SIZE if count + BATCH_SIZE <= len(wins) else len(wins)
         traces_l = [self.ds.get_traces(win['video'], win['user']) for win in wins[count:end]]
         x_i_l = [win['trace_id'] for win in wins[count:end]]
         yield model.generate_batch(traces_l, x_i_l)
+
+  def drop_predict_cols(self) -> None:
+    col_rm = [col for col in self._ds.df.columns for model in ARGS_MODEL_NAMES if col.startswith(model)]
+    self._ds.df.drop(col_rm, axis=1, errors='ignore', inplace=True)
 
   @property
   def ds(self) -> Dataset:
@@ -154,7 +166,7 @@ class Experiment():
   def train(self) -> None:
     logger.info('train()')
     assert not self.using_auto, "train_entropy should not be auto"
-    assert self.model_name not in config.MODELS_NAMES_NO_TRAIN, f"{self.model_name} does not need training"
+    assert self.model_name not in MODELS_NAMES_NO_TRAIN, f"{self.model_name} does not need training"
     logger.info('model_dir=' + self.model_dir)
 
     # check model
@@ -193,8 +205,8 @@ class Experiment():
       for trace_id in range(self.init_window, row[1]['traces'].shape[0] -self.end_window)]
 
     # fit
-    steps_per_ep_train = np.ceil(len(self.x_train_wins) / config.BATCH_SIZE)
-    steps_per_ep_validate = np.ceil(len(self.x_val_wins) / config.BATCH_SIZE)
+    steps_per_ep_train = np.ceil(len(self.x_train_wins) / BATCH_SIZE)
+    steps_per_ep_validate = np.ceil(len(self.x_val_wins) / BATCH_SIZE)
     csv_logger = CSVLogger(self.train_csv_log_f, append=True)
     # https://www.tensorflow.org/tutorials/keras/save_and_load
     model_checkpoint = ModelCheckpoint(self.model_path,
@@ -208,7 +220,7 @@ class Experiment():
               steps_per_epoch=steps_per_ep_train,
               validation_data=validation_data,
               validation_steps=steps_per_ep_validate,
-              validation_freq=config.BATCH_SIZE,
+              validation_freq=BATCH_SIZE,
               epochs=self.epochs,
               initial_epoch=initial_epoch,
               callbacks=callbacks)
@@ -302,13 +314,13 @@ class Experiment():
                   color='model',
                   title='compare_train_loss',
                   width=800)
-    config.show_or_save(fig, self.savedir, 'compare_train')
+    show_or_save(fig, self.savedir, 'compare_train')
 
   def list_done_evaluate(self) -> None:
     models_cols = sorted([
       col for col in self.ds.df.columns \
-      if any(m_name in col for m_name in config.ARGS_MODEL_NAMES)\
-      and not any(ds_name in col for ds_name in config.ARGS_DS_NAMES[1:])])
+      if any(m_name in col for m_name in ARGS_MODEL_NAMES)\
+      and not any(ds_name in col for ds_name in ARGS_DS_NAMES[1:])])
     if models_cols:
       for model in models_cols:
         preds = len(self.ds.df[model].apply(lambda x: len(x) != 0))
@@ -336,13 +348,13 @@ class Experiment():
     # models_cols
     models_cols = sorted([
       col for col in self.x_test.columns \
-      if any(m_name in col for m_name in config.ARGS_MODEL_NAMES)\
-      and not any(ds_name in col for ds_name in config.ARGS_DS_NAMES[1:])\
+      if any(m_name in col for m_name in ARGS_MODEL_NAMES)\
+      and not any(ds_name in col for ds_name in ARGS_DS_NAMES[1:])\
       and not any(self.df_compare_evaluate['model_name'] == col) # already calculated
       ])
     if models_cols:
       logger.info(f"compare evaluate for models: {', '.join(models_cols)}")
-      logger.info(f"for each model, compare users: {config.ARGS_ENTROPY_NAMES[:6]}")
+      logger.info(f"for each model, compare users: {ARGS_ENTROPY_NAMES[:6]}")
     else:
       logger.info(f"evaluate models already calculated. skip to visualize")
 
@@ -411,7 +423,7 @@ class Experiment():
       .background_gradient(axis=0, cmap='coolwarm')\
       .highlight_min(subset=list(self.range_win), props=props)\
       .highlight_max(subset=list(self.range_win), props=props)
-    config.show_or_save(output, self.savedir, 'compare_evaluate')
+    show_or_save(output, self.savedir, 'compare_evaluate')
 
   def compare_evaluate_save(self) -> None:
     assert hasattr(self, 'df_compare_evaluate')
@@ -440,19 +452,19 @@ if __name__ == '__main__':
   # Experiment params
   psr.add_argument('-model_name',
                    nargs='?',
-                   choices=config.ARGS_MODEL_NAMES,
-                   default=config.ARGS_MODEL_NAMES[0],
+                   choices=ARGS_MODEL_NAMES,
+                   default=ARGS_MODEL_NAMES[0],
                    help='reference model to used (default: pos_only)')
   psr.add_argument('-dataset_name',
                    nargs='?',
-                   choices=config.ARGS_DS_NAMES,
-                   default=config.ARGS_DS_NAMES[0],
+                   choices=ARGS_DS_NAMES,
+                   default=ARGS_DS_NAMES[0],
                    help='dataset used to train this network (default: all)')
   psr.add_argument('-train_entropy',
                    nargs='?',
                    type=str,
                    default='all',
-                   choices=config.ARGS_ENTROPY_NAMES + config.ARGS_ENTROPY_AUTO_NAMES,
+                   choices=ARGS_ENTROPY_NAMES + ARGS_ENTROPY_AUTO_NAMES,
                    help='''entropy to filter train data (default all).
                            -evaluate accepts auto, auto_m_window, auto_since_start''')
 
@@ -479,14 +491,14 @@ if __name__ == '__main__':
                    help='test percetage (default: 0.2)')
   psr.add_argument('-savedir',
                    nargs='?',
-                   default=config.DEFAULT_SAVEDIR,
+                   default=DEFAULT_SAVEDIR,
                    type=str,
                    help='dir to save models, processed data and results (default: saved/)')
 
   # train() only params
   psr.add_argument('-lr',
                    type=float,
-                   help=f'learning rate (default is {config.LEARNING_RATE})')
+                   help=f'learning rate (default is {LEARNING_RATE})')
   psr.add_argument('-gpu_id',
                    nargs='?',
                    type=int,
@@ -495,8 +507,8 @@ if __name__ == '__main__':
   psr.add_argument('-epochs',
                    nargs='?',
                    type=int,
-                   default=config.DEFAULT_EPOCHS,
-                   help=f'epochs numbers (default is {config.DEFAULT_EPOCHS})')
+                   default=DEFAULT_EPOCHS,
+                   help=f'epochs numbers (default is {DEFAULT_EPOCHS})')
 
   args = psr.parse_args()
   # create Experiment
@@ -513,7 +525,7 @@ if __name__ == '__main__':
       'savedir' : args.savedir
   }
   if args.lr  is not None:
-    config.LEARNING_RATE = args.lr
+    LEARNING_RATE = args.lr
   exp = Experiment(**exp_args)
   if args.compare_train:
     exp.compare_train()

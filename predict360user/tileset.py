@@ -8,7 +8,6 @@ from spherical_geometry import polygon
 from spherical_geometry.polygon import SphericalPolygon
 from tqdm.auto import tqdm
 
-from predict360user.config import logger
 from predict360user.utils import *
 
 tqdm.pandas()
