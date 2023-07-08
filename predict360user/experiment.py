@@ -108,7 +108,7 @@ class Experiment():
 
   def create_model(self, model_path='') -> BaseModel:
     if self.model_name == 'pos_only':
-      model = PosOnly(self.m_window, self.h_window)
+      model = PosOnly(self.m_window, self.h_window, LEARNING_RATE)
     elif self.model_name == 'pos_only_3d':
       model = PosOnly3D(self.m_window, self.h_window)
     elif self.model_name == 'interpolation':

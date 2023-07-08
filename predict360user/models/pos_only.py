@@ -51,8 +51,8 @@ class PosOnly(BaseModel):
     model_pred = super().predict(inputs, verbose=0)[0]
     return transform_normalized_eulerian_to_cartesian(model_pred)
 
-  def __init__(self, m_window: int, h_window: int) -> None:
-    self.m_window, self.h_window = m_window, h_window
+  def __init__(self, m_window: int, h_window: int, lr: float) -> None:
+    self.m_window, self.h_window, self.lr = m_window, h_window, lr
 
     # Defining model structure
     encoder_inputs = Input(shape=(self.m_window, 2))
@@ -92,7 +92,7 @@ class PosOnly(BaseModel):
 
     # Define and compile model
     super().__init__([encoder_inputs, decoder_inputs], decoder_outputs)
-    model_optimizer = keras.optimizers.Adam(learning_rate=LEARNING_RATE)
+    model_optimizer = keras.optimizers.Adam(learning_rate=self.lr)
     self.compile(optimizer=model_optimizer, loss=metric_orth_dist_eulerian)
 
 class NoMotion(BaseModel):
