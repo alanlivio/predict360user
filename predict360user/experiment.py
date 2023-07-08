@@ -20,7 +20,8 @@ from predict360user.dataset import (Dataset, calc_actual_entropy,
                                     get_class_thresholds)
 from predict360user.models import (BaseModel, Interpolation, NoMotion, PosOnly,
                                    PosOnly3D)
-from predict360user.utils import RAWDIR, DEFAULT_SAVEDIR, calc_actual_entropy, logger
+from predict360user.utils import (RAWDIR, DEFAULT_SAVEDIR, calc_actual_entropy,
+                                  logger, show_or_save, orth_dist_cartesian)
 
 
 ARGS_MODEL_NAMES = ['pos_only', 'pos_only_3d', 'no_motion', 'interpolation', 'TRACK', 'CVPR18', 'MM18', 'most_salient_point']
