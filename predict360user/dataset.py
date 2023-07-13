@@ -13,7 +13,7 @@ import scipy.stats
 from plotly.subplots import make_subplots
 
 from predict360user.tileset import TILESET_DEFAULT, TileSet
-from predict360user.utils import RAWDIR, DEFAULT_SAVEDIR, calc_actual_entropy, logger
+from predict360user.utils import HMDDIR, ENTROPY_CLASS_COLORS, RAWDIR, DEFAULT_SAVEDIR, calc_actual_entropy, logger
 
 DS_NAMES = ['david', 'fan', 'nguyen', 'xucvpr', 'xupami']
 DS_SIZES = [1083, 300, 432, 6654, 4408]
