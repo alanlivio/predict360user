@@ -8,6 +8,7 @@ spherical_geometry
 tqdm
 keras-tqdm
 jenkspy
+protobuf==3.20.*    # prevent error "TypeError: Descriptors cannot not be created directly"
 keras               # ==2.3.1
 matplotlib==3.7     # ==3.1.3
 numpy==1.23.5       # ==1.18.1

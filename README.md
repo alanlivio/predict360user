@@ -61,14 +61,16 @@ Library to predict user behavior in 360 videos. It extends [Rondon 360-videos mo
 
 #### Requirements
 
-The project requirements are in [requirements.txt](requirements.txt). It targets tensorflow==2.8 so [you will need cuda>=11.2 and cuDNN==8.1](https://www.tensorflow.org/install/source#gpu). First, check the available Cuda version for your GPU and follow one of the guides below based on [TensorFlow pip installation tutorial](https://www.tensorflow.org/install/pip). 
+The project requirements are in [requirements.txt](requirements.txt) and it targets tensorflow==2.8 so [you will need cuda>=11.2 and cuDNN==8.1](https://www.tensorflow.org/install/source#gpu). 
+
+So to setup you first need check the available Cuda version for your GPU by run `nvcc --version`. Then follow one of the guides below based on [TensorFlow pip installation tutorial](https://www.tensorflow.org/install/pip). 
 
 For GPUs with Cuda 11.2, you can:
 ```bash
 conda create -n p3u python==3.9 -c conda-forge
 conda activate p3u
 conda install -c conda-forge cudatoolkit=11.2.0 
-pip install nvidia-cudnn-cu11==8.1.*  -r requirements.txt
+pip install nvidia-cudnn-cu11  -r requirements.txt
 ```
 
 For GPUs with Cuda 11.8, you can:
@@ -76,10 +78,10 @@ For GPUs with Cuda 11.8, you can:
 conda create -n p3u python==3.9 -c conda-forge
 conda activate p3u
 conda install -c conda-forge cudatoolkit=11.8.0 
-pip install nvidia-cudnn-cu11==8.6.* -r requirements.txt
+pip install nvidia-cudnn-cu11 -r requirements.txt
 ```
 
-OBS: To install drivers in Windows-WSL, you can use [this tutorial](https://ubuntu.com/tutorials/enabling-gpu-acceleration-on-ubuntu-on-wsl2-with-the-nvidia-cuda-platform#3-install-nvidia-cuda-on-ubuntu) to install cuda==11.8.
+Note: To install drivers in Windows-WSL, you can use [this tutorial](https://ubuntu.com/tutorials/enabling-gpu-acceleration-on-ubuntu-on-wsl2-with-the-nvidia-cuda-platform#3-install-nvidia-cuda-on-ubuntu) to install cuda==11.8.
 
 #### Train and evaluate
 
