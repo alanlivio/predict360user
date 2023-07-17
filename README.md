@@ -2,14 +2,14 @@
 
 Library to predict user behavior in 360 videos. It extends [Rondon 360-videos models/dataset collection](https://gitlab.com/miguelfromeror/head-motion-prediction). The library's main classes are:
 
-* `Dataset`: stores the dataset in memory as a pandas.DataFrame and provides functions for data preprocessing, such as user clustering by entropy.
+* `Dataset`: stores the dataset in memory as a `pandas.DataFrame` and provides functions for data preprocessing, such as user clustering by entropy.
 
   |     | ds    | user    | video         | traces        |
   | --- | ----- | ------- | ------------- | ------------- |
   | 0   | david | david_0 | david_10_Cows | [[x,y,z],...] |
 
 * `Experiment`: train and evaluate prediction models
-* `Plot360`: plot viewport, trajectory or predictions for users using 3D visualization
+* `Plot360`: plot viewport, trajectory, or predictions for users using 3D visualization
 
 ### Datasets
 
@@ -61,9 +61,9 @@ Library to predict user behavior in 360 videos. It extends [Rondon 360-videos mo
 
 #### Requirements
 
-The project requirements are in [requirements.txt](requirements.txt). It target tensorflow==2.8 so [so will need cuda>=11.2 and cuDNN==8.1](https://www.tensorflow.org/install/source#gpu). First check the avaliable cuda version for you GPU and follow one of the guides bellow based on [TensorFlow pip installation tutorial](https://www.tensorflow.org/install/pip). 
+The project requirements are in [requirements.txt](requirements.txt). It targets tensorflow==2.8 so [you will need cuda>=11.2 and cuDNN==8.1](https://www.tensorflow.org/install/source#gpu). First, check the available Cuda version for your GPU and follow one of the guides below based on [TensorFlow pip installation tutorial](https://www.tensorflow.org/install/pip). 
 
-For GPUs with cuda 11.2, you can:
+For GPUs with Cuda 11.2, you can:
 ```bash
 conda create -n p3u python==3.9 -c conda-forge
 conda activate p3u
@@ -71,7 +71,7 @@ conda install -c conda-forge cudatoolkit=11.2.0
 pip install nvidia-cudnn-cu11==8.1.*  -r requirements.txt
 ```
 
-For GPUs with cuda 11.8, you can:
+For GPUs with Cuda 11.8, you can:
 ```bash
 conda create -n p3u python==3.9 -c conda-forge
 conda activate p3u
