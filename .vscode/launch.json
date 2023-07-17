@@ -8,19 +8,8 @@
             "name": "predict360user",
             "type": "python",
             "request": "launch",
-            "module": "predict360user",
+            "module": "predict360user.experiment",
             "args": [
-                // "-train",
-                // "-compare_evaluate",
-                // "-evaluate",
-                // "-dataset_name", "david",
-                // "-oneuser", "david_1", "-onevideo", "david_6_DroneFlight", // medium
-                // "-oneuser", "david_0", "-onevideo", "david_10_Cows", // index 0
-                // "-train_entropy",
-                // "auto"
-                // "hight",
-                // "auto_m_window"
-                // "auto_since_start"
             ],
             "justMyCode": true
         },

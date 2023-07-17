@@ -468,7 +468,6 @@ if __name__ == '__main__':
                    choices=ARGS_ENTROPY_NAMES + ARGS_ENTROPY_AUTO_NAMES,
                    help='''entropy to filter train data (default all).
                            -evaluate accepts auto, auto_m_window, auto_since_start''')
-
   psr.add_argument('-init_window',
                    nargs='?',
                    type=int,
