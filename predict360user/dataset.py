@@ -1,8 +1,9 @@
 import multiprocessing
 import os
 import pickle
-from os.path import exists
+from os.path import exists, basename
 from typing import Literal
+import logging
 
 import jenkspy
 import numpy as np
@@ -13,10 +14,11 @@ import scipy.stats
 from plotly.subplots import make_subplots
 
 from predict360user.tileset import TILESET_DEFAULT, TileSet
-from predict360user.utils import HMDDIR, ENTROPY_CLASS_COLORS, RAWDIR, DEFAULT_SAVEDIR, calc_actual_entropy, logger
+from predict360user.utils import HMDDIR, ENTROPY_CLASS_COLORS, RAWDIR, DEFAULT_SAVEDIR, calc_actual_entropy
 
 DS_NAMES = ['david', 'fan', 'nguyen', 'xucvpr', 'xupami']
 DS_SIZES = [1083, 300, 432, 6654, 4408]
+log = logging.getLogger(basename(__file__))
 
 def get_class_thresholds(df, col: str) -> tuple[float, float]:
   _, threshold_medium, threshold_high, _ = jenkspy.jenks_breaks(df[col], n_classes=3)
@@ -48,13 +50,13 @@ class Dataset:
     self.pickle_file = os.path.join(savedir, 'df_trajects.pickle')
     if exists(self.pickle_file):
       with open(self.pickle_file, 'rb') as f:
-        logger.info(f'loading df from {self.pickle_file}')
+        log.info(f'loading df from {self.pickle_file}')
         self.df = pickle.load(f)
     else:
-      logger.info(f'there is no {self.pickle_file}')
-      logger.info(f'loading df from {HMDDIR}')
+      log.info(f'there is no {self.pickle_file}')
+      log.info(f'loading df from {HMDDIR}')
       self.df = self._load_df_trajects_from_hmp()
-      logger.info(f'calculating entropy')
+      log.info(f'calculating entropy')
       self.calc_traces_entropy()
       self.dump()
 
@@ -115,12 +117,12 @@ class Dataset:
     return df
 
   def dump(self) -> None:
-    logger.info(f'saving df to {self.pickle_file}')
+    log.info(f'saving df to {self.pickle_file}')
     with open(self.pickle_file, 'wb') as f:
       pickle.dump(self.df, f)
 
   def dump_column(self, column) -> None:
-    logger.info(f'update column {column} to {self.pickle_file}')
+    log.info(f'update column {column} to {self.pickle_file}')
     if exists(self.pickle_file):
       with multiprocessing.Lock():
         with open(self.pickle_file, 'rb') as f:
@@ -212,9 +214,9 @@ class Dataset:
 
   def show_entropy_counts(self) -> None:
     fmt = '''df has {} trajectories with entropy: {} low, {} medium, {} high'''
-    logger.info(fmt.format(*count_entropy(self.df, 'actS')))
-    logger.info(f"df['actS'].max()={self.df['actS'].max()=}")
-    logger.info(f"df['actS'].min()={self.df['actS'].min()=}")
+    log.info(fmt.format(*count_entropy(self.df, 'actS')))
+    log.info(f"df['actS'].max()={self.df['actS'].max()=}")
+    log.info(f"df['actS'].min()={self.df['actS'].min()=}")
 
   def show_histogram(self, cols: list, facet=None) -> None:
     if not cols:
@@ -230,7 +232,7 @@ class Dataset:
 
   def calc_tileset_reqs_metrics(self, tileset_l: list[TileSet]) -> None:
     if len(self.df) >= 4:
-      logger.info("df.size >= 4, it will take for some time")
+      log.info("df.size >= 4, it will take for some time")
 
     def _trace_mestrics_np(trace, tileset) -> np.array:
       heatmap, vp_quality, area_out = tileset.request(trace, return_metrics=True)

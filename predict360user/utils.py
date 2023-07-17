@@ -10,7 +10,7 @@ import datetime
 import logging
 import pathlib
 import sys
-from os.path import abspath, isabs, join
+from os.path import abspath, isabs, join, basename
 
 import IPython
 import plotly.graph_objs as go
@@ -21,10 +21,9 @@ DEFAULT_SAVEDIR = f"{pathlib.Path('saved/').resolve()}"
 HMDDIR = f"{pathlib.Path(__file__).parent / 'head_motion_prediction/'}"
 # DS_SIZES = [1083, 300, 432, 7106, 4543] # TODO: check sample_dataset folders
 ENTROPY_CLASS_COLORS = {'low': 'blue', 'medium': 'green', 'high': 'red'}
+log = logging.getLogger(basename(__file__))
 
 # global funcs
-logging.basicConfig(level=logging.INFO, format='-- predict360user: %(message)s')
-logger = logging.getLogger(__name__)
 
 def show_or_save(output, savedir, title = '') -> None:
   if 'ipykernel' in sys.modules:
@@ -42,7 +41,7 @@ def show_or_save(output, savedir, title = '') -> None:
       output.to_html(html_file)
     if not isabs(html_file):
       html_file = abspath(html_file)
-    logger.info(f'compare_train saved on {html_file}')
+    log.info(f'compare_train saved on {html_file}')
 
 def degrees_to_radian(degree):
     return degree*np.pi/180.0

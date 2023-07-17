@@ -1,6 +1,7 @@
 import math
 from enum import Enum, auto
 from functools import cache
+import logging
 
 import numpy as np
 from scipy.spatial import SphericalVoronoi
@@ -12,6 +13,7 @@ from predict360user.utils import *
 
 tqdm.pandas()
 
+log = logging.getLogger(basename(__file__))
 
 @cache
 def fov_poly(x, y, z) -> polygon.SphericalPolygon:
