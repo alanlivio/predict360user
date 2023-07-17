@@ -2,9 +2,11 @@ import os
 import pickle
 import sys
 import hydra
+from hydra.core.config_store import ConfigStore
 from omegaconf import DictConfig, OmegaConf
 import logging
 
+from dataclasses import dataclass
 from os.path import exists, isdir, join, basename
 from typing import Generator
 
@@ -32,7 +34,6 @@ ARGS_DS_NAMES = ['all', 'david', 'fan', 'nguyen', 'xucvpr', 'xupami']
 ARGS_ENTROPY_NAMES = [ 'all', 'low', 'medium', 'high', 'nohigh', 'nolow', 'allminsize', 'low_hmp', 'medium_hmp', 'high_hmp', 'nohigh_hmp', 'nolow_hmp' ]
 ARGS_ENTROPY_AUTO_NAMES = ['auto', 'auto_m_window', 'auto_since_start']
 BATCH_SIZE = 128
-DEFAULT_EPOCHS = 30
 LEARNING_RATE = 0.0005
 log = logging.getLogger(basename(__file__))
 
@@ -58,67 +59,64 @@ def filter_df_by_entropy(df: pd.DataFrame, entropy_type: str, train_entropy: str
   return filter_df.groupby(entropy_type + '_c').apply(lambda x: x.sample(n=n, random_state=1))
 
 
-class Experiment():
+@dataclass
+class ExperimentConfig():
+  model_name: str = 'pos_only'
+  dataset_name: str = 'all'
+  h_window: int = 25
+  init_window: int = 30
+  m_window: int = 5
+  test_size: float = 0.2
+  gpu_id: int = 0
+  train_entropy: str = 'all'
+  epochs: int = 30
+  savedir: str = DEFAULT_SAVEDIR
 
-  def __init__(self,
-               model_name='pos_only',
-               dataset_name='all',
-               h_window=25,
-               init_window=30,
-               m_window=5,
-               test_size=0.2,
-               gpu_id=0,
-               train_entropy='all',
-               epochs=DEFAULT_EPOCHS,
-               savedir=DEFAULT_SAVEDIR) -> None:
-    # properties from constructor
-    assert model_name in ARGS_MODEL_NAMES
-    assert dataset_name in ARGS_DS_NAMES
-    assert train_entropy in ARGS_ENTROPY_NAMES + ARGS_ENTROPY_AUTO_NAMES
-    self.model_name = model_name
-    self.dataset_name = dataset_name
-    self.train_entropy = train_entropy
-    self.savedir = savedir
-    self.h_window = h_window
-    self.init_window = init_window
-    self.m_window = m_window
-    self.test_size = test_size
-    self.epochs = epochs
-    self.end_window = self.h_window
-    if gpu_id:
-      os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu_id)
-      log.info(f"set visible cpu to {gpu_id}")
+  def __post_init__(self) -> None:
+    assert self.model_name in ARGS_MODEL_NAMES
+    assert self.dataset_name in ARGS_DS_NAMES
+    assert self.train_entropy in ARGS_ENTROPY_NAMES + ARGS_ENTROPY_AUTO_NAMES
+  def __str__(self) -> str:
+    return OmegaConf.to_yaml(self)
+
+cs = ConfigStore.instance()
+cs.store(name="experiment", group="experiment", node=ExperimentConfig)
+
+class Experiment():
+  cfg: ExperimentConfig
+
+  def __init__(self, cfg: ExperimentConfig) -> None:
+    self.cfg = cfg
+    log.info("ExperimentConfig:\n-------\n"+ OmegaConf.to_yaml(cfg) + "-------")
+
+    if self.cfg.gpu_id:
+      os.environ["CUDA_VISIBLE_DEVICES"] = str(self.cfg.gpu_id)
+      log.info(f"set visible cpu to {self.cfg.gpu_id}")
+
     # properties others
-    self.compare_eval_pickle = join(self.savedir, 'df_compare_evaluate.pickle')
-    self.using_auto = self.train_entropy.startswith('auto')
-    self.entropy_type = 'hmpS' if self.train_entropy.endswith('hmp') else 'actS'
-    if self.dataset_name == 'all' and self.train_entropy == 'all':
-      self.model_fullname = self.model_name
-    elif self.train_entropy == 'all':
-      self.model_fullname = f'{self.model_name},{self.dataset_name},,'
+    self.compare_eval_pickle = join(self.cfg.savedir, 'df_compare_evaluate.pickle')
+    self.using_auto = self.cfg.train_entropy.startswith('auto')
+    self.entropy_type = 'hmpS' if self.cfg.train_entropy.endswith('hmp') else 'actS'
+    if self.cfg.dataset_name == 'all' and self.cfg.train_entropy == 'all':
+      self.model_fullname = self.cfg.model_name
+    elif self.cfg.train_entropy == 'all':
+      self.model_fullname = f'{self.cfg.model_name},{self.cfg.dataset_name},,'
     else:
-      self.train_entropy = self.train_entropy.removesuffix('_hmp')
-      self.model_fullname = f'{self.model_name},{self.dataset_name},{self.entropy_type},{self.train_entropy}'
-    self.model_dir = join(self.savedir, self.model_fullname)
+      self.cfg.train_entropy = self.cfg.train_entropy.removesuffix('_hmp')
+      self.model_fullname = f'{self.cfg.model_name},{self.cfg.dataset_name},{self.entropy_type},{self.cfg.train_entropy}'
+    self.model_dir = join(self.cfg.savedir, self.model_fullname)
     self.train_csv_log_f = join(self.model_dir, 'train_results.csv')
     self.model_path = join(self.model_dir, 'weights.hdf5')
-    log.info(self.__str__())
-
-  def __str__(self) -> str:
-    return "Experiment(" + ", ".join(f'{elem}={getattr(self, elem)}' for elem in [
-        'model_name', 'dataset_name', 'h_window', 'init_window', 'm_window', 'test_size',
-        'train_entropy', 'epochs', 'savedir'
-    ]) + ")"
 
   def create_model(self, model_path='') -> BaseModel:
-    if self.model_name == 'pos_only':
-      model = PosOnly(self.m_window, self.h_window, LEARNING_RATE)
-    elif self.model_name == 'pos_only_3d':
-      model = PosOnly3D(self.m_window, self.h_window)
-    elif self.model_name == 'interpolation':
-      return Interpolation(self.h_window)  # does not need training
-    elif self.model_name == 'no_motion':
-      return NoMotion(self.h_window)  # does not need training
+    if self.cfg.model_name == 'pos_only':
+      model = PosOnly(self.cfg.m_window, self.cfg.h_window, LEARNING_RATE)
+    elif self.cfg.model_name == 'pos_only_3d':
+      model = PosOnly3D(self.cfg.m_window, self.cfg.h_window)
+    elif self.cfg.model_name == 'interpolation':
+      return Interpolation(self.cfg.h_window)  # does not need training
+    elif self.cfg.model_name == 'no_motion':
+      return NoMotion(self.cfg.h_window)  # does not need training
     else:
       raise RuntimeError
     if model_path:
@@ -142,14 +140,14 @@ class Experiment():
   def ds(self) -> Dataset:
     if not hasattr(self, '_ds'):
       # TODO: filter by dataset name
-      self._ds = Dataset(savedir=self.savedir)
+      self._ds = Dataset(savedir=self.cfg.savedir)
     return self._ds
 
   def _partition(self) -> None:
     log.info('partitioning...')
     # split x_train, x_test (0.2)
     self.x_train, self.x_test = \
-      train_test_split(self.ds.df, random_state=1, test_size=self.test_size, stratify=self.ds.df[self.entropy_type + '_c'])
+      train_test_split(self.ds.df, random_state=1, test_size=self.cfg.test_size, stratify=self.ds.df[self.entropy_type + '_c'])
     # split x_train, x_val (0.125 * 0.8 = 0.1)
     self.x_train, self.x_val = \
       train_test_split(self.x_train,random_state=1, test_size=0.125, stratify=self.x_train[self.entropy_type + '_c'])
@@ -158,10 +156,10 @@ class Experiment():
     log.info('x_test has {} trajectories: {} low, {} medium, {} high'.format(
         *count_entropy(self.x_test, self.entropy_type)))
 
-    if self.train_entropy != 'all' and not self.using_auto:
+    if self.cfg.train_entropy != 'all' and not self.using_auto:
       log.info('train_entropy != all, so filtering x_train, x_val')
-      self.x_train = filter_df_by_entropy(self.x_train, self.entropy_type, self.train_entropy)
-      self.x_val = filter_df_by_entropy(self.x_val, self.entropy_type, self.train_entropy)
+      self.x_train = filter_df_by_entropy(self.x_train, self.entropy_type, self.cfg.train_entropy)
+      self.x_val = filter_df_by_entropy(self.x_val, self.entropy_type, self.cfg.train_entropy)
       log.info('x_train filtred has {} trajectories: {} low, {} medium, {} high'.format(
           *count_entropy(self.x_train, self.entropy_type)))
       log.info('x_val filtred has {} trajectories: {} low, {} medium, {} high'.format(
@@ -170,7 +168,7 @@ class Experiment():
   def train(self) -> None:
     log.info('train()')
     assert not self.using_auto, "train_entropy should not be auto"
-    assert self.model_name not in MODELS_NAMES_NO_TRAIN, f"{self.model_name} does not need training"
+    assert self.cfg.model_name not in MODELS_NAMES_NO_TRAIN, f"{self.cfg.model_name} does not need training"
     log.info('model_dir=' + self.model_dir)
 
     # check model
@@ -200,13 +198,13 @@ class Experiment():
         'user': row[1]['user'],
         'trace_id': trace_id
     } for row in self.x_train.iterrows()\
-      for trace_id in range(self.init_window, row[1]['traces'].shape[0] -self.end_window)]
+      for trace_id in range(self.cfg.init_window, row[1]['traces'].shape[0] -self.cfg.h_window)]
     self.x_val_wins = [{
         'video': row[1]['video'],
         'user': row[1]['user'],
         'trace_id': trace_id,
     } for row in self.x_val.iterrows()\
-      for trace_id in range(self.init_window, row[1]['traces'].shape[0] -self.end_window)]
+      for trace_id in range(self.cfg.init_window, row[1]['traces'].shape[0] -self.cfg.h_window)]
 
     # fit
     steps_per_ep_train = np.ceil(len(self.x_train_wins) / BATCH_SIZE)
@@ -225,16 +223,16 @@ class Experiment():
               validation_data=validation_data,
               validation_steps=steps_per_ep_validate,
               validation_freq=BATCH_SIZE,
-              epochs=self.epochs,
+              epochs=self.cfg.epochs,
               initial_epoch=initial_epoch,
               callbacks=callbacks)
 
   def _auto_select_model(self, traces: np.array, x_i) -> BaseModel:
-    if self.train_entropy == 'auto':
+    if self.cfg.train_entropy == 'auto':
       window = traces
-    elif self.train_entropy == 'auto_m_window':
-      window = traces[x_i - self.m_window:x_i]
-    elif self.train_entropy == 'auto_since_start':
+    elif self.cfg.train_entropy == 'auto_m_window':
+      window = traces[x_i - self.cfg.m_window:x_i]
+    elif self.cfg.train_entropy == 'auto_since_start':
       window = traces[0:x_i]
     else:
       raise RuntimeError()
@@ -260,12 +258,12 @@ class Experiment():
         'trace_id': trace_id,
         'actS_c': row[1]['actS_c']
     } for row in self.x_test.iterrows()\
-      for trace_id in range(self.init_window, row[1]['traces'].shape[0] -self.end_window)]
+      for trace_id in range(self.cfg.init_window, row[1]['traces'].shape[0] -self.cfg.h_window)]
 
     # create model
     log.info('creating model ...')
     if self.using_auto:
-      prefix = join(self.savedir, f'{self.model_name},{self.dataset_name},actS,')
+      prefix = join(self.cfg.savedir, f'{self.cfg.model_name},{self.cfg.dataset_name},actS,')
       self.threshold_medium, self.threshold_high = get_class_thresholds(self.ds.df, 'actS')
       self.model_low = self.create_model(join(prefix + 'low', 'weights.hdf5'))
       self.model_medium = self.create_model(join(prefix + 'medium', 'weights.hdf5'))
@@ -300,12 +298,12 @@ class Experiment():
     self.evaluate()
 
   def compare_train(self) -> None:
-    assert exists(self.savedir), f'the save folder {self.savedir} does not exist. do -train call'
+    assert exists(self.cfg.savedir), f'the save folder {self.cfg.savedir} does not exist. do -train call'
     result_csv = 'train_results.csv'
     # find result_csv files
-    csv_df_l = [(dir_name, pd.read_csv(join(self.savedir, dir_name, file_name)))
-                for dir_name in os.listdir(self.savedir) if isdir(join(self.savedir, dir_name))
-                for file_name in os.listdir(join(self.savedir, dir_name))
+    csv_df_l = [(dir_name, pd.read_csv(join(self.cfg.savedir, dir_name, file_name)))
+                for dir_name in os.listdir(self.cfg.savedir) if isdir(join(self.cfg.savedir, dir_name))
+                for file_name in os.listdir(join(self.cfg.savedir, dir_name))
                 if file_name == result_csv]
     csv_df_l = [df.assign(model=dir_name) for (dir_name, df) in csv_df_l]
     assert csv_df_l, f'no <savedir>/<model>/{result_csv} files, run -train'
@@ -318,7 +316,7 @@ class Experiment():
                   color='model',
                   title='compare_train_loss',
                   width=800)
-    show_or_save(fig, self.savedir, 'compare_train')
+    show_or_save(fig, self.cfg.savedir, 'compare_train')
 
   def list_done_evaluate(self) -> None:
     models_cols = sorted([
@@ -334,7 +332,7 @@ class Experiment():
 
   def compare_evaluate(self) -> None:
     # horizon timestamps to be calculated
-    self.range_win = range(self.h_window)[::4]
+    self.range_win = range(self.cfg.h_window)[::4]
 
     # create df_compare_evaluate
     columns = ['model_name', 'S_type', 'S_class']
@@ -386,7 +384,7 @@ class Experiment():
       for win_pos in win_pos_l:
         if isinstance(df_wins_cols[win_pos], float):
           break  # TODO: review why some pred ends at 51
-        true_win = traject[win_pos + 1:win_pos + self.h_window + 1]
+        true_win = traject[win_pos + 1:win_pos + self.cfg.h_window + 1]
         pred_win = df_wins_cols[win_pos]
         for t in self.range_win:
           errors_per_timestamp[t].append(orth_dist_cartesian(true_win[t], pred_win[t]))
@@ -427,7 +425,7 @@ class Experiment():
       .background_gradient(axis=0, cmap='coolwarm')\
       .highlight_min(subset=list(self.range_win), props=props)\
       .highlight_max(subset=list(self.range_win), props=props)
-    show_or_save(output, self.savedir, 'compare_evaluate')
+    show_or_save(output, self.cfg.savedir, 'compare_evaluate')
 
   def compare_evaluate_save(self) -> None:
     assert hasattr(self, 'df_compare_evaluate')
@@ -442,13 +440,13 @@ class Experiment():
     self.ds.df = pd.concat([self.x_train, self.x_test])
     self.ds.show_histogram(facet='partition')
 
-
 @hydra.main(version_base=None, config_path="conf", config_name="config")
-def run_experiment(cfg):
+def run_experiment(cfg) -> None:
+
   assert cfg.action in ['run', 'compare_train', 'compare_evaluate']
   LEARNING_RATE = cfg.lr
   BATCH_SIZE = cfg.batch_size
-  exp = Experiment(**cfg.experiment)
+  exp = Experiment(cfg.experiment)
   if cfg.action == 'compare_train':
     exp.compare_train()
   elif cfg.action == 'compare_evaluate':
