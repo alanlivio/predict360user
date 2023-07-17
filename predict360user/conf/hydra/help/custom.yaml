@@ -1,20 +1,9 @@
-# App name, override to match the name your app is known by
 app_name: predict360user
 
-# Help header, customize to describe your app to your users
-header: == ${hydra.help.app_name} ==
-
-footer: |-
-  Use --hydra-help to view Hydra specific help
-
 template: |-
-  ${hydra.help.header}
-
-  This is the config generated for this run.
-  You can override everything, for example:
-  python my_app.py db.user=foo db.pass=bar
+  ${hydra.help.app_name} module create experiments to predict user behaviour in 360 videos
+  It is has hydra powered cli. Use --hydra-help to view Hydra specific help.
+  See below its default config. You can override everything, for example:
+  python ${hydra.help.app_name} experiment.dataset_name=david
   -------
-  $CONFIG
-  -------
-
-  ${hydra.help.footer}
+  $CONFIG-------
