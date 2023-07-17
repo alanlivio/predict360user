@@ -1,0 +1,16 @@
+action: run
+lr: 0.0005
+batch_size: 128
+experiment:
+  dataset_name: all
+  model_name: pos_only
+  train_entropy: all
+  savedir: savedir
+  init_window: 30
+  m_window: 5
+  h_window: 25
+  gpu_id: 0
+  test_size: 0.2
+  epochs: 30
+defaults:
+  - override hydra/help: custom

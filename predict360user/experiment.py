@@ -2,6 +2,8 @@ import os
 import pickle
 import sys
 import argparse
+import hydra
+from omegaconf import DictConfig, OmegaConf
 
 from os.path import exists, isdir, join
 from typing import Generator
@@ -440,97 +442,15 @@ class Experiment():
     self.ds.show_histogram(facet='partition')
 
 
-if __name__ == '__main__':
-  # argparse
-  psr = argparse.ArgumentParser()
-  psr.description = 'experiment on predict user behaviour in 360 videos'
-
-  # actions params
-  grp = psr.add_mutually_exclusive_group()
-  grp.add_argument('-compare_train', action='store_true', help='do only compare training results')
-  grp.add_argument('-compare_evaluate', action='store_true', help='do only compare evaluation results')
-
-  # Experiment params
-  psr.add_argument('-model_name',
-                   nargs='?',
-                   choices=ARGS_MODEL_NAMES,
-                   default=ARGS_MODEL_NAMES[0],
-                   help='reference model to used (default: pos_only)')
-  psr.add_argument('-dataset_name',
-                   nargs='?',
-                   choices=ARGS_DS_NAMES,
-                   default=ARGS_DS_NAMES[0],
-                   help='dataset used to train this network (default: all)')
-  psr.add_argument('-train_entropy',
-                   nargs='?',
-                   type=str,
-                   default='all',
-                   choices=ARGS_ENTROPY_NAMES + ARGS_ENTROPY_AUTO_NAMES,
-                   help='''entropy to filter train data (default all).
-                           -evaluate accepts auto, auto_m_window, auto_since_start''')
-  psr.add_argument('-init_window',
-                   nargs='?',
-                   type=int,
-                   default=30,
-                   help='initial buffer to avoid stationary part (default: 30)')
-  psr.add_argument('-m_window',
-                   nargs='?',
-                   type=int,
-                   default=5,
-                   help='buffer window in timesteps (default: 5)')
-  psr.add_argument('-h_window',
-                   nargs='?',
-                   type=int,
-                   default=25,
-                   help='''forecast window in timesteps (5 timesteps = 1 second)
-                           used to predict (default: 25)''')
-  psr.add_argument('-test_size',
-                   nargs='?',
-                   type=float,
-                   default=0.2,
-                   help='test percetage (default: 0.2)')
-  psr.add_argument('-savedir',
-                   nargs='?',
-                   default=DEFAULT_SAVEDIR,
-                   type=str,
-                   help='dir to save models, processed data and results (default: saved/)')
-
-  # train() only params
-  psr.add_argument('-lr',
-                   type=float,
-                   help=f'learning rate (default is {LEARNING_RATE})')
-  psr.add_argument('-gpu_id',
-                   nargs='?',
-                   type=int,
-                   default=0,
-                   help=f'gpu_id to be used (default is 0)')
-  psr.add_argument('-epochs',
-                   nargs='?',
-                   type=int,
-                   default=DEFAULT_EPOCHS,
-                   help=f'epochs numbers (default is {DEFAULT_EPOCHS})')
-
-  args = psr.parse_args()
-  # create Experiment
-  exp_args = {
-      'dataset_name': args.dataset_name,
-      'model_name': args.model_name,
-      'train_entropy': args.train_entropy,
-      'epochs': args.epochs,
-      'test_size': args.test_size,
-      'gpu_id': args.gpu_id,
-      'init_window': args.init_window,
-      'm_window': args.m_window,
-      'h_window': args.h_window,
-      'savedir' : args.savedir
-  }
-  if args.lr  is not None:
-    LEARNING_RATE = args.lr
-  exp = Experiment(**exp_args)
-  if args.compare_train:
+@hydra.main(version_base=None, config_path="conf", config_name="config")
+def run_experiment(cfg):
+  assert cfg.action in ['run', 'compare_train', 'compare_evaluate']
+  LEARNING_RATE = cfg.lr
+  BATCH_SIZE = cfg.batch_size
+  exp = Experiment(**cfg.experiment)
+  if cfg.action == 'compare_train':
     exp.compare_train()
-  elif args.compare_evaluate:
+  elif cfg.action == 'compare_evaluate':
     exp.compare_evaluate()
   else:
     exp.run()
-  sys.exit()

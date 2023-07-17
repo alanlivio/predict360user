@@ -2,6 +2,7 @@
 jupyter
 plotly
 colour
+hydra-core
 opencv-python
 scipy
 spherical_geometry
