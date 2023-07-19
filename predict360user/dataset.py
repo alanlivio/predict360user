@@ -215,8 +215,8 @@ class Dataset:
   def show_entropy_counts(self) -> None:
     fmt = '''df has {} trajectories with entropy: {} low, {} medium, {} high'''
     log.info(fmt.format(*count_entropy(self.df, 'actS')))
-    log.info(f"df['actS'].max()={self.df['actS'].max()=}")
-    log.info(f"df['actS'].min()={self.df['actS'].min()=}")
+    log.info(f"df['actS'].max()={self.df['actS'].max()}")
+    log.info(f"df['actS'].min()={self.df['actS'].min()}")
 
   def show_histogram(self, cols: list, facet=None) -> None:
     if not cols:
