@@ -9,18 +9,16 @@ from predict360user.utils import RAWDIR, DEFAULT_SAVEDIR, calc_actual_entropy
 class ExperimentTestCase(unittest.TestCase):
 
   def test_init(self) -> None:
-    exp = Experiment()
+    exp = Experiment(ExperimentConfig())
     self.assertEqual(exp.model_fullname, 'pos_only')
     self.assertEqual(exp.model_dir, join(DEFAULT_SAVEDIR, exp.model_fullname))
     self.assertEqual(exp.using_auto, False)
-    exp = Experiment(dataset_name='david')
+    exp = Experiment(ExperimentConfig(dataset_name='david'))
     self.assertEqual(exp.model_fullname, 'pos_only,david,,')
     self.assertEqual(exp.using_auto, False)
     for train_entropy in ARGS_ENTROPY_NAMES[1:] + ARGS_ENTROPY_AUTO_NAMES:
-      exp = Experiment(train_entropy=train_entropy)
-      entropy_type = 'hmpS' if train_entropy.endswith('hmp') else 'actS'
-      train_entropy = train_entropy.removesuffix('_hmp')
-      model_fullname = f'pos_only,all,{entropy_type},{train_entropy}'
+      exp = Experiment(ExperimentConfig(train_entropy=train_entropy))
+      model_fullname = f'pos_only,all,actS,{train_entropy}'
       self.assertEqual(exp.model_fullname, model_fullname)
       self.assertEqual(exp.model_dir, join(DEFAULT_SAVEDIR, model_fullname))
       self.assertEqual(exp.using_auto, train_entropy.startswith('auto'))
@@ -29,12 +27,12 @@ class ExperimentTestCase(unittest.TestCase):
     ds = Dataset()
     self.assertFalse(ds.df.empty)
     min_size = ds.df['actS_c'].value_counts().min()
-    for train_entropy in ['allminsize', 'nohigh', 'nolow', 'medium', 'low', 'high']:
+    for train_entropy in ARGS_ENTROPY_NAMES[1:]:
       fdf = filter_df_by_entropy(df=ds.df, entropy_type='actS', train_entropy=train_entropy)
       self.assertAlmostEqual(min_size, len(fdf), delta=2)
 
   def test_partition(self) -> None:
-    exp = Experiment(train_entropy='all')
+    exp = Experiment(ExperimentConfig(train_entropy='all'))
     # all
     exp.train_entropy = 'all'
     exp._partition()

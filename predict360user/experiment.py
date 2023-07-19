@@ -31,7 +31,7 @@ from predict360user.utils import (RAWDIR, DEFAULT_SAVEDIR, calc_actual_entropy,
 ARGS_MODEL_NAMES = ['pos_only', 'pos_only_3d', 'no_motion', 'interpolation', 'TRACK', 'CVPR18', 'MM18', 'most_salient_point']
 MODELS_NAMES_NO_TRAIN = ['no_motion', 'interpolation']
 ARGS_DS_NAMES = ['all', 'david', 'fan', 'nguyen', 'xucvpr', 'xupami']
-ARGS_ENTROPY_NAMES = [ 'all', 'low', 'medium', 'high', 'nohigh', 'nolow', 'allminsize', 'low_hmp', 'medium_hmp', 'high_hmp', 'nohigh_hmp', 'nolow_hmp' ]
+ARGS_ENTROPY_NAMES = [ 'all', 'low', 'medium', 'high', 'nohigh', 'nolow', 'allminsize' ]
 ARGS_ENTROPY_AUTO_NAMES = ['auto', 'auto_m_window', 'auto_since_start']
 log = logging.getLogger(basename(__file__))
 
@@ -96,13 +96,12 @@ class Experiment():
     # properties others
     self.compare_eval_pickle = join(self.cfg.savedir, 'df_compare_evaluate.pickle')
     self.using_auto = self.cfg.train_entropy.startswith('auto')
-    self.entropy_type = 'hmpS' if self.cfg.train_entropy.endswith('hmp') else 'actS'
+    self.entropy_type = 'actS'
     if self.cfg.dataset_name == 'all' and self.cfg.train_entropy == 'all':
       self.model_fullname = self.cfg.model_name
     elif self.cfg.train_entropy == 'all':
       self.model_fullname = f'{self.cfg.model_name},{self.cfg.dataset_name},,'
     else:
-      self.cfg.train_entropy = self.cfg.train_entropy.removesuffix('_hmp')
       self.model_fullname = f'{self.cfg.model_name},{self.cfg.dataset_name},{self.entropy_type},{self.cfg.train_entropy}'
     self.model_dir = join(self.cfg.savedir, self.model_fullname)
     self.train_csv_log_f = join(self.model_dir, 'train_results.csv')
