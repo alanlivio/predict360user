@@ -3,7 +3,7 @@ experiment:
   dataset_name: all
   model_name: pos_only
   train_entropy: all
-  savedir: savedir
+  savedir: saved
   init_window: 30
   m_window: 5
   h_window: 25
