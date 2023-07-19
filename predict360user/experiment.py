@@ -1,8 +1,6 @@
 import os
 import pickle
-import sys
 import hydra
-from hydra.core.config_store import ConfigStore
 from omegaconf import DictConfig, OmegaConf
 import logging
 
@@ -57,37 +55,15 @@ def filter_df_by_entropy(df: pd.DataFrame, entropy_type: str, train_entropy: str
   return filter_df.groupby(entropy_type + '_c').apply(lambda x: x.sample(n=n, random_state=1))
 
 
-@dataclass
-class ExperimentConfig():
-  model_name: str = 'pos_only'
-  dataset_name: str = 'all'
-  h_window: int = 25
-  init_window: int = 30
-  m_window: int = 5
-  test_size: float = 0.2
-  gpu_id: int = 0
-  train_entropy: str = 'all'
-  epochs: int = 30
-  batch_size = 128
-  learning_rate = 0.0005
-  savedir: str = DEFAULT_SAVEDIR
-
-  def __post_init__(self) -> None:
-    assert self.model_name in ARGS_MODEL_NAMES
-    assert self.dataset_name in ARGS_DS_NAMES
-    assert self.train_entropy in ARGS_ENTROPY_NAMES + ARGS_ENTROPY_AUTO_NAMES
-  def __str__(self) -> str:
-    return OmegaConf.to_yaml(self)
-
-cs = ConfigStore.instance()
-cs.store(name="experiment", group="experiment", node=ExperimentConfig)
-
 class Experiment():
-  cfg: ExperimentConfig
+  cfg: DictConfig
 
-  def __init__(self, cfg: ExperimentConfig) -> None:
-    self.cfg = cfg
+  def __init__(self, cfg: DictConfig) -> None:
     log.info("ExperimentConfig:\n-------\n"+ OmegaConf.to_yaml(cfg) + "-------")
+    assert cfg.model_name in ARGS_MODEL_NAMES
+    assert cfg.dataset_name in ARGS_DS_NAMES
+    assert cfg.train_entropy in ARGS_ENTROPY_NAMES + ARGS_ENTROPY_AUTO_NAMES
+    self.cfg = cfg
 
     if self.cfg.gpu_id:
       os.environ["CUDA_VISIBLE_DEVICES"] = str(self.cfg.gpu_id)
@@ -441,7 +417,6 @@ class Experiment():
 
 @hydra.main(version_base=None, config_path="conf", config_name="config")
 def run_experiment(cfg) -> None:
-
   assert cfg.action in ['run', 'compare_train', 'compare_evaluate']
   exp = Experiment(cfg.experiment)
   if cfg.action == 'compare_train':
