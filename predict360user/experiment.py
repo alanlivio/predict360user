@@ -33,8 +33,6 @@ MODELS_NAMES_NO_TRAIN = ['no_motion', 'interpolation']
 ARGS_DS_NAMES = ['all', 'david', 'fan', 'nguyen', 'xucvpr', 'xupami']
 ARGS_ENTROPY_NAMES = [ 'all', 'low', 'medium', 'high', 'nohigh', 'nolow', 'allminsize', 'low_hmp', 'medium_hmp', 'high_hmp', 'nohigh_hmp', 'nolow_hmp' ]
 ARGS_ENTROPY_AUTO_NAMES = ['auto', 'auto_m_window', 'auto_since_start']
-BATCH_SIZE = 128
-LEARNING_RATE = 0.0005
 log = logging.getLogger(basename(__file__))
 
 absl.logging.set_verbosity(absl.logging.ERROR)
@@ -70,6 +68,8 @@ class ExperimentConfig():
   gpu_id: int = 0
   train_entropy: str = 'all'
   epochs: int = 30
+  batch_size = 128
+  learning_rate = 0.0005
   savedir: str = DEFAULT_SAVEDIR
 
   def __post_init__(self) -> None:
@@ -110,7 +110,7 @@ class Experiment():
 
   def create_model(self, model_path='') -> BaseModel:
     if self.cfg.model_name == 'pos_only':
-      model = PosOnly(self.cfg.m_window, self.cfg.h_window, LEARNING_RATE)
+      model = PosOnly(self.cfg.m_window, self.cfg.h_window, self.cfg.learning_rate)
     elif self.cfg.model_name == 'pos_only_3d':
       model = PosOnly3D(self.cfg.m_window, self.cfg.h_window)
     elif self.cfg.model_name == 'interpolation':
@@ -126,8 +126,8 @@ class Experiment():
   def generate_batchs(self, model: BaseModel, wins: list) -> Generator:
     while True:
       shuffle(wins, random_state=1)
-      for count, _ in enumerate(wins[::BATCH_SIZE]):
-        end = count + BATCH_SIZE if count + BATCH_SIZE <= len(wins) else len(wins)
+      for count, _ in enumerate(wins[::self.cfg.batch_size]):
+        end = count + self.cfg.batch_size if count + self.cfg.batch_size <= len(wins) else len(wins)
         traces_l = [self.ds.get_traces(win['video'], win['user']) for win in wins[count:end]]
         x_i_l = [win['trace_id'] for win in wins[count:end]]
         yield model.generate_batch(traces_l, x_i_l)
@@ -207,8 +207,8 @@ class Experiment():
       for trace_id in range(self.cfg.init_window, row[1]['traces'].shape[0] -self.cfg.h_window)]
 
     # fit
-    steps_per_ep_train = np.ceil(len(self.x_train_wins) / BATCH_SIZE)
-    steps_per_ep_validate = np.ceil(len(self.x_val_wins) / BATCH_SIZE)
+    steps_per_ep_train = np.ceil(len(self.x_train_wins) / self.cfg.batch_size)
+    steps_per_ep_validate = np.ceil(len(self.x_val_wins) / self.cfg.batch_size)
     csv_logger = CSVLogger(self.train_csv_log_f, append=True)
     # https://www.tensorflow.org/tutorials/keras/save_and_load
     model_checkpoint = ModelCheckpoint(self.model_path,
@@ -222,7 +222,7 @@ class Experiment():
               steps_per_epoch=steps_per_ep_train,
               validation_data=validation_data,
               validation_steps=steps_per_ep_validate,
-              validation_freq=BATCH_SIZE,
+              validation_freq=self.cfg.batch_size,
               epochs=self.cfg.epochs,
               initial_epoch=initial_epoch,
               callbacks=callbacks)
@@ -444,8 +444,6 @@ class Experiment():
 def run_experiment(cfg) -> None:
 
   assert cfg.action in ['run', 'compare_train', 'compare_evaluate']
-  LEARNING_RATE = cfg.lr
-  BATCH_SIZE = cfg.batch_size
   exp = Experiment(cfg.experiment)
   if cfg.action == 'compare_train':
     exp.compare_train()

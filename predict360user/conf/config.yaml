@@ -1,6 +1,4 @@
 action: run
-lr: 0.0005
-batch_size: 128
 experiment:
   dataset_name: all
   model_name: pos_only
@@ -12,6 +10,8 @@ experiment:
   gpu_id: 0
   test_size: 0.2
   epochs: 30
+  batch_size: 128
+  learning_rate: 0.0005
 defaults:
   - override hydra/help: custom
   - override hydra/job_logging: custom
