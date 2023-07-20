@@ -5,6 +5,7 @@ from tensorflow import keras
 from keras import backend as K
 from keras.layers import (LSTM, Concatenate, Dense, Flatten, Input, Lambda,
                           Reshape, TimeDistributed)
+from omegaconf import DictConfig
 
 from predict360user.models.base_model import (BaseModel,
                                               delta_angle_from_ori_mot,
@@ -21,13 +22,13 @@ class TRACK(keras.Model, BaseModel):
     raise NotImplementedError
 
 
-  def __init__(self, m_window: int, h_window: int, num_tiles_height: int, num_tiles_width: int) -> None:
-    self.m_window, self.h_window = m_window, h_window
+  def __init__(self, cfg: DictConfig) -> None:
+    self.m_window, self.h_window = cfg.m_window, cfg.h_window, cfg.n_tiles_h, cfg.n_tiles_w
     # Defining model structure
-    encoder_position_inputs = Input(shape=(m_window, 3))
-    encoder_saliency_inputs = Input(shape=(m_window, num_tiles_height, num_tiles_width, 1))
+    encoder_position_inputs = Input(shape=(self.m_window, 3))
+    encoder_saliency_inputs = Input(shape=(self.m_window, self.n_tiles_h, self.n_tiles_w, 1))
     decoder_position_inputs = Input(shape=(1, 3))
-    decoder_saliency_inputs = Input(shape=(h_window, num_tiles_height, num_tiles_width, 1))
+    decoder_saliency_inputs = Input(shape=(self.h_window, self.n_tiles_h, self.n_tiles_w, 1))
 
     sense_pos_enc = LSTM(units=256, return_sequences=True, return_state=True, name='prop_lstm_1_enc')
 
@@ -63,12 +64,12 @@ class TRACK(keras.Model, BaseModel):
     # Decoding
     all_pos_outputs = []
     inputs = decoder_position_inputs
-    for curr_idx in range(h_window):
+    for curr_idx in range(self.h_window):
       out_enc_pos, state_h_1, state_c_1 = sense_pos_dec(inputs, initial_state=states_1)
       states_1 = [state_h_1, state_c_1]
 
       selected_timestep_saliency = Lambda(selectImageInModel, arguments={'curr_idx': curr_idx})(decoder_saliency_inputs)
-      flatten_timestep_saliency = Reshape((1, num_tiles_width * num_tiles_height))(selected_timestep_saliency)
+      flatten_timestep_saliency = Reshape((1, self.n_tiles_w * self.n_tiles_h))(selected_timestep_saliency)
       out_enc_sal, state_h_2, state_c_2 = sense_sal_dec(flatten_timestep_saliency, initial_state=states_2)
       states_2 = [state_h_2, state_c_2]
 

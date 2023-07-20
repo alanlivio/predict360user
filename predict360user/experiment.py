@@ -85,13 +85,13 @@ class Experiment():
 
   def create_model(self, model_path='') -> BaseModel:
     if self.cfg.model_name == 'pos_only':
-      model = PosOnly(self.cfg.m_window, self.cfg.h_window, self.cfg.learning_rate)
+      model = PosOnly(self.cfg)
     elif self.cfg.model_name == 'pos_only_3d':
-      model = PosOnly3D(self.cfg.m_window, self.cfg.h_window)
+      model = PosOnly3D(self.cfg)
     elif self.cfg.model_name == 'interpolation':
-      return Interpolation(self.cfg.h_window)  # does not need training
+      return Interpolation(self.cfg)  # does not need training
     elif self.cfg.model_name == 'no_motion':
-      return NoMotion(self.cfg.h_window)  # does not need training
+      return NoMotion(self.cfg)  # does not need training
     else:
       raise RuntimeError
     if model_path:

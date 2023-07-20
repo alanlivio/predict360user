@@ -4,6 +4,7 @@ from keras import backend as K
 from keras.layers import LSTM, Dense, Input, Lambda, TimeDistributed
 from keras.metrics import mean_squared_error as mse
 from tensorflow import keras
+from omegaconf import DictConfig
 
 from predict360user.models.base_model import (BaseModel,
                                               delta_angle_from_ori_mot,
@@ -12,20 +13,8 @@ from predict360user.models.base_model import (BaseModel,
 
 class PosOnly3D(keras.Model, BaseModel):
 
-  # This way we ensure that the network learns to predict the delta angle
-  def toPosition(self, values):
-    orientation = values[0]
-    delta = values[1]
-    return orientation + delta
-
-  def loss_function(self, x_true, x_pred):
-    xent_loss = mse(x_true, x_pred)
-    unitary_loss = K.square((K.sqrt(K.sum(K.square(x_pred), axis=-1))) - 1.0)
-    loss = xent_loss + unitary_loss
-    return loss
-
-  def __init__(self, m_window: int, h_window: int) -> None:
-    self.m_window, self.h_window = m_window, h_window    # Defining model structure
+  def __init__(self, cfg: DictConfig) -> None:
+    self.m_window, self.h_window = cfg.m_window, cfg.h_window    # Defining model structure
 
     encoder_inputs = Input(shape=(None, 3))
     decoder_inputs = Input(shape=(1, 3))
@@ -48,7 +37,7 @@ class PosOnly3D(keras.Model, BaseModel):
     # Decoding
     all_outputs = []
     inputs = decoder_inputs
-    for _ in range(h_window):
+    for _ in range(self.h_window):
       # # Run the decoder on one timestep
       inputs_1 = sense_pos_1(inputs)
       inputs_2 = sense_pos_2(inputs_1)
@@ -63,7 +52,7 @@ class PosOnly3D(keras.Model, BaseModel):
       # Reinject the outputs as inputs for the next loop iteration as well as update the states
       inputs = outputs_pos
       states = [state_h, state_c]
-    if h_window == 1:
+    if self.h_window == 1:
       decoder_outputs = outputs_pos
     else:
       # Concatenate all predictions
@@ -76,8 +65,20 @@ class PosOnly3D(keras.Model, BaseModel):
                         loss=self.loss_function,
                         metrics=[metric_orth_dist_cartesian])
 
+  # This way we ensure that the network learns to predict the delta angle
+  def toPosition(self, values):
+    orientation = values[0]
+    delta = values[1]
+    return orientation + delta
+
+  def loss_function(self, x_true, x_pred):
+    xent_loss = mse(x_true, x_pred)
+    unitary_loss = K.square((K.sqrt(K.sum(K.square(x_pred), axis=-1))) - 1.0)
+    loss = xent_loss + unitary_loss
+    return loss
+
   def predict_for_sample(self, pos_inputs) -> np.array:
-    pred = super.predict([np.array([pos_inputs[:-1]]), np.array([pos_inputs[-1:]])])
+    pred = super().predict([np.array([pos_inputs[:-1]]), np.array([pos_inputs[-1:]])])
     norm_factor = np.sqrt(pred[0, :, 0] * pred[0, :, 0] + pred[0, :, 1] * pred[0, :, 1] +
                           pred[0, :, 2] * pred[0, :, 2])
     data = {
