@@ -152,10 +152,10 @@ class Experiment():
       lines = pd.read_csv(self.train_csv_log_f)
       lines.dropna(how="all", inplace=True)
       done_epochs = int(lines.iloc[-1]['epoch']) + 1
-      if done_epochs >= self.epochs:
+      if done_epochs >= self.cfg.epochs:
         log.info(f'train_csv_log_f has {done_epochs}>=epochs. stopping.')
         return
-      log.info(f'train_csv_log_f has {self.epochs}<epochs. continuing from {done_epochs}.')
+      log.info(f'train_csv_log_f has {self.cfg.epochs}<epochs. continuing from {done_epochs}.')
       model = self.create_model(self.model_path)
       initial_epoch = done_epochs
     else:
