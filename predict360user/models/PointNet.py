@@ -1,11 +1,11 @@
 from typing import Tuple
 
 import numpy as np
-
+from tensorflow import keras
 from predict360user.models.base_model import BaseModel
 
 
-class PointNet(BaseModel):
+class PointNet(keras.Model, BaseModel):
 
   def generate_batch(self, traces_l: list[np.array], x_i_l: list) -> Tuple[list, list]:
     raise NotImplementedError

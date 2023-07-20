@@ -5,14 +5,13 @@ from keras import backend as K
 from keras.layers import (LSTM, Concatenate, Dense, Input, Lambda, Reshape,
                           TimeDistributed)
 from tensorflow import keras
-
 from predict360user.models.base_model import (BaseModel, add_timestep_axis,
                                               delta_angle_from_ori_mot,
                                               metric_orth_dist_cartesian,
                                               selectImageInModel)
 
 
-class CVPR18(BaseModel):
+class CVPR18(keras.Model, BaseModel):
 
   def generate_batch(self, traces_l: list[np.array], x_i_l: list) -> Tuple[list, list]:
     raise NotImplementedError
@@ -76,7 +75,7 @@ class CVPR18(BaseModel):
     # decoder_outputs_img = Lambda(lambda x: K.concatenate(x, axis=1))(all_outputs)
 
     # Define and compile model
-    super().__init__([encoder_position_inputs, decoder_position_inputs, decoder_saliency_inputs], decoder_outputs_pos)
+    super().__init__(inputs=[encoder_position_inputs, decoder_position_inputs, decoder_saliency_inputs], outputs=decoder_outputs_pos)
 
     model_optimizer = keras.optimizers.Adam(lr=0.0005)
     self.compile(optimizer=model_optimizer, loss='mean_squared_error', metrics=[metric_orth_dist_cartesian])

@@ -10,7 +10,7 @@ from predict360user.models.base_model import (BaseModel,
                                               metric_orth_dist_cartesian)
 
 
-class PosOnly3D(BaseModel):
+class PosOnly3D(keras.Model, BaseModel):
 
   # This way we ensure that the network learns to predict the delta angle
   def toPosition(self, values):
@@ -70,7 +70,7 @@ class PosOnly3D(BaseModel):
       decoder_outputs = Lambda(lambda x: K.concatenate(x, axis=1))(all_outputs)
 
     # Define and compile model
-    super().__init__([encoder_inputs, decoder_inputs], decoder_outputs)
+    super().__init__(inputs=[encoder_inputs, decoder_inputs], outputs=decoder_outputs)
     model_optimizer = keras.optimizers.Adam(lr=0.0005)
     self.compile(optimizer=model_optimizer,
                         loss=self.loss_function,

@@ -3,12 +3,13 @@ from os.path import join
 from typing import Tuple
 
 import numpy as np
+from tensorflow import keras
 from keras.models import load_model
 
 from predict360user.models.base_model import BaseModel
+from ..utils import RAWDIR
 
-
-class MM18(BaseModel):
+class MM18(keras.Model, BaseModel):
 
   def generate_batch(self, traces_l: list[np.array], x_i_l: list) -> Tuple[list, list]:
     raise NotImplementedError

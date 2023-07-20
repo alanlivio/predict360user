@@ -1,10 +1,9 @@
 from typing import Tuple
 
 import numpy as np
+from tensorflow import keras
 from keras import backend as K
 from keras.layers import LSTM, Dense, Input, Lambda
-from keras.models import Model
-from tensorflow import keras
 
 from predict360user.models.base_model import (BaseModel,
                                               delta_angle_from_ori_mag_dir,
@@ -26,7 +25,7 @@ def transform_normalized_eulerian_to_cartesian(positions) -> np.array:
   eulerian_samples = [eulerian_to_cartesian(pos[0], pos[1]) for pos in positions]
   return np.array(eulerian_samples)
 
-class PosOnly(BaseModel):
+class PosOnly(keras.Model, BaseModel):
 
   def generate_batch(self, traces_l: list[np.array], x_i_l: list) -> Tuple[list, list]:
     encoder_pos_inputs_for_batch = []
@@ -91,7 +90,7 @@ class PosOnly(BaseModel):
     # decoder_outputs = all_outputs
 
     # Define and compile model
-    super().__init__([encoder_inputs, decoder_inputs], decoder_outputs)
+    super().__init__(inputs=[encoder_inputs, decoder_inputs], outputs=decoder_outputs)
     model_optimizer = keras.optimizers.Adam(learning_rate=self.lr)
     self.compile(optimizer=model_optimizer, loss=metric_orth_dist_eulerian)
 
@@ -124,7 +123,7 @@ class Interpolation(BaseModel):
       prediction.append(rotation.rotate(prediction[-1]))
     return prediction
 
-class Regression(Model):
+class Regression(BaseModel):
   def generate_batch(self, traces_l: list[np.array], x_i_l: list) -> Tuple[list, list]:
     raise NotImplementedError
 
