@@ -1,4 +1,3 @@
-action: run
 experiment:
   dataset_name: all
   model_name: pos_only

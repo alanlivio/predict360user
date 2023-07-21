@@ -272,6 +272,8 @@ class Experiment():
     self.train()
     self.evaluate()
 
+  # compare-related methods TODO: replace then by a log in model registry
+
   def compare_train(self) -> None:
     assert exists(self.cfg.savedir), f'the save folder {self.cfg.savedir} does not exist. do -train call'
     result_csv = 'train_results.csv'
@@ -415,13 +417,8 @@ class Experiment():
     self.ds.df = pd.concat([self.x_train, self.x_test])
     self.ds.show_histogram(facet='partition')
 
+
 @hydra.main(version_base=None, config_path="conf", config_name="config")
 def run_experiment(cfg) -> None:
-  assert cfg.action in ['run', 'compare_train', 'compare_evaluate']
   exp = Experiment(cfg.experiment)
-  if cfg.action == 'compare_train':
-    exp.compare_train()
-  elif cfg.action == 'compare_evaluate':
-    exp.compare_evaluate()
-  else:
-    exp.run()
+  exp.run()
