@@ -23,7 +23,7 @@ from predict360user.dataset import (Dataset, calc_actual_entropy,
                                     get_class_thresholds)
 from predict360user.models import (BaseModel, Interpolation, NoMotion, PosOnly,
                                    PosOnly3D)
-from predict360user.utils import (RAWDIR, DEFAULT_SAVEDIR, calc_actual_entropy,
+from predict360user.utils import (DEFAULT_SAVEDIR, calc_actual_entropy,
                                   show_or_save, orth_dist_cartesian)
 
 
@@ -41,23 +41,25 @@ os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 
 @dataclass
 class TrainerCfg():
-  model_name: str = 'pos_only'
+
+  batch_size: int = 128
   dataset_name: str = 'all'
+  epochs: int = 30
+  gpu_id: int = 0
   h_window: int = 25
   init_window: int = 30
+  lr: float = 0.0005
   m_window: int = 5
+  model_name: str = 'pos_only'
+  savedir: str = 'saved'
   test_size: float = 0.2
-  gpu_id: int = 0
   train_entropy: str = 'all'
-  epochs: int = 30
-  batch_size = 128
-  learning_rate = 0.0005
-  savedir: str = DEFAULT_SAVEDIR
 
   def __post_init__(self) -> None:
     assert self.model_name in ARGS_MODEL_NAMES
     assert self.dataset_name in ARGS_DS_NAMES
     assert self.train_entropy in ARGS_ENTROPY_NAMES + ARGS_ENTROPY_AUTO_NAMES
+
   def __str__(self) -> str:
     return OmegaConf.to_yaml(self)
 
@@ -362,6 +364,6 @@ class Trainer():
 
 
 @hydra.main(version_base=None, config_path="conf", config_name="trainer")
-def trainer_cli(cfg) -> None:
+def trainer_cli(cfg: TrainerCfg) -> None:
   exp = Trainer(cfg)
   exp.run()

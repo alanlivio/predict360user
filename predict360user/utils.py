@@ -16,8 +16,8 @@ import IPython
 import plotly.graph_objs as go
 
 # global constants
+DEFAULT_SAVEDIR = 'saved'
 RAWDIR = f"{pathlib.Path(__file__).parent.parent / 'rawdata/'}"
-DEFAULT_SAVEDIR = f"{pathlib.Path('saved/').resolve()}"
 HMDDIR = f"{pathlib.Path(__file__).parent / 'head_motion_prediction/'}"
 # DS_SIZES = [1083, 300, 432, 7106, 4543] # TODO: check sample_dataset folders
 ENTROPY_CLASS_COLORS = {'low': 'blue', 'medium': 'green', 'high': 'red'}
