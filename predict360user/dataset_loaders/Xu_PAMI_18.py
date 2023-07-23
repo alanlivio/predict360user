@@ -6,7 +6,7 @@ import pandas as pd
 import scipy
 from pyquaternion import Quaternion
 
-from predict360user.utils import RAWDIR, DEFAULT_SAVEDIR
+from predict360user.utils import *
 
 ROOT_FOLDER = join(RAWDIR, 'Xu_PAMI_18/dataset/')
 DATA_FILENAME = 'FULLdata_per_video_frame.mat'

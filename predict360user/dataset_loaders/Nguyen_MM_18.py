@@ -3,12 +3,12 @@ import pickle
 from os import makedirs
 from os.path import exists, join
 
-import cv2
+from cv2 import cv2
 import numpy as np
 import pandas as pd
 from pyquaternion import Quaternion
 
-from predict360user.utils import RAWDIR, DEFAULT_SAVEDIR
+from predict360user.utils import *
 
 ROOT_FOLDER = join(RAWDIR, 'Nguyen_MM_18/dataset/')
 OUTPUT_FOLDER = join(DEFAULT_SAVEDIR, 'Nguyen_MM_18/sampled_dataset')

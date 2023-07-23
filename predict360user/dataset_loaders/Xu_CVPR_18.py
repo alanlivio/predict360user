@@ -2,12 +2,12 @@ import os
 from os import makedirs
 from os.path import exists, join
 
-import cv2
+from cv2 import cv2
 import numpy as np
 import pandas as pd
 from pyquaternion import Quaternion
 
-from predict360user.utils import RAWDIR, DEFAULT_SAVEDIR
+from predict360user.utils import *
 
 ROOT_FOLDER = join(RAWDIR, './Xu_CVPR_18/dataset/')
 GAZE_TXT_FOLDER = 'Gaze_txt_files'
