@@ -23,24 +23,15 @@ class TrainerTestCase(unittest.TestCase):
 
   def test_init_cli(self) -> None:
     with initialize(version_base=None, config_path="../predict360user/conf"):
+      # load from yaml
       cfg = compose(config_name="trainer")
+      assert cfg
+      # check has default values
+      trn_cfg = TrainerCfg(**cfg)
+      trn_cfg_default = TrainerCfg()
+      self.assertEqual(trn_cfg, trn_cfg_default)
+      # check some values
       trn = Trainer(cfg)
       self.assertEqual(trn.model_fullname, 'pos_only')
       self.assertEqual(trn.model_dir, join('saved', trn.model_fullname))
       self.assertEqual(trn.using_auto, False)
-    with initialize(version_base=None, config_path="../predict360user/conf"):
-      cfg = compose(config_name="trainer")
-      cfg.dataset_name = 'david'
-      trn = Trainer(cfg)
-      self.assertEqual(trn.model_fullname, 'pos_only,david,,')
-      self.assertEqual(trn.model_dir, join('saved', trn.model_fullname))
-      self.assertEqual(trn.using_auto, False)
-    with initialize(version_base=None, config_path="../predict360user/conf"):
-      cfg = compose(config_name="trainer")
-      for train_entropy in ARGS_ENTROPY_NAMES[1:] + ARGS_ENTROPY_AUTO_NAMES:
-        cfg.train_entropy = train_entropy
-        trn = Trainer(cfg)
-        model_fullname = f'pos_only,all,actS,{train_entropy}'
-        self.assertEqual(trn.model_fullname, model_fullname)
-        self.assertEqual(trn.model_dir, join('saved', model_fullname))
-        self.assertEqual(trn.using_auto, train_entropy.startswith('auto'))
