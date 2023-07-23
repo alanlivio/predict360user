@@ -2,6 +2,8 @@ import os
 import pickle
 import hydra
 from omegaconf import DictConfig, OmegaConf
+from hydra.core.config_store import ConfigStore
+from dataclasses import dataclass
 import logging
 
 from os.path import exists, join, basename, isdir
@@ -37,14 +39,36 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 
 
-class Trainer():
-  cfg: DictConfig
+@dataclass
+class TrainerCfg():
+  model_name: str = 'pos_only'
+  dataset_name: str = 'all'
+  h_window: int = 25
+  init_window: int = 30
+  m_window: int = 5
+  test_size: float = 0.2
+  gpu_id: int = 0
+  train_entropy: str = 'all'
+  epochs: int = 30
+  batch_size = 128
+  learning_rate = 0.0005
+  savedir: str = DEFAULT_SAVEDIR
 
-  def __init__(self, cfg: DictConfig) -> None:
-    log.info("TrainerConfig:\n-------\n"+ OmegaConf.to_yaml(cfg) + "-------")
-    assert cfg.model_name in ARGS_MODEL_NAMES
-    assert cfg.dataset_name in ARGS_DS_NAMES
-    assert cfg.train_entropy in ARGS_ENTROPY_NAMES + ARGS_ENTROPY_AUTO_NAMES
+  def __post_init__(self) -> None:
+    assert self.model_name in ARGS_MODEL_NAMES
+    assert self.dataset_name in ARGS_DS_NAMES
+    assert self.train_entropy in ARGS_ENTROPY_NAMES + ARGS_ENTROPY_AUTO_NAMES
+  def __str__(self) -> str:
+    return OmegaConf.to_yaml(self)
+
+cs = ConfigStore.instance()
+cs.store(name="trainer", group="trainer", node=TrainerCfg)
+
+class Trainer():
+  cfg: TrainerCfg
+
+  def __init__(self, cfg: TrainerCfg) -> None:
+    log.info("TrainerCfg:\n-------\n"+ OmegaConf.to_yaml(cfg) + "-------")
     self.cfg = cfg
 
     if self.cfg.gpu_id:
@@ -337,7 +361,7 @@ class Trainer():
       pickle.dump(self.df_compare_evaluate, f)
 
 
-@hydra.main(version_base=None, config_path="conf", config_name="config")
+@hydra.main(version_base=None, config_path="conf", config_name="trainer")
 def trainer_cli(cfg) -> None:
   exp = Trainer(cfg.experiment)
   exp.run()
