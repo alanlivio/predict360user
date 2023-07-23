@@ -88,7 +88,7 @@ Note: To install drivers in Windows-WSL, you can use [this tutorial](https://ubu
 To illustrate usage, the code below does train and evaluates `pos_only` model for david dataset.
 
 ```bash
-python main.py experiment.dataset_name=david experiment.model_name=pos_only
+python train.py dataset_name=david model_name=pos_only
 ```
 
 #### Documentation

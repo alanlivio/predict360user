@@ -363,5 +363,5 @@ class Trainer():
 
 @hydra.main(version_base=None, config_path="conf", config_name="trainer")
 def trainer_cli(cfg) -> None:
-  exp = Trainer(cfg.experiment)
+  exp = Trainer(cfg)
   exp.run()
