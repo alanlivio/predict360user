@@ -1,7 +1,7 @@
 import unittest
 
 from predict360user.dataset import Dataset, filter_df_by_entropy
-from predict360user.experiment import ARGS_ENTROPY_NAMES
+from predict360user.trainer import ARGS_ENTROPY_NAMES
 
 
 class DatasetTestCase(unittest.TestCase):

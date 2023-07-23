@@ -1,4 +1,4 @@
-from predict360user.experiment import run_experiment
+from predict360user.trainer import trainer_cli
 
 if __name__ == '__main__':
-  run_experiment()
+  trainer_cli()

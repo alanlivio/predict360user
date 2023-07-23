@@ -37,11 +37,11 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 
 
-class Experiment():
+class Trainer():
   cfg: DictConfig
 
   def __init__(self, cfg: DictConfig) -> None:
-    log.info("ExperimentConfig:\n-------\n"+ OmegaConf.to_yaml(cfg) + "-------")
+    log.info("TrainerConfig:\n-------\n"+ OmegaConf.to_yaml(cfg) + "-------")
     assert cfg.model_name in ARGS_MODEL_NAMES
     assert cfg.dataset_name in ARGS_DS_NAMES
     assert cfg.train_entropy in ARGS_ENTROPY_NAMES + ARGS_ENTROPY_AUTO_NAMES
@@ -338,6 +338,6 @@ class Experiment():
 
 
 @hydra.main(version_base=None, config_path="conf", config_name="config")
-def run_experiment(cfg) -> None:
-  exp = Experiment(cfg.experiment)
+def trainer_cli(cfg) -> None:
+  exp = Trainer(cfg.experiment)
   exp.run()
