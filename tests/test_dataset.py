@@ -1,6 +1,7 @@
 import unittest
 
-from predict360user.dataset import Dataset
+from predict360user.dataset import Dataset, filter_df_by_entropy
+from predict360user.experiment import ARGS_ENTROPY_NAMES
 
 
 class DatasetTestCase(unittest.TestCase):
@@ -31,3 +32,65 @@ class DatasetTestCase(unittest.TestCase):
     self.ds.calc_traces_entropy()
     self.ds.calc_traces_entropy_hmp()
     self.ds.calc_traces_poles_prc()
+
+
+  def test_filter_df_by_entropy(self) -> None:
+    min_size = self.ds.df['actS_c'].value_counts().min()
+    for train_entropy in ARGS_ENTROPY_NAMES[1:]:
+      fdf = filter_df_by_entropy(df=self.ds.df, entropy_type='actS', train_entropy=train_entropy)
+      self.assertAlmostEqual(min_size, len(fdf), delta=2)
+
+  def testpartition(self) -> None:
+      self.ds.partition('all')
+      self.assertGreater(len(self.ds.x_train), len(self.ds.x_val))
+      classes = set(self.ds.x_train['actS_c'].unique())
+      self.assertSequenceEqual(classes, set(['low', 'medium', 'high']))
+      classes = set(self.ds.x_train['actS_c'].unique())
+      self.assertSequenceEqual(classes, set(['low', 'medium', 'high']))
+      classes = set(self.ds.x_test['actS_c'].unique())
+      self.assertSequenceEqual(classes, set(['low', 'medium', 'high']))
+      # low
+      self.ds.partition('low')
+      self.assertGreater(len(self.ds.x_train), len(self.ds.x_val))
+      classes = set(self.ds.x_train['actS_c'].unique())
+      self.assertSequenceEqual(classes, set(['low']))
+      classes = set(self.ds.x_val['actS_c'].unique())
+      self.assertSequenceEqual(classes, set(['low']))
+      classes = set(self.ds.x_test['actS_c'].unique())
+      self.assertSequenceEqual(classes, set(['low', 'medium', 'high']))
+      # medium
+      self.ds.partition('medium')
+      self.assertGreater(len(self.ds.x_train), len(self.ds.x_val))
+      classes = set(self.ds.x_train['actS_c'].unique())
+      self.assertSequenceEqual(classes, set(['medium']))
+      classes = set(self.ds.x_val['actS_c'].unique())
+      self.assertSequenceEqual(classes, set(['medium']))
+      classes = set(self.ds.x_test['actS_c'].unique())
+      self.assertSequenceEqual(classes, set(['low', 'medium', 'high']))
+      # nolow
+      self.ds.partition('nolow')
+      self.assertGreater(len(self.ds.x_train), len(self.ds.x_val))
+      classes = set(self.ds.x_train['actS_c'].unique())
+      self.assertSequenceEqual(classes, set(['medium','high']))
+      classes = set(self.ds.x_val['actS_c'].unique())
+      self.assertSequenceEqual(classes, set(['medium','high']))
+      classes = set(self.ds.x_test['actS_c'].unique())
+      self.assertSequenceEqual(classes, set(['low', 'medium', 'high']))
+      # nohigh
+      self.ds.partition('nohigh')
+      self.assertGreater(len(self.ds.x_train), len(self.ds.x_val))
+      classes = set(self.ds.x_train['actS_c'].unique())
+      self.assertSequenceEqual(classes, set(['low','medium']))
+      classes = set(self.ds.x_val['actS_c'].unique())
+      self.assertSequenceEqual(classes, set(['low','medium']))
+      classes = set(self.ds.x_test['actS_c'].unique())
+      self.assertSequenceEqual(classes, set(['low', 'medium', 'high']))
+      # high
+      self.ds.partition('high')
+      self.assertGreater(len(self.ds.x_train), len(self.ds.x_val))
+      classes = set(self.ds.x_train['actS_c'].unique())
+      self.assertSequenceEqual(classes, set(['high']))
+      classes = set(self.ds.x_val['actS_c'].unique())
+      self.assertSequenceEqual(classes, set(['high']))
+      classes = set(self.ds.x_test['actS_c'].unique())
+      self.assertSequenceEqual(classes, set(['low', 'medium', 'high']))

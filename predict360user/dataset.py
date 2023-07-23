@@ -12,6 +12,7 @@ import plotly.express as px
 import plotly.graph_objs as go
 import scipy.stats
 from plotly.subplots import make_subplots
+from sklearn.model_selection import train_test_split
 
 from predict360user.tileset import TILESET_DEFAULT, TileSet
 from predict360user.utils import HMDDIR, ENTROPY_CLASS_COLORS, RAWDIR, DEFAULT_SAVEDIR, calc_actual_entropy
@@ -28,6 +29,22 @@ def get_class_thresholds(df, col: str) -> tuple[float, float]:
 def get_class_name(x: float, threshold_medium: float,
                    threshold_high: float) -> Literal['low', 'medium', 'high']:
   return 'low' if x < threshold_medium else ('medium' if x < threshold_high else 'high')
+
+def filter_df_by_entropy(df: pd.DataFrame, entropy_type: str, entropy_filter: str) -> pd.DataFrame:
+  if entropy_filter == 'all':
+    return df
+  min_size = df[entropy_type + '_c'].value_counts().min()
+  if entropy_filter == 'allminsize':  # 3 classes-> n = min_size/3
+    filter_df = df
+  elif entropy_filter == 'nohigh':  # 2 classes-> n = min_size/2
+    filter_df = df[df[entropy_type + '_c'] != 'high']
+  elif entropy_filter == 'nolow':  # 2 classes-> n = min_size/2
+    filter_df = df[df[entropy_type + '_c'] != 'low']
+  else:  # 1 class-> n = min_size
+    filter_df = df[df[entropy_type + '_c'] == entropy_filter]
+  nunique = len(filter_df[entropy_type + '_c'].unique())
+  n = int(min_size / nunique)
+  return filter_df.groupby(entropy_type + '_c').apply(lambda x: x.sample(n=n, random_state=1))
 
 
 def count_entropy(df: pd.DataFrame, entropy_type: str) -> tuple[int, int, int, int]:
@@ -230,6 +247,8 @@ class Dataset:
                    color_discrete_map=ENTROPY_CLASS_COLORS,
                    width=900).show()
 
+  # -- tileset
+
   def calc_tileset_reqs_metrics(self, tileset_l: list[TileSet]) -> None:
     if len(self.df) >= 4:
       log.info("df.size >= 4, it will take for some time")
@@ -278,3 +297,51 @@ class Dataset:
         barmode='stack',
     )
     fig.show()
+
+  def partition(self, entropy_filter, test_size=0.8) -> None:
+    entropy_type = "actS"
+    # split x_train, x_test (0.2)
+    self.x_train, self.x_test = \
+      train_test_split(self.df, random_state=1, test_size=test_size, stratify=self.df[entropy_type + '_c'])
+    # split x_train, x_val (0.125 * 0.8 = 0.1)
+    self.x_train, self.x_val = \
+      train_test_split(self.x_train,random_state=1, test_size=0.125, stratify=self.x_train[entropy_type + '_c'])
+    log.info('x_train has {} trajectories: {} low, {} medium, {} high'.format(
+        *count_entropy(self.x_train, entropy_type)))
+    log.info('x_test has {} trajectories: {} low, {} medium, {} high'.format(*count_entropy(self.x_test, entropy_type)))
+
+    if entropy_filter != 'all':
+      log.info('entropy_filter != all, so filtering x_train, x_val')
+      self.x_train = filter_df_by_entropy(self.x_train, entropy_type, entropy_filter)
+      self.x_val = filter_df_by_entropy(self.x_val, entropy_type, entropy_filter)
+      log.info('x_train filtred has {} trajectories: {} low, {} medium, {} high'.format(
+          *count_entropy(self.x_train, entropy_type)))
+      log.info('x_val filtred has {} trajectories: {} low, {} medium, {} high'.format(
+          *count_entropy(self.x_val, entropy_type)))
+
+  def create_wins(self, init_window: int, h_window: int) -> None:
+    self.x_train_wins = [{
+        'video': row[1]['video'],
+        'user': row[1]['user'],
+        'trace_id': trace_id
+    } for row in self.x_train.iterrows()\
+      for trace_id in range(init_window, row[1]['traces'].shape[0] - h_window)]
+    self.x_val_wins = [{
+        'video': row[1]['video'],
+        'user': row[1]['user'],
+        'trace_id': trace_id,
+    } for row in self.x_val.iterrows()\
+      for trace_id in range(init_window, row[1]['traces'].shape[0] - h_window)]
+    self.x_test_wins = [{
+        'video': row[1]['video'],
+        'user': row[1]['user'],
+        'trace_id': trace_id,
+        'actS_c': row[1]['actS_c']
+    } for row in self.x_test.iterrows()\
+      for trace_id in range(init_window, row[1]['traces'].shape[0] - h_window)]
+
+  def show_train_test_split(self) -> None:
+    self.x_train['partition'] = 'train'
+    self.x_test['partition'] = 'test'
+    df = pd.concat([self.x_train, self.x_test])
+    df.show_histogram(facet='partition')

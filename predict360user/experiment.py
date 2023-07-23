@@ -4,17 +4,16 @@ import hydra
 from omegaconf import DictConfig, OmegaConf
 import logging
 
-from dataclasses import dataclass
-from os.path import exists, isdir, join, basename
+from os.path import exists, join, basename, isdir
 from typing import Generator
+from sklearn.utils import shuffle
 
 import absl.logging
 import numpy as np
 import pandas as pd
 import plotly.express as px
 from keras.callbacks import CSVLogger, ModelCheckpoint
-from sklearn.model_selection import train_test_split
-from sklearn.utils import shuffle
+
 from tqdm.auto import tqdm
 
 from predict360user.dataset import (Dataset, calc_actual_entropy,
@@ -26,33 +25,16 @@ from predict360user.utils import (RAWDIR, DEFAULT_SAVEDIR, calc_actual_entropy,
                                   show_or_save, orth_dist_cartesian)
 
 
+ARGS_ENTROPY_NAMES = [ 'all', 'low', 'medium', 'high', 'nohigh', 'nolow', 'allminsize' ]
 ARGS_MODEL_NAMES = ['pos_only', 'pos_only_3d', 'no_motion', 'interpolation', 'TRACK', 'CVPR18', 'MM18', 'most_salient_point']
 MODELS_NAMES_NO_TRAIN = ['no_motion', 'interpolation']
 ARGS_DS_NAMES = ['all', 'david', 'fan', 'nguyen', 'xucvpr', 'xupami']
-ARGS_ENTROPY_NAMES = [ 'all', 'low', 'medium', 'high', 'nohigh', 'nolow', 'allminsize' ]
 ARGS_ENTROPY_AUTO_NAMES = ['auto', 'auto_m_window', 'auto_since_start']
 log = logging.getLogger(basename(__file__))
 
 absl.logging.set_verbosity(absl.logging.ERROR)
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-
-
-def filter_df_by_entropy(df: pd.DataFrame, entropy_type: str, train_entropy: str) -> pd.DataFrame:
-  if train_entropy == 'all':
-    return df
-  min_size = df[entropy_type + '_c'].value_counts().min()
-  if train_entropy == 'allminsize':  # 3 classes-> n = min_size/3
-    filter_df = df
-  elif train_entropy == 'nohigh':  # 2 classes-> n = min_size/2
-    filter_df = df[df[entropy_type + '_c'] != 'high']
-  elif train_entropy == 'nolow':  # 2 classes-> n = min_size/2
-    filter_df = df[df[entropy_type + '_c'] != 'low']
-  else:  # 1 class-> n = min_size
-    filter_df = df[df[entropy_type + '_c'] == train_entropy]
-  nunique = len(filter_df[entropy_type + '_c'].unique())
-  n = int(min_size / nunique)
-  return filter_df.groupby(entropy_type + '_c').apply(lambda x: x.sample(n=n, random_state=1))
 
 
 class Experiment():
@@ -108,99 +90,8 @@ class Experiment():
         yield model.generate_batch(traces_l, x_i_l)
 
   def drop_predict_cols(self) -> None:
-    col_rm = [col for col in self._ds.df.columns for model in ARGS_MODEL_NAMES if col.startswith(model)]
-    self._ds.df.drop(col_rm, axis=1, errors='ignore', inplace=True)
-
-  @property
-  def ds(self) -> Dataset:
-    if not hasattr(self, '_ds'):
-      # TODO: filter by dataset name
-      self._ds = Dataset(savedir=self.cfg.savedir)
-    return self._ds
-
-  def _partition(self) -> None:
-    log.info('partitioning...')
-    # split x_train, x_test (0.2)
-    self.x_train, self.x_test = \
-      train_test_split(self.ds.df, random_state=1, test_size=self.cfg.test_size, stratify=self.ds.df[self.entropy_type + '_c'])
-    # split x_train, x_val (0.125 * 0.8 = 0.1)
-    self.x_train, self.x_val = \
-      train_test_split(self.x_train,random_state=1, test_size=0.125, stratify=self.x_train[self.entropy_type + '_c'])
-    log.info('x_train has {} trajectories: {} low, {} medium, {} high'.format(
-        *count_entropy(self.x_train, self.entropy_type)))
-    log.info('x_test has {} trajectories: {} low, {} medium, {} high'.format(
-        *count_entropy(self.x_test, self.entropy_type)))
-
-    if self.cfg.train_entropy != 'all' and not self.using_auto:
-      log.info('train_entropy != all, so filtering x_train, x_val')
-      self.x_train = filter_df_by_entropy(self.x_train, self.entropy_type, self.cfg.train_entropy)
-      self.x_val = filter_df_by_entropy(self.x_val, self.entropy_type, self.cfg.train_entropy)
-      log.info('x_train filtred has {} trajectories: {} low, {} medium, {} high'.format(
-          *count_entropy(self.x_train, self.entropy_type)))
-      log.info('x_val filtred has {} trajectories: {} low, {} medium, {} high'.format(
-          *count_entropy(self.x_val, self.entropy_type)))
-
-  def train(self) -> None:
-    log.info('train()')
-    assert not self.using_auto, "train_entropy should not be auto"
-    assert self.cfg.model_name not in MODELS_NAMES_NO_TRAIN, f"{self.cfg.model_name} does not need training"
-    log.info('model_dir=' + self.model_dir)
-
-    # check model
-    log.info('creating model ...')
-    if exists(self.train_csv_log_f):
-      lines = pd.read_csv(self.train_csv_log_f)
-      lines.dropna(how="all", inplace=True)
-      done_epochs = int(lines.iloc[-1]['epoch']) + 1
-      if done_epochs >= self.cfg.epochs:
-        log.info(f'train_csv_log_f has {done_epochs}>=epochs. stopping.')
-        return
-      log.info(f'train_csv_log_f has {self.cfg.epochs}<epochs. continuing from {done_epochs}.')
-      model = self.create_model(self.model_path)
-      initial_epoch = done_epochs
-    else:
-      model = self.create_model()
-      initial_epoch = 0
-      if not exists(self.model_dir):
-        os.makedirs(self.model_dir)
-    assert model
-
-    # partition
-    self._partition()
-    # create x_train_wins, x_val_wins
-    self.x_train_wins = [{
-        'video': row[1]['video'],
-        'user': row[1]['user'],
-        'trace_id': trace_id
-    } for row in self.x_train.iterrows()\
-      for trace_id in range(self.cfg.init_window, row[1]['traces'].shape[0] -self.cfg.h_window)]
-    self.x_val_wins = [{
-        'video': row[1]['video'],
-        'user': row[1]['user'],
-        'trace_id': trace_id,
-    } for row in self.x_val.iterrows()\
-      for trace_id in range(self.cfg.init_window, row[1]['traces'].shape[0] -self.cfg.h_window)]
-
-    # fit
-    steps_per_ep_train = np.ceil(len(self.x_train_wins) / self.cfg.batch_size)
-    steps_per_ep_validate = np.ceil(len(self.x_val_wins) / self.cfg.batch_size)
-    csv_logger = CSVLogger(self.train_csv_log_f, append=True)
-    # https://www.tensorflow.org/tutorials/keras/save_and_load
-    model_checkpoint = ModelCheckpoint(self.model_path,
-                                       save_weights_only=True,
-                                       verbose=1)
-    callbacks = [csv_logger, model_checkpoint]
-    generator = self.generate_batchs(model, self.x_train_wins)
-    validation_data = self.generate_batchs(model, self.x_val_wins)
-    model.fit(x=generator,
-              verbose=1,
-              steps_per_epoch=steps_per_ep_train,
-              validation_data=validation_data,
-              validation_steps=steps_per_ep_validate,
-              validation_freq=self.cfg.batch_size,
-              epochs=self.cfg.epochs,
-              initial_epoch=initial_epoch,
-              callbacks=callbacks)
+    col_rm = [col for col in self.ds.df.columns for model in ARGS_MODEL_NAMES if col.startswith(model)]
+    self.ds.df.drop(col_rm, axis=1, errors='ignore', inplace=True)
 
   def _auto_select_model(self, traces: np.array, x_i) -> BaseModel:
     if self.cfg.train_entropy == 'auto':
@@ -221,36 +112,70 @@ class Experiment():
       return self.model_high
     raise RuntimeError()
 
-  def evaluate(self) -> None:
-    log.info('evaluate()')
-    log.info('model_dir=' + self.model_dir)
+  def run(self) -> None:
+    if not self.using_auto and self.cfg.model_name not in MODELS_NAMES_NO_TRAIN:
+      log.info('train ...')
+      log.info('model_dir=' + self.model_dir)
+      # check model
+      log.info('creating model ...')
+      if exists(self.train_csv_log_f):
+        lines = pd.read_csv(self.train_csv_log_f)
+        lines.dropna(how="all", inplace=True)
+        done_epochs = int(lines.iloc[-1]['epoch']) + 1
+        if done_epochs >= self.cfg.epochs:
+          log.info(f'train_csv_log_f has {done_epochs}>=epochs. stopping.')
+          return
+        log.info(f'train_csv_log_f has {self.cfg.epochs}<epochs. continuing from {done_epochs}.')
+        model = self.create_model(self.model_path)
+        initial_epoch = done_epochs
+      else:
+        model = self.create_model()
+        initial_epoch = 0
+        if not exists(self.model_dir):
+          os.makedirs(self.model_dir)
+      assert model
 
-    # partition
-    self._partition()
-    self.x_test_wins = [{
-        'video': row[1]['video'],
-        'user': row[1]['user'],
-        'trace_id': trace_id,
-        'actS_c': row[1]['actS_c']
-    } for row in self.x_test.iterrows()\
-      for trace_id in range(self.cfg.init_window, row[1]['traces'].shape[0] -self.cfg.h_window)]
+      if not hasattr(self, 'ds'):
+        # TODO: filter by dataset name
+        self.ds = Dataset(savedir=self.cfg.savedir)
+        self.ds.partition(entropy_filter=self.cfg.train_entropy, test_size=self.cfg.test_size)
+        self.ds.create_wins(init_window=self.cfg.init_window, h_window=self.cfg.h_window)
 
-    # create model
-    log.info('creating model ...')
+      # fit
+      steps_per_ep_train = np.ceil(len(self.ds.x_train_wins) / self.cfg.batch_size)
+      steps_per_ep_validate = np.ceil(len(self.ds.x_val_wins) / self.cfg.batch_size)
+      csv_logger = CSVLogger(self.train_csv_log_f, append=True)
+      # https://www.tensorflow.org/tutorials/keras/save_and_load
+      model_checkpoint = ModelCheckpoint(self.model_path,
+                                        save_weights_only=True,
+                                        verbose=1)
+      callbacks = [csv_logger, model_checkpoint]
+      generator = self.generate_batchs(model, self.ds.x_train_wins)
+      validation_data = self.generate_batchs(model, self.ds.x_val_wins)
+      model.fit(x=generator,
+                verbose=1,
+                steps_per_epoch=steps_per_ep_train,
+                validation_data=validation_data,
+                validation_steps=steps_per_ep_validate,
+                validation_freq=self.cfg.batch_size,
+                epochs=self.cfg.epochs,
+                initial_epoch=initial_epoch,
+                callbacks=callbacks)
+
+    log.info('evaluate ...')
     if self.using_auto:
       prefix = join(self.cfg.savedir, f'{self.cfg.model_name},{self.cfg.dataset_name},actS,')
+      log.info('creating model auto ...')
       self.threshold_medium, self.threshold_high = get_class_thresholds(self.ds.df, 'actS')
       self.model_low = self.create_model(join(prefix + 'low', 'weights.hdf5'))
       self.model_medium = self.create_model(join(prefix + 'medium', 'weights.hdf5'))
       self.model_high = self.create_model(join(prefix + 'high', 'weights.hdf5'))
-    else:
-      model = self.create_model(self.model_path)
 
     if not self.model_fullname in self.ds.df.columns:
       empty = pd.Series([{} for _ in range(len(self.ds.df))]).astype(object)
       self.ds.df[self.model_fullname] = empty
 
-    for ids in tqdm(self.x_test_wins, desc=f'evaluate model {self.model_fullname}'):
+    for ids in tqdm(self.ds.x_test_wins, desc=f'evaluate model {self.model_fullname}'):
       user = ids['user']
       video = ids['video']
       x_i = ids['trace_id']
@@ -268,11 +193,9 @@ class Experiment():
     # save on df
     self.ds.dump_column(self.model_fullname)
 
-  def run(self) -> None:
-    self.train()
-    self.evaluate()
-
-  # compare-related methods TODO: replace then by a log in model registry
+  #
+  # compare-related methods TODO: replace then by a log in a model registry
+  #
 
   def compare_train(self) -> None:
     assert exists(self.cfg.savedir), f'the save folder {self.cfg.savedir} does not exist. do -train call'
@@ -322,11 +245,14 @@ class Experiment():
         self.df_compare_evaluate = pd.DataFrame(columns=columns + list(self.range_win),
                                                 dtype=np.float32)
 
-    self._partition()
+    if not hasattr(self, 'ds') and not hasattr(self.ds, 'x_test'):
+      # TODO: filter by dataset name
+      self.ds = Dataset(savedir=self.cfg.savedir)
+      self.ds.partition(entropy_filter=self.cfg.train_entropy, test_size=self.cfg.test_size)
 
     # models_cols
     models_cols = sorted([
-      col for col in self.x_test.columns \
+      col for col in self.ds.x_test.columns \
       if any(m_name in col for m_name in ARGS_MODEL_NAMES)\
       and not any(ds_name in col for ds_name in ARGS_DS_NAMES[1:])\
       and not any(self.df_compare_evaluate['model_name'] == col) # already calculated
@@ -340,23 +266,23 @@ class Experiment():
     # create targets in format (model, s_type, s_class, mask)
     targets = []
     for model in models_cols:
-      assert len(self.x_test) == len(self.x_test[model].apply(lambda x: len(x) != 0))
-      targets.append((model, 'all', 'all', pd.Series(True, index=self.x_test.index)))
+      assert len(self.ds.x_test) == len(self.ds.x_test[model].apply(lambda x: len(x) != 0))
+      targets.append((model, 'all', 'all', pd.Series(True, index=self.ds.x_test.index)))
       targets.append(
-          (model, self.entropy_type, 'low', self.x_test[self.entropy_type + '_c'] == 'low'))
-      targets.append((model, self.entropy_type, 'nolow', self.x_test[self.entropy_type + '_c']
+          (model, self.entropy_type, 'low', self.ds.x_test[self.entropy_type + '_c'] == 'low'))
+      targets.append((model, self.entropy_type, 'nolow', self.ds.x_test[self.entropy_type + '_c']
                       != 'low'))
       targets.append(
-          (model, self.entropy_type, 'medium', self.x_test[self.entropy_type + '_c'] == 'medium'))
-      targets.append((model, self.entropy_type, 'nohigh', self.x_test[self.entropy_type + '_c']
+          (model, self.entropy_type, 'medium', self.ds.x_test[self.entropy_type + '_c'] == 'medium'))
+      targets.append((model, self.entropy_type, 'nohigh', self.ds.x_test[self.entropy_type + '_c']
                       != 'high'))
       targets.append(
-          (model, self.entropy_type, 'high', self.x_test[self.entropy_type + '_c'] == 'high'))
+          (model, self.entropy_type, 'high', self.ds.x_test[self.entropy_type + '_c'] == 'high'))
 
     # function to fill self.df_compare_evaluate from each moldel column at self.df
     def _evaluate_model_wins(df_wins_cols, errors_per_timestamp) -> None:
       traject_index = df_wins_cols.name
-      traject = self.x_test.loc[traject_index, 'traces']
+      traject = self.ds.x_test.loc[traject_index, 'traces']
       win_pos_l = df_wins_cols.index
       for win_pos in win_pos_l:
         if isinstance(df_wins_cols[win_pos], float):
@@ -368,7 +294,7 @@ class Experiment():
 
     for model, s_type, s_class, mask in tqdm(targets, desc='compare evaluate'):
       # create df_win with columns as timestamps
-      model_srs = self.x_test.loc[mask, model]
+      model_srs = self.ds.x_test.loc[mask, model]
       if len(model_srs) == 0:
         raise RuntimeError(f"empty {model=}, {s_type}={s_class}")
       model_df_wins = pd.DataFrame.from_dict(model_srs.values.tolist())
@@ -409,13 +335,6 @@ class Experiment():
     with open(self.compare_eval_pickle, 'wb') as f:
       log.info(f'saving df_compare_evaluate to {self.compare_eval_pickle}')
       pickle.dump(self.df_compare_evaluate, f)
-
-  def show_train_test_split(self) -> None:
-    self._partition()
-    self.x_train['partition'] = 'train'
-    self.x_test['partition'] = 'test'
-    self.ds.df = pd.concat([self.x_train, self.x_test])
-    self.ds.show_histogram(facet='partition')
 
 
 @hydra.main(version_base=None, config_path="conf", config_name="config")
