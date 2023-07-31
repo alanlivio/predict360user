@@ -51,6 +51,7 @@ class TrainerCfg():
   m_window: int = 5
   model_name: str = 'pos_only'
   savedir: str = 'saved'
+  train_size: float = 0.8
   test_size: float = 0.2
   train_entropy: str = 'all'
 
@@ -142,7 +143,7 @@ class Trainer():
       log.info('loading dataset ...')
       # TODO: filter by dataset name
       self.ds = Dataset(savedir=self.cfg.savedir)
-      self.ds.partition(entropy_filter=self.cfg.train_entropy, test_size=self.cfg.test_size)
+      self.ds.partition(entropy_filter=self.cfg.train_entropy, train_size=self.cfg.train_size, test_size=self.cfg.test_size)
       self.ds.create_wins(init_window=self.cfg.init_window, h_window=self.cfg.h_window)
 
     if not self.using_auto and self.cfg.model_name not in MODELS_NAMES_NO_TRAIN:
