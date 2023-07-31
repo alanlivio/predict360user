@@ -1,7 +1,7 @@
 import os
 import pickle
 import hydra
-from omegaconf import DictConfig, OmegaConf
+from omegaconf import OmegaConf
 from hydra.core.config_store import ConfigStore
 from dataclasses import dataclass
 import logging
@@ -18,12 +18,11 @@ from keras.callbacks import CSVLogger, ModelCheckpoint
 
 from tqdm.auto import tqdm
 
-from predict360user.dataset import (Dataset, calc_actual_entropy,
-                                    count_entropy, get_class_name,
+from predict360user.dataset import (Dataset, get_class_name,
                                     get_class_thresholds)
 from predict360user.models import (BaseModel, Interpolation, NoMotion, PosOnly,
                                    PosOnly3D)
-from predict360user.utils import (DEFAULT_SAVEDIR, calc_actual_entropy,
+from predict360user.utils import (calc_actual_entropy,
                                   show_or_save, orth_dist_cartesian)
 
 

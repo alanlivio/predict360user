@@ -3,7 +3,7 @@ import pickle
 from os import makedirs
 from os.path import exists, join
 
-from cv2 import cv2
+import cv2
 import numpy as np
 import pandas as pd
 from pyquaternion import Quaternion

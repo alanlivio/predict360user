@@ -44,20 +44,20 @@ def show_or_save(output, savedir, title = '') -> None:
     log.info(f'compare_train saved on {html_file}')
 
 def degrees_to_radian(degree):
-    return degree*np.pi/180.0
+  return degree*np.pi/180.0
 
 def radian_to_degrees(radian):
-    return radian*180.0/np.pi
+  return radian*180.0/np.pi
 
 def orthogonal(v):
-    x = abs(v[0])
-    y = abs(v[1])
-    z = abs(v[2])
-    other = (1, 0, 0) if (x < y and x < z) else (0, 1, 0) if (y < z) else (0, 0, 1)
-    return cross(v, other)
+  x = abs(v[0])
+  y = abs(v[1])
+  z = abs(v[2])
+  other = (1, 0, 0) if (x < y and x < z) else (0, 1, 0) if (y < z) else (0, 0, 1)
+  return cross(v, other)
 
 def normalized(v):
-    return normalize(v[:, np.newaxis], axis=0).ravel()
+  return normalize(v[:, np.newaxis], axis=0).ravel()
 
 # Compute the orthodromic distance between two points in 3d coordinates
 def orth_dist_cartesian(true_position, pred_position):
@@ -81,12 +81,12 @@ def orth_dist_cartesian(true_position, pred_position):
 # theta in the range 0, to 2*pi, theta can be negative, e.g. cartesian_to_eulerian(0, -1, 0) = (-pi/2, pi/2) (is equal to (3*pi/2, pi/2))
 # phi in the range 0 to pi (0 being the north pole, pi being the south pole)
 def cartesian_to_eulerian(x, y, z) -> tuple[float, float]:
-    r = np.sqrt(x*x+y*y+z*z)
-    theta = np.arctan2(y, x)
-    phi = np.arccos(z/r)
-    # remainder is used to transform it in the positive range (0, 2*pi)
-    theta = np.remainder(theta, 2*np.pi)
-    return theta, phi
+  r = np.sqrt(x*x+y*y+z*z)
+  theta = np.arctan2(y, x)
+  phi = np.arccos(z/r)
+  # remainder is used to transform it in the positive range (0, 2*pi)
+  theta = np.remainder(theta, 2*np.pi)
+  return theta, phi
 
 # The (input) values of theta and phi are assumed to be as follows:
 # theta = Any              phi =   0    : north pole (0, 0, 1)
@@ -100,27 +100,27 @@ def cartesian_to_eulerian(x, y, z) -> tuple[float, float]:
 # The latitude ranges from 0 to pi, origin of equirectangular in the top-left corner
 # Returns the values (x, y, z) of a unit sphere with center in (0, 0, 0)
 def eulerian_to_cartesian(theta, phi) -> np.array:
-    x = np.cos(theta)*np.sin(phi)
-    y = np.sin(theta)*np.sin(phi)
-    z = np.cos(phi)
-    return np.array([x, y, z])
+  x = np.cos(theta)*np.sin(phi)
+  y = np.sin(theta)*np.sin(phi)
+  z = np.cos(phi)
+  return np.array([x, y, z])
 
 
 # Transforms the eulerian angles from range (0, 2*pi) and (0, pi) to (-pi, pi) and (-pi/2, pi/2)
 def eulerian_in_range(theta, phi) -> tuple[float, float]:
-    theta = theta - np.pi
-    phi = (phi - (np.pi / 2.0))
-    return theta, phi
+  theta = theta - np.pi
+  phi = (phi - (np.pi / 2.0))
+  return theta, phi
 
 def rotationBetweenVectors(u, v) -> Quaternion:
-    u = normalized(u)
-    v = normalized(v)
-    if np.allclose(u, v):
-        return Quaternion(angle=0.0, axis=u)
-    if np.allclose(u, -v):
-        return Quaternion(angle=np.pi, axis=normalized(orthogonal(u)))
-    quat = Quaternion(angle=np.arccos(dot(u, v)), axis=normalized(cross(u, v)))
-    return quat
+  u = normalized(u)
+  v = normalized(v)
+  if np.allclose(u, v):
+      return Quaternion(angle=0.0, axis=u)
+  if np.allclose(u, -v):
+      return Quaternion(angle=np.pi, axis=normalized(orthogonal(u)))
+  quat = Quaternion(angle=np.arccos(dot(u, v)), axis=normalized(cross(u, v)))
+  return quat
 
 @cache
 def fov_points(x, y, z) -> np.ndarray:
