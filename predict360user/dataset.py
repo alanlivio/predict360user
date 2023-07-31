@@ -47,12 +47,12 @@ def filter_df_by_entropy(df: pd.DataFrame, entropy_filter: str) -> pd.DataFrame:
   return filter_df.groupby('actS_c').apply(lambda x: x.sample(n=n, random_state=1))
 
 
-def count_entropy(df: pd.DataFrame) -> tuple[int, int, int, int]:
+def count_entropy_str(df: pd.DataFrame) -> tuple[int, int, int, int]:
   a_len = len(df)
   l_len = len(df[df['actS_c'] == 'low'])
   m_len = len(df[df['actS_c'] == 'medium'])
   h_len = len(df[df['actS_c'] == 'high'])
-  return a_len, l_len, m_len, h_len
+  return 'total of {}: {} low, {} medium, {} high'.format(a_len, l_len, m_len, h_len)
 
 class Dataset:
   """:class:`Dataset` stores the original dataset in memory.
@@ -231,7 +231,7 @@ class Dataset:
 
   def show_entropy_counts(self) -> None:
     fmt = '''df has {} trajectories with entropy: {} low, {} medium, {} high'''
-    log.info(fmt.format(*count_entropy(self.df, 'actS')))
+    log.info(count_entropy_str(self.df))
     log.info(f"df['actS'].max()={self.df['actS'].max()}")
     log.info(f"df['actS'].min()={self.df['actS'].min()}")
 
@@ -299,28 +299,22 @@ class Dataset:
     fig.show()
 
   def partition(self, entropy_filter: str, train_size=0.8, val_size=0.25, test_size=0.2) -> None:
+    log.info(f'{train_size=}, {test_size=}. {val_size=} of train, so {train_size*val_size}')
     # first split into x_train and x_test
-    self.x_train, self.x_test = \
-      train_test_split(self.df, random_state=1, train_size=train_size, test_size=test_size, stratify=self.df['actS_c'])
+    self.x_train, self.x_test = train_test_split(self.df, random_state=1, train_size=train_size, test_size=test_size, stratify=self.df['actS_c'])
     # then split x_train in final x_train and x_val
-    self.x_train, self.x_val = \
-      train_test_split(self.x_train, random_state=1, test_size=val_size, stratify=self.x_train['actS_c'])
-    log.info('x_train has {} trajectories: {} low, {} medium, {} high'.format(
-        *count_entropy(self.x_train)))
-    log.info('x_val has {} trajectories: {} low, {} medium, {} high'.format(
-        *count_entropy(self.x_val)))
-    log.info('x_test has {} trajectories: {} low, {} medium, {} high'.format(*count_entropy(self.x_test)))
+    self.x_train, self.x_val = train_test_split(self.x_train, random_state=1, test_size=val_size, stratify=self.x_train['actS_c'])
+    log.info('trajectories x_train has ' + count_entropy_str(self.x_train))
+    log.info('trajectories x_val has' + count_entropy_str(self.x_val))
+    log.info('trajectories x_test has ' + count_entropy_str(self.x_test))
 
     if entropy_filter != 'all':
       log.info('entropy_filter != all, so filtering x_train, x_val')
       self.x_train = filter_df_by_entropy(self.x_train, entropy_filter)
       self.x_val = filter_df_by_entropy(self.x_val, entropy_filter)
-      log.info('x_train filtred has {} trajectories: {} low, {} medium, {} high'.format(
-          *count_entropy(self.x_train)))
-      log.info('x_val filtred has {} trajectories: {} low, {} medium, {} high'.format(
-          *count_entropy(self.x_val)))
-      log.info('x_val filtred has {} trajectories: {} low, {} medium, {} high'.format(
-          *count_entropy(self.x_val)))
+      log.info('filtred trajectories x_train has ' + count_entropy_str(self.x_train))
+      log.info('filtred trajectories x_val has' + count_entropy_str(self.x_val))
+      log.info('filtred trajectories x_test has ' + count_entropy_str(self.x_test))
 
   def create_wins(self, init_window: int, h_window: int) -> None:
     self.x_train_wins = [{

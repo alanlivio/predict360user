@@ -162,7 +162,7 @@ class Trainer():
         log.info(f'train_csv_log_f has {initial_epoch} epochs ')
 
       if initial_epoch >= self.cfg.epochs:
-        log.info(f'train_csv_log_f has {initial_epoch}>=epochs. not training.')
+        log.info(f'train_csv_log_f has {initial_epoch}>={self.cfg.epochs}. not training.')
       else:
         # fit
         steps_per_ep_train = np.ceil(len(self.ds.x_train_wins) / self.cfg.batch_size)
