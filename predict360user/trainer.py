@@ -89,21 +89,17 @@ class Trainer():
     self.model_dir = join(self.cfg.savedir, self.model_fullname)
     self.train_csv_log_f = join(self.model_dir, 'train_results.csv')
     self.model_path = join(self.model_dir, 'weights.hdf5')
-
-  def create_model(self, model_path='') -> BaseModel:
+    self.model: BaseModel
     if self.cfg.model_name == 'pos_only':
-      model = PosOnly(self.cfg)
+      self.model = PosOnly(self.cfg)
     elif self.cfg.model_name == 'pos_only_3d':
-      model = PosOnly3D(self.cfg)
+      self.model = PosOnly3D(self.cfg)
     elif self.cfg.model_name == 'interpolation':
-      return Interpolation(self.cfg)  # does not need training
+      self.model = Interpolation(self.cfg)
     elif self.cfg.model_name == 'no_motion':
-      return NoMotion(self.cfg)  # does not need training
+      self.model = NoMotion(self.cfg)
     else:
       raise RuntimeError
-    if model_path:
-      model.load_weights(model_path)
-    return model
 
   def generate_batchs(self, model: BaseModel, wins: list) -> Generator:
     while True:
@@ -138,54 +134,55 @@ class Trainer():
     raise RuntimeError()
 
   def run(self) -> None:
+    if not exists(self.model_dir):
+      os.makedirs(self.model_dir)
+    log.info('model_dir=' + self.model_dir)
+
+    if not hasattr(self, 'ds'):
+      log.info('loading dataset ...')
+      # TODO: filter by dataset name
+      self.ds = Dataset(savedir=self.cfg.savedir)
+      self.ds.partition(entropy_filter=self.cfg.train_entropy, test_size=self.cfg.test_size)
+      self.ds.create_wins(init_window=self.cfg.init_window, h_window=self.cfg.h_window)
+
     if not self.using_auto and self.cfg.model_name not in MODELS_NAMES_NO_TRAIN:
       log.info('train ...')
-      log.info('model_dir=' + self.model_dir)
-      # check model
-      log.info('creating model ...')
+      if exists(self.model_path):
+        self.model.load_weights(self.model_path)
+
+      # setting initial_epoch
+      initial_epoch = 0
       if exists(self.train_csv_log_f):
         lines = pd.read_csv(self.train_csv_log_f)
         lines.dropna(how="all", inplace=True)
         done_epochs = int(lines.iloc[-1]['epoch']) + 1
-        if done_epochs >= self.cfg.epochs:
-          log.info(f'train_csv_log_f has {done_epochs}>=epochs. stopping.')
-          return
-        log.info(f'train_csv_log_f has {self.cfg.epochs}<epochs. continuing from {done_epochs}.')
-        model = self.create_model(self.model_path)
+        assert done_epochs <= self.cfg.epochs
         initial_epoch = done_epochs
+        log.info(f'train_csv_log_f has {initial_epoch} epochs ')
+
+      if initial_epoch >= self.cfg.epochs:
+        log.info(f'train_csv_log_f has {initial_epoch}>=epochs. not training.')
       else:
-        model = self.create_model()
-        initial_epoch = 0
-        if not exists(self.model_dir):
-          os.makedirs(self.model_dir)
-      assert model
-
-      if not hasattr(self, 'ds'):
-        # TODO: filter by dataset name
-        self.ds = Dataset(savedir=self.cfg.savedir)
-        self.ds.partition(entropy_filter=self.cfg.train_entropy, test_size=self.cfg.test_size)
-        self.ds.create_wins(init_window=self.cfg.init_window, h_window=self.cfg.h_window)
-
-      # fit
-      steps_per_ep_train = np.ceil(len(self.ds.x_train_wins) / self.cfg.batch_size)
-      steps_per_ep_validate = np.ceil(len(self.ds.x_val_wins) / self.cfg.batch_size)
-      csv_logger = CSVLogger(self.train_csv_log_f, append=True)
-      # https://www.tensorflow.org/tutorials/keras/save_and_load
-      model_checkpoint = ModelCheckpoint(self.model_path,
-                                        save_weights_only=True,
-                                        verbose=1)
-      callbacks = [csv_logger, model_checkpoint]
-      generator = self.generate_batchs(model, self.ds.x_train_wins)
-      validation_data = self.generate_batchs(model, self.ds.x_val_wins)
-      model.fit(x=generator,
-                verbose=1,
-                steps_per_epoch=steps_per_ep_train,
-                validation_data=validation_data,
-                validation_steps=steps_per_ep_validate,
-                validation_freq=self.cfg.batch_size,
-                epochs=self.cfg.epochs,
-                initial_epoch=initial_epoch,
-                callbacks=callbacks)
+        # fit
+        steps_per_ep_train = np.ceil(len(self.ds.x_train_wins) / self.cfg.batch_size)
+        steps_per_ep_validate = np.ceil(len(self.ds.x_val_wins) / self.cfg.batch_size)
+        csv_logger = CSVLogger(self.train_csv_log_f, append=True)
+        # https://www.tensorflow.org/tutorials/keras/save_and_load
+        model_checkpoint = ModelCheckpoint(self.model_path,
+                                          save_weights_only=True,
+                                          verbose=1)
+        callbacks = [csv_logger, model_checkpoint]
+        generator = self.generate_batchs(self.model, self.ds.x_train_wins)
+        validation_data = self.generate_batchs(self.model, self.ds.x_val_wins)
+        self.model.fit(x=generator,
+                  verbose=1,
+                  steps_per_epoch=steps_per_ep_train,
+                  validation_data=validation_data,
+                  validation_steps=steps_per_ep_validate,
+                  validation_freq=self.cfg.batch_size,
+                  epochs=self.cfg.epochs,
+                  initial_epoch=initial_epoch,
+                  callbacks=callbacks)
 
     log.info('evaluate ...')
     if self.using_auto:
@@ -207,8 +204,9 @@ class Trainer():
       traces = self.ds.get_traces(video, user)
       # predict
       if self.using_auto:
-        model = self._auto_select_model(traces, x_i)
-      pred = model.predict_for_sample(traces, x_i)
+        pred = self._auto_select_model(traces, x_i).predict_for_sample(traces, x_i)
+      else:
+        pred = self.model.predict_for_sample(traces, x_i)
       # save prediction
       traject_row = self.ds.df.loc[(self.ds.df['video'] == video) & (self.ds.df['user'] == user)]
       assert not traject_row.empty
