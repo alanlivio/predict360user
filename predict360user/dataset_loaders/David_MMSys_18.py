@@ -9,9 +9,9 @@ from pyquaternion import Quaternion
 
 from predict360user.utils import *
 
-ROOT_FOLDER = join(RAWDIR, 'David_MMSys_18/dataset/')
-OUTPUT_FOLDER = join(DEFAULT_SAVEDIR, 'David_MMSys_18/sampled_dataset')
-OUTPUT_TRUE_SALIENCY_FOLDER = join(DEFAULT_SAVEDIR, 'David_MMSys_18/true_saliency')
+ROOT_FOLDER = join(DATADIR, 'David_MMSys_18/dataset/')
+OUTPUT_FOLDER = join(DATADIR, 'David_MMSys_18/sampled_dataset')
+OUTPUT_TRUE_SALIENCY_FOLDER = join(DATADIR, 'David_MMSys_18/true_saliency')
 SAMPLING_RATE = 0.2
 NUM_TILES_WIDTH_TRUE_SAL = 256
 NUM_TILES_HEIGHT_TRUE_SAL = 256

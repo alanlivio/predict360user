@@ -11,13 +11,13 @@ from pyquaternion import Quaternion
 
 from predict360user.utils import *
 
-ROOT_FOLDER = join(RAWDIR, 'Fan_NOSSDAV_17/dataset/')
-FOLDER_IMAGES_SAL = join(RAWDIR, 'content/saliency')
-FOLDER_IMAGES_MOT = join(RAWDIR, 'content/motion')
-OUTPUT_FOLDER = join(DEFAULT_SAVEDIR, 'Fan_NOSSDAV_17/sampled_dataset')
-OUTPUT_TILE_PROB_FOLDER = join(DEFAULT_SAVEDIR, 'Fan_NOSSDAV_17/dataset/sensory/tile_replica')
-OUTPUT_SALIENCY_FOLDER = join(DEFAULT_SAVEDIR, 'Fan_NOSSDAV_17/extract_saliency/saliency')
-OUTPUT_TRUE_SALIENCY_FOLDER = join(DEFAULT_SAVEDIR, 'Fan_NOSSDAV_17/true_saliency')
+ROOT_FOLDER = join(DATADIR, 'Fan_NOSSDAV_17/dataset/')
+FOLDER_IMAGES_SAL = join(DATADIR, 'content/saliency')
+FOLDER_IMAGES_MOT = join(DATADIR, 'content/motion')
+OUTPUT_FOLDER = join(DATADIR, 'Fan_NOSSDAV_17/sampled_dataset')
+OUTPUT_TILE_PROB_FOLDER = join(DATADIR, 'Fan_NOSSDAV_17/dataset/sensory/tile_replica')
+OUTPUT_SALIENCY_FOLDER = join(DATADIR, 'Fan_NOSSDAV_17/extract_saliency/saliency')
+OUTPUT_TRUE_SALIENCY_FOLDER = join(DATADIR, 'Fan_NOSSDAV_17/true_saliency')
 NUM_TILES_WIDTH_TRUE_SAL = 256
 NUM_TILES_HEIGHT_TRUE_SAL = 256
 

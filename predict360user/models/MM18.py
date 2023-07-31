@@ -7,7 +7,7 @@ from tensorflow import keras
 from keras.models import load_model
 
 from predict360user.models.base_model import BaseModel
-from ..utils import RAWDIR
+from predict360user.utils import DATADIR
 
 class MM18(keras.Model, BaseModel):
 
@@ -19,5 +19,5 @@ class MM18(keras.Model, BaseModel):
 
   def __init__(self, m_window: int, h_window: int) -> None:
     self.m_window, self.h_window = m_window, h_window
-    saved_model = load_model(join(RAWDIR ,'model3_360net_128_w16_h9_8000'))
+    saved_model = load_model(join(DATADIR ,'model3_360net_128_w16_h9_8000'))
     self = copy.copy(saved_model)

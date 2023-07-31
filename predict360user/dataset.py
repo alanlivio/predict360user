@@ -15,7 +15,7 @@ from plotly.subplots import make_subplots
 from sklearn.model_selection import train_test_split
 
 from predict360user.tileset import TILESET_DEFAULT, TileSet
-from predict360user.utils import HMDDIR, ENTROPY_CLASS_COLORS, RAWDIR, DEFAULT_SAVEDIR, calc_actual_entropy
+from predict360user.utils import HMDDIR, ENTROPY_CLASS_COLORS, DEFAULT_SAVEDIR, calc_actual_entropy
 
 DS_NAMES = ['david', 'fan', 'nguyen', 'xucvpr', 'xupami']
 DS_SIZES = [1083, 300, 432, 6654, 4408]

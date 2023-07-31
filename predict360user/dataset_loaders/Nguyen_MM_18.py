@@ -10,10 +10,10 @@ from pyquaternion import Quaternion
 
 from predict360user.utils import *
 
-ROOT_FOLDER = join(RAWDIR, 'Nguyen_MM_18/dataset/')
-OUTPUT_FOLDER = join(DEFAULT_SAVEDIR, 'Nguyen_MM_18/sampled_dataset')
-OUTPUT_SALIENCY_FOLDER = join(DEFAULT_SAVEDIR, 'Nguyen_MM_18/extract_saliency/saliency')
-OUTPUT_TRUE_SALIENCY_FOLDER = join(DEFAULT_SAVEDIR, 'Nguyen_MM_18/true_saliency')
+ROOT_FOLDER = join(DATADIR, 'Nguyen_MM_18/dataset/')
+OUTPUT_FOLDER = join(DATADIR, 'Nguyen_MM_18/sampled_dataset')
+OUTPUT_SALIENCY_FOLDER = join(DATADIR, 'Nguyen_MM_18/extract_saliency/saliency')
+OUTPUT_TRUE_SALIENCY_FOLDER = join(DATADIR, 'Nguyen_MM_18/true_saliency')
 NUM_TILES_WIDTH_TRUE_SAL = 256
 NUM_TILES_HEIGHT_TRUE_SAL = 256
 ORIGINAL_SAMPLING_RATE = 0.063
