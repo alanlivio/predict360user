@@ -4,7 +4,6 @@ template: |-
   ${hydra.help.app_name} module create experiments to predict user behaviour in 360 videos
 
   It uses a hydra powered cli. Use --hydra-help to view Hydra specific help.
-  See below its default config. You can override everything, for example:
-  python ${hydra.help.app_name} experiment.dataset_name=david
+  See below its default config. You can override everything, for example dataset_name=david
   -------
   $CONFIG-------
