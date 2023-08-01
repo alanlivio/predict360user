@@ -190,9 +190,12 @@ class Trainer():
       prefix = join(self.cfg.savedir, f'{self.cfg.model_name},{self.cfg.dataset_name},actS,')
       log.info('creating model auto ...')
       self.threshold_medium, self.threshold_high = get_class_thresholds(self.ds.df, 'actS')
-      self.model_low = self.create_model(join(prefix + 'low', 'weights.hdf5'))
-      self.model_medium = self.create_model(join(prefix + 'medium', 'weights.hdf5'))
-      self.model_high = self.create_model(join(prefix + 'high', 'weights.hdf5'))
+      self.model_low = self.model.copy()
+      self.model_low.load_weights(join(prefix + 'low', 'weights.hdf5'))
+      self.model_medium = self.model.copy()
+      self.model_medium.load_weights(join(prefix + 'medium', 'weights.hdf5'))
+      self.model_high = self.model.copy()
+      self.model_high.load_weights(join(prefix + 'high', 'weights.hdf5'))
 
     if not self.model_fullname in self.ds.df.columns:
       empty = pd.Series([{} for _ in range(len(self.ds.df))]).astype(object)
