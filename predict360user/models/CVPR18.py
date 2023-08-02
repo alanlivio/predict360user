@@ -5,6 +5,7 @@ from keras import backend as K
 from keras.layers import (LSTM, Concatenate, Dense, Input, Lambda, Reshape,
                           TimeDistributed)
 from tensorflow import keras
+
 from predict360user.models.base_model import (BaseModel, add_timestep_axis,
                                               delta_angle_from_ori_mot,
                                               metric_orth_dist_cartesian,

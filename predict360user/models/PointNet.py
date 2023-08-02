@@ -2,6 +2,7 @@ from typing import Tuple
 
 import numpy as np
 from tensorflow import keras
+
 from predict360user.models.base_model import BaseModel
 
 

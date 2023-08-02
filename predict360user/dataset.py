@@ -1,9 +1,9 @@
+import logging
 import multiprocessing
 import os
 import pickle
-from os.path import exists, basename
+from os.path import basename, exists
 from typing import Literal
-import logging
 
 import jenkspy
 import numpy as np
@@ -15,7 +15,8 @@ from plotly.subplots import make_subplots
 from sklearn.model_selection import train_test_split
 
 from predict360user.tileset import TILESET_DEFAULT, TileSet
-from predict360user.utils import HMDDIR, ENTROPY_CLASS_COLORS, DEFAULT_SAVEDIR, calc_actual_entropy
+from predict360user.utils import (DEFAULT_SAVEDIR, ENTROPY_CLASS_COLORS,
+                                  HMDDIR, calc_actual_entropy)
 
 DS_NAMES = ['david', 'fan', 'nguyen', 'xucvpr', 'xupami']
 DS_SIZES = [1083, 300, 432, 6654, 4408]

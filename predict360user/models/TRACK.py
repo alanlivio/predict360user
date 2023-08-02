@@ -1,11 +1,11 @@
 from typing import Tuple
 
 import numpy as np
-from tensorflow import keras
 from keras import backend as K
 from keras.layers import (LSTM, Concatenate, Dense, Flatten, Input, Lambda,
                           Reshape, TimeDistributed)
 from omegaconf import DictConfig
+from tensorflow import keras
 
 from predict360user.models.base_model import (BaseModel,
                                               delta_angle_from_ori_mot,

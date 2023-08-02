@@ -1,19 +1,18 @@
+import datetime
+import logging
+import pathlib
+import sys
 from functools import cache
+from os.path import abspath, basename, isabs, join
 
+import IPython
 import numpy as np
+import plotly.graph_objs as go
 from numpy import cross, dot
 from pyquaternion import Quaternion
 from scipy.spatial.transform import Rotation as R
 from scipy.spatial.transform import Slerp
 from sklearn.preprocessing import normalize
-import datetime
-import logging
-import pathlib
-import sys
-from os.path import abspath, isabs, join, basename
-
-import IPython
-import plotly.graph_objs as go
 
 # global constants
 DEFAULT_SAVEDIR = 'saved'

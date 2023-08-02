@@ -3,11 +3,12 @@ from os.path import join
 from typing import Tuple
 
 import numpy as np
-from tensorflow import keras
 from keras.models import load_model
+from tensorflow import keras
 
 from predict360user.models.base_model import BaseModel
 from predict360user.utils import DATADIR
+
 
 class MM18(keras.Model, BaseModel):
 

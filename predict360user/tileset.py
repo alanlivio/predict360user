@@ -1,7 +1,7 @@
+import logging
 import math
 from enum import Enum, auto
 from functools import cache
-import logging
 
 import numpy as np
 from scipy.spatial import SphericalVoronoi
@@ -10,6 +10,7 @@ from spherical_geometry.polygon import SphericalPolygon
 from tqdm.auto import tqdm
 
 from predict360user.utils import *
+
 log = logging.getLogger(basename(__file__))
 
 tqdm.pandas()
