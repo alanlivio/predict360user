@@ -231,22 +231,17 @@ class Dataset:
     assert not self.df['poles_prc_c'].isna().any()
 
   def show_entropy_counts(self) -> None:
-    fmt = '''df has {} trajectories with entropy: {} low, {} medium, {} high'''
     log.info(count_entropy_str(self.df))
     log.info(f"df['actS'].max()={self.df['actS'].max()}")
     log.info(f"df['actS'].min()={self.df['actS'].min()}")
 
-  def show_histogram(self, cols: list, facet=None) -> None:
-    if not cols:
-      cols = ['actS', 'hmpS']
-    cols_data = [col for col in cols if {col}.issubset(self.df.columns)]
-    for col in cols_data:
-      px.histogram(self.df,
-                   x=col,
-                   color=col + '_c',
-                   facet_col=facet,
-                   color_discrete_map=ENTROPY_CLASS_COLORS,
-                   width=900).show()
+  def show_entropy_histogram(self, facet=None) -> None:
+    px.histogram(self.df,
+                  x='actS',
+                  color='actS_c',
+                  facet_col=facet,
+                  color_discrete_map=ENTROPY_CLASS_COLORS,
+                  width=900).show()
 
   # -- tileset
 
