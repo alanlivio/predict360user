@@ -1,15 +1,16 @@
 import logging
 import os
-import pickle
 from dataclasses import dataclass
-from os.path import basename, exists, isdir, join
+from os.path import basename, exists, join, isdir
 from typing import Generator
 
 import absl.logging
-import hydra
 import numpy as np
 import pandas as pd
+import hydra
+import pickle
 import plotly.express as px
+
 from hydra.core.config_store import ConfigStore
 from keras.callbacks import CSVLogger, ModelCheckpoint
 from omegaconf import OmegaConf
@@ -20,8 +21,7 @@ from predict360user.dataset import (Dataset, get_class_name,
                                     get_class_thresholds)
 from predict360user.models import (BaseModel, Interpolation, NoMotion, PosOnly,
                                    PosOnly3D)
-from predict360user.utils import (calc_actual_entropy, orth_dist_cartesian,
-                                  show_or_save)
+from predict360user.utils import calc_actual_entropy, orth_dist_cartesian, show_or_save
 
 ARGS_ENTROPY_NAMES = [ 'all', 'low', 'medium', 'high', 'nohigh', 'nolow', 'allminsize' ]
 ARGS_MODEL_NAMES = ['pos_only', 'pos_only_3d', 'no_motion', 'interpolation', 'TRACK', 'CVPR18', 'MM18', 'most_salient_point']
