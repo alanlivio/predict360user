@@ -301,7 +301,7 @@ class Dataset:
     # then split x_train in final x_train and x_val
     self.x_train, self.x_val = train_test_split(self.x_train, random_state=1, test_size=val_size, stratify=self.x_train['actS_c'])
     log.info('trajectories x_train has ' + count_entropy_str(self.x_train))
-    log.info('trajectories x_val has' + count_entropy_str(self.x_val))
+    log.info('trajectories x_val has ' + count_entropy_str(self.x_val))
     log.info('trajectories x_test has ' + count_entropy_str(self.x_test))
 
     if entropy_filter != 'all':
@@ -309,7 +309,7 @@ class Dataset:
       self.x_train = filter_df_by_entropy(self.x_train, entropy_filter)
       self.x_val = filter_df_by_entropy(self.x_val, entropy_filter)
       log.info('filtred trajectories x_train has ' + count_entropy_str(self.x_train))
-      log.info('filtred trajectories x_val has' + count_entropy_str(self.x_val))
+      log.info('filtred trajectories x_val has ' + count_entropy_str(self.x_val))
       log.info('filtred trajectories x_test has ' + count_entropy_str(self.x_test))
 
   def create_wins(self, init_window: int, h_window: int) -> None:

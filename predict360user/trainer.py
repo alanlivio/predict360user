@@ -33,7 +33,7 @@ log = logging.getLogger(basename(__file__))
 absl.logging.set_verbosity(absl.logging.ERROR)
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-
+tqdm.pandas()
 
 @dataclass
 class TrainerCfg():
@@ -194,28 +194,52 @@ class Trainer():
       self.model_high = self.model.copy()
       self.model_high.load_weights(join(prefix + 'high', 'weights.hdf5'))
 
-    if not self.model_fullname in self.ds.df.columns:
-      empty = pd.Series([{} for _ in range(len(self.ds.df))]).astype(object)
-      self.ds.df[self.model_fullname] = empty
+    # auxiliary df based on x_test_wins to calculate error
+    pred_range = range(self.cfg.h_window)
+    df = pd.DataFrame(self.ds.x_test_wins).set_index(['user', 'video', 'trace_id'])
+    df.sort_index(inplace=True)
+    for step in pred_range:
+      df[step]=np.nan
 
-    for ids in tqdm(self.ds.x_test_wins, desc=f'evaluate model {self.model_fullname}'):
-      user = ids['user']
-      video = ids['video']
-      x_i = ids['trace_id']
+    # calculate predictions
+    for idx, _ in tqdm(df.iterrows(), desc=f'evaluate model {self.model_fullname}'):
+      user, video, x_i = idx[0], idx[1], idx[2]
       traces = self.ds.get_traces(video, user)
       # predict
       if self.using_auto:
         pred = self._auto_select_model(traces, x_i).predict_for_sample(traces, x_i)
       else:
         pred = self.model.predict_for_sample(traces, x_i)
+      assert len(pred) == self.cfg.h_window
+      pred_true = traces[x_i + 1 : x_i + self.cfg.h_window + 1]
+      error_per_t = [orth_dist_cartesian(pred[t], pred_true[t]) for t in pred_range]
       # save prediction
-      traject_row = self.ds.df.loc[(self.ds.df['video'] == video) & (self.ds.df['user'] == user)]
-      assert not traject_row.empty
-      index = traject_row.index[0]
-      traject_row.loc[index, self.model_fullname][x_i] = pred
+      df.loc[idx, pred_range] = error_per_t
 
-    # save on df
-    self.ds.dump_column(self.model_fullname)
+    # save at df_compare_evaluate.pickle
+    columns = ['model_name', 'S_class', 'mean_err']
+    if not hasattr(self, 'df_compare_evaluate'):
+      if exists(self.compare_eval_pickle):
+        with open(self.compare_eval_pickle, 'rb') as f:
+          log.info(f'loading df_compare_evaluate from {self.compare_eval_pickle}')
+          self.df_compare_evaluate = pickle.load(f)
+      else:
+        self.df_compare_evaluate = pd.DataFrame(columns=columns + list(pred_range),
+                                                dtype=np.float32)
+
+    targets = [
+      ('all', pd.Series(True, df.index)),
+      ('low', df['actS_c'] == 'low'),
+      ('nolow', df['actS_c']),
+      ('medium', df['actS_c'] == 'medium'),
+      ('nohigh', df['actS_c']),
+      ('high', df['actS_c'] == 'high')
+    ]
+    for S_class, idx in targets:
+      newid = len(self.df_compare_evaluate)
+      mean_err = np.nanmean(df[pred_range].values)
+      self.df_compare_evaluate[newid, ['model_name', 'S_class','mean_err']] = [self.model_fullname, S_class, mean_err]
+      self.df_compare_evaluate.loc[newid, ['model_name', 'S_class','mean_err' , pred_range]] = df[idx, pred_range].mean()
 
   #
   # compare-related methods TODO: replace then by a log in a model registry
@@ -254,90 +278,8 @@ class Trainer():
     else:
       log.error('no evaluate done')
 
-  def compare_evaluate(self) -> None:
-    # horizon timestamps to be calculated
-    self.range_win = range(self.cfg.h_window)[::4]
-
-    # create df_compare_evaluate
-    columns = ['model_name', 'S_type', 'S_class']
-    if not hasattr(self, 'df_compare_evaluate'):
-      if exists(self.compare_eval_pickle):
-        with open(self.compare_eval_pickle, 'rb') as f:
-          log.info(f'loading df_compare_evaluate from {self.compare_eval_pickle}')
-          self.df_compare_evaluate = pickle.load(f)
-      else:
-        self.df_compare_evaluate = pd.DataFrame(columns=columns + list(self.range_win),
-                                                dtype=np.float32)
-
-    if not hasattr(self, 'ds') and not hasattr(self.ds, 'x_test'):
-      # TODO: filter by dataset name
-      self.ds = Dataset(savedir=self.cfg.savedir)
-      self.ds.partition(entropy_filter=self.cfg.train_entropy, test_size=self.cfg.test_size)
-
-    # models_cols
-    models_cols = sorted([
-      col for col in self.ds.x_test.columns \
-      if any(m_name in col for m_name in ARGS_MODEL_NAMES)\
-      and not any(ds_name in col for ds_name in ARGS_DS_NAMES[1:])\
-      and not any(self.df_compare_evaluate['model_name'] == col) # already calculated
-      ])
-    if models_cols:
-      log.info(f"compare evaluate for models: {', '.join(models_cols)}")
-      log.info(f"for each model, compare users: {ARGS_ENTROPY_NAMES[:6]}")
-    else:
-      log.info(f"evaluate models already calculated. skip to visualize")
-
-    # create targets in format (model, s_type, s_class, mask)
-    targets = []
-    for model in models_cols:
-      assert len(self.ds.x_test) == len(self.ds.x_test[model].apply(lambda x: len(x) != 0))
-      targets.append((model, 'all', 'all', pd.Series(True, index=self.ds.x_test.index)))
-      targets.append(
-          (model, self.entropy_type, 'low', self.ds.x_test[self.entropy_type + '_c'] == 'low'))
-      targets.append((model, self.entropy_type, 'nolow', self.ds.x_test[self.entropy_type + '_c']
-                      != 'low'))
-      targets.append(
-          (model, self.entropy_type, 'medium', self.ds.x_test[self.entropy_type + '_c'] == 'medium'))
-      targets.append((model, self.entropy_type, 'nohigh', self.ds.x_test[self.entropy_type + '_c']
-                      != 'high'))
-      targets.append(
-          (model, self.entropy_type, 'high', self.ds.x_test[self.entropy_type + '_c'] == 'high'))
-
-    # function to fill self.df_compare_evaluate from each moldel column at self.df
-    def _evaluate_model_wins(df_wins_cols, errors_per_timestamp) -> None:
-      traject_index = df_wins_cols.name
-      traject = self.ds.x_test.loc[traject_index, 'traces']
-      win_pos_l = df_wins_cols.index
-      for win_pos in win_pos_l:
-        if isinstance(df_wins_cols[win_pos], float):
-          break  # TODO: review why some pred ends at 51
-        true_win = traject[win_pos + 1:win_pos + self.cfg.h_window + 1]
-        pred_win = df_wins_cols[win_pos]
-        for t in self.range_win:
-          errors_per_timestamp[t].append(orth_dist_cartesian(true_win[t], pred_win[t]))
-
-    for model, s_type, s_class, mask in tqdm(targets, desc='compare evaluate'):
-      # create df_win with columns as timestamps
-      model_srs = self.ds.x_test.loc[mask, model]
-      if len(model_srs) == 0:
-        raise RuntimeError(f"empty {model=}, {s_type}={s_class}")
-      model_df_wins = pd.DataFrame.from_dict(model_srs.values.tolist())
-      model_df_wins.index = model_srs.index
-      # calc errors_per_timestamp from df_wins
-      errors_per_timestamp = {idx: [] for idx in self.range_win}
-      model_df_wins.apply(_evaluate_model_wins, axis=1, args=(errors_per_timestamp, ))
-      newid = len(self.df_compare_evaluate)
-      avg_error_per_timestamp = [
-          np.mean(errors_per_timestamp[t]) if len(errors_per_timestamp[t]) else np.nan
-          for t in self.range_win
-      ]
-      self.df_compare_evaluate.loc[newid,
-                                   ['model_name', 'S_type', 'S_class']] = [model, s_type, s_class]
-      self.df_compare_evaluate.loc[newid, self.range_win] = avg_error_per_timestamp
-
-    self.compare_evaluate_show()
-
   def compare_evaluate_show(self, model_filter=None, entropy_filter=None) -> None:
+    pred_range = range(self.cfg.h_window)
     # create vis table
     assert len(self.df_compare_evaluate), 'run -evaluate first'
     props = 'text-decoration: underline'
@@ -347,11 +289,11 @@ class Trainer():
     if entropy_filter:
       df = df.loc[df['S_class'].isin(entropy_filter)]
     output = df.dropna()\
-      .sort_values(by=list(self.range_win))\
+      .sort_values(by=list(pred_range))\
       .style\
       .background_gradient(axis=0, cmap='coolwarm')\
-      .highlight_min(subset=list(self.range_win), props=props)\
-      .highlight_max(subset=list(self.range_win), props=props)
+      .highlight_min(subset=list(pred_range), props=props)\
+      .highlight_max(subset=list(pred_range), props=props)
     show_or_save(output, self.cfg.savedir, 'compare_evaluate')
 
   def compare_evaluate_save(self) -> None:
