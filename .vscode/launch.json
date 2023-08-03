@@ -8,9 +8,12 @@
             "name": "predict360user",
             "type": "python",
             "request": "launch",
-            "module": "predict360user.experiment",
-            "args": [
-            ],
+            "program": "train.py",
+            // "args": [
+            //     "train_size=0.01",
+            //     "test_size=0.0005",
+            //     "epochs=9"
+            // ],
             "justMyCode": true
         },
     ]

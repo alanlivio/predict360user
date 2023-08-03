@@ -243,6 +243,9 @@ class Trainer():
       new_row = [self.model_fullname, S_class, mean_err] + list(df.loc[idx, pred_range].mean())
       self.df_compare_evaluate.loc[newid] = new_row
 
+    with open(self.compare_eval_pickle, 'wb') as f:
+      log.info(f'saving df_compare_evaluate to {self.compare_eval_pickle}')
+      pickle.dump(self.df_compare_evaluate, f)
 
   #
   # compare-related methods TODO: replace then by a log in a model registry
@@ -282,6 +285,11 @@ class Trainer():
       log.error('no evaluate done')
 
   def compare_evaluate_show(self, model_filter=None, entropy_filter=None) -> None:
+    if not hasattr(self, 'df_compare_evaluate'):
+      if exists(self.compare_eval_pickle):
+        with open(self.compare_eval_pickle, 'rb') as f:
+          log.info(f'loading df_compare_evaluate from {self.compare_eval_pickle}')
+          self.df_compare_evaluate = pickle.load(f)
     pred_range = range(self.cfg.h_window)
     # create vis table
     assert len(self.df_compare_evaluate), 'run -evaluate first'
@@ -298,12 +306,6 @@ class Trainer():
       .highlight_min(subset=list(pred_range), props=props)\
       .highlight_max(subset=list(pred_range), props=props)
     show_or_save(output, self.cfg.savedir, 'compare_evaluate')
-
-  def compare_evaluate_save(self) -> None:
-    assert hasattr(self, 'df_compare_evaluate')
-    with open(self.compare_eval_pickle, 'wb') as f:
-      log.info(f'saving df_compare_evaluate to {self.compare_eval_pickle}')
-      pickle.dump(self.df_compare_evaluate, f)
 
 
 @hydra.main(version_base=None, config_path="conf", config_name="trainer")
