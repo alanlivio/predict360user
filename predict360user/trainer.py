@@ -4,11 +4,11 @@ from dataclasses import dataclass
 from os.path import basename, exists, join, isdir
 from typing import Generator
 
+import pickle
 import absl.logging
 import numpy as np
 import pandas as pd
 import hydra
-import pickle
 import plotly.express as px
 
 from hydra.core.config_store import ConfigStore
@@ -198,12 +198,10 @@ class Trainer():
     pred_range = range(self.cfg.h_window)
     df = pd.DataFrame(self.ds.x_test_wins).set_index(['user', 'video', 'trace_id'])
     df.sort_index(inplace=True)
-    for step in pred_range:
-      df[step]=np.nan
 
-    # calculate predictions
-    for idx, _ in tqdm(df.iterrows(), desc=f'evaluate model {self.model_fullname}'):
-      user, video, x_i = idx[0], idx[1], idx[2]
+    def _save_pred(row) -> None:
+      # row.name return the index (user, video, time)
+      user, video, x_i = row.name[0], row.name[1], row.name[2]
       traces = self.ds.get_traces(video, user)
       # predict
       if self.using_auto:
@@ -214,7 +212,11 @@ class Trainer():
       pred_true = traces[x_i + 1 : x_i + self.cfg.h_window + 1]
       error_per_t = [orth_dist_cartesian(pred[t], pred_true[t]) for t in pred_range]
       # save prediction
-      df.loc[idx, pred_range] = error_per_t
+      return error_per_t
+
+    # calculate predictions
+    tqdm.pandas(desc=f'evaluate model {self.model_fullname}')
+    df = pd.concat([df, df.progress_apply(_save_pred, axis=1, result_type='expand')], axis=1)
 
     # save at df_compare_evaluate.pickle
     columns = ['model_name', 'S_class', 'mean_err']
@@ -230,16 +232,17 @@ class Trainer():
     targets = [
       ('all', pd.Series(True, df.index)),
       ('low', df['actS_c'] == 'low'),
-      ('nolow', df['actS_c']),
+      ('nolow', df['actS_c'] != 'low'),
       ('medium', df['actS_c'] == 'medium'),
-      ('nohigh', df['actS_c']),
+      ('nohigh', df['actS_c'] != 'high'),
       ('high', df['actS_c'] == 'high')
     ]
     for S_class, idx in targets:
-      newid = len(self.df_compare_evaluate)
       mean_err = np.nanmean(df[pred_range].values)
-      self.df_compare_evaluate[newid, ['model_name', 'S_class','mean_err']] = [self.model_fullname, S_class, mean_err]
-      self.df_compare_evaluate.loc[newid, ['model_name', 'S_class','mean_err' , pred_range]] = df[idx, pred_range].mean()
+      newid = len(self.df_compare_evaluate)
+      new_row = [self.model_fullname, S_class, mean_err] + list(df.loc[idx, pred_range].mean())
+      self.df_compare_evaluate.loc[newid] = new_row
+
 
   #
   # compare-related methods TODO: replace then by a log in a model registry
