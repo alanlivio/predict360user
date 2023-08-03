@@ -4,7 +4,6 @@ from dataclasses import dataclass
 from os.path import basename, exists, join, isdir
 from typing import Generator
 
-import pickle
 import absl.logging
 import numpy as np
 import pandas as pd
@@ -75,7 +74,6 @@ class Trainer():
       log.info(f"set visible cpu to {self.cfg.gpu_id}")
 
     # properties others
-    self.compare_eval_pickle = join(self.cfg.savedir, 'df_compare_evaluate.pickle')
     self.using_auto = self.cfg.train_entropy.startswith('auto')
     self.entropy_type = 'actS'
     if self.cfg.dataset_name == 'all' and self.cfg.train_entropy == 'all':
@@ -218,17 +216,10 @@ class Trainer():
     tqdm.pandas(desc=f'evaluate model {self.model_fullname}')
     df = pd.concat([df, df.progress_apply(_save_pred, axis=1, result_type='expand')], axis=1)
 
-    # save at df_compare_evaluate.pickle
+    # save at evaluate_results.csv
     columns = ['model_name', 'S_class', 'mean_err']
-    if not hasattr(self, 'df_compare_evaluate'):
-      if exists(self.compare_eval_pickle):
-        with open(self.compare_eval_pickle, 'rb') as f:
-          log.info(f'loading df_compare_evaluate from {self.compare_eval_pickle}')
-          self.df_compare_evaluate = pickle.load(f)
-      else:
-        self.df_compare_evaluate = pd.DataFrame(columns=columns + list(pred_range),
-                                                dtype=np.float32)
-
+    df_evaluate_res = pd.DataFrame(columns=columns + pred_range,
+                                              dtype=np.float32)
     targets = [
       ('all', pd.Series(True, df.index)),
       ('low', df['actS_c'] == 'low'),
@@ -239,72 +230,58 @@ class Trainer():
     ]
     for S_class, idx in targets:
       mean_err = np.nanmean(df[pred_range].values)
-      newid = len(self.df_compare_evaluate)
+      newid = len(df_evaluate_res)
       new_row = [self.model_fullname, S_class, mean_err] + list(df.loc[idx, pred_range].mean())
-      self.df_compare_evaluate.loc[newid] = new_row
+      df_evaluate_res.loc[newid] = new_row
 
-    with open(self.compare_eval_pickle, 'wb') as f:
-      log.info(f'saving df_compare_evaluate to {self.compare_eval_pickle}')
-      pickle.dump(self.df_compare_evaluate, f)
+    log.info(f'saving evaluate_results.csv')
+    df_evaluate_res.to_csv(join(self.model_dir, 'evaluate_results.csv'), index=False)
 
   #
   # compare-related methods TODO: replace then by a log in a model registry
   #
 
   def compare_train(self) -> None:
-    assert exists(self.cfg.savedir), f'the save folder {self.cfg.savedir} does not exist. do -train call'
-    result_csv = 'train_results.csv'
-    # find result_csv files
+    results_csv = 'train_results.csv'
+    # find results_csv files
     csv_df_l = [(dir_name, pd.read_csv(join(self.cfg.savedir, dir_name, file_name)))
                 for dir_name in os.listdir(self.cfg.savedir) if isdir(join(self.cfg.savedir, dir_name))
                 for file_name in os.listdir(join(self.cfg.savedir, dir_name))
-                if file_name == result_csv]
-    csv_df_l = [df.assign(model=dir_name) for (dir_name, df) in csv_df_l]
-    assert csv_df_l, f'no <savedir>/<model>/{result_csv} files, run -train'
+                if file_name == results_csv]
+    csv_df_l = [df.assign(model_name=dir_name) for (dir_name, df) in csv_df_l]
+    assert csv_df_l, f'no <savedir>/<model>/{results_csv} files'
+    df_compare = pd.concat(csv_df_l, ignore_index=True)
 
     # plot
-    df_compare = pd.concat(csv_df_l)
     fig = px.line(df_compare,
                   x='epoch',
                   y='loss',
-                  color='model',
+                  color='model_name',
                   title='compare_train_loss',
                   width=800)
     show_or_save(fig, self.cfg.savedir, 'compare_train')
 
-  def list_done_evaluate(self) -> None:
-    models_cols = sorted([
-      col for col in self.ds.df.columns \
-      if any(m_name in col for m_name in ARGS_MODEL_NAMES)\
-      and not any(ds_name in col for ds_name in ARGS_DS_NAMES[1:])])
-    if models_cols:
-      for model in models_cols:
-        preds = len(self.ds.df[model].apply(lambda x: len(x) != 0))
-        log.info(f"{model} has {preds} predict wins calculated")
-    else:
-      log.error('no evaluate done')
+  def compare_evaluate(self, model_filter=None, entropy_filter=None) -> None:
+    results_csv = 'evaluate_results.csv'
+    # find results_csv files
+    csv_df_l = [pd.read_csv(join(self.cfg.savedir, dir_name, file_name))
+                for dir_name in os.listdir(self.cfg.savedir) if isdir(join(self.cfg.savedir, dir_name))
+                for file_name in os.listdir(join(self.cfg.savedir, dir_name))
+                if file_name == results_csv]
+    assert csv_df_l, f'no <savedir>/<model>/{results_csv} files'
+    df_compare = pd.concat(csv_df_l, ignore_index=True)
 
-  def compare_evaluate_show(self, model_filter=None, entropy_filter=None) -> None:
-    if not hasattr(self, 'df_compare_evaluate'):
-      if exists(self.compare_eval_pickle):
-        with open(self.compare_eval_pickle, 'rb') as f:
-          log.info(f'loading df_compare_evaluate from {self.compare_eval_pickle}')
-          self.df_compare_evaluate = pickle.load(f)
-    pred_range = range(self.cfg.h_window)
     # create vis table
-    assert len(self.df_compare_evaluate), 'run -evaluate first'
+    pred_range = [ str(col) for col in range(self.cfg.h_window)]
     props = 'text-decoration: underline'
-    df = self.df_compare_evaluate
     if model_filter:
-      df = df.loc[df['model_name'].isin(model_filter)]
+      df_compare = df_compare.loc[df_compare['model_name'].isin(model_filter)]
     if entropy_filter:
-      df = df.loc[df['S_class'].isin(entropy_filter)]
-    output = df.dropna()\
-      .sort_values(by=list(pred_range))\
-      .style\
+      df_compare = df_compare.loc[df_compare['S_class'].isin(entropy_filter)]
+    output = df_compare.sort_values(by=pred_range).style\
       .background_gradient(axis=0, cmap='coolwarm')\
-      .highlight_min(subset=list(pred_range), props=props)\
-      .highlight_max(subset=list(pred_range), props=props)
+      .highlight_min(subset=pred_range, props=props)\
+      .highlight_max(subset=pred_range, props=props)
     show_or_save(output, self.cfg.savedir, 'compare_evaluate')
 
 
