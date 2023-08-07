@@ -2,6 +2,7 @@ import unittest
 from os.path import join
 from hydra import initialize, compose
 from predict360user.trainer import *
+from predict360user.utils import DEFAULT_SAVEDIR
 
 
 class TrainerTestCase(unittest.TestCase):
