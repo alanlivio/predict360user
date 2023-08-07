@@ -29,20 +29,18 @@ class DatasetTestCase(unittest.TestCase):
         self.assertTrue(self.ds.get_traces(videos_l[0], users_l[0]).size)
 
     def test_trajects_entropy(self) -> None:
-        self.ds.df = self.ds.df.sample(n=8)  # limitig given time
+        self.ds._df = self.ds._df.sample(n=8)  # limitig given time
         self.ds.calc_traces_entropy()
-        self.ds.calc_traces_entropy_hmp()
-        self.ds.calc_traces_poles_prc()
 
     def test_filter_df_by_entropy(self) -> None:
         min_size = self.ds.df["actS_c"].value_counts().min()
         for train_entropy in ARGS_ENTROPY_NAMES[1:]:
             fdf = filter_df_by_entropy(
-                df=self.ds.df, entropy_type="actS", train_entropy=train_entropy
+                df=self.ds.df, entropy_filter=train_entropy
             )
             self.assertAlmostEqual(min_size, len(fdf), delta=2)
 
-    def testpartition(self) -> None:
+    def test_partition(self) -> None:
         self.ds.partition("all")
         self.assertGreater(len(self.ds.x_train), len(self.ds.x_val))
         classes = set(self.ds.x_train["actS_c"].unique())

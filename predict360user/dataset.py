@@ -76,17 +76,22 @@ class Dataset:
     def __init__(self, savedir=DEFAULT_SAVEDIR) -> None:
         self.savedir = savedir
         self.pickle_file = os.path.join(savedir, "df_trajects.pickle")
-        if exists(self.pickle_file):
-            with open(self.pickle_file, "rb") as f:
-                log.info(f"loading df from {self.pickle_file}")
-                self.df = pickle.load(f)
-        else:
-            log.info(f"there is no {self.pickle_file}")
-            log.info(f"loading df from {HMDDIR}")
-            self.df = self._load_df_trajects_from_hmp()
-            log.info(f"calculating entropy")
-            self.calc_traces_entropy()
-            self.dump()
+
+    @property
+    def df(self) -> pd.DataFrame:
+        if not hasattr(self, '_df'):
+            if exists(self.pickle_file):
+                with open(self.pickle_file, "rb") as f:
+                    log.info(f"loading df from {self.pickle_file}")
+                    self._df = pickle.load(f)
+            else:
+                log.info(f"there is no {self.pickle_file}")
+                log.info(f"loading df from {HMDDIR}")
+                self._df = self._load_df_trajects_from_hmp()
+                log.info(f"calculating entropy")
+                self.calc_traces_entropy()
+                self.dump()
+        return self._df
 
     def _load_df_trajects_from_hmp(self) -> pd.DataFrame:
         # save cwd and move to head_motion_prediction for invoking funcs
