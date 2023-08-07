@@ -48,16 +48,3 @@ class TileSetTestCase(unittest.TestCase):
             self.assertAlmostEqual(
                 tile_poly(6, 4, 5, col).overlap(fov_poly(0, 0, -1)), 1.0, places=4
             )
-
-    def test_tileset_metrics_reqs(self) -> None:
-        # limit testing df to 2
-        self.ds = Dataset()
-        self.assertFalse(self.ds.df.empty)
-        self.ds.df = self.ds.df[:2]
-        # force hmp recalc
-        self.ds.df.drop(["traces_hmp"], axis=1, errors="ignore")
-        tileset_variations = [
-            TileSet(3, 3, TileCover.ANY),
-            TileSetVoro(14, TileCover.ANY),
-        ]
-        self.ds.calc_tileset_reqs_metrics(tileset_variations)

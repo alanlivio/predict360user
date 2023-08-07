@@ -15,9 +15,6 @@ log = logging.getLogger(basename(__file__))
 
 tqdm.pandas()
 
-log = logging.getLogger(basename(__file__))
-
-
 @cache
 def fov_poly(x, y, z) -> polygon.SphericalPolygon:
     points_trace = fov_points(x, y, z)
@@ -177,14 +174,6 @@ class TileSet:
         else:
             return heatmap
 
-
-_4X6_CTR = TileSet(4, 6, TileCover.CENTER)
-_4X6_ANY = TileSet(4, 6, TileCover.ANY)
-_4X6_20P = TileSet(4, 6, TileCover.ONLY20PERC)
-TILESET_DEFAULT = _4X6_ANY
-TILESET_VARIATIONS = [_4X6_CTR, _4X6_ANY, _4X6_20P]
-
-
 @cache
 def voro_trinity(n_patchs: int) -> SphericalVoronoi:
     points = np.empty((0, 3))
@@ -280,20 +269,4 @@ class TileSetVoro(TileSet):
         else:
             return heatmap
 
-
-_VORO14_CTR = TileSetVoro(14, TileCover.CENTER)
-_VORO14_ANY = TileSetVoro(14, TileCover.ANY)
-_VORO14_20P = TileSetVoro(14, TileCover.ONLY20PERC)
-_VORO24_CTR = TileSetVoro(24, TileCover.CENTER)
-_VORO24_ANY = TileSetVoro(24, TileCover.ANY)
-_VORO24_20P = TileSetVoro(24, TileCover.ONLY20PERC)
-
-TILESET_VORO_VARIATIONS = [
-    _VORO14_CTR,
-    _VORO14_ANY,
-    _VORO14_20P,
-    _VORO24_CTR,
-    _VORO24_ANY,
-    _VORO24_20P,
-]
-TILESET_VORO_DEFAULT = _VORO14_ANY
+TILESET_DEFAULT = TileSet(4, 6, TileCover.ANY)

@@ -25,7 +25,7 @@ log = logging.getLogger(basename(__file__))
 # global funcs
 
 
-def show_or_save(output, savedir, title="") -> None:
+def show_or_save(output, savedir=DEFAULT_SAVEDIR, title="") -> None:
     if "ipykernel" in sys.modules:
         IPython.display.display(output)
     else:
