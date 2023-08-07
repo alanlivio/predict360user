@@ -7,7 +7,6 @@ from typing import Generator
 import absl.logging
 import numpy as np
 import pandas as pd
-import hydra
 import plotly.express as px
 
 from hydra.core.config_store import ConfigStore
@@ -341,9 +340,3 @@ class Trainer:
             .highlight_max(subset=pred_range, props=props)
         )
         show_or_save(output, self.cfg.savedir, "compare_evaluate")
-
-
-@hydra.main(version_base=None, config_path="conf", config_name="trainer")
-def trainer_cli(cfg: TrainerCfg) -> None:
-    exp = Trainer(cfg)
-    exp.run()
