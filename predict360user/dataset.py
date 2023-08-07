@@ -22,8 +22,13 @@ from predict360user.utils import (
     calc_actual_entropy,
 )
 
-DS_NAMES = ["david", "fan", "nguyen", "xucvpr", "xupami"]
-DS_SIZES = [1083, 300, 432, 6654, 4408]
+DATASETS = {
+    "david": {"size": 1083},
+    "fan": {"size": 300},
+    "nguyen": {"size": 432},
+    "xucvpr": {"size": 6654},
+    "xupami": {"size": 4408},
+}
 log = logging.getLogger(basename(__file__))
 
 
@@ -73,8 +78,10 @@ class Dataset:
         df (str): pandas.DataFrame.
     """
 
-    def __init__(self, savedir=DEFAULT_SAVEDIR) -> None:
+    def __init__(self, dataset_name="all", savedir=DEFAULT_SAVEDIR) -> None:
+        assert dataset_name in ["all"] + list(DATASETS.keys())
         self.savedir = savedir
+        self.dataset_name = dataset_name
         self.pickle_file = os.path.join(savedir, "df_trajects.pickle")
 
     @property
@@ -102,15 +109,21 @@ class Dataset:
         from .head_motion_prediction.Nguyen_MM_18 import Read_Dataset as nguyen
         from .head_motion_prediction.Xu_CVPR_18 import Read_Dataset as xucvpr
         from .head_motion_prediction.Xu_PAMI_18 import Read_Dataset as xupami
-
-        ds_pkgs = [david, fan, nguyen, xucvpr, xupami]  # [:1]
-        ds_idxs = range(len(ds_pkgs))
-
-        def _load_dataset_xyz(idx, n_traces=100) -> pd.DataFrame:
+        DATASETS['david']['pkg'] = david
+        DATASETS['fan']['pkg'] = fan
+        DATASETS['nguyen']['pkg'] = nguyen
+        DATASETS['xucvpr']['pkg'] = xucvpr
+        DATASETS['xupami']['pkg'] = xupami
+        if self.dataset_name == "all":
+            target = DATASETS
+        else:
+            target = { self.dataset_name: DATASETS[self.dataset_name]}
+        n_traces=100
+        def _load_dataset_xyz(key, value) -> pd.DataFrame:
             # create_and_store_sampled_dataset()
             # stores csv at head_motion_prediction/<dataset>/sampled_dataset
-            if len(os.listdir(ds_pkgs[idx].OUTPUT_FOLDER)) < 2:
-                ds_pkgs[idx].create_and_store_sampled_dataset()
+            if len(os.listdir(value['pkg'].OUTPUT_FOLDER)) < 2:
+                value['pkg'].create_and_store_sampled_dataset()
             # load_sample_dateset() process head_motion_prediction/<dataset>/sampled_dataset
             # and return a dict with:
             # {<video1>:{
@@ -119,13 +132,13 @@ class Dataset:
             #  },
             #  ...
             # }"
-            dataset = ds_pkgs[idx].load_sampled_dataset()
+            dataset = value['pkg'].load_sampled_dataset()
             # convert dict to DataFrame
             data = [
                 (
-                    DS_NAMES[idx],
-                    DS_NAMES[idx] + "_" + user,
-                    DS_NAMES[idx] + "_" + video,
+                    key,
+                    key + "_" + user,
+                    key + "_" + video,
                     # np.around(dataset[user][video][:n_traces, 0], decimals=2),
                     dataset[user][video][:n_traces, 1:],
                 )
@@ -143,12 +156,13 @@ class Dataset:
                 ],
             )
             # assert and check
-            assert len(tmpdf["ds"]) == DS_SIZES[idx]
+            assert len(tmpdf["ds"]) == value['size']
             return tmpdf
 
         # create df for each dataset
         df = pd.concat(
-            map(_load_dataset_xyz, ds_idxs), ignore_index=True
+            [ _load_dataset_xyz(k,v) for k, v in target.items()],
+            ignore_index=True
         ).convert_dtypes()
         assert not df.empty
         # back to cwd

@@ -4,8 +4,8 @@ import hydra
 
 @hydra.main(version_base=None, config_path="conf", config_name="trainer")
 def trainer_run(cfg: TrainerCfg) -> None:
-    exp = Trainer(cfg)
-    exp.run()
+    trn = Trainer(cfg)
+    trn.run()
 
 
 if __name__ == "__main__":

@@ -31,7 +31,6 @@ ARGS_MODEL_NAMES = [
     "most_salient_point",
 ]
 MODELS_NAMES_NO_TRAIN = ["no_motion", "interpolation"]
-ARGS_DS_NAMES = ["all", "david", "fan", "nguyen", "xucvpr", "xupami"]
 ARGS_ENTROPY_AUTO_NAMES = ["auto", "auto_m_window", "auto_since_start"]
 log = logging.getLogger(basename(__file__))
 
@@ -59,7 +58,6 @@ class TrainerCfg:
 
     def __post_init__(self) -> None:
         assert self.model_name in ARGS_MODEL_NAMES
-        assert self.dataset_name in ARGS_DS_NAMES
         assert self.train_entropy in ARGS_ENTROPY_NAMES + ARGS_ENTROPY_AUTO_NAMES
 
     def __str__(self) -> str:
@@ -81,7 +79,7 @@ class Trainer:
             os.environ["CUDA_VISIBLE_DEVICES"] = str(self.cfg.gpu_id)
             log.info(f"set visible cpu to {self.cfg.gpu_id}")
 
-        self.ds = Dataset(savedir=self.cfg.savedir)
+        self.ds = Dataset(dataset_name=self.cfg.dataset_name, savedir=self.cfg.savedir)
         # properties others
         self.using_auto = self.cfg.train_entropy.startswith("auto")
         self.entropy_type = "actS"
