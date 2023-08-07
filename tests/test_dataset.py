@@ -35,9 +35,7 @@ class DatasetTestCase(unittest.TestCase):
     def test_filter_df_by_entropy(self) -> None:
         min_size = self.ds.df["actS_c"].value_counts().min()
         for train_entropy in ARGS_ENTROPY_NAMES[1:]:
-            fdf = filter_df_by_entropy(
-                df=self.ds.df, entropy_filter=train_entropy
-            )
+            fdf = filter_df_by_entropy(df=self.ds.df, entropy_filter=train_entropy)
             self.assertAlmostEqual(min_size, len(fdf), delta=2)
 
     def test_partition(self) -> None:

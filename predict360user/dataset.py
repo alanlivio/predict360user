@@ -79,7 +79,7 @@ class Dataset:
 
     @property
     def df(self) -> pd.DataFrame:
-        if not hasattr(self, '_df'):
+        if not hasattr(self, "_df"):
             if exists(self.pickle_file):
                 with open(self.pickle_file, "rb") as f:
                     log.info(f"loading df from {self.pickle_file}")
