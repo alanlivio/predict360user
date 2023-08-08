@@ -231,7 +231,6 @@ class Trainer:
         # auxiliary df based on x_test_wins to calculate error
         pred_range = range(self.cfg.h_window)
         df = pd.DataFrame(self.ds.x_test_wins).set_index(["user", "video", "trace_id"])
-        df.sort_index(inplace=True)
 
         def _save_pred(row) -> None:
             # row.name return the index (user, video, time)

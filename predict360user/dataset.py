@@ -13,6 +13,7 @@ import plotly.graph_objs as go
 import scipy.stats
 from plotly.subplots import make_subplots
 from sklearn.model_selection import train_test_split
+from tqdm.auto import tqdm
 
 from predict360user.tileset import TILESET_DEFAULT, TileSet
 from predict360user.utils import (
@@ -112,21 +113,23 @@ class Dataset:
         from .head_motion_prediction.Nguyen_MM_18 import Read_Dataset as nguyen
         from .head_motion_prediction.Xu_CVPR_18 import Read_Dataset as xucvpr
         from .head_motion_prediction.Xu_PAMI_18 import Read_Dataset as xupami
-        DATASETS['david']['pkg'] = david
-        DATASETS['fan']['pkg'] = fan
-        DATASETS['nguyen']['pkg'] = nguyen
-        DATASETS['xucvpr']['pkg'] = xucvpr
-        DATASETS['xupami']['pkg'] = xupami
+
+        DATASETS["david"]["pkg"] = david
+        DATASETS["fan"]["pkg"] = fan
+        DATASETS["nguyen"]["pkg"] = nguyen
+        DATASETS["xucvpr"]["pkg"] = xucvpr
+        DATASETS["xupami"]["pkg"] = xupami
         if self.dataset_name == "all":
             target = DATASETS
         else:
-            target = { self.dataset_name: DATASETS[self.dataset_name]}
-        n_traces=100
+            target = {self.dataset_name: DATASETS[self.dataset_name]}
+        n_traces = 100
+
         def _load_dataset_xyz(key, value) -> pd.DataFrame:
             # create_and_store_sampled_dataset()
             # stores csv at head_motion_prediction/<dataset>/sampled_dataset
-            if len(os.listdir(value['pkg'].OUTPUT_FOLDER)) < 2:
-                value['pkg'].create_and_store_sampled_dataset()
+            if len(os.listdir(value["pkg"].OUTPUT_FOLDER)) < 2:
+                value["pkg"].create_and_store_sampled_dataset()
             # load_sample_dateset() process head_motion_prediction/<dataset>/sampled_dataset
             # and return a dict with:
             # {<video1>:{
@@ -135,7 +138,7 @@ class Dataset:
             #  },
             #  ...
             # }"
-            dataset = value['pkg'].load_sampled_dataset()
+            dataset = value["pkg"].load_sampled_dataset()
             # convert dict to DataFrame
             data = [
                 (
@@ -150,22 +153,15 @@ class Dataset:
             ]
             tmpdf = pd.DataFrame(
                 data,
-                columns=[
-                    "ds",  # e.g., david
-                    "user",  # e.g., david_0
-                    "video",  # e.g., david_10_Cows
-                    # 'times',
-                    "traces",  # [[x,y,z], ...]
-                ],
+                columns=["ds", "user", "video", "traces"],
             )
             # assert and check
-            assert len(tmpdf["ds"]) == value['size']
+            assert len(tmpdf["ds"]) == value["size"]
             return tmpdf
 
         # create df for each dataset
         df = pd.concat(
-            [ _load_dataset_xyz(k,v) for k, v in target.items()],
-            ignore_index=True
+            [_load_dataset_xyz(k, v) for k, v in target.items()]
         ).convert_dtypes()
         assert not df.empty
         # back to cwd
@@ -220,59 +216,62 @@ class Dataset:
 
     def calc_traces_entropy(self) -> None:
         self.df.drop(["actS", "actS_c"], axis=1, errors="ignore", inplace=True)
-        # calc actS
-        self.df["actS"] = self.df["traces"].progress_apply(calc_actual_entropy)
+        tqdm.pandas(desc=f"calc actS")
+        self.df["actS"] = (
+            self.df["traces"].progress_apply(calc_actual_entropy).astype(float)
+        )
         assert not self.df["actS"].isnull().any()
-        # calc trajects_entropy_class
         threshold_medium, threshold_high = get_class_thresholds(self.df, "actS")
-        self.df["actS_c"] = self.df["actS"].progress_apply(
-            get_class_name, args=(threshold_medium, threshold_high)
+        self.df["actS_c"] = (
+            self.df["actS"]
+            .apply(get_class_name, args=(threshold_medium, threshold_high))
+            .astype("string")
         )
         assert not self.df["actS_c"].isnull().any()
 
     def calc_traces_entropy_hmp(self) -> None:
         self.df.drop(["hmpS", "hmpS_c"], axis=1, errors="ignore", inplace=True)
 
-        # calc hmpS
-        if not "traces_hmp" in self.df.columns:
-
-            def _calc_traject_hmp(traces) -> np.array:
-                return np.apply_along_axis(TILESET_DEFAULT.request, 1, traces)
-
-            np_hmps = self.df["traces"].progress_apply(_calc_traject_hmp)
-            self.df["traces_hmp"] = pd.Series(np_hmps)
-            assert not self.df["traces_hmp"].isnull().any()
+        def _calc_traject_hmp(traces) -> np.array:
+            return np.apply_along_axis(TILESET_DEFAULT.request, 1, traces)
 
         def _hmp_entropy(traject) -> float:
             return scipy.stats.entropy(np.sum(traject, axis=0).reshape((-1)))
 
-        self.df["hmpS"] = self.df["traces_hmp"].progress_apply(_hmp_entropy)
+        if not "traces_hmp" in self.df.columns:
+            tqdm.pandas(desc=f"calc traces_hmp")
+            np_hmps = self.df["traces"].progress_apply(_calc_traject_hmp)
+            self.df["traces_hmp"] = pd.Series(np_hmps)
+            assert not self.df["traces_hmp"].isnull().any()
+        tqdm.pandas(desc=f"calc hmpS")
+        self.df["hmpS"] = (
+            self.df["traces_hmp"].progress_apply(_hmp_entropy).astype(float)
+        )
         assert not self.df["hmpS"].isnull().any()
-
-        # calc hmpS_c
         threshold_medium, threshold_high = get_class_thresholds(self.df, "hmpS")
-        self.df["hmpS_c"] = self.df["hmpS"].progress_apply(
-            get_class_name, args=(threshold_medium, threshold_high)
+        self.df["hmpS_c"] = (
+            self.df["hmpS"]
+            .apply(get_class_name, args=(threshold_medium, threshold_high))
+            .astype("string")
         )
         assert not self.df["hmpS_c"].isnull().any()
 
     def calc_traces_poles_prc(self) -> None:
-        self.df.drop(
-            ["poles_prc", "poles_prc_c"], axis=1, errors="ignore", inplace=True
-        )
-
-        # calc poles_prc
         def _calc_poles_prc(traces) -> float:
             return np.count_nonzero(abs(traces[:, 2]) > 0.7) / len(traces)
 
-        self.df["poles_prc"] = pd.Series(
-            self.df["traces"].progress_apply(_calc_poles_prc)
+        self.df.drop(
+            ["poles_prc", "poles_prc_c"], axis=1, errors="ignore", inplace=True
         )
-
-        # calc poles_prc_c
+        tqdm.pandas(desc=f"calc poles_prc")
+        self.df["poles_prc"] = pd.Series(
+            self.df["traces"].progress_apply(_calc_poles_prc).astype(float)
+        )
         threshold_medium, threshold_high = get_class_thresholds(self.df, "poles_prc")
-        self.df["poles_prc_c"] = self.df["poles_prc"].progress_apply(
-            get_class_name, args=(threshold_medium, threshold_high)
+        self.df["poles_prc_c"] = (
+            self.df["poles_prc"]
+            .apply(get_class_name, args=(threshold_medium, threshold_high))
+            .astype("string")
         )
         assert not self.df["poles_prc_c"].isna().any()
 
