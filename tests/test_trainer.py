@@ -33,5 +33,5 @@ class TrainerTestCase(unittest.TestCase):
             # check some values
             trn = Trainer(cfg)
             self.assertEqual(trn.model_fullname, "pos_only")
-            self.assertEqual(trn.model_dir, join("saved", trn.model_fullname))
+            self.assertEqual(trn.model_dir, join(DEFAULT_SAVEDIR, trn.model_fullname))
             self.assertEqual(trn.using_auto, False)

@@ -130,8 +130,8 @@ class Dataset:
             # stores csv at head_motion_prediction/<dataset>/sampled_dataset
             if len(os.listdir(value["pkg"].OUTPUT_FOLDER)) < 2:
                 value["pkg"].create_and_store_sampled_dataset()
-            # load_sample_dateset() process head_motion_prediction/<dataset>/sampled_dataset
-            # and return a dict with:
+            # then call load_sample_dateset()
+            # and convert csv as dict with
             # {<video1>:{
             #   <user1>:[time-stamp, x, y, z],
             #    ...
@@ -139,15 +139,9 @@ class Dataset:
             #  ...
             # }"
             dataset = value["pkg"].load_sampled_dataset()
-            # convert dict to DataFrame
+            # time: np.around(dataset[user][video][:n_traces, 0], decimals=2)
             data = [
-                (
-                    key,
-                    key + "_" + user,
-                    key + "_" + video,
-                    # np.around(dataset[user][video][:n_traces, 0], decimals=2),
-                    dataset[user][video][:n_traces, 1:],
-                )
+                (key, user, video, dataset[user][video][:n_traces, 1:])
                 for user in dataset.keys()
                 for video in dataset[user].keys()
             ]
@@ -164,6 +158,8 @@ class Dataset:
             [_load_dataset_xyz(k, v) for k, v in target.items()]
         ).convert_dtypes()
         assert not df.empty
+        # https://pandas.pydata.org/pandas-docs/stable/user_guide/advanced.html
+        df = df.set_index(["ds", "user", "video"])
         # back to cwd
         os.chdir(cwd)
         return df
@@ -198,21 +194,19 @@ class Dataset:
         assert not row.empty
         return row["traces"].iloc[0]
 
-    def get_trace_random(
-        self,
-    ) -> np.array:
+    def get_trace_random(self) -> np.array:
         traject_ar = self.get_traject_random()["traces"].iloc[0]
         trace = traject_ar[np.random.randint(len(traject_ar - 1))]
         return trace
 
     def get_video_ids(self) -> np.array:
-        return self.df["video"].unique()
+        return self.df.reset_index()["video"].unique()
 
     def get_user_ids(self) -> np.array:
-        return self.df["user"].unique()
+        return self.df.reset_index()["user"].unique()
 
     def get_ds_ids(self) -> np.array:
-        return self.df["ds"].unique()
+        return self.df.reset_index()["ds"].unique()
 
     def calc_traces_entropy(self) -> None:
         self.df.drop(["actS", "actS_c"], axis=1, errors="ignore", inplace=True)

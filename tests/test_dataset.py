@@ -12,14 +12,12 @@ class DatasetTestCase(unittest.TestCase):
     def test_random(self) -> None:
         one_row = self.ds.get_traject_random()
         self.assertFalse(one_row.empty)
-        one_row = self.ds.df.query(
-            "ds=='david' and user=='david_0' and video=='david_10_Cows'"
-        )
+        one_row = self.ds.df.loc[('david','0','10_Cows')]
         self.assertFalse(one_row.empty)
         trace = self.ds.get_trace_random()
         self.assertEqual(trace.shape, (3,))
 
-    def test_trajects_get(self) -> None:
+    def test_trajects_get_ids(self) -> None:
         videos_l = self.ds.get_video_ids()
         self.assertTrue(videos_l.size)
         users_l = self.ds.get_user_ids()

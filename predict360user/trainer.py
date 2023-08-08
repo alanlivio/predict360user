@@ -79,7 +79,6 @@ class Trainer:
             os.environ["CUDA_VISIBLE_DEVICES"] = str(self.cfg.gpu_id)
             log.info(f"set visible cpu to {self.cfg.gpu_id}")
 
-        self.ds = Dataset(dataset_name=self.cfg.dataset_name, savedir=self.cfg.savedir)
         # properties others
         self.using_auto = self.cfg.train_entropy.startswith("auto")
         self.entropy_type = "actS"
@@ -155,7 +154,10 @@ class Trainer:
 
         if not hasattr(self, "ds"):
             log.info("loading dataset ...")
-            # TODO: filter by dataset name
+            self.ds = Dataset(
+                dataset_name=self.cfg.dataset_name,
+                savedir=self.cfg.savedir
+            )
             self.ds.partition(
                 entropy_filter=self.cfg.train_entropy,
                 train_size=self.cfg.train_size,
