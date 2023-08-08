@@ -10,11 +10,11 @@ class DatasetTestCase(unittest.TestCase):
         self.assertFalse(self.ds.df.empty)
 
     def test_random(self) -> None:
-        one_row = self.ds.get_traject_random()
+        one_row = self.ds.get_random_traject()
         self.assertFalse(one_row.empty)
         one_row = self.ds.df.loc[('david','0','10_Cows')]
         self.assertFalse(one_row.empty)
-        trace = self.ds.get_trace_random()
+        trace = self.ds.get_random_trace()
         self.assertEqual(trace.shape, (3,))
 
     def test_trajects_get_ids(self) -> None:

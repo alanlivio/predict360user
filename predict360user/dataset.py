@@ -181,21 +181,17 @@ class Dataset:
         else:
             self.dump()
 
-    def get_trajects(self, video: str, user: str) -> np.array:
-        rows = self.df.query(f"user=='{user}' and video=='{video}'")
-        assert not rows.empty
-        return rows
-
-    def get_traject_random(self) -> pd.Series:
-        return self.df.sample(1)
 
     def get_traces(self, video: str, user: str) -> np.array:
         row = self.df.query(f"user=='{user}' and video=='{video}'")
         assert not row.empty
         return row["traces"].iloc[0]
 
-    def get_trace_random(self) -> np.array:
-        traject_ar = self.get_traject_random()["traces"].iloc[0]
+    def get_random_traject(self) -> pd.Series:
+        return self.df.sample(1)
+
+    def get_random_trace(self) -> np.array:
+        traject_ar = self.get_random_traject()["traces"].iloc[0]
         trace = traject_ar[np.random.randint(len(traject_ar - 1))]
         return trace
 
