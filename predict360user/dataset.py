@@ -78,16 +78,19 @@ class Dataset:
         df (str): pandas.DataFrame.
     """
 
-    def __init__(self, dataset_name="all", savedir=DEFAULT_SAVEDIR) -> None:
+    def __init__(
+        self, dataset_name="all", savedir=DEFAULT_SAVEDIR, force_load=False
+    ) -> None:
         assert dataset_name in ["all"] + list(DATASETS.keys())
         self.savedir = savedir
+        self.force_load = force_load
         self.dataset_name = dataset_name
         self.pickle_file = os.path.join(savedir, "df_trajects.pickle")
 
     @property
     def df(self) -> pd.DataFrame:
         if not hasattr(self, "_df"):
-            if exists(self.pickle_file):
+            if not self.force_load and exists(self.pickle_file):
                 with open(self.pickle_file, "rb") as f:
                     log.info(f"loading df from {self.pickle_file}")
                     self._df = pickle.load(f)
