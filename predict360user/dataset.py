@@ -101,11 +101,13 @@ class Dataset:
                     self._df = pickle.load(f)
             else:
                 log.info(f"there is no {self.pickle_file}")
-                log.info(f"loading df from {HMDDIR}")
+                log.info(f"loading trajects from {HMDDIR}")
                 self._df = self._load_df_trajecs_from_hmp()
                 log.info(f"calculating entropy")
                 self.calc_traces_entropy()
-                self.dump()
+                log.info(f"saving trajects to {self.pickle_file} for fast loading")
+                with open(self.pickle_file, "wb") as f:
+                    pickle.dump(self.df, f)
         return self._df
 
     def _load_df_trajecs_from_hmp(self) -> pd.DataFrame:
@@ -168,11 +170,6 @@ class Dataset:
         os.chdir(cwd)
         return df
 
-    def dump(self) -> None:
-        log.info(f"saving df to {self.pickle_file}")
-        with open(self.pickle_file, "wb") as f:
-            pickle.dump(self.df, f)
-
     def get_random_traject(self) -> pd.Series:
         return self.df.sample(1)
 
@@ -234,11 +231,6 @@ class Dataset:
             .astype("string")
         )
         assert not self.df["poles_prc_c"].isna().any()
-
-    def show_entropy_counts(self) -> None:
-        log.info(count_entropy_str(self.df))
-        log.info(f"df['actS'].max()={self.df['actS'].max()}")
-        log.info(f"df['actS'].min()={self.df['actS'].min()}")
 
     def show_entropy_histogram(self) -> None:
         px.histogram(
