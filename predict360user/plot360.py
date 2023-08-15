@@ -266,8 +266,7 @@ class Plot360:
         return px.imshow(heatmap, text_auto=True, x=x, y=y)
 
     def show_traject(self, row: pd.Series) -> None:
-        assert row.shape[0] == 1
-        assert "traces" in row.columns
+        assert "traces" in row.index
         fig = make_subplots(
             rows=1, cols=2, specs=[[{"type": "surface"}, {"type": "image"}]]
         )
