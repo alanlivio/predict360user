@@ -61,8 +61,10 @@ def filter_df_by_entropy(df: pd.DataFrame, entropy_filter: str) -> pd.DataFrame:
         filter_df = df[df["actS_c"] == entropy_filter]
     nunique = len(filter_df["actS_c"].unique())
     n = int(min_size / nunique)
-    df_sampled = filter_df.groupby("actS_c").apply(lambda x: x.sample(n=n, random_state=1))
-    return df_sampled.droplevel(0) # undo groupby
+    df_sampled = filter_df.groupby("actS_c").apply(
+        lambda x: x.sample(n=n, random_state=1)
+    )
+    return df_sampled.droplevel(0)  # undo groupby
 
 
 def count_entropy_str(df: pd.DataFrame) -> tuple[int, int, int, int]:
@@ -245,19 +247,21 @@ class Dataset:
             color="actS_c",
             color_discrete_map=ENTROPY_CLASS_COLORS,
             width=900,
-            category_orders={"actS": ["low", "medium", "hight"]}
+            category_orders={"actS": ["low", "medium", "hight"]},
         ).show()
 
     def show_entropy_histogram_per_partition(self) -> None:
-        assert 'partition' in self.df.columns
+        assert "partition" in self.df.columns
         px.histogram(
             self.df.dropna(),
             x="actS",
             color="actS_c",
             facet_col="partition",
             color_discrete_map=ENTROPY_CLASS_COLORS,
-            category_orders={"actS": ["low", "medium", "hight"],
-                             "partition": ["train", "val", "test"]},
+            category_orders={
+                "actS": ["low", "medium", "hight"],
+                "partition": ["train", "val", "test"],
+            },
             width=900,
         ).show()
 
@@ -283,25 +287,21 @@ class Dataset:
             test_size=val_size,
             stratify=self.x_train["actS_c"],
         )
-        log.info("trajectories x_train has " + count_entropy_str(self.x_train))
-        log.info("trajectories x_val has " + count_entropy_str(self.x_val))
-        log.info("trajectories x_test has " + count_entropy_str(self.x_test))
+        log.info("trajecs at x_train has " + count_entropy_str(self.x_train))
+        log.info("trajecs at x_val has" + count_entropy_str(self.x_val))
+        log.info("trajecs at x_test has" + count_entropy_str(self.x_test))
 
         if entropy_filter != "all":
             log.info("entropy_filter != all, so filtering x_train, x_val")
             self.x_train = filter_df_by_entropy(self.x_train, entropy_filter)
             self.x_val = filter_df_by_entropy(self.x_val, entropy_filter)
-            log.info(
-                "filtred trajectories x_train has " + count_entropy_str(self.x_train)
-            )
-            log.info("filtred trajectories x_val has " + count_entropy_str(self.x_val))
-            log.info(
-                "filtred trajectories x_test has " + count_entropy_str(self.x_test)
-            )
+            log.info("trajecs x_train has " + count_entropy_str(self.x_train))
+            log.info("trajecs x_val has " + count_entropy_str(self.x_val))
+            log.info("trajecs x_test has " + count_entropy_str(self.x_test))
 
-        self.df.loc[self.x_train.index, 'partition'] = 'train'
-        self.df.loc[self.x_val.index, 'partition'] = 'val'
-        self.df.loc[self.x_test.index, 'partition'] = 'test'
+        self.df.loc[self.x_train.index, "partition"] = "train"
+        self.df.loc[self.x_val.index, "partition"] = "val"
+        self.df.loc[self.x_test.index, "partition"] = "test"
 
     def create_wins(self, init_window: int, h_window: int) -> None:
         # lambda to create list of trace_id
