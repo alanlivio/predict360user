@@ -170,24 +170,6 @@ class Dataset:
         with open(self.pickle_file, "wb") as f:
             pickle.dump(self.df, f)
 
-    def dump_column(self, column) -> None:
-        log.info(f"update column {column} to {self.pickle_file}")
-        if exists(self.pickle_file):
-            with multiprocessing.Lock():
-                with open(self.pickle_file, "rb") as f:
-                    tmpdf = pickle.load(f)
-                tmpdf[column] = self.df[column]
-                with open(self.pickle_file, "wb") as f:
-                    pickle.dump(tmpdf, f)
-        else:
-            self.dump()
-
-
-    def get_traces(self, video: str, user: str) -> np.array:
-        row = self.df.query(f"user=='{user}' and video=='{video}'")
-        assert not row.empty
-        return row["traces"].iloc[0]
-
     def get_random_traject(self) -> pd.Series:
         return self.df.sample(1)
 
