@@ -61,7 +61,8 @@ def filter_df_by_entropy(df: pd.DataFrame, entropy_filter: str) -> pd.DataFrame:
         filter_df = df[df["actS_c"] == entropy_filter]
     nunique = len(filter_df["actS_c"].unique())
     n = int(min_size / nunique)
-    return filter_df.groupby("actS_c").apply(lambda x: x.sample(n=n, random_state=1))
+    df_sampled = filter_df.groupby("actS_c").apply(lambda x: x.sample(n=n, random_state=1))
+    return df_sampled.droplevel(0) # undo groupby
 
 
 def count_entropy_str(df: pd.DataFrame) -> tuple[int, int, int, int]:
