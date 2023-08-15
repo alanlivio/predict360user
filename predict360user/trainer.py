@@ -258,7 +258,7 @@ class Trainer:
 
         # save at evaluate_results.csv
         columns = ["model_name", "S_class", "mean_err"]
-        df_evaluate_res = pd.DataFrame(columns=columns + pred_range, dtype=np.float32)
+        df_evaluate_res = pd.DataFrame(columns=columns + list(pred_range), dtype=np.float32)
         targets = [
             ("all", pd.Series(True, df.index)),
             ("low", df["actS_c"] == "low"),
@@ -284,7 +284,7 @@ class Trainer:
     # compare-related methods TODO: replace then by a log in a model registry
     #
 
-    def compare_train(self) -> None:
+    def show_compare_train(self) -> None:
         results_csv = "train_results.csv"
         # find results_csv files
         csv_df_l = [
@@ -309,7 +309,7 @@ class Trainer:
         )
         show_or_save(fig, self.cfg.savedir, "compare_train")
 
-    def compare_evaluate(self, model_filter=None, entropy_filter=None) -> None:
+    def show_compare_evaluate(self, model_filter=None, entropy_filter=None) -> None:
         results_csv = "evaluate_results.csv"
         # find results_csv files
         csv_df_l = [
