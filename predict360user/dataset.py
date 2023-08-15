@@ -4,6 +4,7 @@ import os
 import pickle
 from os.path import basename, exists
 from typing import Literal
+from sklearn.utils import shuffle
 
 import jenkspy
 import numpy as np
@@ -318,30 +319,30 @@ class Dataset:
             )
 
     def create_wins(self, init_window: int, h_window: int) -> None:
-        self.x_train_wins = [
-            {"video": row[1]["video"], "user": row[1]["user"], "trace_id": trace_id}
-            for row in self.x_train.iterrows()
-            for trace_id in range(init_window, row[1]["traces"].shape[0] - h_window)
+        # lambda to create list of trace_id
+        f_list_trace_id = lambda traces: [
+            trace_id for trace_id in range(init_window, traces.shape[0] - h_window)
         ]
-        self.x_val_wins = [
-            {
-                "video": row[1]["video"],
-                "user": row[1]["user"],
-                "trace_id": trace_id,
-            }
-            for row in self.x_val.iterrows()
-            for trace_id in range(init_window, row[1]["traces"].shape[0] - h_window)
+
+        # x_train_wins, x_val_wins
+        self.x_train["trace_id"] = self.x_train["traces"].apply(f_list_trace_id)
+        self.x_train_wins = self.x_train.explode("trace_id").reset_index()[
+            ["ds", "user", "video", "trace_id"]
         ]
-        self.x_test_wins = [
-            {
-                "video": row[1]["video"],
-                "user": row[1]["user"],
-                "trace_id": trace_id,
-                "actS_c": row[1]["actS_c"],
-            }
-            for row in self.x_test.iterrows()
-            for trace_id in range(init_window, row[1]["traces"].shape[0] - h_window)
+        self.x_train_wins = shuffle(self.x_train_wins, random_state=1)
+
+        self.x_val["trace_id"] = self.x_val["traces"].apply(f_list_trace_id)
+        self.x_val_wins = self.x_train.explode("trace_id").reset_index()[
+            ["ds", "user", "video", "trace_id"]
         ]
+        self.x_val_wins = shuffle(self.x_val_wins, random_state=1)
+
+        # x_test_wins with actS_c columns
+        self.x_test["trace_id"] = self.x_test["traces"].apply(f_list_trace_id)
+        self.x_test_wins = self.x_train.explode("trace_id").reset_index()[
+            ["ds", "user", "video", "trace_id", "actS_c"]
+        ]
+        self.x_test = shuffle(self.x_test, random_state=1)
 
     def show_train_test_split(self) -> None:
         self.x_train["partition"] = "train"

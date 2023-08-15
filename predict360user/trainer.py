@@ -12,7 +12,6 @@ import plotly.express as px
 from hydra.core.config_store import ConfigStore
 from keras.callbacks import CSVLogger, ModelCheckpoint
 from omegaconf import OmegaConf
-from sklearn.utils import shuffle
 from tqdm.auto import tqdm
 
 from predict360user.dataset import Dataset, get_class_name, get_class_thresholds
@@ -103,20 +102,19 @@ class Trainer:
         else:
             raise RuntimeError
 
-    def generate_batchs(self, model: BaseModel, wins: list) -> Generator:
+    def generate_batchs(self, model: BaseModel, df_wins: pd.DataFrame) -> Generator:
         while True:
-            shuffle(wins, random_state=1)
-            for count, _ in enumerate(wins[:: self.cfg.batch_size]):
+            for count, _ in enumerate(df_wins[:: self.cfg.batch_size]):
                 end = (
                     count + self.cfg.batch_size
-                    if count + self.cfg.batch_size <= len(wins)
-                    else len(wins)
+                    if count + self.cfg.batch_size <= len(df_wins)
+                    else len(df_wins)
                 )
                 traces_l = [
-                    self.ds.get_traces(win["video"], win["user"])
-                    for win in wins[count:end]
+                    self.ds.df.loc[row["ds"], row["user"], row["video"]]['traces']
+                    for _, row  in df_wins[count:end].iterrows()
                 ]
-                x_i_l = [win["trace_id"] for win in wins[count:end]]
+                x_i_l = [row["trace_id"] for _, row in df_wins[count:end].iterrows()]
                 yield model.generate_batch(traces_l, x_i_l)
 
     def drop_predict_cols(self) -> None:
@@ -155,8 +153,7 @@ class Trainer:
         if not hasattr(self, "ds"):
             log.info("loading dataset ...")
             self.ds = Dataset(
-                dataset_name=self.cfg.dataset_name,
-                savedir=self.cfg.savedir
+                dataset_name=self.cfg.dataset_name, savedir=self.cfg.savedir
             )
             self.ds.partition(
                 entropy_filter=self.cfg.train_entropy,
@@ -232,12 +229,12 @@ class Trainer:
 
         # auxiliary df based on x_test_wins to calculate error
         pred_range = range(self.cfg.h_window)
-        df = pd.DataFrame(self.ds.x_test_wins).set_index(["user", "video", "trace_id"])
+        df = pd.DataFrame(self.ds.x_test_wins).set_index(["ds", "user", "video", "trace_id"])
 
         def _save_pred(row) -> None:
             # row.name return the index (user, video, time)
-            user, video, x_i = row.name[0], row.name[1], row.name[2]
-            traces = self.ds.get_traces(video, user)
+            ds, user, video, x_i = row.name[0], row.name[1], row.name[2], row.name[3]
+            traces = self.ds.df.loc[ds, user, video]["traces"]
             # predict
             if self.using_auto:
                 pred = self._auto_select_model(traces, x_i).predict_for_sample(
