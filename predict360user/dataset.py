@@ -203,32 +203,16 @@ class Dataset:
         )
         assert not self.df["actS_c"].isnull().any()
 
-    def calc_traces_entropy_hmp(self) -> None:
-        self.df.drop(["hmpS", "hmpS_c"], axis=1, errors="ignore", inplace=True)
+    def calc_traces_hmp(self) -> None:
+        self.df.drop(["traces_hmp"], axis=1, errors="ignore", inplace=True)
 
         def _calc_traject_hmp(traces) -> np.array:
             return np.apply_along_axis(TILESET_DEFAULT.request, 1, traces)
 
-        def _hmp_entropy(traject) -> float:
-            return scipy.stats.entropy(np.sum(traject, axis=0).reshape((-1)))
-
-        if not "traces_hmp" in self.df.columns:
-            tqdm.pandas(desc=f"calc traces_hmp")
-            np_hmps = self.df["traces"].progress_apply(_calc_traject_hmp)
-            self.df["traces_hmp"] = pd.Series(np_hmps)
-            assert not self.df["traces_hmp"].isnull().any()
-        tqdm.pandas(desc=f"calc hmpS")
-        self.df["hmpS"] = (
-            self.df["traces_hmp"].progress_apply(_hmp_entropy).astype(float)
-        )
-        assert not self.df["hmpS"].isnull().any()
-        threshold_medium, threshold_high = get_class_thresholds(self.df, "hmpS")
-        self.df["hmpS_c"] = (
-            self.df["hmpS"]
-            .apply(get_class_name, args=(threshold_medium, threshold_high))
-            .astype("string")
-        )
-        assert not self.df["hmpS_c"].isnull().any()
+        tqdm.pandas(desc=f"calc traces_hmp")
+        np_hmps = self.df["traces"].progress_apply(_calc_traject_hmp)
+        self.df["traces_hmp"] = pd.Series(np_hmps)
+        assert not self.df["traces_hmp"].isnull().any()
 
     def calc_traces_poles_prc(self) -> None:
         def _calc_poles_prc(traces) -> float:
