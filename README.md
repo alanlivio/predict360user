@@ -22,7 +22,6 @@ Library to predict user behavior in 360 videos. It extends [Rondon 360-videos mo
 | David_MMSys_18 ([paper][David_MMSys_18]) | 57        | 19         | 1,083              |yes        |
 | total                                    |           |            | 12,451             |yes        |
 
-
 ### Models
 
 | model                                                                 | method              | user input                | integrated |
@@ -41,8 +40,6 @@ Library to predict user behavior in 360 videos. It extends [Rondon 360-videos mo
 
 [Petrangeli_AIVR_18]: https://ieeexplore.ieee.org/document/8613652
 [Taghavi_NOSSDAV_20]: https://dl.acm.org/doi/10.1145/3386290.3396934
-[Wu_AAAI_20]: https://ojs.aaai.org/index.php/AAAI/article/view/7377
-[Wu_AAAI_20_code]: https://github.com/wuchlei/AAAI20-Viewport-Prediction
 [Chao_MMSP_21]: https://ieeexplore.ieee.org/document/9733647
 [Nguyen_MM_18]: https://dl.acm.org/doi/10.1145/3240508.3240669
 [Xu_CVPR_18]: https://ieeexplore.ieee.org/document/8578657
@@ -52,32 +49,33 @@ Library to predict user behavior in 360 videos. It extends [Rondon 360-videos mo
 [Romero_PAMI_22_code]: https://gitlabmiguelfromeror/head-motion-prediction
 [Xu_PAMIN_18]: https://ieeexplore.ieee.org/document/8418756
 [Xu_PAMIN_18_code]: https://github.com/YuhangSong/DHP
-[Fan_NOSSDAV_17]: https://doi.org/10.1145/3204949.3208139  
-[David_MMSys_18]: https://dl.acm.org/doi/10.1145/3083165.3083180  
-[Li_ChinaCom_18]: https://eudl.eu/pdf/10.1007/978-3-030-06161-6_49  
-
+[Fan_NOSSDAV_17]: https://doi.org/10.1145/3204949.3208139
+[David_MMSys_18]: https://dl.acm.org/doi/10.1145/3083165.3083180
+[Li_ChinaCom_18]: https://eudl.eu/pdf/10.1007/978-3-030-06161-6_49
 
 ## Usage
 
 #### Requirements
 
-The project requirements are in [requirements.txt](requirements.txt) and it targets tensorflow==2.8 so [you will need cuda>=11.2 and cuDNN==8.1](https://www.tensorflow.org/install/source#gpu). 
+The project requirements are in [requirements.txt](requirements.txt) and it targets tensorflow==2.8 so [you will need cuda>=11.2 and cuDNN==8.1](https://www.tensorflow.org/install/source#gpu).
 
-So to setup you first need check the available Cuda version for your GPU by run `nvcc --version`. Then follow one of the guides below based on [TensorFlow pip installation tutorial](https://www.tensorflow.org/install/pip). 
+So to setup you first need check the available Cuda version for your GPU by run `nvcc --version`. Then follow one of the guides below based on [TensorFlow pip installation tutorial](https://www.tensorflow.org/install/pip).
 
 For GPUs with Cuda 11.2, you can:
+
 ```bash
 conda create -n p3u python==3.9 -c conda-forge
 conda activate p3u
-conda install -c conda-forge cudatoolkit=11.2.0 
+conda install -c conda-forge cudatoolkit=11.2.0
 pip install nvidia-cudnn-cu11  -r requirements.txt
 ```
 
 For GPUs with Cuda 11.8, you can:
+
 ```bash
 conda create -n p3u python==3.9 -c conda-forge
 conda activate p3u
-conda install -c conda-forge cudatoolkit=11.8.0 
+conda install -c conda-forge cudatoolkit=11.8.0
 pip install nvidia-cudnn-cu11 -r requirements.txt
 ```
 
