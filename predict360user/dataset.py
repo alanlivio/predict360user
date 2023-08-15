@@ -254,19 +254,33 @@ class Dataset:
         log.info(f"df['actS'].max()={self.df['actS'].max()}")
         log.info(f"df['actS'].min()={self.df['actS'].min()}")
 
-    def show_entropy_histogram(self, facet=None) -> None:
+    def show_entropy_histogram(self) -> None:
         px.histogram(
-            self.df,
+            self.df.dropna(),
             x="actS",
             color="actS_c",
-            facet_col=facet,
             color_discrete_map=ENTROPY_CLASS_COLORS,
+            width=900,
+            category_orders={"actS": ["low", "medium", "hight"]}
+        ).show()
+
+    def show_entropy_histogram_per_partition(self) -> None:
+        assert 'partition' in self.df.columns
+        px.histogram(
+            self.df.dropna(),
+            x="actS",
+            color="actS_c",
+            facet_col="partition",
+            color_discrete_map=ENTROPY_CLASS_COLORS,
+            category_orders={"actS": ["low", "medium", "hight"],
+                             "partition": ["train", "val", "test"]},
             width=900,
         ).show()
 
     def partition(
         self, entropy_filter: str, train_size=0.8, val_size=0.25, test_size=0.2
     ) -> None:
+        self.df.drop(["partition"], axis=1, errors="ignore", inplace=True)
         log.info(
             f"{train_size=}, {test_size=}. {val_size=} of train, so {train_size*val_size}"
         )
@@ -301,6 +315,10 @@ class Dataset:
                 "filtred trajectories x_test has " + count_entropy_str(self.x_test)
             )
 
+        self.df.loc[self.x_train.index, 'partition'] = 'train'
+        self.df.loc[self.x_val.index, 'partition'] = 'val'
+        self.df.loc[self.x_test.index, 'partition'] = 'test'
+
     def create_wins(self, init_window: int, h_window: int) -> None:
         # lambda to create list of trace_id
         f_list_trace_id = lambda traces: [
@@ -326,9 +344,3 @@ class Dataset:
             ["ds", "user", "video", "trace_id", "actS_c"]
         ]
         self.x_test = shuffle(self.x_test, random_state=1)
-
-    def show_train_test_split(self) -> None:
-        self.x_train["partition"] = "train"
-        self.x_test["partition"] = "test"
-        df = pd.concat([self.x_train, self.x_test])
-        df.show_histogram(facet="partition")
