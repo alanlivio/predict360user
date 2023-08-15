@@ -20,6 +20,7 @@ DATADIR = f"{pathlib.Path(__file__).parent.parent / 'data/'}"
 HMDDIR = f"{pathlib.Path(__file__).parent / 'head_motion_prediction/'}"
 # DS_SIZES = [1083, 300, 432, 7106, 4543] # TODO: check sample_dataset folders
 ENTROPY_CLASS_COLORS = {"low": "blue", "medium": "green", "high": "red"}
+logging.basicConfig(level=logging.INFO, format='[%(levelname)s][%(name)s] - %(message)s')
 log = logging.getLogger(basename(__file__))
 
 # global funcs
