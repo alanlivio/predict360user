@@ -90,7 +90,7 @@ class Dataset:
         self.savedir = savedir
         self.force_load = force_load
         self.dataset_name = dataset_name
-        self.pickle_file = os.path.join(savedir, "df_trajects.pickle")
+        self.pickle_file = os.path.join(savedir, f"df_trajecs_{dataset_name}.pickle")
 
     @property
     def df(self) -> pd.DataFrame:
@@ -102,13 +102,13 @@ class Dataset:
             else:
                 log.info(f"there is no {self.pickle_file}")
                 log.info(f"loading df from {HMDDIR}")
-                self._df = self._load_df_trajects_from_hmp()
+                self._df = self._load_df_trajecs_from_hmp()
                 log.info(f"calculating entropy")
                 self.calc_traces_entropy()
                 self.dump()
         return self._df
 
-    def _load_df_trajects_from_hmp(self) -> pd.DataFrame:
+    def _load_df_trajecs_from_hmp(self) -> pd.DataFrame:
         # save cwd and move to head_motion_prediction for invoking funcs
         cwd = os.getcwd()
         os.chdir(HMDDIR)
