@@ -223,31 +223,6 @@ class Dataset:
         )
         assert not self.df["poles_prc_c"].isna().any()
 
-    def show_entropy_histogram(self) -> None:
-        px.histogram(
-            self.df.dropna(),
-            x="actS",
-            color="actS_c",
-            color_discrete_map=ENTROPY_CLASS_COLORS,
-            width=900,
-            category_orders={"actS": ["low", "medium", "hight"]},
-        ).show()
-
-    def show_entropy_histogram_per_partition(self) -> None:
-        assert "partition" in self.df.columns
-        px.histogram(
-            self.df.dropna(),
-            x="actS",
-            color="actS_c",
-            facet_col="partition",
-            color_discrete_map=ENTROPY_CLASS_COLORS,
-            category_orders={
-                "actS": ["low", "medium", "hight"],
-                "partition": ["train", "val", "test"],
-            },
-            width=900,
-        ).show()
-
     def partition(
         self, entropy_filter: str, train_size=0.8, val_size=0.25, test_size=0.2
     ) -> None:
@@ -311,3 +286,29 @@ class Dataset:
             ["ds", "user", "video", "trace_id", "actS_c"]
         ]
         self.x_test = shuffle(self.x_test, random_state=1)
+
+    def show_entropy_histogram(self) -> None:
+        assert "actS" in self.df.columns
+        px.histogram(
+            self.df.dropna(),
+            x="actS",
+            color="actS_c",
+            color_discrete_map=ENTROPY_CLASS_COLORS,
+            width=900,
+            category_orders={"actS": ["low", "medium", "hight"]},
+        ).show()
+
+    def show_entropy_histogram_per_partition(self) -> None:
+        assert "partition" in self.df.columns
+        px.histogram(
+            self.df.dropna(),
+            x="actS",
+            color="actS_c",
+            facet_col="partition",
+            color_discrete_map=ENTROPY_CLASS_COLORS,
+            category_orders={
+                "actS": ["low", "medium", "hight"],
+                "partition": ["train", "val", "test"],
+            },
+            width=900,
+        ).show()
