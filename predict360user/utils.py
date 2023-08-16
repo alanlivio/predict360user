@@ -20,7 +20,9 @@ DATADIR = f"{pathlib.Path(__file__).parent.parent / 'data/'}"
 HMDDIR = f"{pathlib.Path(__file__).parent / 'head_motion_prediction/'}"
 # DS_SIZES = [1083, 300, 432, 7106, 4543] # TODO: check sample_dataset folders
 ENTROPY_CLASS_COLORS = {"low": "blue", "medium": "green", "high": "red"}
-logging.basicConfig(level=logging.INFO, format='[%(levelname)s][%(name)s] - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="[%(levelname)s][%(name)s] - %(message)s"
+)
 log = logging.getLogger(basename(__file__))
 
 # global funcs
@@ -140,20 +142,6 @@ def rotationBetweenVectors(u, v) -> Quaternion:
     return quat
 
 
-@cache
-def fov_points(x, y, z) -> np.ndarray:
-    rotation = rotationBetweenVectors(X1Y0Z0, np.array([x, y, z]))
-    points = np.array(
-        [
-            rotation.rotate(_fov_x1y0z0_points[0]),
-            rotation.rotate(_fov_x1y0z0_points[1]),
-            rotation.rotate(_fov_x1y0z0_points[2]),
-            rotation.rotate(_fov_x1y0z0_points[3]),
-        ]
-    )
-    return points
-
-
 X1Y0Z0 = np.array([1, 0, 0])
 HOR_DIST = degrees_to_radian(110)
 HOR_MARGIN = degrees_to_radian(110 / 2)
@@ -177,6 +165,20 @@ _fov_x1y0z0_points = np.array(
         eulerian_to_cartesian(*_fov_x1y0z0_fov_points_euler[3]),
     ]
 )
+
+
+@cache
+def fov_points(x, y, z) -> np.ndarray:
+    rotation = rotationBetweenVectors(X1Y0Z0, np.array([x, y, z]))
+    points = np.array(
+        [
+            rotation.rotate(_fov_x1y0z0_points[0]),
+            rotation.rotate(_fov_x1y0z0_points[1]),
+            rotation.rotate(_fov_x1y0z0_points[2]),
+            rotation.rotate(_fov_x1y0z0_points[3]),
+        ]
+    )
+    return points
 
 
 def calc_fixmps_ids(traces: np.array) -> np.array:

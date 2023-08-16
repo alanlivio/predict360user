@@ -1,5 +1,6 @@
 import logging
 import math
+from os.path import basename
 from enum import Enum, auto
 from functools import cache
 
@@ -9,7 +10,7 @@ from spherical_geometry import polygon
 from spherical_geometry.polygon import SphericalPolygon
 from tqdm.auto import tqdm
 
-from predict360user.utils import *
+from predict360user.utils import degrees_to_radian, fov_points, eulerian_to_cartesian, orth_dist_cartesian, HOR_MARGIN, HOR_DIST
 
 log = logging.getLogger(basename(__file__))
 

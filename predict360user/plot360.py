@@ -9,7 +9,7 @@ from scipy.spatial import SphericalVoronoi, geometric_slerp
 from spherical_geometry.polygon import SphericalPolygon
 
 from predict360user.tileset import TILESET_DEFAULT, TileSet, TileSetVoro, tile_points
-from predict360user.utils import *
+from predict360user.utils import fov_points
 
 
 class Plot360:
