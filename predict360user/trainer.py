@@ -111,8 +111,8 @@ class Trainer:
                     else len(df_wins)
                 )
                 traces_l = [
-                    self.ds.df.loc[row["ds"], row["user"], row["video"]]['traces']
-                    for _, row  in df_wins[count:end].iterrows()
+                    self.ds.df.loc[row["ds"], row["user"], row["video"]]["traces"]
+                    for _, row in df_wins[count:end].iterrows()
                 ]
                 x_i_l = [row["trace_id"] for _, row in df_wins[count:end].iterrows()]
                 yield model.generate_batch(traces_l, x_i_l)
@@ -218,11 +218,13 @@ class Trainer:
             self.model_high = self.model.copy()
             self.model_high.load_weights(join(prefix + "high", "weights.hdf5"))
 
-        # auxiliary df based on x_test_wins to calculate error
+        # auxiliary df based on x_test_wins save prediction errors
         pred_range = range(self.cfg.h_window)
-        df = pd.DataFrame(self.ds.x_test_wins).set_index(["ds", "user", "video", "trace_id"])
+        df = pd.DataFrame(self.ds.x_test_wins).set_index(
+            ["ds", "user", "video", "trace_id"]
+        )
 
-        def _save_pred(row) -> None:
+        def _save_pred_errors(row) -> None:
             # row.name return the index (user, video, time)
             ds, user, video, x_i = row.name[0], row.name[1], row.name[2], row.name[3]
             traces = self.ds.df.loc[ds, user, video]["traces"]
@@ -238,18 +240,20 @@ class Trainer:
             error_per_t = [
                 orth_dist_cartesian(pred[t], pred_true[t]) for t in pred_range
             ]
-            # save prediction
             return error_per_t
 
-        # calculate predictions
+        # calculate predictions errors
         tqdm.pandas(desc=f"evaluate model {self.model_fullname}")
         df = pd.concat(
-            [df, df.progress_apply(_save_pred, axis=1, result_type="expand")], axis=1
+            [df, df.progress_apply(_save_pred_errors, axis=1, result_type="expand")],
+            axis=1,
         )
 
         # save at evaluate_results.csv
-        columns = ["model_name", "S_class", "mean_err"]
-        df_evaluate_res = pd.DataFrame(columns=columns + list(pred_range), dtype=np.float32)
+        df_evaluate_res = pd.DataFrame(
+            columns=["model_name", "S_class", "mean_err"] + list(pred_range),
+            dtype=np.float32,
+        )
         targets = [
             ("all", pd.Series(True, df.index)),
             ("low", df["actS_c"] == "low"),
@@ -259,10 +263,13 @@ class Trainer:
             ("high", df["actS_c"] == "high"),
         ]
         for S_class, idx in targets:
-            mean_err = np.nanmean(df[pred_range].values)
             newid = len(df_evaluate_res)
-            new_row = [self.model_fullname, S_class, mean_err] + list(
-                df.loc[idx, pred_range].mean()
+            new_row = [
+                self.model_fullname,  # target model
+                S_class,  # target class
+                np.nanmean(df[pred_range].values),  # mean error for all t in the class
+            ] + list(
+                df.loc[idx, pred_range].mean()  # mean error for each t in the class
             )
             df_evaluate_res.loc[newid] = new_row
 
