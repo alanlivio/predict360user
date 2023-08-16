@@ -117,15 +117,6 @@ class Trainer:
                 x_i_l = [row["trace_id"] for _, row in df_wins[count:end].iterrows()]
                 yield model.generate_batch(traces_l, x_i_l)
 
-    def drop_predict_cols(self) -> None:
-        col_rm = [
-            col
-            for col in self.ds.df.columns
-            for model in ARGS_MODEL_NAMES
-            if col.startswith(model)
-        ]
-        self.ds.df.drop(col_rm, axis=1, errors="ignore", inplace=True)
-
     def _auto_select_model(self, traces: np.array, x_i) -> BaseModel:
         if self.cfg.train_entropy == "auto":
             window = traces
