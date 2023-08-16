@@ -15,6 +15,7 @@ import scipy.stats
 from plotly.subplots import make_subplots
 from sklearn.model_selection import train_test_split
 from tqdm.auto import tqdm
+from predict360user.plot360 import Plot360
 
 from predict360user.tileset import TILESET_DEFAULT, TileSet
 from predict360user.utils import (
@@ -170,11 +171,11 @@ class Dataset:
         os.chdir(cwd)
         return df
 
-    def get_random_traject(self) -> pd.Series:
+    def sample_traject(self) -> pd.Series:
         return self.df.sample(1)
 
-    def get_random_trace(self) -> np.array:
-        traject_ar = self.get_random_traject()["traces"].iloc[0]
+    def sample_trace(self) -> np.array:
+        traject_ar = self.sample_traject()["traces"].iloc[0]
         trace = traject_ar[np.random.randint(len(traject_ar - 1))]
         return trace
 
@@ -193,16 +194,16 @@ class Dataset:
         )
         assert not self.df["actS_c"].isnull().any()
 
-    def calc_traces_hmp(self) -> None:
-        self.df.drop(["traces_hmp"], axis=1, errors="ignore", inplace=True)
+    def calc_traces_hmps(self) -> None:
+        self.df.drop(["traces_hmps"], axis=1, errors="ignore", inplace=True)
 
         def _calc_traject_hmp(traces) -> np.array:
             return np.apply_along_axis(TILESET_DEFAULT.request, 1, traces)
 
-        tqdm.pandas(desc=f"calc traces_hmp")
+        tqdm.pandas(desc=f"calc traces_hmps")
         np_hmps = self.df["traces"].progress_apply(_calc_traject_hmp)
-        self.df["traces_hmp"] = pd.Series(np_hmps)
-        assert not self.df["traces_hmp"].isnull().any()
+        self.df["traces_hmps"] = pd.Series(np_hmps)
+        assert not self.df["traces_hmps"].isnull().any()
 
     def calc_traces_poles_prc(self) -> None:
         def _calc_poles_prc(traces) -> float:
@@ -286,6 +287,35 @@ class Dataset:
             ["ds", "user", "video", "trace_id", "actS_c"]
         ]
         self.x_test = shuffle(self.x_test, random_state=1)
+
+    def show_traject(self, row: pd.Series) -> None:
+        assert "traces" in row.index
+        traces = row["traces"]
+        fig = make_subplots(
+            rows=1, cols=2, specs=[[{"type": "surface"}, {"type": "image"}]]
+        )
+
+        # add traces
+        plot = Plot360()
+        plot.add_traces(traces)
+        for d in plot.data:  # load all data from the self
+            fig.append_trace(d, row=1, col=1)
+
+        # add hmps_sum
+        traces_hmps = np.apply_along_axis(TILESET_DEFAULT.request, 1, row["traces"])
+        hmps_sum = np.sum(traces_hmps, axis=0)
+        x = [str(x) for x in range(1, hmps_sum.shape[1] + 1)]
+        y = [str(y) for y in range(1, hmps_sum.shape[0] + 1)]
+        erp_heatmap =  px.imshow(hmps_sum, text_auto=True, x=x, y=y)
+        erp_heatmap.update_layout(width=100, height=100)
+
+        # show fig
+        fig.append_trace(erp_heatmap.data[0], row=1, col=2)
+        # fix given phi 0 being the north pole at cartesian_to_eulerian
+        fig.update_yaxes(autorange="reversed")
+        title = f"trajec_{row.name}_[{TILESET_DEFAULT.prefix}]"
+        fig.update_layout(width=800, showlegend=False, title_text=title)
+        fig.show()
 
     def show_entropy_histogram(self) -> None:
         assert "actS" in self.df.columns
