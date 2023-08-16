@@ -17,14 +17,6 @@ class DatasetTestCase(unittest.TestCase):
         trace = self.ds.get_random_trace()
         self.assertEqual(trace.shape, (3,))
 
-    def test_trajects_get_ids(self) -> None:
-        videos_l = self.ds.get_video_ids()
-        self.assertTrue(videos_l.size)
-        users_l = self.ds.get_user_ids()
-        self.assertTrue(users_l.size)
-        ds_l = self.ds.get_ds_ids()
-        self.assertTrue(ds_l.size)
-
     def test_trajects_entropy(self) -> None:
         self.ds._df = self.ds._df.sample(n=8)  # limitig given time
         self.ds.calc_traces_entropy()

@@ -178,15 +178,6 @@ class Dataset:
         trace = traject_ar[np.random.randint(len(traject_ar - 1))]
         return trace
 
-    def get_video_ids(self) -> np.array:
-        return self.df.reset_index()["video"].unique()
-
-    def get_user_ids(self) -> np.array:
-        return self.df.reset_index()["user"].unique()
-
-    def get_ds_ids(self) -> np.array:
-        return self.df.reset_index()["ds"].unique()
-
     def calc_traces_entropy(self) -> None:
         self.df.drop(["actS", "actS_c"], axis=1, errors="ignore", inplace=True)
         tqdm.pandas(desc=f"calc actS")
