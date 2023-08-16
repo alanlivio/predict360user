@@ -270,4 +270,4 @@ class TileSetVoro(TileSet):
         else:
             return heatmap
 
-TILESET_DEFAULT = TileSet(4, 6, TileCover.ANY)
+TILESET_DEFAULT = TileSet(4, 6, TileCover.CENTER)
