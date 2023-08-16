@@ -1,12 +1,13 @@
 # predict360user
 
-Library to predict user behavior in 360 videos. It extends [Rondon 360-videos models/dataset collection](https://gitlab.com/miguelfromeror/head-motion-prediction). The library's main classes are:
+predict360user is a library that aims to help researchers to reproduce and develop models to predict user behavior in 360 videos. It extends [Rondon 360-videos models/dataset collection](https://gitlab.com/miguelfromeror/head-motion-prediction) and takes a lot of design inspirations from the recommendation systems framework [RecBole](https://recbole.io/docs/index.html). The library's main classes are:
 
-* `Dataset`: stores the dataset in memory as a `pandas.DataFrame` and provides functions for data preprocessing, such as user clustering by entropy.
+* `Dataset`: stores users trajectories in 360 videos in memory as a `pandas.DataFrame` and provides functions for data visualization and preprocessing. It is inspired by the [RecBole Dataset](https://recbole.io/docs/recbole/recbole.data.dataset.dataset.html#recbole.data.dataset.dataset.Dataset). The trajectory is indexed by a tuple of dataset, user and video ids, and has the columns: traces for the list of x,y,z points; actS for the actual entropy; and actS_c for a class name (low, medium hight) considering all other trajectories. See example below:
 
-  |     | ds    | user    | video         | traces        |
-  | --- | ----- | ------- | ------------- | ------------- |
-  | 0   | david | david_0 | david_10_Cows | [[x,y,z],...] |
+  |       |         |               | traces        | actS          | actS_c        |
+  | ----- | ------- | ------------- | ------------- | ------------- | ------------- |
+  | ds    | user    | video         |               |               |               |
+  | david | david_0 | david_10_Cows | [[x,y,z],...] | 3.2           | medium        |
 
 * `Trainer`: train and evaluate prediction models
 * `Plot360`: plot viewport, trajectory, or predictions for users using 3D visualization
@@ -110,7 +111,7 @@ If you use `predict360user` please consider citing it as:
 
 ## A note on maintenance
 
-This repository was born as part of the UK EPSR SpheryStream project. Its maintenance is limited by a research project's time and resources. Even if I want to automate all 360 user prediction models, I do not have the time to maintain the whole body of automation that a well-maintained package deserves. Any help is very welcome. Here is a quick guide to interacting with this repository:
+This repository was born as part of the UK EPSR SpheryStream project. Its maintenance is limited by a research project's time and resources. Even if I want to automate all 360 user prediction models, I need more time to maintain the whole body of automation that a well-maintained package deserves. Any help is very welcome. Here is a quick guide to interacting with this repository:
 
 * If you find a bug, please open an issue, and I will fix it as soon as possible.
 * If you want to request a new feature, please open an issue, and I will consider it as soon as possible.
