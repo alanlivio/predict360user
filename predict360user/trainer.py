@@ -251,7 +251,7 @@ class Trainer:
 
         # save at evaluate_results.csv
         df_evaluate_res = pd.DataFrame(
-            columns=["model_name", "S_class", "mean_err"] + list(pred_range),
+            columns=["model_name", "S_class", "mean_all"] + list(pred_range),
             dtype=np.float32,
         )
         targets = [
