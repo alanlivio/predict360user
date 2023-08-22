@@ -3,10 +3,10 @@ import hydra
 
 
 @hydra.main(version_base=None, config_path="conf", config_name="trainer")
-def trainer_run(cfg: TrainerCfg) -> None:
+def main(cfg: TrainerCfg) -> None:
     trn = Trainer(cfg)
     trn.run()
 
 
 if __name__ == "__main__":
-    trainer_run()
+    main()

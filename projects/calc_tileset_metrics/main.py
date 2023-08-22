@@ -60,7 +60,7 @@ def show_tileset_reqs_metrics(df: pd.DataFrame) -> None:
     show_or_save(fig, savedir=DEFAULT_SAVEDIR, title="tileset_metrics")
 
 
-if __name__ == "__main__":
+def main() -> None:
     tileset_variations = [
         TileSet(4, 6, TileCover.CENTER),
         TileSet(4, 6, TileCover.ANY),
@@ -75,3 +75,7 @@ if __name__ == "__main__":
     df = Dataset(dataset_name="david").df[:2]
     calc_tileset_reqs_metrics(df, tileset_variations)
     show_tileset_reqs_metrics(df, tileset_variations)
+
+
+if __name__ == "__main__":
+    main()
