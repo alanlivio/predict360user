@@ -15,7 +15,7 @@ from omegaconf import OmegaConf
 from tqdm.auto import tqdm
 
 from predict360user.dataset import Dataset, get_class_name, get_class_thresholds
-from predict360user.models import BaseModel, Interpolation, NoMotion, PosOnly, PosOnly3D
+from predict360user.models import BaseModel, Interpolation, NoMotion, PosOnly, PosOnly3D, TRACK
 from predict360user.utils import calc_actual_entropy, orth_dist_cartesian, show_or_save
 
 ARGS_ENTROPY_NAMES = ["all", "low", "medium", "high", "nohigh", "nolow", "allminsize"]
@@ -97,6 +97,8 @@ class Trainer:
             self.model = PosOnly3D(self.cfg)
         elif self.cfg.model_name == "interpolation":
             self.model = Interpolation(self.cfg)
+        elif self.cfg.model_name == "TRACK":
+            self.model = TRACK(self.cfg)
         elif self.cfg.model_name == "no_motion":
             self.model = NoMotion(self.cfg)
         else:
