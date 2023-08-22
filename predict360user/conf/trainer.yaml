@@ -11,6 +11,19 @@ test_size: 0.2
 epochs: 30
 batch_size: 128
 lr: 0.0005
-defaults:
-  - override hydra/help: custom
-  - override hydra/job_logging: custom
+hydra:
+  help: # https://hydra.cc/docs/0.11/configure_hydra/app_help/
+    app_name: predict360user
+    template: |-
+      ${hydra.help.app_name} module create experiments to predict user behaviour in 360 videos
+
+      It uses a hydra powered cli. Use --hydra-help to view Hydra specific help.
+      See below its default config. You can override everything, for example dataset_name=david
+      -------
+      $CONFIG-------
+  job_logging: # https://hydra.cc/docs/configure_hydra/logging/
+    formatters:
+      simple:
+        format: '[%(levelname)s] - %(message)s'
+    root:
+      handlers: [console]
