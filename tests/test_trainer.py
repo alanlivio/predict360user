@@ -22,7 +22,7 @@ class TrainerTestCase(unittest.TestCase):
             self.assertEqual(trn.using_auto, train_entropy.startswith("auto"))
 
     def test_init_cli(self) -> None:
-        with initialize(version_base=None, config_path="../predict360user/conf"):
+        with initialize(version_base=None, config_path="../predict360user/configs"):
             # load from yaml
             cfg = compose(config_name="trainer")
             assert cfg
