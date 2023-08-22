@@ -13,9 +13,9 @@ batch_size: 128
 lr: 0.0005
 hydra:
   help: # https://hydra.cc/docs/0.11/configure_hydra/app_help/
-    app_name: predict360user
+    app_name: predict360user.trainer
     template: |-
-      ${hydra.help.app_name} module create experiments to predict user behaviour in 360 videos
+      ${hydra.help.app_name} module train and evaluate models to predict user behaviour in 360 videos.
 
       It uses a hydra powered cli. Use --hydra-help to view Hydra specific help.
       See below its default config. You can override everything, for example dataset_name=david
