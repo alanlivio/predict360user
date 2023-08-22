@@ -1,8 +1,8 @@
 # predict360user
 
-predict360user is a library that aims to help researchers to reproduce and develop models to predict user behavior in 360 videos. It extends [Rondon 360-videos models/dataset collection](https://gitlab.com/miguelfromeror/head-motion-prediction) and takes a lot of design inspirations from the recommendation systems framework [RecBole](https://recbole.io/docs/index.html). The library's main classes are:
+predict360user is a library that aims to help researchers to reproduce and develop models to predict user behavior in 360 videos, namely trajectory (or traject for short). It extends [Rondon 360-videos models/dataset collection](https://gitlab.com/miguelfromeror/head-motion-prediction) and takes a lot of design inspirations from the recommendation systems framework [RecBole](https://recbole.io/docs/index.html). The library's main classes are:
 
-* `Dataset`: stores users trajectories in 360 videos in memory as a `pandas.DataFrame` and provides functions for data visualization and preprocessing. It is inspired by the [RecBole Dataset](https://recbole.io/docs/recbole/recbole.data.dataset.dataset.html#recbole.data.dataset.dataset.Dataset). The trajectory is indexed by a tuple of dataset, user and video ids, and has the columns: traces for the list of x,y,z points; actS for the actual entropy; and actS_c for a class name (low, medium hight) considering all other trajectories. See example below:
+* `Dataset`: stores users trajects in 360 videos in memory as a `pandas.DataFrame` and provides functions for data visualization and preprocessing. It is inspired by the [RecBole Dataset](https://recbole.io/docs/recbole/recbole.data.dataset.dataset.html#recbole.data.dataset.dataset.Dataset). The traject is indexed by a tuple of dataset, user and video ids, and has the columns: traces for the list of x,y,z points; actS for the actual entropy; and actS_c for a class name (low, medium hight) considering all other trajects. See example below:
 
   |       |         |               | traces        | actS          | actS_c        |
   | ----- | ------- | ------------- | ------------- | ------------- | ------------- |
@@ -10,11 +10,10 @@ predict360user is a library that aims to help researchers to reproduce and devel
   | david | david_0 | david_10_Cows | [[x,y,z],...] | 3.2           | medium        |
 
 * `Trainer`: train and evaluate prediction models
-* `Plot360`: plot viewport, trajectory, or predictions for users using 3D visualization
 
 ### Datasets
 
-| dataset                                  | users (u) | videos (v) | trajectories (u*v) |integrated |
+| dataset                                  | users (u) | videos (v) | trajects (u*v) |integrated |
 | ---------------------------------------- | --------- | ---------- | ------------------ |---------- |
 | Xu_PAMI_18 ([paper][Xu_PAMIN_18])        | 59        | 77         | 4,543              |yes        |
 | Xu_CVPR_18 ([paper][Xu_CVPR_18])         | 34        | 209        | 7,106              |yes        |
