@@ -73,7 +73,7 @@ def count_entropy_str(df: pd.DataFrame) -> tuple[int, int, int, int]:
     l_len = len(df[df["actS_c"] == "low"])
     m_len = len(df[df["actS_c"] == "medium"])
     h_len = len(df[df["actS_c"] == "high"])
-    return "total of {}: {} low, {} medium, {} high".format(a_len, l_len, m_len, h_len)
+    return "{}: {} low, {} medium, {} high".format(a_len, l_len, m_len, h_len)
 
 
 class Dataset:
@@ -246,17 +246,17 @@ class Dataset:
             test_size=val_size,
             stratify=self.x_train["actS_c"],
         )
-        log.info("trajecs at x_train has " + count_entropy_str(self.x_train))
-        log.info("trajecs at x_val has" + count_entropy_str(self.x_val))
-        log.info("trajecs at x_test has" + count_entropy_str(self.x_test))
+        log.info("trajecs at x_train are " + count_entropy_str(self.x_train))
+        log.info("trajecs at x_val are " + count_entropy_str(self.x_val))
+        log.info("trajecs at x_test are " + count_entropy_str(self.x_test))
 
         if entropy_filter != "all":
             log.info("entropy_filter != all, so filtering x_train, x_val")
             self.x_train = filter_df_by_entropy(self.x_train, entropy_filter)
             self.x_val = filter_df_by_entropy(self.x_val, entropy_filter)
-            log.info("trajecs x_train has " + count_entropy_str(self.x_train))
-            log.info("trajecs x_val has " + count_entropy_str(self.x_val))
-            log.info("trajecs x_test has " + count_entropy_str(self.x_test))
+            log.info("trajecs x_train are " + count_entropy_str(self.x_train))
+            log.info("trajecs x_val are " + count_entropy_str(self.x_val))
+            log.info("trajecs x_test are " + count_entropy_str(self.x_test))
 
         self.df.loc[self.x_train.index, "partition"] = "train"
         self.df.loc[self.x_val.index, "partition"] = "val"
