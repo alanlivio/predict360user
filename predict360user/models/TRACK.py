@@ -22,6 +22,9 @@ from predict360user.models.base_model import (
     selectImageInModel,
 )
 
+N_TILES_W = 384
+N_TILES_H = 216
+
 
 class TRACK(keras.Model, BaseModel):
     def generate_batch(
@@ -36,18 +39,12 @@ class TRACK(keras.Model, BaseModel):
         self.m_window, self.h_window = (
             cfg.m_window,
             cfg.h_window,
-            cfg.n_tiles_h,
-            cfg.n_tiles_w,
         )
         # Defining model structure
         encoder_position_inputs = Input(shape=(self.m_window, 3))
-        encoder_saliency_inputs = Input(
-            shape=(self.m_window, self.n_tiles_h, self.n_tiles_w, 1)
-        )
+        encoder_saliency_inputs = Input(shape=(self.m_window, N_TILES_H, N_TILES_W, 1))
         decoder_position_inputs = Input(shape=(1, 3))
-        decoder_saliency_inputs = Input(
-            shape=(self.h_window, self.n_tiles_h, self.n_tiles_w, 1)
-        )
+        decoder_saliency_inputs = Input(shape=(self.h_window, N_TILES_H, N_TILES_W, 1))
 
         sense_pos_enc = LSTM(
             units=256, return_sequences=True, return_state=True, name="prop_lstm_1_enc"
@@ -100,7 +97,7 @@ class TRACK(keras.Model, BaseModel):
             selected_timestep_saliency = Lambda(
                 selectImageInModel, arguments={"curr_idx": curr_idx}
             )(decoder_saliency_inputs)
-            flatten_timestep_saliency = Reshape((1, self.n_tiles_w * self.n_tiles_h))(
+            flatten_timestep_saliency = Reshape((1, N_TILES_W * N_TILES_H))(
                 selected_timestep_saliency
             )
             out_enc_sal, state_h_2, state_c_2 = sense_sal_dec(
