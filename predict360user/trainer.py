@@ -3,7 +3,7 @@ import os
 from dataclasses import dataclass
 from os.path import basename, exists, join, isdir
 from typing import Generator
-
+import random
 import absl.logging
 import numpy as np
 import pandas as pd
@@ -158,13 +158,14 @@ class Trainer:
         wandb.init(
             project="predict360user",
             tags=[self.cfg.model_name, self.cfg.train_entropy],
-            name=self.model_fullname,
             config={
                 "model_name": self.cfg.model_name,
                 "train_entropy": self.cfg.train_entropy,
                 "batch_size": self.cfg.batch_size,
                 "lr": self.cfg.lr,
             },
+            # make unique name
+            name=self.model_fullname + "_" +  str(random.randint(0, 999))
         )
 
         if not exists(self.model_dir):
