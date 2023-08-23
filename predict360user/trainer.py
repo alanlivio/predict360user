@@ -8,6 +8,8 @@ import absl.logging
 import numpy as np
 import pandas as pd
 import plotly.express as px
+import wandb
+from wandb.keras import WandbMetricsLogger
 
 from hydra.core.config_store import ConfigStore
 from keras.callbacks import CSVLogger, ModelCheckpoint
@@ -15,7 +17,14 @@ from omegaconf import OmegaConf
 from tqdm.auto import tqdm
 
 from predict360user.dataset import Dataset, get_class_name, get_class_thresholds
-from predict360user.models import BaseModel, Interpolation, NoMotion, PosOnly, PosOnly3D, TRACK
+from predict360user.models import (
+    BaseModel,
+    Interpolation,
+    NoMotion,
+    PosOnly,
+    PosOnly3D,
+    TRACK,
+)
 from predict360user.utils import calc_actual_entropy, orth_dist_cartesian, show_or_save
 
 ARGS_ENTROPY_NAMES = ["all", "low", "medium", "high", "nohigh", "nolow", "allminsize"]
@@ -33,10 +42,16 @@ MODELS_NAMES_NO_TRAIN = ["no_motion", "interpolation"]
 ARGS_ENTROPY_AUTO_NAMES = ["auto", "auto_m_window", "auto_since_start"]
 log = logging.getLogger(basename(__file__))
 
-absl.logging.set_verbosity(absl.logging.ERROR)
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 tqdm.pandas()
+
+# disable TF logging
+absl.logging.set_verbosity(absl.logging.ERROR)
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+
+# disable wandb logging
+logger = logging.getLogger("wandb")
+logger.setLevel(logging.WARNING)
 
 
 @dataclass
@@ -88,8 +103,9 @@ class Trainer:
         else:
             self.model_fullname = f"{self.cfg.model_name},{self.cfg.dataset_name},{self.entropy_type},{self.cfg.train_entropy}"
         self.model_dir = join(self.cfg.savedir, self.model_fullname)
-        self.train_csv_log_f = join(self.model_dir, "train_results.csv")
+        self.train_csv_log_f = join(self.model_dir, "train_loss.csv")
         self.model_path = join(self.model_dir, "weights.hdf5")
+        # https://docs.wandb.ai/guides/integrations/hydra#track-hyperparameters
         self.model: BaseModel
         if self.cfg.model_name == "pos_only":
             self.model = PosOnly(self.cfg)
@@ -139,6 +155,18 @@ class Trainer:
         raise RuntimeError()
 
     def run(self) -> None:
+        wandb.init(
+            project="predict360user",
+            tags=[self.cfg.model_name, self.cfg.train_entropy],
+            name=self.model_fullname+ "2",
+            config={
+                "model_name": self.cfg.model_name,
+                "train_entropy": self.cfg.train_entropy,
+                "batch_size": self.cfg.batch_size,
+                "lr": self.cfg.lr,
+            },
+        )
+
         if not exists(self.model_dir):
             os.makedirs(self.model_dir)
         log.info("model_dir=" + self.model_dir)
@@ -184,12 +212,12 @@ class Trainer:
                 steps_per_ep_validate = np.ceil(
                     len(self.ds.x_val_wins) / self.cfg.batch_size
                 )
-                csv_logger = CSVLogger(self.train_csv_log_f, append=True)
                 # https://www.tensorflow.org/tutorials/keras/save_and_load
-                model_checkpoint = ModelCheckpoint(
-                    self.model_path, save_weights_only=True, verbose=1
-                )
-                callbacks = [csv_logger, model_checkpoint]
+                callbacks = [
+                    CSVLogger(self.train_csv_log_f, append=True),
+                    ModelCheckpoint(self.model_path, save_weights_only=True, verbose=1),
+                    WandbMetricsLogger(initial_global_step=initial_epoch),
+                ]
                 generator = self.generate_batchs(self.model, self.ds.x_train_wins)
                 validation_data = self.generate_batchs(self.model, self.ds.x_val_wins)
                 self.model.fit(
@@ -220,13 +248,18 @@ class Trainer:
             self.model_high = self.model.copy()
             self.model_high.load_weights(join(prefix + "high", "weights.hdf5"))
 
+        # save predications
+        # the avg for each target is savem as summary
+        # err_all, err_low, err_nohigh, err_medium, err_nolow, err_nolow, err_all, err_hight
+        # the err_per_t is saved as test_err_per_t.csv to be see by show_compare_evaluate
+
         # auxiliary df based on x_test_wins save prediction errors
         pred_range = range(self.cfg.h_window)
         df = pd.DataFrame(self.ds.x_test_wins).set_index(
             ["ds", "user", "video", "trace_id"]
         )
-
         def _save_pred_errors(row) -> None:
+            return np.random.rand(self.cfg.h_window)  # for debugging
             # row.name return the index (user, video, time)
             ds, user, video, x_i = row.name[0], row.name[1], row.name[2], row.name[3]
             traces = self.ds.df.loc[ds, user, video]["traces"]
@@ -251,33 +284,35 @@ class Trainer:
             axis=1,
         )
 
-        # save at evaluate_results.csv
-        df_evaluate_res = pd.DataFrame(
-            columns=["model_name", "S_class", "mean_all"] + list(pred_range),
-            dtype=np.float32,
-        )
         targets = [
             ("all", pd.Series(True, df.index)),
             ("low", df["actS_c"] == "low"),
-            ("nolow", df["actS_c"] != "low"),
-            ("medium", df["actS_c"] == "medium"),
             ("nohigh", df["actS_c"] != "high"),
+            ("medium", df["actS_c"] == "medium"),
+            ("nolow", df["actS_c"] != "low"),
             ("high", df["actS_c"] == "high"),
         ]
-        for S_class, idx in targets:
-            newid = len(df_evaluate_res)
+        df_test_err_per_t = pd.DataFrame(
+            columns=["model_name", "actS_c"] + [str(col) for col in pred_range],
+            dtype=np.float32,
+        )
+        for actS_c, idx in targets:
+            # mean error for all t in the class
+            class_err = round(np.nanmean(df[pred_range].values), 4)
+            wandb.run.summary[f"err_{actS_c}"] = class_err
+            # mean error for each t in the class
+            class_err_per_t = df.loc[idx, pred_range].mean().round(4)
             new_row = [
                 self.model_fullname,  # target model
-                S_class,  # target class
-                np.nanmean(df[pred_range].values),  # mean error for all t in the class
-            ] + list(
-                df.loc[idx, pred_range].mean()  # mean error for each t in the class
-            )
-            df_evaluate_res.loc[newid] = new_row
-
-        log.info(f"saving evaluate_results.csv")
-        df_evaluate_res.to_csv(
-            join(self.model_dir, "evaluate_results.csv"), index=False
+                actS_c,  # target class
+            ] + list(class_err_per_t)
+            newid = len(df_test_err_per_t)
+            df_test_err_per_t.loc[newid] = new_row
+        wandb.run.log({"test_err_per_t": wandb.Table(dataframe=df_test_err_per_t, columns=df_test_err_per_t.columns)})
+        wandb.finish()
+        log.info("saving test_err_per_t.csv")
+        df_test_err_per_t.to_csv(
+            join(self.model_dir, "test_err_per_t.csv"), index=False
         )
 
     #
@@ -285,7 +320,7 @@ class Trainer:
     #
 
     def show_compare_train(self) -> None:
-        results_csv = "train_results.csv"
+        results_csv = "train_loss.csv"
         # find results_csv files
         csv_df_l = [
             (dir_name, pd.read_csv(join(self.cfg.savedir, dir_name, file_name)))
@@ -310,7 +345,7 @@ class Trainer:
         show_or_save(fig, self.cfg.savedir, "compare_train")
 
     def show_compare_evaluate(self, model_filter=None, entropy_filter=None) -> None:
-        results_csv = "evaluate_results.csv"
+        results_csv = "test_err_per_t.csv"
         # find results_csv files
         csv_df_l = [
             pd.read_csv(join(self.cfg.savedir, dir_name, file_name))
@@ -323,12 +358,12 @@ class Trainer:
         df_compare = pd.concat(csv_df_l, ignore_index=True)
 
         # create vis table
-        pred_range = [str(col) for col in range(self.cfg.h_window)]
+        pred_range = [col for col in range(self.cfg.h_window)]
         props = "text-decoration: underline"
         if model_filter:
             df_compare = df_compare.loc[df_compare["model_name"].isin(model_filter)]
         if entropy_filter:
-            df_compare = df_compare.loc[df_compare["S_class"].isin(entropy_filter)]
+            df_compare = df_compare.loc[df_compare["actS_c"].isin(entropy_filter)]
         output = (
             df_compare.sort_values(by=pred_range)
             .style.background_gradient(axis=0, cmap="coolwarm")

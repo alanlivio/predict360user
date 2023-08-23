@@ -169,6 +169,7 @@ typings
 ### Added ###
 output
 outputs
+wandb
 .tmp*
 saved/*
 *.pickle
