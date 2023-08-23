@@ -249,7 +249,8 @@ class Trainer:
             self.model_high.load_weights(join(prefix + "high", "weights.hdf5"))
 
         # calculate predictions errors
-        t_range =  [str(col) for col in range(self.cfg.h_window)]
+        t_range = list(range(self.cfg.h_window))
+
         def _calc_pred_err(row) -> None:
             # return np.random.rand(self.cfg.h_window)  # for debugging
             # row.name return the index (user, video, time)
@@ -264,18 +265,19 @@ class Trainer:
                 pred = self.model.predict_for_sample(traces, x_i)
             assert len(pred) == self.cfg.h_window
             pred_true = traces[x_i + 1 : x_i + self.cfg.h_window + 1]
-            error_per_t = [
-                orth_dist_cartesian(pred[t], pred_true[t]) for t in t_range
-            ]
+            error_per_t = [orth_dist_cartesian(pred[t], pred_true[t]) for t in t_range]
             return error_per_t
 
         tqdm.pandas(desc=f"evaluate model {self.model_fullname}")
-        self.ds.x_test_wins[t_range] = self.ds.x_test_wins.progress_apply(_calc_pred_err, axis=1, result_type="expand")
+        self.ds.x_test_wins[t_range] = self.ds.x_test_wins.progress_apply(
+            _calc_pred_err, axis=1, result_type="expand"
+        )
 
         # save predications
         # 1) avg per class as wandb summary: # err_all, err_low, err_nohigh, err_medium,
         # err_nolow, err_nolow, err_all, err_hight
-        # 2) avg per t per class as wandb plot and as csv (see by show_saved_train_pred_err)
+        # 2.1) avg err per t per class as wandb line plots
+        # 2.2) avg err per t per class as csv to see by show_saved_train_pred_err
         targets = [
             ("all", pd.Series(True, self.ds.x_test_wins.index)),
             ("low", self.ds.x_test_wins["actS_c"] == "low"),
@@ -289,10 +291,9 @@ class Trainer:
             dtype=np.float32,
         )
         for actS_c, idx in targets:
-            # mean error for all t in the class
             class_err = round(np.nanmean(self.ds.x_test_wins[t_range].values), 4)
+            # 1)
             wandb.run.summary[f"err_{actS_c}"] = class_err
-            # mean error for each t in the class
             class_err_per_t = self.ds.x_test_wins.loc[idx, t_range].mean().round(4)
             new_row = [
                 self.model_fullname,  # target model
@@ -300,13 +301,18 @@ class Trainer:
             ] + list(class_err_per_t)
             newid = len(df_test_err_per_t)
             df_test_err_per_t.loc[newid] = new_row
-
-        wandb.run.log({"test_err_per_t": wandb.Table(dataframe=df_test_err_per_t, columns=df_test_err_per_t.columns)})
-        wandb.finish()
+            # 2.1)
+            data = [[x, y] for (x, y) in zip(t_range, class_err_per_t)]
+            table = wandb.Table(data=data, columns=["t", "err"])
+            plot_id = f"test_err_per_t_class_{actS_c}"
+            plot = wandb.plot.line(table, "t", "err", title=plot_id)
+            wandb.log({plot_id: plot})
+        # 2.2)
         log.info("saving test_err_per_t.csv")
         df_test_err_per_t.to_csv(
             join(self.model_dir, "test_err_per_t.csv"), index=False
         )
+        wandb.finish()
 
     #
     # compare-related methods TODO: replace then by a log in a model registry
