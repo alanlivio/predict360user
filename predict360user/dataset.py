@@ -171,11 +171,8 @@ class Dataset:
         os.chdir(cwd)
         return df
 
-    def sample_traject(self) -> pd.Series:
-        return self.df.sample(1)
-
     def sample_trace(self) -> np.array:
-        traject_ar = self.sample_traject()["traces"].iloc[0]
+        traject_ar = self.df.sample(1).iloc[0]["traces"]
         trace = traject_ar[np.random.randint(len(traject_ar - 1))]
         return trace
 
