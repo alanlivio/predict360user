@@ -254,11 +254,11 @@ class Trainer:
         # the err_per_t is saved as test_err_per_t.csv to be see by show_compare_evaluate
 
         # auxiliary df based on x_test_wins save prediction errors
-        pred_range = range(self.cfg.h_window)
+        t_range = range(self.cfg.h_window)
         df = pd.DataFrame(self.ds.x_test_wins).set_index(
             ["ds", "user", "video", "trace_id"]
         )
-        def _save_pred_errors(row) -> None:
+        def _calc_pred_err(row) -> None:
             return np.random.rand(self.cfg.h_window)  # for debugging
             # row.name return the index (user, video, time)
             ds, user, video, x_i = row.name[0], row.name[1], row.name[2], row.name[3]
@@ -273,14 +273,14 @@ class Trainer:
             assert len(pred) == self.cfg.h_window
             pred_true = traces[x_i + 1 : x_i + self.cfg.h_window + 1]
             error_per_t = [
-                orth_dist_cartesian(pred[t], pred_true[t]) for t in pred_range
+                orth_dist_cartesian(pred[t], pred_true[t]) for t in t_range
             ]
             return error_per_t
 
         # calculate predictions errors
         tqdm.pandas(desc=f"evaluate model {self.model_fullname}")
         df = pd.concat(
-            [df, df.progress_apply(_save_pred_errors, axis=1, result_type="expand")],
+            [df, df.progress_apply(_calc_pred_err, axis=1, result_type="expand")],
             axis=1,
         )
 
@@ -293,15 +293,15 @@ class Trainer:
             ("high", df["actS_c"] == "high"),
         ]
         df_test_err_per_t = pd.DataFrame(
-            columns=["model_name", "actS_c"] + [str(col) for col in pred_range],
+            columns=["model_name", "actS_c"] + [str(col) for col in t_range],
             dtype=np.float32,
         )
         for actS_c, idx in targets:
             # mean error for all t in the class
-            class_err = round(np.nanmean(df[pred_range].values), 4)
+            class_err = round(np.nanmean(df[t_range].values), 4)
             wandb.run.summary[f"err_{actS_c}"] = class_err
             # mean error for each t in the class
-            class_err_per_t = df.loc[idx, pred_range].mean().round(4)
+            class_err_per_t = df.loc[idx, t_range].mean().round(4)
             new_row = [
                 self.model_fullname,  # target model
                 actS_c,  # target class
@@ -358,16 +358,16 @@ class Trainer:
         df_compare = pd.concat(csv_df_l, ignore_index=True)
 
         # create vis table
-        pred_range = [col for col in range(self.cfg.h_window)]
+        t_range = [col for col in range(self.cfg.h_window)]
         props = "text-decoration: underline"
         if model_filter:
             df_compare = df_compare.loc[df_compare["model_name"].isin(model_filter)]
         if entropy_filter:
             df_compare = df_compare.loc[df_compare["actS_c"].isin(entropy_filter)]
         output = (
-            df_compare.sort_values(by=pred_range)
+            df_compare.sort_values(by=t_range)
             .style.background_gradient(axis=0, cmap="coolwarm")
-            .highlight_min(subset=pred_range, props=props)
-            .highlight_max(subset=pred_range, props=props)
+            .highlight_min(subset=t_range, props=props)
+            .highlight_max(subset=t_range, props=props)
         )
         show_or_save(output, self.cfg.savedir, "compare_evaluate")
