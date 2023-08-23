@@ -3,10 +3,10 @@ jupyter
 plotly
 colour
 hydra-core
-opencv-python
 scipy
 spherical_geometry
 tqdm
+wandb
 keras-tqdm
 jenkspy
 protobuf==3.20.*    # prevent error "TypeError: Descriptors cannot not be created directly"
