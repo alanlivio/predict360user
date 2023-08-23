@@ -158,7 +158,7 @@ class Trainer:
         wandb.init(
             project="predict360user",
             tags=[self.cfg.model_name, self.cfg.train_entropy],
-            name=self.model_fullname+ "2",
+            name=self.model_fullname,
             config={
                 "model_name": self.cfg.model_name,
                 "train_entropy": self.cfg.train_entropy,
@@ -249,11 +249,11 @@ class Trainer:
             self.model_high.load_weights(join(prefix + "high", "weights.hdf5"))
 
         # calculate predictions errors
-        t_range = list(range(self.cfg.h_window))
+        t_range =  [str(col) for col in range(self.cfg.h_window)]
         def _calc_pred_err(row) -> None:
-            return np.random.rand(self.cfg.h_window)  # for debugging
+            # return np.random.rand(self.cfg.h_window)  # for debugging
             # row.name return the index (user, video, time)
-            ds, user, video, x_i = row.name[0], row.name[1], row.name[2], row.name[3]
+            ds, user, video, x_i = row["ds"], row["user"], row["video"], row["trace_id"]
             traces = self.ds.df.loc[ds, user, video]["traces"]
             # predict
             if self.using_auto:
@@ -273,9 +273,9 @@ class Trainer:
         self.ds.x_test_wins[t_range] = self.ds.x_test_wins.progress_apply(_calc_pred_err, axis=1, result_type="expand")
 
         # save predications by actS_c
-        # the avg for each target is savem as summary
-        # err_all, err_low, err_nohigh, err_medium, err_nolow, err_nolow, err_all, err_hight
-        # the err_per_t is saved as test_err_per_t.csv to be see by show_compare_evaluate
+        # the avg for each target is savem as summary: # err_all, err_low, err_nohigh, err_medium,
+        # err_nolow, err_nolow, err_all, err_hight
+        # and the err_per_t is saved as table and can be see by show_compare_evaluate()
         targets = [
             ("all", pd.Series(True, self.ds.x_test_wins.index)),
             ("low", self.ds.x_test_wins["actS_c"] == "low"),
@@ -285,7 +285,7 @@ class Trainer:
             ("high", self.ds.x_test_wins["actS_c"] == "high"),
         ]
         df_test_err_per_t = pd.DataFrame(
-            columns=["model_name", "actS_c"] + [str(col) for col in t_range],
+            columns=["model_name", "actS_c"] + t_range,
             dtype=np.float32,
         )
         for actS_c, idx in targets:
@@ -300,6 +300,7 @@ class Trainer:
             ] + list(class_err_per_t)
             newid = len(df_test_err_per_t)
             df_test_err_per_t.loc[newid] = new_row
+
         wandb.run.log({"test_err_per_t": wandb.Table(dataframe=df_test_err_per_t, columns=df_test_err_per_t.columns)})
         wandb.finish()
         log.info("saving test_err_per_t.csv")
