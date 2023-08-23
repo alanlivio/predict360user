@@ -272,10 +272,10 @@ class Trainer:
         tqdm.pandas(desc=f"evaluate model {self.model_fullname}")
         self.ds.x_test_wins[t_range] = self.ds.x_test_wins.progress_apply(_calc_pred_err, axis=1, result_type="expand")
 
-        # save predications by actS_c
-        # the avg for each target is savem as summary: # err_all, err_low, err_nohigh, err_medium,
+        # save predications
+        # 1) avg per class as wandb summary: # err_all, err_low, err_nohigh, err_medium,
         # err_nolow, err_nolow, err_all, err_hight
-        # and the err_per_t is saved as table and can be see by show_compare_evaluate()
+        # 2) avg per t per class as wandb plot and as csv (see by show_saved_train_pred_err)
         targets = [
             ("all", pd.Series(True, self.ds.x_test_wins.index)),
             ("low", self.ds.x_test_wins["actS_c"] == "low"),
@@ -312,7 +312,7 @@ class Trainer:
     # compare-related methods TODO: replace then by a log in a model registry
     #
 
-    def show_compare_train(self) -> None:
+    def show_saved_train_loss(self) -> None:
         results_csv = "train_loss.csv"
         # find results_csv files
         csv_df_l = [
@@ -337,7 +337,7 @@ class Trainer:
         )
         show_or_save(fig, self.cfg.savedir, "compare_train")
 
-    def show_compare_evaluate(self, model_filter=None, entropy_filter=None) -> None:
+    def show_saved_pred_err(self, model_filter=None, entropy_filter=None) -> None:
         results_csv = "test_err_per_t.csv"
         # find results_csv files
         csv_df_l = [
