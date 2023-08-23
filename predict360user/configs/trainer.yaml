@@ -12,6 +12,10 @@ epochs: 30
 batch_size: 128
 lr: 0.0005
 hydra:
+  run: # https://hydra.cc/docs/configure_hydra/workdir/
+    dir: '/tmp/'
+  job: # https://hydra.cc/docs/tutorials/basic/running_your_app/working_directory/
+    chdir: False
   help: # https://hydra.cc/docs/0.11/configure_hydra/app_help/
     app_name: predict360user.trainer
     template: |-
