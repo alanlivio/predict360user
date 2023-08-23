@@ -248,16 +248,8 @@ class Trainer:
             self.model_high = self.model.copy()
             self.model_high.load_weights(join(prefix + "high", "weights.hdf5"))
 
-        # save predications
-        # the avg for each target is savem as summary
-        # err_all, err_low, err_nohigh, err_medium, err_nolow, err_nolow, err_all, err_hight
-        # the err_per_t is saved as test_err_per_t.csv to be see by show_compare_evaluate
-
-        # auxiliary df based on x_test_wins save prediction errors
-        t_range = range(self.cfg.h_window)
-        df = pd.DataFrame(self.ds.x_test_wins).set_index(
-            ["ds", "user", "video", "trace_id"]
-        )
+        # calculate predictions errors
+        t_range = list(range(self.cfg.h_window))
         def _calc_pred_err(row) -> None:
             return np.random.rand(self.cfg.h_window)  # for debugging
             # row.name return the index (user, video, time)
@@ -277,20 +269,20 @@ class Trainer:
             ]
             return error_per_t
 
-        # calculate predictions errors
         tqdm.pandas(desc=f"evaluate model {self.model_fullname}")
-        df = pd.concat(
-            [df, df.progress_apply(_calc_pred_err, axis=1, result_type="expand")],
-            axis=1,
-        )
+        self.ds.x_test_wins[t_range] = self.ds.x_test_wins.progress_apply(_calc_pred_err, axis=1, result_type="expand")
 
+        # save predications by actS_c
+        # the avg for each target is savem as summary
+        # err_all, err_low, err_nohigh, err_medium, err_nolow, err_nolow, err_all, err_hight
+        # the err_per_t is saved as test_err_per_t.csv to be see by show_compare_evaluate
         targets = [
-            ("all", pd.Series(True, df.index)),
-            ("low", df["actS_c"] == "low"),
-            ("nohigh", df["actS_c"] != "high"),
-            ("medium", df["actS_c"] == "medium"),
-            ("nolow", df["actS_c"] != "low"),
-            ("high", df["actS_c"] == "high"),
+            ("all", pd.Series(True, self.ds.x_test_wins.index)),
+            ("low", self.ds.x_test_wins["actS_c"] == "low"),
+            ("nohigh", self.ds.x_test_wins["actS_c"] != "high"),
+            ("medium", self.ds.x_test_wins["actS_c"] == "medium"),
+            ("nolow", self.ds.x_test_wins["actS_c"] != "low"),
+            ("high", self.ds.x_test_wins["actS_c"] == "high"),
         ]
         df_test_err_per_t = pd.DataFrame(
             columns=["model_name", "actS_c"] + [str(col) for col in t_range],
@@ -298,10 +290,10 @@ class Trainer:
         )
         for actS_c, idx in targets:
             # mean error for all t in the class
-            class_err = round(np.nanmean(df[t_range].values), 4)
+            class_err = round(np.nanmean(self.ds.x_test_wins[t_range].values), 4)
             wandb.run.summary[f"err_{actS_c}"] = class_err
             # mean error for each t in the class
-            class_err_per_t = df.loc[idx, t_range].mean().round(4)
+            class_err_per_t = self.ds.x_test_wins.loc[idx, t_range].mean().round(4)
             new_row = [
                 self.model_fullname,  # target model
                 actS_c,  # target class
