@@ -155,10 +155,13 @@ class Trainer:
         raise RuntimeError()
 
     def run(self) -> None:
+        #  avoid permisison problems at '/tmp/.config/wandb'
+        os.environ["WANDB_DIR"]= self.cfg.savedir
+        os.environ["WANDB_CONFIG_DIR"]= self.cfg.savedir
+        # wandb.init
         wandb.init(
             project="predict360user",
             tags=[self.cfg.model_name, self.cfg.train_entropy],
-            dir=".wandb",  #  avoid permisison problems at '/tmp/.config/wandb'
             config={
                 "model_name": self.cfg.model_name,
                 "train_entropy": self.cfg.train_entropy,
