@@ -158,14 +158,14 @@ class Trainer:
         wandb.init(
             project="predict360user",
             tags=[self.cfg.model_name, self.cfg.train_entropy],
+            dir=".wandb",  #  avoid permisison problems at '/tmp/.config/wandb'
             config={
                 "model_name": self.cfg.model_name,
                 "train_entropy": self.cfg.train_entropy,
                 "batch_size": self.cfg.batch_size,
                 "lr": self.cfg.lr,
             },
-            # make unique name
-            name=self.model_fullname + "_" +  str(random.randint(0, 999))
+            name=self.model_fullname
         )
 
         if not exists(self.model_dir):
