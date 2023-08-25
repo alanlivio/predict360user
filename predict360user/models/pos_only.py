@@ -105,7 +105,7 @@ class PosOnly(keras.Model, BaseModel):
             ),
         )
 
-    def predict_for_sample(self, traces: np.array, x_i) -> np.array:
+    def predict_for_sample(self, traces: np.array, x_i: int) -> np.array:
         encoder_pos_inputs_for_sample = np.array([traces[x_i - self.m_window : x_i]])
         decoder_pos_inputs_for_sample = np.array([traces[x_i : x_i + 1]])
         inputs = [

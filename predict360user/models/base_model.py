@@ -10,11 +10,11 @@ class BaseModel:
     ) -> Tuple[list, list]:
         pass
 
-    def predict_for_sample(self, traces: np.array, x_i) -> np.array:
+    def predict_for_sample(self, traces: np.array, x_i: int) -> np.array:
         pass
 
 
-def metric_orth_dist_cartesian(position_a, position_b):
+def metric_orth_dist_cartesian(position_a, position_b) -> float:
     # Transform into directional vector in Cartesian Coordinate System
     norm_a = tf.sqrt(
         tf.square(position_a[:, :, 0:1])
