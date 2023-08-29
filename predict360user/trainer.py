@@ -156,8 +156,8 @@ class Trainer:
 
     def run(self) -> None:
         #  avoid permisison problems at '/tmp/.config/wandb'
-        os.environ["WANDB_DIR"]= self.cfg.savedir
-        os.environ["WANDB_CONFIG_DIR"]= self.cfg.savedir
+        os.environ["WANDB_DIR"] = self.cfg.savedir
+        os.environ["WANDB_CONFIG_DIR"] = self.cfg.savedir
         # wandb.init
         wandb.init(
             project="predict360user",
@@ -169,7 +169,7 @@ class Trainer:
                 "batch_size": self.cfg.batch_size,
                 "lr": self.cfg.lr,
             },
-            name=self.model_fullname
+            name=self.model_fullname,
         )
 
         if not exists(self.model_dir):
@@ -220,7 +220,7 @@ class Trainer:
                 # https://www.tensorflow.org/tutorials/keras/save_and_load
                 callbacks = [
                     CSVLogger(self.train_csv_log_f, append=True),
-                    ModelCheckpoint(self.model_path, save_weights_only=True, verbose=1),
+                    ModelCheckpoint(self.model_path, save_weights_only=True),
                     WandbMetricsLogger(initial_global_step=initial_epoch),
                 ]
                 generator = self.generate_batchs(self.model, self.ds.x_train_wins)
@@ -273,7 +273,12 @@ class Trainer:
             error_per_t = [orth_dist_cartesian(pred[t], pred_true[t]) for t in t_range]
             return error_per_t
 
-        tqdm.pandas(desc=f"evaluate model {self.model_fullname}")
+        tqdm.pandas(
+            desc=f"evaluate model {self.model_fullname}",
+            ascii=True,
+            mininterval=5,
+            ncols=88,
+        )
         self.ds.x_test_wins[t_range] = self.ds.x_test_wins.progress_apply(
             _calc_pred_err, axis=1, result_type="expand"
         )
