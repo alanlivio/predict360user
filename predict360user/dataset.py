@@ -270,12 +270,14 @@ class Dataset:
         self.x_train_wins = self.x_train.explode("trace_id").reset_index()[
             ["ds", "user", "video", "trace_id"]
         ]
+        self.x_train_wins.dropna(subset=['trace_id'], how='all', inplace=True)
         self.x_train_wins = shuffle(self.x_train_wins, random_state=1)
 
         self.x_val["trace_id"] = self.x_val["traces"].apply(f_list_trace_id)
         self.x_val_wins = self.x_train.explode("trace_id").reset_index()[
             ["ds", "user", "video", "trace_id"]
         ]
+        self.x_val_wins.dropna(subset=['trace_id'], how='all', inplace=True)
         self.x_val_wins = shuffle(self.x_val_wins, random_state=1)
 
         # x_test_wins with actS_c columns
@@ -283,6 +285,7 @@ class Dataset:
         self.x_test_wins = self.x_train.explode("trace_id").reset_index()[
             ["ds", "user", "video", "trace_id", "actS_c"]
         ]
+        self.x_test_wins.dropna(subset=['trace_id'], how='all', inplace=True)
         self.x_test = shuffle(self.x_test, random_state=1)
 
     def show_traject(self, row: pd.Series) -> None:
