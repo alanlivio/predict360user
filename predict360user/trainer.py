@@ -162,6 +162,7 @@ class Trainer:
         wandb.init(
             project="predict360user",
             tags=[self.cfg.model_name, self.cfg.train_entropy],
+            mode=self.cfg.wandb_mode,
             config={
                 "model_name": self.cfg.model_name,
                 "train_entropy": self.cfg.train_entropy,
