@@ -49,10 +49,6 @@ tqdm.pandas()
 absl.logging.set_verbosity(absl.logging.ERROR)
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
-# disable wandb logging
-logger = logging.getLogger("wandb")
-logger.setLevel(logging.WARNING)
-
 
 @dataclass
 class TrainerCfg:
@@ -69,6 +65,7 @@ class TrainerCfg:
     train_size: float = 0.8
     test_size: float = 0.2
     train_entropy: str = "all"
+    wandb_mode = "online"
 
     def __post_init__(self) -> None:
         assert self.model_name in ARGS_MODEL_NAMES
