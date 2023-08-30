@@ -167,14 +167,14 @@ cython_debug/
 typings
 
 ### Added ###
+# log/saved files
 output
 outputs
+logs
 wandb
+Graph
 .tmp*
-saved/*
-*.pickle
+saved
+# data 
 data/model3_360net_128_w16_h9_8000
 data/**/sampled_dataset
-Graph/*
-logs/*
-bkp*
