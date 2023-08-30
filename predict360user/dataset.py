@@ -18,6 +18,7 @@ from tqdm.auto import tqdm
 from predict360user.plot360 import Plot360
 
 from predict360user.tileset import TILESET_DEFAULT, TileSet
+from predict360user.trainer import ARGS_ENTROPY_NAMES
 from predict360user.utils import (
     DEFAULT_SAVEDIR,
     ENTROPY_CLASS_COLORS,
@@ -49,6 +50,7 @@ def get_class_name(
 
 
 def filter_df_by_entropy(df: pd.DataFrame, entropy_filter: str) -> pd.DataFrame:
+    assert entropy_filter in ARGS_ENTROPY_NAMES
     if entropy_filter == "all":
         return df
     min_size = df["actS_c"].value_counts().min()
@@ -222,7 +224,7 @@ class Dataset:
         assert not self.df["poles_prc_c"].isna().any()
 
     def partition(
-        self, entropy_filter: str, train_size=0.8, val_size=0.25, test_size=0.2
+        self, train_filter="all", train_size=0.8, val_size=0.25, test_size=0.2
     ) -> None:
         self.df.drop(["partition"], axis=1, errors="ignore", inplace=True)
         log.info(
@@ -247,10 +249,10 @@ class Dataset:
         log.info("trajecs at x_val are " + count_entropy_str(self.x_val))
         log.info("trajecs at x_test are " + count_entropy_str(self.x_test))
 
-        if entropy_filter != "all":
-            log.info("entropy_filter != all, so filtering x_train, x_val")
-            self.x_train = filter_df_by_entropy(self.x_train, entropy_filter)
-            self.x_val = filter_df_by_entropy(self.x_val, entropy_filter)
+        if train_filter != "all":
+            log.info(f"train_filter != all, so filtering x_train, x_val by {train_filter}")
+            self.x_train = filter_df_by_entropy(self.x_train, train_filter)
+            self.x_val = filter_df_by_entropy(self.x_val, train_filter)
             log.info("trajecs x_train are " + count_entropy_str(self.x_train))
             log.info("trajecs x_val are " + count_entropy_str(self.x_val))
             log.info("trajecs x_test are " + count_entropy_str(self.x_test))
