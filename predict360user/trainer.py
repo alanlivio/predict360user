@@ -46,6 +46,7 @@ tqdm.pandas()
 absl.logging.set_verbosity(absl.logging.ERROR)
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
+
 @dataclass
 class TrainerCfg:
     batch_size: int = 128
@@ -113,6 +114,34 @@ class Trainer:
         else:
             raise RuntimeError
 
+    def run(self) -> None:
+        # 1) wandb.init
+        # setting dirs avoid permisison problems at '/tmp/.config/wandb'
+        os.environ["WANDB_DIR"] = self.cfg.savedir
+        os.environ["WANDB_CONFIG_DIR"] = self.cfg.savedir
+        wandb.init(
+            project="predict360user",
+            tags=[self.cfg.model_name, self.cfg.train_entropy],
+            mode=self.cfg.wandb_mode,
+            config={
+                "model_name": self.cfg.model_name,
+                "train_entropy": self.cfg.train_entropy,
+                "batch_size": self.cfg.batch_size,
+                "lr": self.cfg.lr,
+            },
+            name=self.model_fullname,
+        )
+        # 2) setup data
+        if not hasattr(self, "ds"):
+            self.build_data()
+        # 3) train
+        if not self.using_auto and self.cfg.model_name not in MODELS_NAMES_NO_TRAIN:
+            self.train()
+        # 4) evaluate
+        self.evaluate()
+        # 4) wandb.finish
+        wandb.finish()
+
     def generate_batchs(self, model: BaseModel, df_wins: pd.DataFrame) -> Generator:
         while True:
             for count, _ in enumerate(df_wins[:: self.cfg.batch_size]):
@@ -149,9 +178,7 @@ class Trainer:
 
     def build_data(self) -> None:
         log.info("loading dataset ...")
-        self.ds = Dataset(
-            dataset_name=self.cfg.dataset_name, savedir=self.cfg.savedir
-        )
+        self.ds = Dataset(dataset_name=self.cfg.dataset_name, savedir=self.cfg.savedir)
         self.ds.partition(
             train_filter=self.cfg.train_entropy,
             train_size=self.cfg.train_size,
@@ -161,77 +188,57 @@ class Trainer:
             init_window=self.cfg.init_window, h_window=self.cfg.h_window
         )
 
-    def run(self) -> None:
-        #  avoid permisison problems at '/tmp/.config/wandb'
-        os.environ["WANDB_DIR"] = self.cfg.savedir
-        os.environ["WANDB_CONFIG_DIR"] = self.cfg.savedir
-        # wandb.init
-        wandb.init(
-            project="predict360user",
-            tags=[self.cfg.model_name, self.cfg.train_entropy],
-            mode=self.cfg.wandb_mode,
-            config={
-                "model_name": self.cfg.model_name,
-                "train_entropy": self.cfg.train_entropy,
-                "batch_size": self.cfg.batch_size,
-                "lr": self.cfg.lr,
-            },
-            name=self.model_fullname,
-        )
-
+    def train(self) -> None:
+        log.info("train ...")
         if not exists(self.model_dir):
             os.makedirs(self.model_dir)
         log.info("model_dir=" + self.model_dir)
 
-        if not hasattr(self, "ds"):
-            self.build_data()
+        if exists(self.model_path):
+            self.model.load_weights(self.model_path)
 
-        if not self.using_auto and self.cfg.model_name not in MODELS_NAMES_NO_TRAIN:
-            log.info("train ...")
-            if exists(self.model_path):
-                self.model.load_weights(self.model_path)
+        # setting initial_epoch
+        initial_epoch = 0
+        if exists(self.train_csv_log_f):
+            lines = pd.read_csv(self.train_csv_log_f)
+            lines.dropna(how="all", inplace=True)
+            done_epochs = int(lines.iloc[-1]["epoch"]) + 1
+            assert done_epochs <= self.cfg.epochs
+            initial_epoch = done_epochs
+            log.info(f"train_csv_log_f has {initial_epoch} epochs ")
 
-            # setting initial_epoch
-            initial_epoch = 0
-            if exists(self.train_csv_log_f):
-                lines = pd.read_csv(self.train_csv_log_f)
-                lines.dropna(how="all", inplace=True)
-                done_epochs = int(lines.iloc[-1]["epoch"]) + 1
-                assert done_epochs <= self.cfg.epochs
-                initial_epoch = done_epochs
-                log.info(f"train_csv_log_f has {initial_epoch} epochs ")
+        if initial_epoch >= self.cfg.epochs:
+            log.info(
+                f"train_csv_log_f has {initial_epoch}>={self.cfg.epochs}. not training."
+            )
+        else:
+            # fit
+            steps_per_ep_train = np.ceil(
+                len(self.ds.x_train_wins) / self.cfg.batch_size
+            )
+            steps_per_ep_validate = np.ceil(
+                len(self.ds.x_val_wins) / self.cfg.batch_size
+            )
+            # https://www.tensorflow.org/tutorials/keras/save_and_load
+            callbacks = [
+                CSVLogger(self.train_csv_log_f, append=True),
+                ModelCheckpoint(self.model_path, save_weights_only=True),
+                WandbMetricsLogger(initial_global_step=initial_epoch),
+            ]
+            generator = self.generate_batchs(self.model, self.ds.x_train_wins)
+            validation_data = self.generate_batchs(self.model, self.ds.x_val_wins)
+            self.model.fit(
+                x=generator,
+                steps_per_epoch=steps_per_ep_train,
+                validation_data=validation_data,
+                validation_steps=steps_per_ep_validate,
+                validation_freq=self.cfg.batch_size,
+                epochs=self.cfg.epochs,
+                initial_epoch=initial_epoch,
+                callbacks=callbacks,
+            )
 
-            if initial_epoch >= self.cfg.epochs:
-                log.info(
-                    f"train_csv_log_f has {initial_epoch}>={self.cfg.epochs}. not training."
-                )
-            else:
-                # fit
-                steps_per_ep_train = np.ceil(
-                    len(self.ds.x_train_wins) / self.cfg.batch_size
-                )
-                steps_per_ep_validate = np.ceil(
-                    len(self.ds.x_val_wins) / self.cfg.batch_size
-                )
-                # https://www.tensorflow.org/tutorials/keras/save_and_load
-                callbacks = [
-                    CSVLogger(self.train_csv_log_f, append=True),
-                    ModelCheckpoint(self.model_path, save_weights_only=True),
-                    WandbMetricsLogger(initial_global_step=initial_epoch),
-                ]
-                generator = self.generate_batchs(self.model, self.ds.x_train_wins)
-                validation_data = self.generate_batchs(self.model, self.ds.x_val_wins)
-                self.model.fit(
-                    x=generator,
-                    steps_per_epoch=steps_per_ep_train,
-                    validation_data=validation_data,
-                    validation_steps=steps_per_ep_validate,
-                    validation_freq=self.cfg.batch_size,
-                    epochs=self.cfg.epochs,
-                    initial_epoch=initial_epoch,
-                    callbacks=callbacks,
-                )
-
+    def evaluate(self) -> None:
         log.info("evaluate ...")
         if self.using_auto:
             prefix = join(
@@ -272,7 +279,6 @@ class Trainer:
             desc=f"evaluate model {self.model_fullname}",
             ascii=True,
             mininterval=5,
-            ncols=88,
         )
         self.ds.x_test_wins[t_range] = self.ds.x_test_wins.progress_apply(
             _calc_pred_err, axis=1, result_type="expand"
@@ -317,7 +323,6 @@ class Trainer:
         df_test_err_per_t.to_csv(
             join(self.model_dir, "test_err_per_t.csv"), index=False
         )
-        wandb.finish()
 
     #
     # compare-related methods TODO: replace then by a log in a model registry
