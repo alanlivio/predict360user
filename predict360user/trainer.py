@@ -132,14 +132,12 @@ class Trainer:
             name=self.model_fullname,
         )
         # 2) setup data
-        if not hasattr(self, "ds"):
-            self.build_data()
+        self.build_data()
         # 3) train
-        if not self.using_auto and self.cfg.model_name not in MODELS_NAMES_NO_TRAIN:
-            self.train()
+        self.train()
         # 4) evaluate
         self.evaluate()
-        # 4) wandb.finish
+        # 5) wandb.finish
         wandb.finish()
 
     def generate_batchs(self, model: BaseModel, df_wins: pd.DataFrame) -> Generator:
@@ -177,6 +175,8 @@ class Trainer:
         raise RuntimeError()
 
     def build_data(self) -> None:
+        if not hasattr(self, "ds"):
+            return
         log.info("loading dataset ...")
         self.ds = Dataset(dataset_name=self.cfg.dataset_name, savedir=self.cfg.savedir)
         self.ds.partition(
@@ -190,6 +190,8 @@ class Trainer:
 
     def train(self) -> None:
         log.info("train ...")
+        if not self.using_auto and self.cfg.model_name not in MODELS_NAMES_NO_TRAIN:
+            return
         if not exists(self.model_dir):
             os.makedirs(self.model_dir)
         log.info("model_dir=" + self.model_dir)
