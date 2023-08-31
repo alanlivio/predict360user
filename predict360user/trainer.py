@@ -147,6 +147,20 @@ class Trainer:
             return self.model_high
         raise RuntimeError()
 
+    def build_data(self) -> None:
+        log.info("loading dataset ...")
+        self.ds = Dataset(
+            dataset_name=self.cfg.dataset_name, savedir=self.cfg.savedir
+        )
+        self.ds.partition(
+            train_filter=self.cfg.train_entropy,
+            train_size=self.cfg.train_size,
+            test_size=self.cfg.test_size,
+        )
+        self.ds.create_wins(
+            init_window=self.cfg.init_window, h_window=self.cfg.h_window
+        )
+
     def run(self) -> None:
         #  avoid permisison problems at '/tmp/.config/wandb'
         os.environ["WANDB_DIR"] = self.cfg.savedir
@@ -170,18 +184,7 @@ class Trainer:
         log.info("model_dir=" + self.model_dir)
 
         if not hasattr(self, "ds"):
-            log.info("loading dataset ...")
-            self.ds = Dataset(
-                dataset_name=self.cfg.dataset_name, savedir=self.cfg.savedir
-            )
-            self.ds.partition(
-                entropy_filter=self.cfg.train_entropy,
-                train_size=self.cfg.train_size,
-                test_size=self.cfg.test_size,
-            )
-            self.ds.create_wins(
-                init_window=self.cfg.init_window, h_window=self.cfg.h_window
-            )
+            self.build_data()
 
         if not self.using_auto and self.cfg.model_name not in MODELS_NAMES_NO_TRAIN:
             log.info("train ...")

@@ -241,7 +241,7 @@ class Dataset:
         log.info("trajecs at x_test are " + count_entropy_str(self.x_test))
 
         if train_filter != "all":
-            log.info(f"train_filter != all, so filtering x_train, x_val by {train_filter}")
+            log.info(f"train_filter != all, so (filtering x_train, x_val) by {train_filter}")
             self.x_train = filter_df_by_entropy(self.x_train, train_filter)
             self.x_val = filter_df_by_entropy(self.x_val, train_filter)
             log.info("trajecs x_train are " + count_entropy_str(self.x_train))
