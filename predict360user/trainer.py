@@ -324,59 +324,59 @@ class Trainer:
             join(self.model_dir, "test_err_per_t.csv"), index=False
         )
 
-    #
-    # compare-related methods TODO: replace then by a log in a model registry
-    #
+#
+# compare-related methods over saved results, as alternative to wandb
+#
 
-    def show_saved_train_loss(self) -> None:
-        results_csv = "train_loss.csv"
-        # find results_csv files
-        csv_df_l = [
-            (dir_name, pd.read_csv(join(self.cfg.savedir, dir_name, file_name)))
-            for dir_name in os.listdir(self.cfg.savedir)
-            if isdir(join(self.cfg.savedir, dir_name))
-            for file_name in os.listdir(join(self.cfg.savedir, dir_name))
-            if file_name == results_csv
-        ]
-        csv_df_l = [df.assign(model_name=dir_name) for (dir_name, df) in csv_df_l]
-        assert csv_df_l, f"no <savedir>/<model>/{results_csv} files"
-        df_compare = pd.concat(csv_df_l, ignore_index=True)
+def show_saved_train_loss(savedir="saved") -> None:
+    results_csv = "train_loss.csv"
+    # find results_csv files
+    csv_df_l = [
+        (dir_name, pd.read_csv(join(savedir, dir_name, file_name)))
+        for dir_name in os.listdir(savedir)
+        if isdir(join(savedir, dir_name))
+        for file_name in os.listdir(join(savedir, dir_name))
+        if file_name == results_csv
+    ]
+    csv_df_l = [df.assign(model_name=dir_name) for (dir_name, df) in csv_df_l]
+    assert csv_df_l, f"no <savedir>/<model>/{results_csv} files"
+    df_compare = pd.concat(csv_df_l, ignore_index=True)
 
-        # plot
-        fig = px.line(
-            df_compare,
-            x="epoch",
-            y="loss",
-            color="model_name",
-            title="compare_train_loss",
-            width=800,
-        )
-        show_or_save(fig, self.cfg.savedir, "compare_train")
+    # plot
+    fig = px.line(
+        df_compare,
+        x="epoch",
+        y="loss",
+        color="model_name",
+        title="compare_train_loss",
+        width=800,
+    )
+    show_or_save(fig, savedir, "compare_train")
 
-    def show_saved_pred_err(self, model_filter=None, entropy_filter=None) -> None:
-        results_csv = "test_err_per_t.csv"
-        # find results_csv files
-        csv_df_l = [
-            pd.read_csv(join(self.cfg.savedir, dir_name, file_name))
-            for dir_name in os.listdir(self.cfg.savedir)
-            if isdir(join(self.cfg.savedir, dir_name))
-            for file_name in os.listdir(join(self.cfg.savedir, dir_name))
-            if file_name == results_csv
-        ]
-        assert csv_df_l, f"no <savedir>/<model>/{results_csv} files"
-        df_compare = pd.concat(csv_df_l, ignore_index=True)
+def show_saved_pred_err(savedir="saved", model_filter=None, entropy_filter=None) -> None:
+    results_csv = "test_err_per_t.csv"
+    # find results_csv files
+    csv_df_l = [
+        pd.read_csv(join(savedir, dir_name, file_name))
+        for dir_name in os.listdir(savedir)
+        if isdir(join(savedir, dir_name))
+        for file_name in os.listdir(join(savedir, dir_name))
+        if file_name == results_csv
+    ]
+    assert csv_df_l, f"no <savedir>/<model>/{results_csv} files"
+    df_compare = pd.concat(csv_df_l, ignore_index=True)
 
-        # create vis table
-        t_range = [col for col in range(self.cfg.h_window)]
-        props = "text-decoration: underline"
-        if model_filter:
-            df_compare = df_compare.loc[df_compare["model_name"].isin(model_filter)]
-        if entropy_filter:
-            df_compare = df_compare.loc[df_compare["actS_c"].isin(entropy_filter)]
-        output = (
-            df_compare.sort_values(by=t_range)
-            .style.background_gradient(axis=0, cmap="coolwarm")
-            .highlight_min(subset=t_range, props=props)
-            .highlight_max(subset=t_range, props=props)
-        )
-        show_or_save(output, self.cfg.savedir, "compare_evaluate")
+    # create vis table
+    t_range = [c for c in df_compare.columns if c.isnumeric()]
+    props = "text-decoration: underline"
+    if model_filter:
+        df_compare = df_compare.loc[df_compare["model_name"].isin(model_filter)]
+    if entropy_filter:
+        df_compare = df_compare.loc[df_compare["actS_c"].isin(entropy_filter)]
+    output = (
+        df_compare.sort_values(by=t_range)
+        .style.background_gradient(axis=0, cmap="coolwarm")
+        .highlight_min(subset=t_range, props=props)
+        .highlight_max(subset=t_range, props=props)
+    )
+    show_or_save(output, savedir, "compare_evaluate")
