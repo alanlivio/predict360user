@@ -3,7 +3,6 @@ import os
 from dataclasses import dataclass
 from os.path import basename, exists, join, isdir
 from typing import Generator
-import random
 import absl.logging
 import numpy as np
 import pandas as pd
@@ -25,10 +24,9 @@ from predict360user.models import (
     PosOnly3D,
     TRACK,
 )
-from predict360user.utils import calc_actual_entropy, orth_dist_cartesian, show_or_save
+from predict360user.utils import *
 
-ARGS_ENTROPY_NAMES = ["all", "low", "medium", "high", "nohigh", "nolow", "allminsize"]
-ARGS_MODEL_NAMES = [
+MODEL_NAMES = [
     "pos_only",
     "pos_only_3d",
     "no_motion",
@@ -39,7 +37,6 @@ ARGS_MODEL_NAMES = [
     "most_salient_point",
 ]
 MODELS_NAMES_NO_TRAIN = ["no_motion", "interpolation"]
-ARGS_ENTROPY_AUTO_NAMES = ["auto", "auto_m_window", "auto_since_start"]
 log = logging.getLogger(basename(__file__))
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
@@ -48,7 +45,6 @@ tqdm.pandas()
 # disable TF logging
 absl.logging.set_verbosity(absl.logging.ERROR)
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
-
 
 @dataclass
 class TrainerCfg:
@@ -68,8 +64,8 @@ class TrainerCfg:
     wandb_mode = "online"
 
     def __post_init__(self) -> None:
-        assert self.model_name in ARGS_MODEL_NAMES
-        assert self.train_entropy in ARGS_ENTROPY_NAMES + ARGS_ENTROPY_AUTO_NAMES
+        assert self.model_name in MODEL_NAMES
+        assert self.train_entropy in ENTROPY_NAMES + ENTROPY_AUTO_NAMES
 
     def __str__(self) -> str:
         return OmegaConf.to_yaml(self)

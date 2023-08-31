@@ -14,6 +14,10 @@ from scipy.spatial.transform import Rotation as R
 from scipy.spatial.transform import Slerp
 from sklearn.preprocessing import normalize
 
+# global enums
+ENTROPY_NAMES = ["all", "low", "medium", "high", "nohigh", "nolow", "allminsize"]
+ENTROPY_AUTO_NAMES = ["auto", "auto_m_window", "auto_since_start"]
+
 # global constants
 DEFAULT_SAVEDIR = "saved"
 DATADIR = f"{pathlib.Path(__file__).parent.parent / 'data/'}"
@@ -25,8 +29,8 @@ logging.basicConfig(
 )
 log = logging.getLogger(basename(__file__))
 
-# global funcs
 
+# global funcs
 
 def show_or_save(output, savedir=DEFAULT_SAVEDIR, title="") -> None:
     if "ipykernel" in sys.modules:

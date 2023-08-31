@@ -1,5 +1,4 @@
 import logging
-import multiprocessing
 import os
 import pickle
 from os.path import basename, exists
@@ -10,21 +9,13 @@ import jenkspy
 import numpy as np
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objs as go
-import scipy.stats
 from plotly.subplots import make_subplots
 from sklearn.model_selection import train_test_split
 from tqdm.auto import tqdm
 from predict360user.plot360 import Plot360
 
-from predict360user.tileset import TILESET_DEFAULT, TileSet
-from predict360user.trainer import ARGS_ENTROPY_NAMES
-from predict360user.utils import (
-    DEFAULT_SAVEDIR,
-    ENTROPY_CLASS_COLORS,
-    HMDDIR,
-    calc_actual_entropy,
-)
+from predict360user.tileset import TILESET_DEFAULT
+from predict360user.utils import *
 
 DATASETS = {
     "david": {"size": 1083},
@@ -50,7 +41,7 @@ def get_class_name(
 
 
 def filter_df_by_entropy(df: pd.DataFrame, entropy_filter: str) -> pd.DataFrame:
-    assert entropy_filter in ARGS_ENTROPY_NAMES
+    assert entropy_filter in ENTROPY_NAMES
     if entropy_filter == "all":
         return df
     min_size = df["actS_c"].value_counts().min()
