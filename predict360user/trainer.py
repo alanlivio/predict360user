@@ -94,7 +94,7 @@ class Trainer:
         if self.cfg.dataset_name != "all":
             self.model_fullname += f",ds={self.cfg.dataset_name}"
         if self.cfg.train_entropy != "all":
-            self.model_fullname += f",actS={self.cfg.dataset_name}"
+            self.model_fullname += f",actS={self.cfg.train_entropy}"
         if self.cfg.minsize:
             self.model_fullname += f",minsize={self.cfg.minsize!r}"
         log.info(f"model_fullname = {self.model_fullname}")
