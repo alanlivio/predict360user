@@ -175,8 +175,6 @@ class Trainer:
         raise RuntimeError()
 
     def build_data(self) -> None:
-        if not hasattr(self, "ds"):
-            return
         log.info("loading dataset ...")
         self.ds = Dataset(dataset_name=self.cfg.dataset_name, savedir=self.cfg.savedir)
         self.ds.partition(
