@@ -78,18 +78,16 @@ class Dataset:
     """
 
     def __init__(
-        self, dataset_name="all", savedir=DEFAULT_SAVEDIR, force_load=False
-    ) -> None:
+        self, dataset_name="all", savedir=DEFAULT_SAVEDIR) -> None:
         assert dataset_name in ["all"] + list(DATASETS.keys())
         self.savedir = savedir
-        self.force_load = force_load
         self.dataset_name = dataset_name
         self.pickle_file = os.path.join(savedir, f"df_trajecs_{dataset_name}.pickle")
 
     @property
     def df(self) -> pd.DataFrame:
         if not hasattr(self, "_df"):
-            if not self.force_load and exists(self.pickle_file):
+            if exists(self.pickle_file):
                 with open(self.pickle_file, "rb") as f:
                     log.info(f"loading df from {self.pickle_file}")
                     self._df = pickle.load(f)
@@ -239,7 +237,7 @@ class Dataset:
         log.info("x_test trajecs are " + count_entropy_str(self.x_test))
 
         if train_filter != "all":
-            log.info(f"train_filter = {train_filter}, so filtering x_train, x_val")
+            log.info(f"{train_filter=}, so filtering x_train, x_val")
             self.x_train = filter_df_by_entropy(self.x_train, train_filter)
             self.x_val = filter_df_by_entropy(self.x_val, train_filter)
             log.info("x_train trajecs are " + count_entropy_str(self.x_train))
