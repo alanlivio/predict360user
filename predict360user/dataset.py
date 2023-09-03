@@ -253,29 +253,29 @@ class Dataset:
         self.df.loc[self.x_test.index, "partition"] = "test"
 
     def create_wins(self, init_window: int, h_window: int) -> None:
-        # lambda to create list of trace_id
+        # create trace_id column
         f_list_trace_id = lambda traces: [
             trace_id for trace_id in range(init_window, traces.shape[0] - h_window)
         ]
-
-        # x_train_wins, x_val_wins
         self.x_train["trace_id"] = self.x_train["traces"].apply(f_list_trace_id)
+        self.x_val["trace_id"] = self.x_val["traces"].apply(f_list_trace_id)
+        self.x_test["trace_id"] = self.x_test["traces"].apply(f_list_trace_id)
+
+        # create x_train_wins, x_val_wins
         self.x_train_wins = self.x_train.explode("trace_id").reset_index()[
             ["ds", "user", "video", "trace_id"]
         ]
         self.x_train_wins.dropna(subset=['trace_id'], how='all', inplace=True)
         self.x_train_wins = shuffle(self.x_train_wins, random_state=1)
 
-        self.x_val["trace_id"] = self.x_val["traces"].apply(f_list_trace_id)
-        self.x_val_wins = self.x_train.explode("trace_id").reset_index()[
+        self.x_val_wins = self.x_val.explode("trace_id").reset_index()[
             ["ds", "user", "video", "trace_id"]
         ]
         self.x_val_wins.dropna(subset=['trace_id'], how='all', inplace=True)
         self.x_val_wins = shuffle(self.x_val_wins, random_state=1)
 
-        # x_test_wins with actS_c columns
-        self.x_test["trace_id"] = self.x_test["traces"].apply(f_list_trace_id)
-        self.x_test_wins = self.x_train.explode("trace_id").reset_index()[
+        # create x_test_wins
+        self.x_test_wins = self.x_test.explode("trace_id").reset_index()[
             ["ds", "user", "video", "trace_id", "actS_c"]
         ]
         self.x_test_wins.dropna(subset=['trace_id'], how='all', inplace=True)
