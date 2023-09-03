@@ -286,7 +286,7 @@ class Trainer:
 
         # save predications
         # 1) avg per class as wandb summary: # err_all, err_low, err_nohigh, err_medium,
-        # err_nolow, err_nolow, err_all, err_hight
+        # err_nolow, err_nolow, err_all, err_high
         # 2.1) avg err per t per class as wandb line plots
         # 2.2) avg err per t per class as csv to see by show_saved_train_pred_err
         targets = [

@@ -318,7 +318,7 @@ class Dataset:
             color="actS_c",
             color_discrete_map=ENTROPY_CLASS_COLORS,
             width=900,
-            category_orders={"actS": ["low", "medium", "hight"]},
+            category_orders={"actS": ["low", "medium", "high"]},
         ).show()
 
     def show_entropy_histogram_per_partition(self) -> None:
@@ -330,7 +330,7 @@ class Dataset:
             facet_col="partition",
             color_discrete_map=ENTROPY_CLASS_COLORS,
             category_orders={
-                "actS": ["low", "medium", "hight"],
+                "actS": ["low", "medium", "high"],
                 "partition": ["train", "val", "test"],
             },
             width=900,
