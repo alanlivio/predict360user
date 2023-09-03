@@ -242,7 +242,7 @@ class Dataset:
         log.info("x_val trajecs are " + count_entropy_str(self.x_val))
         log.info("x_test trajecs are " + count_entropy_str(self.x_test))
 
-        if train_filter != "all":
+        if train_filter != "all" or minsize:
             log.info(f"{train_filter=} ({minsize=}), so filtering x_train, x_val")
             self.x_train = filter_by_entropy(self.x_train, train_filter, minsize)
             self.x_val = filter_by_entropy(self.x_val, train_filter, minsize)
