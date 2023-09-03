@@ -240,7 +240,7 @@ class Trainer:
                 epochs=self.cfg.epochs,
                 initial_epoch=initial_epoch,
                 callbacks=callbacks,
-                verbose=0
+                verbose=2
             )
 
     def evaluate(self) -> None:
