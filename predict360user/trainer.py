@@ -324,9 +324,11 @@ class Trainer:
             join(self.model_dir, "test_err_per_t.csv"), index=False
         )
 
+
 #
 # compare-related methods over saved results, as alternative to wandb
 #
+
 
 def show_saved_train_loss(savedir="saved") -> None:
     results_csv = "train_loss.csv"
@@ -353,7 +355,10 @@ def show_saved_train_loss(savedir="saved") -> None:
     )
     show_or_save(fig, savedir, "compare_train")
 
-def show_saved_pred_err(savedir="saved", model_filter=None, entropy_filter=None) -> None:
+
+def show_saved_pred_err(
+    savedir="saved", model_filter=None, entropy_filter=None
+) -> None:
     results_csv = "test_err_per_t.csv"
     # find results_csv files
     csv_df_l = [

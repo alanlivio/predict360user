@@ -10,11 +10,19 @@ from spherical_geometry import polygon
 from spherical_geometry.polygon import SphericalPolygon
 from tqdm.auto import tqdm
 
-from predict360user.utils import degrees_to_radian, fov_points, eulerian_to_cartesian, orth_dist_cartesian, HOR_MARGIN, HOR_DIST
+from predict360user.utils import (
+    degrees_to_radian,
+    fov_points,
+    eulerian_to_cartesian,
+    orth_dist_cartesian,
+    HOR_MARGIN,
+    HOR_DIST
+)
 
 log = logging.getLogger(basename(__file__))
 
 tqdm.pandas()
+
 
 @cache
 def fov_poly(x, y, z) -> polygon.SphericalPolygon:
@@ -175,6 +183,7 @@ class TileSet:
         else:
             return heatmap
 
+
 @cache
 def voro_trinity(n_patchs: int) -> SphericalVoronoi:
     points = np.empty((0, 3))
@@ -269,5 +278,6 @@ class TileSetVoro(TileSet):
             return heatmap, vp_quality, np.sum(areas_out)
         else:
             return heatmap
+
 
 TILESET_DEFAULT = TileSet(4, 6, TileCover.CENTER)

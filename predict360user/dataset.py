@@ -218,9 +218,7 @@ class Dataset:
         self, train_filter="all", train_size=0.8, val_size=0.25, test_size=0.2
     ) -> None:
         self.df.drop(["partition"], axis=1, errors="ignore", inplace=True)
-        log.info(
-            f"{train_size=} (with {val_size=}), {test_size=}"
-        )
+        log.info(f"{train_size=} (with {val_size=}), {test_size=}")
         # first split into x_train and x_test
         self.x_train, self.x_test = train_test_split(
             self.df,
@@ -241,7 +239,7 @@ class Dataset:
         log.info("x_test trajecs are " + count_entropy_str(self.x_test))
 
         if train_filter != "all":
-            log.info(f"train_filter != all, so (filtering x_train, x_val) by {train_filter}")
+            log.info(f"train_filter = {train_filter}, so filtering x_train, x_val")
             self.x_train = filter_df_by_entropy(self.x_train, train_filter)
             self.x_val = filter_df_by_entropy(self.x_val, train_filter)
             log.info("x_train trajecs are " + count_entropy_str(self.x_train))
@@ -265,20 +263,20 @@ class Dataset:
         self.x_train_wins = self.x_train.explode("trace_id").reset_index()[
             ["ds", "user", "video", "trace_id"]
         ]
-        self.x_train_wins.dropna(subset=['trace_id'], how='all', inplace=True)
+        self.x_train_wins.dropna(subset=["trace_id"], how="all", inplace=True)
         self.x_train_wins = shuffle(self.x_train_wins, random_state=1)
 
         self.x_val_wins = self.x_val.explode("trace_id").reset_index()[
             ["ds", "user", "video", "trace_id"]
         ]
-        self.x_val_wins.dropna(subset=['trace_id'], how='all', inplace=True)
+        self.x_val_wins.dropna(subset=["trace_id"], how="all", inplace=True)
         self.x_val_wins = shuffle(self.x_val_wins, random_state=1)
 
         # create x_test_wins
         self.x_test_wins = self.x_test.explode("trace_id").reset_index()[
             ["ds", "user", "video", "trace_id", "actS_c"]
         ]
-        self.x_test_wins.dropna(subset=['trace_id'], how='all', inplace=True)
+        self.x_test_wins.dropna(subset=["trace_id"], how="all", inplace=True)
         self.x_test = shuffle(self.x_test, random_state=1)
 
     def show_traject(self, row: pd.Series) -> None:
@@ -299,7 +297,7 @@ class Dataset:
         hmps_sum = np.sum(traces_hmps, axis=0)
         x = [str(x) for x in range(1, hmps_sum.shape[1] + 1)]
         y = [str(y) for y in range(1, hmps_sum.shape[0] + 1)]
-        erp_heatmap =  px.imshow(hmps_sum, text_auto=True, x=x, y=y)
+        erp_heatmap = px.imshow(hmps_sum, text_auto=True, x=x, y=y)
         erp_heatmap.update_layout(width=100, height=100)
 
         # show fig
