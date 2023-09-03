@@ -62,7 +62,8 @@ class TrainerCfg:
     train_size: float = 0.8
     test_size: float = 0.2
     train_entropy: str = "all"
-    wandb_mode = "online"
+    wandb_mode: str = "online"
+    minsize: bool = False
 
     def __post_init__(self) -> None:
         assert self.model_name in MODEL_NAMES
@@ -89,14 +90,16 @@ class Trainer:
 
         # properties others
         self.using_auto = self.cfg.train_entropy.startswith("auto")
-        self.entropy_type = "actS"
-        if self.cfg.dataset_name == "all" and self.cfg.train_entropy == "all":
-            self.model_fullname = self.cfg.model_name
-        elif self.cfg.train_entropy == "all":
-            self.model_fullname = f"{self.cfg.model_name},{self.cfg.dataset_name},,"
-        else:
-            self.model_fullname = f"{self.cfg.model_name},{self.cfg.dataset_name},{self.entropy_type},{self.cfg.train_entropy}"
+        self.model_fullname = self.cfg.model_name
+        if self.cfg.dataset_name != "all":
+            self.model_fullname += f",ds={self.cfg.dataset_name}"
+        if self.cfg.train_entropy != "all":
+            self.model_fullname += f",actS={self.cfg.dataset_name}"
+        if self.cfg.minsize:
+            self.model_fullname += f",minsize={self.cfg.minsize!r}"
+        log.info(f"model_fullname = {self.model_fullname}")
         self.model_dir = join(self.cfg.savedir, self.model_fullname)
+        log.info(f"model_dir = {self.model_dir}")
         self.train_csv_log_f = join(self.model_dir, "train_loss.csv")
         self.model_path = join(self.model_dir, "weights.hdf5")
         # https://docs.wandb.ai/guides/integrations/hydra#track-hyperparameters
@@ -181,6 +184,7 @@ class Trainer:
             train_filter=self.cfg.train_entropy,
             train_size=self.cfg.train_size,
             test_size=self.cfg.test_size,
+            minsize=self.cfg.minsize,
         )
         self.ds.create_wins(
             init_window=self.cfg.init_window, h_window=self.cfg.h_window

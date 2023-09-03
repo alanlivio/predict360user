@@ -1,6 +1,6 @@
 import unittest
 
-from predict360user.dataset import Dataset, filter_df_by_entropy
+from predict360user.dataset import Dataset, filter_by_entropy
 from predict360user.utils import *
 
 
@@ -21,10 +21,10 @@ class DatasetTestCase(unittest.TestCase):
         self.ds._df = self.ds._df.sample(n=8)  # limitig given time
         self.ds.calc_traces_entropy()
 
-    def test_filter_df_by_entropy(self) -> None:
+    def test_filter_by_entropy(self) -> None:
         min_size = self.ds.df["actS_c"].value_counts().min()
         for train_entropy in ENTROPY_NAMES[1:]:
-            fdf = filter_df_by_entropy(df=self.ds.df, entropy_filter=train_entropy)
+            fdf = filter_by_entropy(df=self.ds.df, entropy_filter=train_entropy)
             self.assertAlmostEqual(min_size, len(fdf), delta=2)
 
     def test_partition(self) -> None:

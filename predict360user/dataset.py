@@ -40,25 +40,27 @@ def get_class_name(
     )
 
 
-def filter_df_by_entropy(df: pd.DataFrame, entropy_filter: str) -> pd.DataFrame:
+def filter_by_entropy(
+    df: pd.DataFrame, entropy_filter: str, minsize: bool
+) -> pd.DataFrame:
     assert entropy_filter in ENTROPY_NAMES
+    minsize = df["actS_c"].value_counts().min()
     if entropy_filter == "all":
-        return df
-    min_size = df["actS_c"].value_counts().min()
-    if entropy_filter == "allminsize":  # 3 classes-> n = min_size/3
-        filter_df = df
-    elif entropy_filter == "nohigh":  # 2 classes-> n = min_size/2
-        filter_df = df[df["actS_c"] != "high"]
-    elif entropy_filter == "nolow":  # 2 classes-> n = min_size/2
-        filter_df = df[df["actS_c"] != "low"]
-    else:  # 1 class-> n = min_size
-        filter_df = df[df["actS_c"] == entropy_filter]
-    nunique = len(filter_df["actS_c"].unique())
-    n = int(min_size / nunique)
-    df_sampled = filter_df.groupby("actS_c").apply(
-        lambda x: x.sample(n=n, random_state=1)
-    )
-    return df_sampled.droplevel(0)  # undo groupby
+        df_to_filter = df
+    elif entropy_filter == "nohigh":  # n_unique=2
+        df_to_filter = df[df["actS_c"] != "high"]
+    elif entropy_filter == "nolow":  # n_unique=2
+        df_to_filter = df[df["actS_c"] != "low"]
+    else:  # n_unique=1
+        df_to_filter = df[df["actS_c"] == entropy_filter]
+    if minsize:
+        n_unique = len(df_to_filter["actS_c"].unique())
+        df_to_filter = (
+            df_to_filter.groupby("actS_c")
+            .apply(lambda x: x.sample(n=int(minsize / n_unique), random_state=1))
+            .droplevel(0)  # undo groupby
+        )
+    return df_to_filter
 
 
 def count_entropy_str(df: pd.DataFrame) -> tuple[int, int, int, int]:
@@ -77,8 +79,7 @@ class Dataset:
         df (str): pandas.DataFrame.
     """
 
-    def __init__(
-        self, dataset_name="all", savedir=DEFAULT_SAVEDIR) -> None:
+    def __init__(self, dataset_name="all", savedir=DEFAULT_SAVEDIR) -> None:
         assert dataset_name in ["all"] + list(DATASETS.keys())
         self.savedir = savedir
         self.dataset_name = dataset_name
@@ -213,7 +214,12 @@ class Dataset:
         assert not self.df["poles_prc_c"].isna().any()
 
     def partition(
-        self, train_filter="all", train_size=0.8, val_size=0.25, test_size=0.2
+        self,
+        train_filter="all",
+        train_size=0.8,
+        val_size=0.25,
+        test_size=0.2,
+        minsize=False,
     ) -> None:
         self.df.drop(["partition"], axis=1, errors="ignore", inplace=True)
         log.info(f"{train_size=} (with {val_size=}), {test_size=}")
@@ -237,12 +243,11 @@ class Dataset:
         log.info("x_test trajecs are " + count_entropy_str(self.x_test))
 
         if train_filter != "all":
-            log.info(f"{train_filter=}, so filtering x_train, x_val")
-            self.x_train = filter_df_by_entropy(self.x_train, train_filter)
-            self.x_val = filter_df_by_entropy(self.x_val, train_filter)
+            log.info(f"{train_filter=} ({minsize=}), so filtering x_train, x_val")
+            self.x_train = filter_by_entropy(self.x_train, train_filter, minsize)
+            self.x_val = filter_by_entropy(self.x_val, train_filter, minsize)
             log.info("x_train trajecs are " + count_entropy_str(self.x_train))
             log.info("x_val trajecs are " + count_entropy_str(self.x_val))
-            log.info("x_test trajecs are " + count_entropy_str(self.x_test))
 
         self.df.loc[self.x_train.index, "partition"] = "train"
         self.df.loc[self.x_val.index, "partition"] = "val"
