@@ -219,7 +219,7 @@ class Dataset:
     ) -> None:
         self.df.drop(["partition"], axis=1, errors="ignore", inplace=True)
         log.info(
-            f"{train_size=}, {test_size=}. {val_size=} of train, so {train_size*val_size}"
+            f"{train_size=} (with {val_size=}), {test_size=}"
         )
         # first split into x_train and x_test
         self.x_train, self.x_test = train_test_split(
@@ -236,17 +236,17 @@ class Dataset:
             test_size=val_size,
             stratify=self.x_train["actS_c"],
         )
-        log.info("trajecs at x_train are " + count_entropy_str(self.x_train))
-        log.info("trajecs at x_val are " + count_entropy_str(self.x_val))
-        log.info("trajecs at x_test are " + count_entropy_str(self.x_test))
+        log.info("x_train trajecs are " + count_entropy_str(self.x_train))
+        log.info("x_val trajecs are " + count_entropy_str(self.x_val))
+        log.info("x_test trajecs are " + count_entropy_str(self.x_test))
 
         if train_filter != "all":
             log.info(f"train_filter != all, so (filtering x_train, x_val) by {train_filter}")
             self.x_train = filter_df_by_entropy(self.x_train, train_filter)
             self.x_val = filter_df_by_entropy(self.x_val, train_filter)
-            log.info("trajecs x_train are " + count_entropy_str(self.x_train))
-            log.info("trajecs x_val are " + count_entropy_str(self.x_val))
-            log.info("trajecs x_test are " + count_entropy_str(self.x_test))
+            log.info("x_train trajecs are " + count_entropy_str(self.x_train))
+            log.info("x_val trajecs are " + count_entropy_str(self.x_val))
+            log.info("x_test trajecs are " + count_entropy_str(self.x_test))
 
         self.df.loc[self.x_train.index, "partition"] = "train"
         self.df.loc[self.x_val.index, "partition"] = "val"
