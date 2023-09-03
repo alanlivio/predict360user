@@ -192,7 +192,7 @@ class Trainer:
 
     def train(self) -> None:
         log.info("train ...")
-        if not self.using_auto and self.cfg.model_name not in MODELS_NAMES_NO_TRAIN:
+        if self.using_auto or (self.cfg.model_name in MODELS_NAMES_NO_TRAIN):
             return
         if not exists(self.model_dir):
             os.makedirs(self.model_dir)
