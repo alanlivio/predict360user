@@ -175,6 +175,7 @@ wandb
 Graph
 .tmp*
 saved
-# data 
+# data
 data/model3_360net_128_w16_h9_8000
 data/**/sampled_dataset
+run*.txt
