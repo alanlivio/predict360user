@@ -103,22 +103,8 @@ class Trainer:
         self.train_csv_log_f = join(self.model_dir, "train_loss.csv")
         self.model_path = join(self.model_dir, "weights.hdf5")
         # https://docs.wandb.ai/guides/integrations/hydra#track-hyperparameters
-        self.model: BaseModel
-        if self.cfg.model_name == "pos_only":
-            self.model = PosOnly(self.cfg)
-        elif self.cfg.model_name == "pos_only_3d":
-            self.model = PosOnly3D(self.cfg)
-        elif self.cfg.model_name == "interpolation":
-            self.model = Interpolation(self.cfg)
-        elif self.cfg.model_name == "TRACK":
-            self.model = TRACK(self.cfg)
-        elif self.cfg.model_name == "no_motion":
-            self.model = NoMotion(self.cfg)
-        else:
-            raise RuntimeError
 
     def run(self) -> None:
-        # 1) wandb.init
         # setting dirs avoid permisison problems at '/tmp/.config/wandb'
         os.environ["WANDB_DIR"] = self.cfg.savedir
         os.environ["WANDB_CONFIG_DIR"] = self.cfg.savedir
@@ -134,14 +120,25 @@ class Trainer:
             },
             name=self.model_fullname,
         )
-        # 2) setup data
         self.build_data()
-        # 3) train
+        self.build_model()
         self.train()
-        # 4) evaluate
         self.evaluate()
-        # 5) wandb.finish
         wandb.finish()
+
+    def build_model(self) -> None:
+        if self.cfg.model_name == "pos_only":
+            self.model = PosOnly(self.cfg)
+        elif self.cfg.model_name == "pos_only_3d":
+            self.model = PosOnly3D(self.cfg)
+        elif self.cfg.model_name == "interpolation":
+            self.model = Interpolation(self.cfg)
+        elif self.cfg.model_name == "TRACK":
+            self.model = TRACK(self.cfg)
+        elif self.cfg.model_name == "no_motion":
+            self.model = NoMotion(self.cfg)
+        else:
+            raise RuntimeError
 
     def generate_batchs(self, model: BaseModel, df_wins: pd.DataFrame) -> Generator:
         while True:
