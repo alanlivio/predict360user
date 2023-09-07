@@ -11,12 +11,15 @@ class TrainerTestCase(unittest.TestCase):
         self.assertEqual(trn.model_fullname, "pos_only")
         self.assertEqual(trn.model_dir, join(DEFAULT_SAVEDIR, trn.model_fullname))
         self.assertEqual(trn.using_auto, False)
-        trn = Trainer(TrainerCfg(dataset_name="david"))
-        self.assertEqual(trn.model_fullname, "pos_only,david,,")
-        self.assertEqual(trn.using_auto, False)
         for train_entropy in ENTROPY_NAMES[1:] + ENTROPY_AUTO_NAMES:
-            trn = Trainer(TrainerCfg(train_entropy=train_entropy))
-            model_fullname = f"pos_only,all,actS,{train_entropy}"
+            trn = Trainer(TrainerCfg(dataset_name="david", train_entropy=train_entropy))
+            model_fullname = f"pos_only,ds=david,actS={train_entropy}"
+            self.assertEqual(trn.model_fullname, model_fullname)
+            self.assertEqual(trn.model_dir, join(DEFAULT_SAVEDIR, model_fullname))
+            self.assertEqual(trn.using_auto, train_entropy.startswith("auto"))
+        for train_entropy in ENTROPY_NAMES[1:] + ENTROPY_AUTO_NAMES:
+            trn = Trainer(TrainerCfg(train_entropy=train_entropy))  # dataset_name="all"
+            model_fullname = f"pos_only,actS={train_entropy}"
             self.assertEqual(trn.model_fullname, model_fullname)
             self.assertEqual(trn.model_dir, join(DEFAULT_SAVEDIR, model_fullname))
             self.assertEqual(trn.using_auto, train_entropy.startswith("auto"))
