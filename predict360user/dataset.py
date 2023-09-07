@@ -63,12 +63,16 @@ def filter_by_entropy(
     return df_to_filter
 
 
-def count_entropy_str(df: pd.DataFrame) -> tuple[int, int, int, int]:
+def count_entropy(df: pd.DataFrame) -> tuple[int, int, int, int]:
     a_len = len(df)
     l_len = len(df[df["actS_c"] == "low"])
     m_len = len(df[df["actS_c"] == "medium"])
     h_len = len(df[df["actS_c"] == "high"])
-    return "{}: {} low, {} medium, {} high".format(a_len, l_len, m_len, h_len)
+    return a_len, l_len, m_len, h_len
+
+
+def count_entropy_str(df: pd.DataFrame) -> str:
+    return "{}: {} low, {} medium, {} high".format(*count_entropy(df))
 
 
 class Dataset:
@@ -239,15 +243,15 @@ class Dataset:
             stratify=self.x_train["actS_c"],
         )
         log.info("x_train trajecs are " + count_entropy_str(self.x_train))
-        log.info("x_val trajecs are " + count_entropy_str(self.x_val))
+        log.info("x_val trajecs (from x_train) are " + count_entropy_str(self.x_val))
         log.info("x_test trajecs are " + count_entropy_str(self.x_test))
 
         if train_filter != "all" or minsize:
-            log.info(f"{train_filter=} ({minsize=}), so filtering x_train, x_val")
+            log.info(f"{train_filter=} and {minsize=}, so filtering x_train, x_val")
             self.x_train = filter_by_entropy(self.x_train, train_filter, minsize)
             self.x_val = filter_by_entropy(self.x_val, train_filter, minsize)
             log.info("x_train trajecs are " + count_entropy_str(self.x_train))
-            log.info("x_val trajecs are " + count_entropy_str(self.x_val))
+            log.info("x_val (from x_train) trajecs are " + count_entropy_str(self.x_val))
 
         self.df.loc[self.x_train.index, "partition"] = "train"
         self.df.loc[self.x_val.index, "partition"] = "val"

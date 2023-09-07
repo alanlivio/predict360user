@@ -16,7 +16,12 @@ from omegaconf import OmegaConf
 from tqdm.auto import tqdm
 
 from .base_model import BaseModel, Interpolation, NoMotion
-from predict360user.dataset import Dataset, get_class_name, get_class_thresholds
+from predict360user.dataset import (
+    Dataset,
+    get_class_name,
+    get_class_thresholds,
+    count_entropy,
+)
 from predict360user.models import PosOnly, PosOnly3D, TRACK
 
 from predict360user.utils import *
@@ -93,9 +98,12 @@ class Trainer:
         self.model_path = join(self.model_dir, "weights.hdf5")
 
     def run(self) -> None:
+        self.build_data()
+        self.build_model()
         # setting dirs avoid permisison problems at '/tmp/.config/wandb'
         os.environ["WANDB_DIR"] = self.cfg.savedir
         os.environ["WANDB_CONFIG_DIR"] = self.cfg.savedir
+        _, n_low, n_medium, n_high = count_entropy(self.ds.x_train)
         wandb.init(
             project="predict360user",
             tags=[self.cfg.model_name, self.cfg.train_entropy],
@@ -105,11 +113,12 @@ class Trainer:
                 "train_entropy": self.cfg.train_entropy,
                 "batch_size": self.cfg.batch_size,
                 "lr": self.cfg.lr,
+                "train_n_low": n_low,
+                "train_n_medium": n_medium,
+                "train_n_high": n_high,
             },
             name=self.model_fullname,
         )
-        self.build_data()
-        self.build_model()
         self.train()
         self.evaluate()
         wandb.finish()
@@ -143,7 +152,7 @@ class Trainer:
                 x_i_l = [row["trace_id"] for _, row in df_wins[count:end].iterrows()]
                 yield model.generate_batch(traces_l, x_i_l)
 
-    def _auto_select_model(self, traces: np.array, x_i) -> BaseModel:
+    def _auto_select_model(self, traces: np.array, x_i: int) -> BaseModel:
         if self.cfg.train_entropy == "auto":
             window = traces
         elif self.cfg.train_entropy == "auto_m_window":
@@ -179,9 +188,6 @@ class Trainer:
         log.info("train ...")
         if self.using_auto or (self.cfg.model_name in MODELS_NAMES_NO_TRAIN):
             return
-        if self.cfg.gpu_id:
-            os.environ["CUDA_VISIBLE_DEVICES"] = str(self.cfg.gpu_id)
-            log.info(f"set visible cpu to {self.cfg.gpu_id}")
         if not exists(self.model_dir):
             os.makedirs(self.model_dir)
         log.info("model_dir=" + self.model_dir)
@@ -200,6 +206,9 @@ class Trainer:
             log.info(f"train_csv_log_f has {initial_epoch} epochs ")
 
         # fit
+        if self.cfg.gpu_id:
+            os.environ["CUDA_VISIBLE_DEVICES"] = str(self.cfg.gpu_id)
+            log.info(f"set visible cpu to {self.cfg.gpu_id}")
         if initial_epoch >= self.cfg.epochs:
             log.info(
                 f"train_csv_log_f has {initial_epoch}>={self.cfg.epochs}. not training."
@@ -211,7 +220,6 @@ class Trainer:
             steps_per_ep_validate = np.ceil(
                 len(self.ds.x_val_wins) / self.cfg.batch_size
             )
-            # https://www.tensorflow.org/tutorials/keras/save_and_load
             callbacks = [
                 CSVLogger(self.train_csv_log_f, append=True),
                 ModelCheckpoint(self.model_path, save_weights_only=True),
@@ -233,7 +241,7 @@ class Trainer:
 
     def evaluate(self) -> None:
         log.info("evaluate ...")
-        if self.using_auto:
+        if self.using_auto:  # will not use self.model
             prefix = join(
                 self.cfg.savedir, f"{self.cfg.model_name},{self.cfg.dataset_name},actS,"
             )
@@ -276,7 +284,7 @@ class Trainer:
         self.ds.x_test_wins[t_range] = self.ds.x_test_wins.progress_apply(
             _calc_pred_err, axis=1, result_type="expand"
         )
-
+        assert self.ds.x_test_wins[t_range].all().all()
         # save predications
         # 1) avg per class as wandb summary: # err_all, err_low, err_nohigh, err_medium,
         # err_nolow, err_nolow, err_all, err_high
@@ -318,9 +326,7 @@ class Trainer:
         )
 
 
-#
-# compare-related methods over saved results, as alternative to wandb
-#
+# compare funcs using saved/ logs, as alternative to wandb
 
 
 def show_saved_train_loss(savedir="saved") -> None:
