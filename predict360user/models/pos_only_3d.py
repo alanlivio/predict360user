@@ -6,7 +6,7 @@ from keras.metrics import mean_squared_error as mse
 from omegaconf import DictConfig
 from tensorflow import keras
 
-from predict360user.models.base_model import (
+from predict360user.base_model import (
     BaseModel,
     delta_angle_from_ori_mot,
     metric_orth_dist_cartesian,

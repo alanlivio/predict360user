@@ -6,7 +6,7 @@ import numpy as np
 from keras.models import load_model
 from tensorflow import keras
 
-from predict360user.models.base_model import BaseModel
+from predict360user.base_model import BaseModel
 from predict360user.utils import DATADIR
 
 

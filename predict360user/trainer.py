@@ -15,15 +15,10 @@ from keras.callbacks import CSVLogger, ModelCheckpoint
 from omegaconf import OmegaConf
 from tqdm.auto import tqdm
 
+from .base_model import BaseModel, Interpolation, NoMotion
 from predict360user.dataset import Dataset, get_class_name, get_class_thresholds
-from predict360user.models import (
-    BaseModel,
-    Interpolation,
-    NoMotion,
-    PosOnly,
-    PosOnly3D,
-    TRACK,
-)
+from predict360user.models import PosOnly, PosOnly3D, TRACK
+
 from predict360user.utils import *
 
 MODEL_NAMES = [
@@ -83,12 +78,6 @@ class Trainer:
     def __init__(self, cfg: TrainerCfg) -> None:
         log.info("TrainerCfg:\n-------\n" + OmegaConf.to_yaml(cfg) + "-------")
         self.cfg = cfg
-
-        if self.cfg.gpu_id:
-            os.environ["CUDA_VISIBLE_DEVICES"] = str(self.cfg.gpu_id)
-            log.info(f"set visible cpu to {self.cfg.gpu_id}")
-
-        # properties others
         self.using_auto = self.cfg.train_entropy.startswith("auto")
         self.model_fullname = self.cfg.model_name
         if self.cfg.dataset_name != "all":
@@ -97,12 +86,11 @@ class Trainer:
             self.model_fullname += f",actS={self.cfg.train_entropy}"
         if self.cfg.minsize:
             self.model_fullname += f",minsize={self.cfg.minsize!r}"
-        log.info(f"model_fullname = {self.model_fullname}")
+        log.info(f"model_fullname={self.model_fullname}")
         self.model_dir = join(self.cfg.savedir, self.model_fullname)
-        log.info(f"model_dir = {self.model_dir}")
+        log.info(f"model_dir={self.model_dir}")
         self.train_csv_log_f = join(self.model_dir, "train_loss.csv")
         self.model_path = join(self.model_dir, "weights.hdf5")
-        # https://docs.wandb.ai/guides/integrations/hydra#track-hyperparameters
 
     def run(self) -> None:
         # setting dirs avoid permisison problems at '/tmp/.config/wandb'
@@ -191,6 +179,9 @@ class Trainer:
         log.info("train ...")
         if self.using_auto or (self.cfg.model_name in MODELS_NAMES_NO_TRAIN):
             return
+        if self.cfg.gpu_id:
+            os.environ["CUDA_VISIBLE_DEVICES"] = str(self.cfg.gpu_id)
+            log.info(f"set visible cpu to {self.cfg.gpu_id}")
         if not exists(self.model_dir):
             os.makedirs(self.model_dir)
         log.info("model_dir=" + self.model_dir)
@@ -198,7 +189,7 @@ class Trainer:
         if exists(self.model_path):
             self.model.load_weights(self.model_path)
 
-        # setting initial_epoch
+        # calc initial_epoch
         initial_epoch = 0
         if exists(self.train_csv_log_f):
             lines = pd.read_csv(self.train_csv_log_f)
@@ -208,12 +199,12 @@ class Trainer:
             initial_epoch = done_epochs
             log.info(f"train_csv_log_f has {initial_epoch} epochs ")
 
+        # fit
         if initial_epoch >= self.cfg.epochs:
             log.info(
                 f"train_csv_log_f has {initial_epoch}>={self.cfg.epochs}. not training."
             )
         else:
-            # fit
             steps_per_ep_train = np.ceil(
                 len(self.ds.x_train_wins) / self.cfg.batch_size
             )
@@ -237,7 +228,7 @@ class Trainer:
                 epochs=self.cfg.epochs,
                 initial_epoch=initial_epoch,
                 callbacks=callbacks,
-                verbose=2
+                verbose=2,
             )
 
     def evaluate(self) -> None:

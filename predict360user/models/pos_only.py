@@ -6,7 +6,7 @@ from keras.layers import LSTM, Dense, Input, Lambda
 from omegaconf import DictConfig
 from tensorflow import keras
 
-from predict360user.models.base_model import (
+from predict360user.base_model import (
     BaseModel,
     delta_angle_from_ori_mag_dir,
     metric_orth_dist_eulerian,
@@ -118,46 +118,3 @@ class PosOnly(keras.Model, BaseModel):
         ]
         model_pred = super().predict(inputs, verbose=0)[0]
         return transform_normalized_eulerian_to_cartesian(model_pred)
-
-
-class NoMotion(BaseModel):
-    def __init__(self, h_window) -> None:
-        super().__init__()
-        self.h_window = h_window
-
-    def generate_batch(
-        self, traces_l: list[np.array], x_i_l: list
-    ) -> Tuple[list, list]:
-        raise NotImplementedError
-
-    def predict_for_sample(self, traces: np.array, x_i) -> np.array:
-        model_pred = np.repeat(traces[x_i : x_i + 1], self.h_window, axis=0)
-        return model_pred
-
-
-class Interpolation(BaseModel):
-    def __init__(self, h_window) -> None:
-        super().__init__()
-        self.h_window = h_window
-
-    def generate_batch(
-        self, traces_l: list[np.array], x_i_l: list
-    ) -> Tuple[list, list]:
-        raise NotImplementedError
-
-    def predict_for_sample(self, traces: np.array, x_i) -> np.array:
-        rotation = rotationBetweenVectors(traces[x_i - 2], traces[x_i - 1])
-        prediction = [rotation.rotate(traces[x_i])]
-        for _ in range(self.h_window - 1):
-            prediction.append(rotation.rotate(prediction[-1]))
-        return prediction
-
-
-class Regression(BaseModel):
-    def generate_batch(
-        self, traces_l: list[np.array], x_i_l: list
-    ) -> Tuple[list, list]:
-        raise NotImplementedError
-
-    def predict_for_sample(self, traces: np.array, x_i) -> np.array:
-        raise NotImplementedError

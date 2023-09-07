@@ -13,7 +13,7 @@ from keras.layers import (
 )
 from tensorflow import keras
 
-from predict360user.models.base_model import (
+from predict360user.base_model import (
     BaseModel,
     add_timestep_axis,
     delta_angle_from_ori_mot,
