@@ -12,14 +12,18 @@ from keras.layers import (
     TimeDistributed,
 )
 from tensorflow import keras
+import tensorflow as tf
 
 from predict360user.base_model import (
     BaseModel,
-    add_timestep_axis,
     delta_angle_from_ori_mot,
     metric_orth_dist_cartesian,
     selectImageInModel,
 )
+
+
+def add_timestep_axis(input):
+    return tf.expand_dims(input, 1)
 
 
 class CVPR18(keras.Model, BaseModel):

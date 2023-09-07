@@ -158,7 +158,3 @@ def delta_angle_from_ori_mot(values):
 def selectImageInModel(input_to_selector, curr_idx):
     selected_image = input_to_selector[:, curr_idx : curr_idx + 1]
     return selected_image
-
-
-def add_timestep_axis(input):
-    return tf.expand_dims(input, 1)
