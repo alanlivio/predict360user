@@ -15,7 +15,7 @@ from keras.callbacks import CSVLogger, ModelCheckpoint
 from omegaconf import OmegaConf
 from tqdm.auto import tqdm
 
-from .base_model import BaseModel, Interpolation, NoMotion
+from predict360user.base_model import BaseModel, Interpolation, NoMotion
 from predict360user.dataset import (
     Dataset,
     get_class_name,
@@ -91,6 +91,7 @@ class Trainer:
             self.model_fullname += f",actS={self.cfg.train_entropy}"
         if self.cfg.minsize:
             self.model_fullname += f",minsize={self.cfg.minsize!r}"
+        self.model_fullname += f",lr={self.cfg.lr!r}"
         log.info(f"model_fullname={self.model_fullname}")
         self.model_dir = join(self.cfg.savedir, self.model_fullname)
         log.info(f"model_dir={self.model_dir}")
