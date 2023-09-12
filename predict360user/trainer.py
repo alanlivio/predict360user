@@ -104,7 +104,7 @@ class Trainer:
         # setting dirs avoid permisison problems at '/tmp/.config/wandb'
         os.environ["WANDB_DIR"] = self.cfg.savedir
         os.environ["WANDB_CONFIG_DIR"] = self.cfg.savedir
-        _, n_low, n_medium, n_high = count_entropy(self.ds.x_train)
+        _, n_low, n_medium, n_high = count_entropy(self.ds.train)
         wandb.init(
             project="predict360user",
             tags=[self.cfg.model_name, self.cfg.train_entropy],
@@ -216,18 +216,18 @@ class Trainer:
             )
         else:
             steps_per_ep_train = np.ceil(
-                len(self.ds.x_train_wins) / self.cfg.batch_size
+                len(self.ds.train_wins) / self.cfg.batch_size
             )
             steps_per_ep_validate = np.ceil(
-                len(self.ds.x_val_wins) / self.cfg.batch_size
+                len(self.ds.val_wins) / self.cfg.batch_size
             )
             callbacks = [
                 CSVLogger(self.train_csv_log_f, append=True),
                 ModelCheckpoint(self.model_path, save_weights_only=True),
                 WandbMetricsLogger(initial_global_step=initial_epoch),
             ]
-            generator = self.generate_batchs(self.model, self.ds.x_train_wins)
-            validation_data = self.generate_batchs(self.model, self.ds.x_val_wins)
+            generator = self.generate_batchs(self.model, self.ds.train_wins)
+            validation_data = self.generate_batchs(self.model, self.ds.val_wins)
             self.model.fit(
                 x=generator,
                 steps_per_epoch=steps_per_ep_train,
@@ -282,21 +282,21 @@ class Trainer:
             ascii=True,
             mininterval=5,
         )
-        self.ds.x_test_wins[t_range] = self.ds.x_test_wins.progress_apply(
+        self.ds.test_wins[t_range] = self.ds.test_wins.progress_apply(
             _calc_pred_err, axis=1, result_type="expand"
         )
-        assert self.ds.x_test_wins[t_range].all().all()
+        assert self.ds.test_wins[t_range].all().all()
         # save predications
         # 1) avg per class (as wandb summary): # err_all, err_low, err_nohigh, err_medium,
         # err_nolow, err_nolow, err_all, err_high
         # 2) avg err per t per class (as wandb line plots and as csv)
         targets = [
-            ("all", pd.Series(True, self.ds.x_test_wins.index)),
-            ("low", self.ds.x_test_wins["actS_c"] == "low"),
-            ("nohigh", self.ds.x_test_wins["actS_c"] != "high"),
-            ("medium", self.ds.x_test_wins["actS_c"] == "medium"),
-            ("nolow", self.ds.x_test_wins["actS_c"] != "low"),
-            ("high", self.ds.x_test_wins["actS_c"] == "high"),
+            ("all", pd.Series(True, self.ds.test_wins.index)),
+            ("low", self.ds.test_wins["actS_c"] == "low"),
+            ("nohigh", self.ds.test_wins["actS_c"] != "high"),
+            ("medium", self.ds.test_wins["actS_c"] == "medium"),
+            ("nolow", self.ds.test_wins["actS_c"] != "low"),
+            ("high", self.ds.test_wins["actS_c"] == "high"),
         ]
         df_test_err_per_t = pd.DataFrame(
             columns=["model_name", "actS_c"] + t_range,
@@ -304,10 +304,10 @@ class Trainer:
         )
         for actS_c, idx in targets:
             # 1)
-            class_err = self.ds.x_test_wins.loc[idx, t_range].values.mean().round(4)
+            class_err = self.ds.test_wins.loc[idx, t_range].values.mean().round(4)
             wandb.run.summary[f"err_{actS_c}"] = class_err
             # 2)
-            class_err_per_t = self.ds.x_test_wins.loc[idx, t_range].mean().round(4)
+            class_err_per_t = self.ds.test_wins.loc[idx, t_range].mean().round(4)
             data = [[x, y] for (x, y) in zip(t_range, class_err_per_t)]
             table = wandb.Table(data=data, columns=["t", "err"])
             plot_id = f"test_err_per_t_class_{actS_c}"

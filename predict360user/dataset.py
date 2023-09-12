@@ -227,64 +227,64 @@ class Dataset:
     ) -> None:
         self.df.drop(["partition"], axis=1, errors="ignore", inplace=True)
         log.info(f"{train_size=} (with {val_size=}), {test_size=}")
-        # first split into x_train and x_test
-        self.x_train, self.x_test = train_test_split(
+        # first split into train and test
+        self.train, self.test = train_test_split(
             self.df,
             random_state=1,
             train_size=train_size,
             test_size=test_size,
             stratify=self.df["actS_c"],
         )
-        # then split x_train in final x_train and x_val
-        self.x_train, self.x_val = train_test_split(
-            self.x_train,
+        # then split train in final train and val
+        self.train, self.val = train_test_split(
+            self.train,
             random_state=1,
             test_size=val_size,
-            stratify=self.x_train["actS_c"],
+            stratify=self.train["actS_c"],
         )
-        log.info("x_train trajecs are " + count_entropy_str(self.x_train))
-        log.info("x_val trajecs (from x_train) are " + count_entropy_str(self.x_val))
-        log.info("x_test trajecs are " + count_entropy_str(self.x_test))
+        log.info("train trajecs are " + count_entropy_str(self.train))
+        log.info("val trajecs (from train) are " + count_entropy_str(self.val))
+        log.info("test trajecs are " + count_entropy_str(self.test))
 
         if train_entropy != "all" or minsize:
-            log.info(f"{train_entropy=} and {minsize=}, so filtering x_train, x_val")
-            self.x_train = filter_by_entropy(self.x_train, train_entropy, minsize)
-            self.x_val = filter_by_entropy(self.x_val, train_entropy, minsize)
-            log.info("x_train trajecs are " + count_entropy_str(self.x_train))
-            log.info("x_val (from x_train) trajecs are " + count_entropy_str(self.x_val))
+            log.info(f"{train_entropy=} and {minsize=}, so filtering train, val")
+            self.train = filter_by_entropy(self.train, train_entropy, minsize)
+            self.val = filter_by_entropy(self.val, train_entropy, minsize)
+            log.info("train trajecs are " + count_entropy_str(self.train))
+            log.info("val (from train) trajecs are " + count_entropy_str(self.val))
 
-        self.df.loc[self.x_train.index, "partition"] = "train"
-        self.df.loc[self.x_val.index, "partition"] = "val"
-        self.df.loc[self.x_test.index, "partition"] = "test"
+        self.df.loc[self.train.index, "partition"] = "train"
+        self.df.loc[self.val.index, "partition"] = "val"
+        self.df.loc[self.test.index, "partition"] = "test"
 
     def create_wins(self, init_window: int, h_window: int) -> None:
         # create trace_id column
         f_list_trace_id = lambda traces: [
             trace_id for trace_id in range(init_window, traces.shape[0] - h_window)
         ]
-        self.x_train["trace_id"] = self.x_train["traces"].apply(f_list_trace_id)
-        self.x_val["trace_id"] = self.x_val["traces"].apply(f_list_trace_id)
-        self.x_test["trace_id"] = self.x_test["traces"].apply(f_list_trace_id)
+        self.train["trace_id"] = self.train["traces"].apply(f_list_trace_id)
+        self.val["trace_id"] = self.val["traces"].apply(f_list_trace_id)
+        self.test["trace_id"] = self.test["traces"].apply(f_list_trace_id)
 
-        # create x_train_wins, x_val_wins
-        self.x_train_wins = self.x_train.explode("trace_id").reset_index()[
+        # create train_wins, val_wins
+        self.train_wins = self.train.explode("trace_id").reset_index()[
             ["ds", "user", "video", "trace_id"]
         ]
-        self.x_train_wins.dropna(subset=["trace_id"], how="all", inplace=True)
-        self.x_train_wins = shuffle(self.x_train_wins, random_state=1)
+        self.train_wins.dropna(subset=["trace_id"], how="all", inplace=True)
+        self.train_wins = shuffle(self.train_wins, random_state=1)
 
-        self.x_val_wins = self.x_val.explode("trace_id").reset_index()[
+        self.val_wins = self.val.explode("trace_id").reset_index()[
             ["ds", "user", "video", "trace_id"]
         ]
-        self.x_val_wins.dropna(subset=["trace_id"], how="all", inplace=True)
-        self.x_val_wins = shuffle(self.x_val_wins, random_state=1)
+        self.val_wins.dropna(subset=["trace_id"], how="all", inplace=True)
+        self.val_wins = shuffle(self.val_wins, random_state=1)
 
-        # create x_test_wins
-        self.x_test_wins = self.x_test.explode("trace_id").reset_index()[
+        # create test_wins
+        self.test_wins = self.test.explode("trace_id").reset_index()[
             ["ds", "user", "video", "trace_id", "actS_c"]
         ]
-        self.x_test_wins.dropna(subset=["trace_id"], how="all", inplace=True)
-        self.x_test = shuffle(self.x_test, random_state=1)
+        self.test_wins.dropna(subset=["trace_id"], how="all", inplace=True)
+        self.test = shuffle(self.test, random_state=1)
 
     def show_traject(self, row: pd.Series) -> None:
         assert "traces" in row.index
