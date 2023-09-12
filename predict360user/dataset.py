@@ -5,7 +5,7 @@ from os.path import basename, exists
 from typing import Literal
 from sklearn.utils import shuffle
 
-import jenkspy
+from jenkspy import jenks_breaks
 import numpy as np
 import pandas as pd
 import plotly.express as px
@@ -28,7 +28,7 @@ log = logging.getLogger(basename(__file__))
 
 
 def get_class_thresholds(df, col: str) -> tuple[float, float]:
-    _, threshold_medium, threshold_high, _ = jenkspy.jenks_breaks(df[col], n_classes=3)
+    _, threshold_medium, threshold_high, _ = jenks_breaks(df[col], n_classes=3)
     return threshold_medium, threshold_high
 
 
