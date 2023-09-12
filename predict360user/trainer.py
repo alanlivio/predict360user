@@ -176,7 +176,7 @@ class Trainer:
         log.info("loading dataset ...")
         self.ds = Dataset(dataset_name=self.cfg.dataset_name, savedir=self.cfg.savedir)
         self.ds.partition(
-            train_filter=self.cfg.train_entropy,
+            train_entropy=self.cfg.train_entropy,
             train_size=self.cfg.train_size,
             test_size=self.cfg.test_size,
             minsize=self.cfg.minsize,
