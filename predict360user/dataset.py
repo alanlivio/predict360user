@@ -55,9 +55,11 @@ def filter_by_entropy(
         df_filtred = df[df["actS_c"] == entropy]
     if minsize:
         minsize_among_classes = df["actS_c"].value_counts().min()
+        final_n_classes = len(df_filtred["actS_c"].unique())
+        n_sample_per_class = int(minsize_among_classes/final_n_classes)
         df_filtred = (
             df_filtred.groupby("actS_c")
-            .apply(lambda x: x.sample(n=minsize_among_classes, random_state=1))
+            .apply(lambda x: x.sample(n=n_sample_per_class, random_state=1))
             .droplevel(0)  # undo groupby
         )
     return df_filtred
@@ -222,7 +224,8 @@ class Dataset:
     ) -> None:
         self.df.drop(["partition"], axis=1, errors="ignore", inplace=True)
         log.info(f"{train_size=} (with {val_size=}), {test_size=}")
-        # first split into train and test
+        
+        # split into train and test
         self.train, self.test = train_test_split(
             self.df,
             random_state=1,
@@ -230,24 +233,23 @@ class Dataset:
             test_size=test_size,
             stratify=self.df["actS_c"],
         )
-        # then split train in final train and val
+        log.info("train trajecs are " + count_entropy_str(self.train))
+        
+        # split train in train and val
+        if train_entropy != "all" or minsize:
+            log.info(f"{train_entropy=} and {minsize=}, so filtering train")
+            self.train = filter_by_entropy(self.train, train_entropy, minsize)
+            log.info("train trajecs (filtred) are " + count_entropy_str(self.train))
         self.train, self.val = train_test_split(
             self.train,
             random_state=1,
             test_size=val_size,
             stratify=self.train["actS_c"],
         )
-        log.info("train trajecs are " + count_entropy_str(self.train))
-        log.info("val trajecs (from train) are " + count_entropy_str(self.val))
+        log.info("val trajecs are " + count_entropy_str(self.val))
         log.info("test trajecs are " + count_entropy_str(self.test))
-
-        if train_entropy != "all" or minsize:
-            log.info(f"{train_entropy=} and {minsize=}, so filtering train, val")
-            self.train = filter_by_entropy(self.train, train_entropy, minsize)
-            self.val = filter_by_entropy(self.val, train_entropy, minsize)
-            log.info("train trajecs are " + count_entropy_str(self.train))
-            log.info("val (from train) trajecs are " + count_entropy_str(self.val))
-
+        
+        # save "partition" column for show_entropy_histogram_per_partition
         self.df.loc[self.train.index, "partition"] = "train"
         self.df.loc[self.val.index, "partition"] = "val"
         self.df.loc[self.test.index, "partition"] = "test"
@@ -313,7 +315,7 @@ class Dataset:
     def show_entropy_histogram(self) -> None:
         assert "actS" in self.df.columns
         px.histogram(
-            self.df,
+            self.df.dropna(),
             x="actS",
             color="actS_c",
             color_discrete_map=ENTROPY_CLASS_COLORS,
@@ -324,7 +326,7 @@ class Dataset:
     def show_entropy_histogram_per_partition(self) -> None:
         assert "partition" in self.df.columns
         px.histogram(
-            self.df,
+            self.df.dropna(),
             x="actS",
             color="actS_c",
             facet_col="partition",
