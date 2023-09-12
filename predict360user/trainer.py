@@ -81,7 +81,6 @@ class Trainer:
     cfg: TrainerCfg
 
     def __init__(self, cfg: TrainerCfg) -> None:
-        log.info("TrainerCfg:\n-------\n" + OmegaConf.to_yaml(cfg) + "-------")
         self.cfg = cfg
         self.using_auto = self.cfg.train_entropy.startswith("auto")
         self.model_fullname = self.cfg.model_name
@@ -99,6 +98,7 @@ class Trainer:
         self.model_path = join(self.model_dir, "weights.hdf5")
 
     def run(self) -> None:
+        log.info("Trainer.run with TrainerCfg:\n-------\n" + OmegaConf.to_yaml(self.cfg) + "-------")
         self.build_data()
         self.build_model()
         # setting dirs avoid permisison problems at '/tmp/.config/wandb'
