@@ -287,10 +287,9 @@ class Trainer:
         )
         assert self.ds.x_test_wins[t_range].all().all()
         # save predications
-        # 1) avg per class as wandb summary: # err_all, err_low, err_nohigh, err_medium,
+        # 1) avg per class (as wandb summary): # err_all, err_low, err_nohigh, err_medium,
         # err_nolow, err_nolow, err_all, err_high
-        # 2.1) avg err per t per class as wandb line plots
-        # 2.2) avg err per t per class as csv to see by show_saved_train_pred_err
+        # 2) avg err per t per class (as wandb line plots and as csv)
         targets = [
             ("all", pd.Series(True, self.ds.x_test_wins.index)),
             ("low", self.ds.x_test_wins["actS_c"] == "low"),
@@ -304,23 +303,22 @@ class Trainer:
             dtype=np.float32,
         )
         for actS_c, idx in targets:
-            class_err = round(np.nanmean(self.ds.x_test_wins[t_range].values), 4)
             # 1)
+            class_err = self.ds.x_test_wins.loc[idx, t_range].values.mean().round(4)
             wandb.run.summary[f"err_{actS_c}"] = class_err
+            # 2)
             class_err_per_t = self.ds.x_test_wins.loc[idx, t_range].mean().round(4)
-            new_row = [
-                self.model_fullname,  # target model
-                actS_c,  # target class
-            ] + list(class_err_per_t)
-            newid = len(df_test_err_per_t)
-            df_test_err_per_t.loc[newid] = new_row
-            # 2.1)
             data = [[x, y] for (x, y) in zip(t_range, class_err_per_t)]
             table = wandb.Table(data=data, columns=["t", "err"])
             plot_id = f"test_err_per_t_class_{actS_c}"
             plot = wandb.plot.line(table, "t", "err", title=plot_id)
             wandb.log({plot_id: plot})
-        # 2.2)
+            # csv
+            new_row = [
+                self.model_fullname,  # target model
+                actS_c,  # target class
+            ] + list(class_err_per_t)
+            df_test_err_per_t.loc[len(df_test_err_per_t)] = new_row
         log.info("saving test_err_per_t.csv")
         df_test_err_per_t.to_csv(
             join(self.model_dir, "test_err_per_t.csv"), index=False
