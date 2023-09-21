@@ -225,7 +225,7 @@ class Trainer:
             )
             callbacks = [
                 CSVLogger(self.train_csv_log_f, append=True),
-                ModelCheckpoint(self.model_path, save_best_only=True, save_weights_only=True, mode='auto', save_weights_only=True),
+                ModelCheckpoint(self.model_path, save_best_only=True, mode='auto', save_weights_only=True),
                 WandbMetricsLogger(initial_global_step=initial_epoch),
             ]
             generator = self.generate_batchs(self.model, self.ds.train_wins)
@@ -306,10 +306,10 @@ class Trainer:
         )
         for actS_c, idx in targets:
             # 1)
-            class_err = self.ds.test_wins.loc[idx, t_range].values.mean().round(4)
+            class_err = self.ds.test_wins.loc[idx, t_range].values.mean()
             wandb.run.summary[f"err_{actS_c}"] = class_err
             # 2)
-            class_err_per_t = self.ds.test_wins.loc[idx, t_range].mean().round(4)
+            class_err_per_t = self.ds.test_wins.loc[idx, t_range].mean()
             data = [[x, y] for (x, y) in zip(t_range, class_err_per_t)]
             table = wandb.Table(data=data, columns=["t", "err"])
             plot_id = f"test_err_per_t_class_{actS_c}"
