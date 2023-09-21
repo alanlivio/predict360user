@@ -225,7 +225,7 @@ class Trainer:
             )
             callbacks = [
                 CSVLogger(self.train_csv_log_f, append=True),
-                ModelCheckpoint(self.model_path, save_weights_only=True),
+                ModelCheckpoint(self.model_path, save_best_only=True, save_weights_only=True, mode='auto', save_weights_only=True),
                 WandbMetricsLogger(initial_global_step=initial_epoch),
             ]
             generator = self.generate_batchs(self.model, self.ds.train_wins)
