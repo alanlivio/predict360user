@@ -84,13 +84,6 @@ class Dataset:
     Attributes:
         df (str): pandas.DataFrame.
     """
-    df: pd.DataFrame
-    train: pd.DataFrame
-    test: pd.DataFrame
-    val: pd.DataFrame
-    train_wins: pd.DataFrame
-    test_wins: pd.DataFrame
-    val_wins: pd.DataFrame
     
     def __init__(self, dataset_name="all", savedir=DEFAULT_SAVEDIR) -> None:
         assert dataset_name in ["all"] + list(DATASETS.keys())
@@ -261,33 +254,21 @@ class Dataset:
         self.df.loc[self.test.index, "partition"] = "test"
 
     def create_wins(self, init_window: int, h_window: int) -> None:
-        # create trace_id column
-        f_list_trace_id = lambda traces: [
+        create_trace_id_l = lambda traces: [
             trace_id for trace_id in range(init_window, traces.shape[0] - h_window)
         ]
-        self.train["trace_id"] = self.train["traces"].apply(f_list_trace_id)
-        self.val["trace_id"] = self.val["traces"].apply(f_list_trace_id)
-        self.test["trace_id"] = self.test["traces"].apply(f_list_trace_id)
-
-        # create train_wins, val_wins
-        self.train_wins = self.train.explode("trace_id").reset_index()[
-            ["ds", "user", "video", "trace_id"]
-        ]
-        self.train_wins.dropna(subset=["trace_id"], how="all", inplace=True)
+        # create train_wins
+        self.train_wins = self.train.assign(trace_id=self.train["traces"].apply(create_trace_id_l)).reset_index()[["ds", "user", "video", "trace_id"]]
+        self.train_wins = self.train_wins.explode("trace_id").dropna(subset=["trace_id"], how="all")
         self.train_wins = shuffle(self.train_wins, random_state=1)
-
-        self.val_wins = self.val.explode("trace_id").reset_index()[
-            ["ds", "user", "video", "trace_id"]
-        ]
-        self.val_wins.dropna(subset=["trace_id"], how="all", inplace=True)
+        # create val_wins
+        self.val_wins = self.val.assign(trace_id=self.val["traces"].apply(create_trace_id_l)).reset_index()[["ds", "user", "video", "trace_id"]]
+        self.val_wins = self.val_wins.explode("trace_id").dropna(subset=["trace_id"], how="all")
         self.val_wins = shuffle(self.val_wins, random_state=1)
-
         # create test_wins
-        self.test_wins = self.test.explode("trace_id").reset_index()[
-            ["ds", "user", "video", "trace_id", "actS_c"]
-        ]
-        self.test_wins.dropna(subset=["trace_id"], how="all", inplace=True)
-        self.test = shuffle(self.test, random_state=1)
+        self.test_wins = self.test.assign(trace_id=self.test["traces"].apply(create_trace_id_l)).reset_index()[["ds", "user", "video", "trace_id", "actS_c"]]
+        self.test_wins = self.test_wins.explode("trace_id").dropna(subset=["trace_id"], how="all")
+        self.test_wins = shuffle(self.test_wins, random_state=1)
 
     def show_traject(self, row: pd.Series) -> None:
         assert "traces" in row.index

@@ -78,10 +78,6 @@ cs.store(name="trainer", group="trainer", node=TrainerCfg)
 
 
 class Trainer:
-    cfg: TrainerCfg
-    model: BaseModel
-    ds: Dataset
-    
     def __init__(self, cfg: TrainerCfg) -> None:
         self.cfg = cfg
         self.using_auto = self.cfg.train_entropy.startswith("auto")
@@ -93,14 +89,14 @@ class Trainer:
         if self.cfg.minsize:
             self.model_fullname += f",minsize={self.cfg.minsize!r}"
         self.model_fullname += f",lr={self.cfg.lr!r}"
-        log.info(f"model_fullname={self.model_fullname}")
         self.model_dir = join(self.cfg.savedir, self.model_fullname)
-        log.info(f"model_dir={self.model_dir}")
-        self.train_csv_log_f = join(self.model_dir, "train_loss.csv")
         self.model_path = join(self.model_dir, "weights.hdf5")
+        self.train_csv_log_f = join(self.model_dir, "train_loss.csv")
 
     def run(self) -> None:
-        log.info("Trainer.run with TrainerCfg:\n-------\n" + OmegaConf.to_yaml(self.cfg) + "-------")
+        log.info("Trainer.run using:\n-------\n" + OmegaConf.to_yaml(self.cfg) + "-------")
+        log.info(f"model_fullname={self.model_fullname}")
+        log.info(f"model_dir={self.model_dir}")
         self.build_data()
         self.build_model()
         # setting dirs avoid permisison problems at '/tmp/.config/wandb'
@@ -288,7 +284,7 @@ class Trainer:
             _calc_pred_err, axis=1, result_type="expand"
         )
         assert self.ds.test_wins[t_range].all().all()
-        # save predications
+        # save predications 
         # 1) avg per class (as wandb summary): # err_all, err_low, err_nohigh, err_medium,
         # err_nolow, err_nolow, err_all, err_high
         # 2) avg err per t per class (as wandb line plots and as csv)
@@ -315,12 +311,11 @@ class Trainer:
             plot_id = f"test_err_per_t_class_{actS_c}"
             plot = wandb.plot.line(table, "t", "err", title=plot_id)
             wandb.log({plot_id: plot})
-            # csv
-            new_row = [
+            # save new row on csv
+            df_test_err_per_t.loc[len(df_test_err_per_t)] = [
                 self.model_fullname,  # target model
                 actS_c,  # target class
             ] + list(class_err_per_t)
-            df_test_err_per_t.loc[len(df_test_err_per_t)] = new_row
         log.info("saving test_err_per_t.csv")
         df_test_err_per_t.to_csv(
             join(self.model_dir, "test_err_per_t.csv"), index=False
