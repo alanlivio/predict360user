@@ -79,7 +79,9 @@ cs.store(name="trainer", group="trainer", node=TrainerCfg)
 
 class Trainer:
     cfg: TrainerCfg
-
+    model: BaseModel
+    ds: Dataset
+    
     def __init__(self, cfg: TrainerCfg) -> None:
         self.cfg = cfg
         self.using_auto = self.cfg.train_entropy.startswith("auto")

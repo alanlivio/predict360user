@@ -85,6 +85,12 @@ class Dataset:
         df (str): pandas.DataFrame.
     """
     df: pd.DataFrame
+    train: pd.DataFrame
+    test: pd.DataFrame
+    val: pd.DataFrame
+    train_wins: pd.DataFrame
+    test_wins: pd.DataFrame
+    val_wins: pd.DataFrame
     
     def __init__(self, dataset_name="all", savedir=DEFAULT_SAVEDIR) -> None:
         assert dataset_name in ["all"] + list(DATASETS.keys())
