@@ -1,29 +1,28 @@
 import logging
 import os
 from dataclasses import dataclass
-from os.path import basename, exists, join, isdir
+from os.path import basename, exists, isdir, join
 from typing import Generator
+
 import absl.logging
 import numpy as np
 import pandas as pd
 import plotly.express as px
 import wandb
-from wandb.keras import WandbMetricsLogger
-
 from hydra.core.config_store import ConfigStore
 from keras.callbacks import CSVLogger, ModelCheckpoint
 from omegaconf import OmegaConf
 from tqdm.auto import tqdm
+from wandb.keras import WandbMetricsLogger
 
 from predict360user.base_model import BaseModel, Interpolation, NoMotion
 from predict360user.dataset import (
     Dataset,
+    count_entropy,
     get_class_name,
     get_class_thresholds,
-    count_entropy,
 )
-from predict360user.models import PosOnly, PosOnly3D, TRACK
-
+from predict360user.models import TRACK, PosOnly, PosOnly3D
 from predict360user.utils import *
 
 MODEL_NAMES = [
@@ -276,9 +275,9 @@ class Trainer:
             return error_per_t
 
         tqdm.pandas(
-            desc=f"evaluate model {self.model_fullname}",
+            desc="evaluate",
             ascii=True,
-            mininterval=5,
+            mininterval=60, # one min
         )
         self.ds.test_wins[t_range] = self.ds.test_wins.progress_apply(
             _calc_pred_err, axis=1, result_type="expand"
