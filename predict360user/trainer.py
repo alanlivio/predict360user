@@ -220,17 +220,21 @@ class Trainer:
             )
             callbacks = [
                 CSVLogger(self.train_csv_log_f, append=True),
-                ModelCheckpoint(self.model_path, save_best_only=True, mode='auto', save_weights_only=True),
+                ModelCheckpoint(
+                    self.model_path,
+                    save_best_only=True,
+                    mode="min", # using orth_dist as loss
+                    save_weights_only=True,
+                ),
                 WandbMetricsLogger(initial_global_step=initial_epoch),
             ]
             generator = self.generate_batchs(self.model, self.ds.train_wins)
             validation_data = self.generate_batchs(self.model, self.ds.val_wins)
-            self.model.fit(
-                x=generator,
+            self.model.fit_generator(
+                generator=generator,
                 steps_per_epoch=steps_per_ep_train,
                 validation_data=validation_data,
                 validation_steps=steps_per_ep_validate,
-                validation_freq=self.cfg.batch_size,
                 epochs=self.cfg.epochs,
                 initial_epoch=initial_epoch,
                 callbacks=callbacks,
