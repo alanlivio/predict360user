@@ -25,6 +25,9 @@ from predict360user.dataset import (
 from predict360user.models import TRACK, PosOnly, PosOnly3D
 from predict360user.utils import *
 
+EVAL_RES_CSV = "eval_results.csv"
+TRAIN_RES_CSV = "train_results.csv"
+
 MODEL_NAMES = [
     "pos_only",
     "pos_only_3d",
@@ -93,7 +96,9 @@ class Trainer:
         self.train_csv_log_f = join(self.model_dir, "train_loss.csv")
 
     def run(self) -> None:
-        log.info("Trainer.run using:\n-------\n" + OmegaConf.to_yaml(self.cfg) + "-------")
+        log.info(
+            "Trainer.run using:\n---\n" + OmegaConf.to_yaml(self.cfg) + "----"
+        )
         log.info(f"model_fullname={self.model_fullname}")
         log.info(f"model_dir={self.model_dir}")
         self.build_data()
@@ -212,18 +217,14 @@ class Trainer:
                 f"train_csv_log_f has {initial_epoch}>={self.cfg.epochs}. not training."
             )
         else:
-            steps_per_ep_train = np.ceil(
-                len(self.ds.train_wins) / self.cfg.batch_size
-            )
-            steps_per_ep_validate = np.ceil(
-                len(self.ds.val_wins) / self.cfg.batch_size
-            )
+            steps_per_ep_train = np.ceil(len(self.ds.train_wins) / self.cfg.batch_size)
+            steps_per_ep_validate = np.ceil(len(self.ds.val_wins) / self.cfg.batch_size)
             callbacks = [
                 CSVLogger(self.train_csv_log_f, append=True),
                 ModelCheckpoint(
                     self.model_path,
                     save_best_only=True,
-                    mode="min", # using orth_dist as loss
+                    mode="min",  # using orth_dist as loss
                     save_weights_only=True,
                 ),
                 WandbMetricsLogger(initial_global_step=initial_epoch),
@@ -281,13 +282,13 @@ class Trainer:
         tqdm.pandas(
             desc="evaluate",
             ascii=True,
-            mininterval=60, # one min
+            mininterval=60,  # one min
         )
         self.ds.test_wins[t_range] = self.ds.test_wins.progress_apply(
             _calc_pred_err, axis=1, result_type="expand"
         )
         assert self.ds.test_wins[t_range].all().all()
-        # save predications 
+        # save predications
         # 1) avg per class (as wandb summary): # err_all, err_low, err_nohigh, err_medium,
         # err_nolow, err_nolow, err_all, err_high
         # 2) avg err per t per class (as wandb line plots and as csv)
@@ -319,54 +320,61 @@ class Trainer:
                 self.model_fullname,  # target model
                 actS_c,  # target class
             ] + list(class_err_per_t)
-        log.info("saving test_err_per_t.csv")
-        df_test_err_per_t.to_csv(
-            join(self.model_dir, "test_err_per_t.csv"), index=False
-        )
+        log.info("saving eval_results.csv")
+        df_test_err_per_t.to_csv(join(self.model_dir, "eval_results.csv"), index=False)
 
 
 # compare funcs using saved/ logs, as alternative to wandb
 
 
-def show_saved_train_loss(savedir="saved") -> None:
-    results_csv = "train_loss.csv"
+def show_saved_train_results(savedir="saved", model_filter=[]) -> None:
     # find results_csv files
     csv_df_l = [
         (dir_name, pd.read_csv(join(savedir, dir_name, file_name)))
         for dir_name in os.listdir(savedir)
         if isdir(join(savedir, dir_name))
         for file_name in os.listdir(join(savedir, dir_name))
-        if file_name == results_csv
+        if file_name == TRAIN_RES_CSV
     ]
     csv_df_l = [df.assign(model_name=dir_name) for (dir_name, df) in csv_df_l]
-    assert csv_df_l, f"no <savedir>/<model>/{results_csv} files"
+    assert csv_df_l, f"no <savedir>/<model>/{TRAIN_RES_CSV} files"
     df_compare = pd.concat(csv_df_l, ignore_index=True)
-
+    if model_filter:
+        df_compare = df_compare.loc[df_compare["model_name"].isin(model_filter)]
+        
     # plot
     fig = px.line(
         df_compare,
         x="epoch",
         y="loss",
         color="model_name",
-        title="compare_train_loss",
+        title="compare_loss",
         width=800,
     )
-    show_or_save(fig, savedir, "compare_train")
+    show_or_save(fig, savedir, "compare_loss")
+    fig = px.line(
+        df_compare,
+        x="epoch",
+        y="val_loss",
+        color="model_name",
+        title="compare_val_loss",
+        width=800,
+    )
+    show_or_save(fig, savedir, "compare_val_loss")
 
 
-def show_saved_pred_err(
-    savedir="saved", model_filter=None, entropy_filter=None
+def show_saved_eval_results(
+    savedir="saved", model_filter=[], entropy_filter=[]
 ) -> None:
-    results_csv = "test_err_per_t.csv"
     # find results_csv files
     csv_df_l = [
         pd.read_csv(join(savedir, dir_name, file_name))
         for dir_name in os.listdir(savedir)
         if isdir(join(savedir, dir_name))
         for file_name in os.listdir(join(savedir, dir_name))
-        if file_name == results_csv
+        if file_name == EVAL_RES_CSV
     ]
-    assert csv_df_l, f"no <savedir>/<model>/{results_csv} files"
+    assert csv_df_l, f"no <savedir>/<model>/{EVAL_RES_CSV} files"
     df_compare = pd.concat(csv_df_l, ignore_index=True)
 
     # create vis table
