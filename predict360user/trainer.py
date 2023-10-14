@@ -84,13 +84,13 @@ class Trainer:
         self.cfg = cfg
         self.using_auto = self.cfg.train_entropy.startswith("auto")
         self.model_fullname = self.cfg.model_name
+        self.model_fullname += f",lr={self.cfg.lr!r}"
         if self.cfg.dataset_name != "all":
             self.model_fullname += f",ds={self.cfg.dataset_name}"
         if self.cfg.train_entropy != "all":
             self.model_fullname += f",actS={self.cfg.train_entropy}"
         if self.cfg.minsize:
             self.model_fullname += f",minsize={self.cfg.minsize!r}"
-        self.model_fullname += f",lr={self.cfg.lr!r}"
         self.model_dir = join(self.cfg.savedir, self.model_fullname)
         self.model_path = join(self.model_dir, "weights.hdf5")
         self.train_csv_log_f = join(self.model_dir, "train_loss.csv")
