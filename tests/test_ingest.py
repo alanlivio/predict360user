@@ -10,16 +10,15 @@ class DatasetTestCase(unittest.TestCase):
         self.assertFalse(self.ds.df.empty)
 
     def test_random(self) -> None:
-        one_row = self.ds.df.loc[('david','0','10_Cows')]
+        one_row = self.ds.df.sample(1)
         self.assertFalse(one_row.empty)
-        traject_ar = self.ds.df.sample(1).iloc[0]["traces"]
+        traject_ar = one_row.iloc[0]["traces"]
         trace = traject_ar[np.random.randint(len(traject_ar - 1))]
         self.assertEqual(trace.shape, (3,))
 
     def test_trajects_entropy(self) -> None:
         self.ds.df = self.ds.df.sample(n=8)  # limitig given time
         self.ds.calc_traces_entropy()
-
 
     def test_partition(self) -> None:
         self.ds.partition("all")
