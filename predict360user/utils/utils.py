@@ -19,6 +19,8 @@ ENTROPY_NAMES = ["all", "low", "medium", "high", "nohigh", "nolow", "allminsize"
 ENTROPY_AUTO_NAMES = ["auto", "auto_m_window", "auto_since_start"]
 
 # global constants
+EVAL_RES_CSV = "eval_results.csv"
+TRAIN_RES_CSV = "train_results.csv"
 DEFAULT_SAVEDIR = "saved"
 DATADIR = f"{pathlib.Path(__file__).parent.parent / 'data/'}"
 HMDDIR = f"{pathlib.Path(__file__).parent / 'head_motion_prediction/'}"
