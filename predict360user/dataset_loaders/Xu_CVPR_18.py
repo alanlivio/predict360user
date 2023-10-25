@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 from pyquaternion import Quaternion
 
-from predict360user.utils import *
+from predict360user.utils.utils import *
 
 ROOT_FOLDER = join(DATADIR, "./Xu_CVPR_18/dataset/")
 GAZE_TXT_FOLDER = "Gaze_txt_files"

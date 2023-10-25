@@ -2,7 +2,7 @@ from typing import Tuple
 
 import numpy as np
 import tensorflow as tf
-from .utils import *
+from .utils.utils import *
 
 
 class BaseModel:

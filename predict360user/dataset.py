@@ -12,10 +12,10 @@ import plotly.express as px
 from plotly.subplots import make_subplots
 from sklearn.model_selection import train_test_split
 from tqdm.auto import tqdm
-from predict360user.plot360 import Plot360
+from predict360user.utils.plot360 import Plot360
 
-from predict360user.tileset import TILESET_DEFAULT
-from predict360user.utils import *
+from predict360user.utils.tileset import TILESET_DEFAULT
+from predict360user.utils.utils import *
 
 DATASETS = {
     "david": {"size": 1083},

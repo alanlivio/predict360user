@@ -23,7 +23,7 @@ from predict360user.dataset import (
     get_class_thresholds,
 )
 from predict360user.models import TRACK, PosOnly, PosOnly3D
-from predict360user.utils import *
+from predict360user.utils.utils import *
 
 EVAL_RES_CSV = "eval_results.csv"
 TRAIN_RES_CSV = "train_results.csv"

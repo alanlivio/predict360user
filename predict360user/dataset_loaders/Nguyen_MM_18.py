@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 from pyquaternion import Quaternion
 
-from predict360user.utils import *
+from predict360user.utils.utils import *
 
 ROOT_FOLDER = join(DATADIR, "Nguyen_MM_18/dataset/")
 OUTPUT_FOLDER = join(DATADIR, "Nguyen_MM_18/sampled_dataset")

@@ -10,7 +10,7 @@ from spherical_geometry import polygon
 from spherical_geometry.polygon import SphericalPolygon
 from tqdm.auto import tqdm
 
-from predict360user.utils import (
+from predict360user.utils.utils import (
     degrees_to_radian,
     fov_points,
     eulerian_to_cartesian,

@@ -1,4 +1,3 @@
-from . import dataset_loaders, models, utils
-from .dataset import Dataset
-from .plot360 import Plot360
-from .trainer import Trainer, TrainerCfg
+from predict360user.dataset import *
+from predict360user.trainer import *
+from predict360user.utils.plot360 import *

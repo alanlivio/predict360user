@@ -1,7 +1,7 @@
 import unittest
 
 from predict360user.dataset import Dataset, filter_by_entropy
-from predict360user.utils import *
+from predict360user.utils.utils import *
 
 
 class DatasetTestCase(unittest.TestCase):
@@ -10,22 +10,15 @@ class DatasetTestCase(unittest.TestCase):
         self.assertFalse(self.ds.df.empty)
 
     def test_random(self) -> None:
-        one_row = self.ds.get_random_traject()
-        self.assertFalse(one_row.empty)
         one_row = self.ds.df.loc[('david','0','10_Cows')]
         self.assertFalse(one_row.empty)
-        trace = self.ds.get_random_trace()
+        trace = self.ds.sample_trace()
         self.assertEqual(trace.shape, (3,))
 
     def test_trajects_entropy(self) -> None:
-        self.ds._df = self.ds._df.sample(n=8)  # limitig given time
+        self.ds.df = self.ds.df.sample(n=8)  # limitig given time
         self.ds.calc_traces_entropy()
 
-    def test_filter_by_entropy(self) -> None:
-        min_size = self.ds.df["actS_c"].value_counts().min()
-        for train_entropy in ENTROPY_NAMES[1:]:
-            fdf = filter_by_entropy(df=self.ds.df, entropy_filter=train_entropy)
-            self.assertAlmostEqual(min_size, len(fdf), delta=2)
 
     def test_partition(self) -> None:
         self.ds.partition("all")

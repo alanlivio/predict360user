@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 from pyquaternion import Quaternion
 
-from predict360user.utils import *
+from predict360user.utils.utils import *
 
 ROOT_FOLDER = join(DATADIR, "Fan_NOSSDAV_17/dataset/")
 FOLDER_IMAGES_SAL = join(DATADIR, "content/saliency")
