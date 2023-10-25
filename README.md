@@ -86,7 +86,7 @@ Note: To install drivers in Windows-WSL, you can use [this tutorial](https://ubu
 To illustrate usage, the code below does train and evaluates `pos_only` model for david dataset.
 
 ```bash
-python -m predict360user.run_train dataset_name=david model_name=pos_only
+python -m predict360user.start_run dataset_name=david model_name=pos_only
 ```
 
 #### Documentation

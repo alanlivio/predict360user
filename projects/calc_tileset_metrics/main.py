@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from predict360user.utils.utils import show_or_save, DEFAULT_SAVEDIR
-from predict360user.trainer import Dataset
+from predict360user.ingest import Dataset
 from predict360user.utils.tileset import TileSet, TileSetVoro, TileCover
 from predict360user.utils.utils import *
 from plotly.subplots import make_subplots
