@@ -93,7 +93,7 @@ class Trainer:
             self.model_fullname += f",minsize={self.cfg.minsize!r}"
         self.model_dir = join(self.cfg.savedir, self.model_fullname)
         self.model_path = join(self.model_dir, "weights.hdf5")
-        self.train_csv_log_f = join(self.model_dir, "train_loss.csv")
+        self.train_csv_log_f = join(self.model_dir, TRAIN_RES_CSV)
 
     def run(self) -> None:
         log.info(
@@ -322,7 +322,7 @@ class Trainer:
                 actS_c,  # target class
             ] + list(class_err_per_t)
         log.info("saving eval_results.csv")
-        df_test_err_per_t.to_csv(join(self.model_dir, "eval_results.csv"), index=False)
+        df_test_err_per_t.to_csv(join(self.model_dir, EVAL_RES_CSV), index=False)
 
 
 # compare funcs using saved/ logs, as alternative to wandb
