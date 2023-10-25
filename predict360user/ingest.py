@@ -8,13 +8,9 @@ from sklearn.utils import shuffle
 from jenkspy import jenks_breaks
 import numpy as np
 import pandas as pd
-import plotly.express as px
-from plotly.subplots import make_subplots
 from sklearn.model_selection import train_test_split
 from tqdm.auto import tqdm
-from predict360user.utils.plot360 import Plot360
 
-from predict360user.utils.tileset import TILESET_DEFAULT
 from predict360user.utils.utils import *
 
 DATASETS = {
@@ -40,11 +36,9 @@ def get_class_name(
     )
 
 
-def filter_by_entropy(
-    df: pd.DataFrame, entropy: str, minsize: bool
-) -> pd.DataFrame:
+def filter_by_entropy(df: pd.DataFrame, entropy: str, minsize: bool) -> pd.DataFrame:
     assert entropy in ENTROPY_NAMES
-    assert len(df["actS_c"].unique()) == 3 # low, medium, high
+    assert len(df["actS_c"].unique()) == 3  # low, medium, high
     if entropy == "all":
         df_filtred = df
     elif entropy == "nohigh":
@@ -56,7 +50,7 @@ def filter_by_entropy(
     if minsize:
         minsize_among_classes = df["actS_c"].value_counts().min()
         final_n_classes = len(df_filtred["actS_c"].unique())
-        n_sample_per_class = int(minsize_among_classes/final_n_classes)
+        n_sample_per_class = int(minsize_among_classes / final_n_classes)
         df_filtred = (
             df_filtred.groupby("actS_c")
             .apply(lambda x: x.sample(n=n_sample_per_class, random_state=1))
@@ -84,7 +78,7 @@ class Dataset:
     Attributes:
         df (str): pandas.DataFrame.
     """
-    
+
     def __init__(self, dataset_name="all", savedir=DEFAULT_SAVEDIR) -> None:
         assert dataset_name in ["all"] + list(DATASETS.keys())
         self.dataset_name = dataset_name
@@ -183,36 +177,6 @@ class Dataset:
         )
         assert not self.df["actS_c"].isnull().any()
 
-    def calc_traces_hmps(self) -> None:
-        self.df.drop(["traces_hmps"], axis=1, errors="ignore", inplace=True)
-
-        def _calc_traject_hmp(traces) -> np.array:
-            return np.apply_along_axis(TILESET_DEFAULT.request, 1, traces)
-
-        tqdm.pandas(desc=f"calc traces_hmps")
-        np_hmps = self.df["traces"].progress_apply(_calc_traject_hmp)
-        self.df["traces_hmps"] = pd.Series(np_hmps)
-        assert not self.df["traces_hmps"].isnull().any()
-
-    def calc_traces_poles_prc(self) -> None:
-        def _calc_poles_prc(traces) -> float:
-            return np.count_nonzero(abs(traces[:, 2]) > 0.7) / len(traces)
-
-        self.df.drop(
-            ["poles_prc", "poles_prc_c"], axis=1, errors="ignore", inplace=True
-        )
-        tqdm.pandas(desc=f"calc poles_prc")
-        self.df["poles_prc"] = pd.Series(
-            self.df["traces"].progress_apply(_calc_poles_prc).astype(float)
-        )
-        threshold_medium, threshold_high = get_class_thresholds(self.df, "poles_prc")
-        self.df["poles_prc_c"] = (
-            self.df["poles_prc"]
-            .apply(get_class_name, args=(threshold_medium, threshold_high))
-            .astype("string")
-        )
-        assert not self.df["poles_prc_c"].isna().any()
-
     def partition(
         self,
         train_entropy="all",
@@ -223,7 +187,7 @@ class Dataset:
     ) -> None:
         self.df.drop(["partition"], axis=1, errors="ignore", inplace=True)
         log.info(f"{train_size=} (with {val_size=}), {test_size=}")
-        
+
         # split into train and test
         self.train, self.test = train_test_split(
             self.df,
@@ -233,7 +197,7 @@ class Dataset:
             stratify=self.df["actS_c"],
         )
         log.info("train trajecs are " + count_entropy_str(self.train))
-        
+
         # split train in train and val
         if train_entropy != "all" or minsize:
             log.info(f"{train_entropy=} and {minsize=}, so filtering train")
@@ -247,7 +211,7 @@ class Dataset:
         )
         log.info("val trajecs are " + count_entropy_str(self.val))
         log.info("test trajecs are " + count_entropy_str(self.test))
-        
+
         # save "partition" column for show_entropy_histogram_per_partition
         self.df.loc[self.train.index, "partition"] = "train"
         self.df.loc[self.val.index, "partition"] = "val"
@@ -258,69 +222,26 @@ class Dataset:
             trace_id for trace_id in range(init_window, traces.shape[0] - h_window)
         ]
         # create train_wins
-        self.train_wins = self.train.assign(trace_id=self.train["traces"].apply(create_trace_id_l)).reset_index()[["ds", "user", "video", "trace_id"]]
-        self.train_wins = self.train_wins.explode("trace_id").dropna(subset=["trace_id"], how="all")
+        self.train_wins = self.train.assign(
+            trace_id=self.train["traces"].apply(create_trace_id_l)
+        ).reset_index()[["ds", "user", "video", "trace_id"]]
+        self.train_wins = self.train_wins.explode("trace_id").dropna(
+            subset=["trace_id"], how="all"
+        )
         self.train_wins = shuffle(self.train_wins, random_state=1)
         # create val_wins
-        self.val_wins = self.val.assign(trace_id=self.val["traces"].apply(create_trace_id_l)).reset_index()[["ds", "user", "video", "trace_id"]]
-        self.val_wins = self.val_wins.explode("trace_id").dropna(subset=["trace_id"], how="all")
+        self.val_wins = self.val.assign(
+            trace_id=self.val["traces"].apply(create_trace_id_l)
+        ).reset_index()[["ds", "user", "video", "trace_id"]]
+        self.val_wins = self.val_wins.explode("trace_id").dropna(
+            subset=["trace_id"], how="all"
+        )
         self.val_wins = shuffle(self.val_wins, random_state=1)
         # create test_wins
-        self.test_wins = self.test.assign(trace_id=self.test["traces"].apply(create_trace_id_l)).reset_index()[["ds", "user", "video", "trace_id", "actS_c"]]
-        self.test_wins = self.test_wins.explode("trace_id").dropna(subset=["trace_id"], how="all")
-        self.test_wins = shuffle(self.test_wins, random_state=1)
-
-    def show_traject(self, row: pd.Series) -> None:
-        assert "traces" in row.index
-        traces = row["traces"]
-        fig = make_subplots(
-            rows=1, cols=2, specs=[[{"type": "surface"}, {"type": "image"}]]
+        self.test_wins = self.test.assign(
+            trace_id=self.test["traces"].apply(create_trace_id_l)
+        ).reset_index()[["ds", "user", "video", "trace_id", "actS_c"]]
+        self.test_wins = self.test_wins.explode("trace_id").dropna(
+            subset=["trace_id"], how="all"
         )
-
-        # add traces
-        plot = Plot360()
-        plot.add_traces(traces)
-        for d in plot.data:  # load all data from the self
-            fig.append_trace(d, row=1, col=1)
-
-        # add hmps_sum
-        traces_hmps = np.apply_along_axis(TILESET_DEFAULT.request, 1, row["traces"])
-        hmps_sum = np.sum(traces_hmps, axis=0)
-        x = [str(x) for x in range(1, hmps_sum.shape[1] + 1)]
-        y = [str(y) for y in range(1, hmps_sum.shape[0] + 1)]
-        erp_heatmap = px.imshow(hmps_sum, text_auto=True, x=x, y=y)
-        erp_heatmap.update_layout(width=100, height=100)
-
-        # show fig
-        fig.append_trace(erp_heatmap.data[0], row=1, col=2)
-        # fix given phi 0 being the north pole at cartesian_to_eulerian
-        fig.update_yaxes(autorange="reversed")
-        title = f"trajec_{row.name}_[{TILESET_DEFAULT.prefix}]"
-        fig.update_layout(width=800, showlegend=False, title_text=title)
-        fig.show()
-
-    def show_entropy_histogram(self) -> None:
-        assert "actS" in self.df.columns
-        px.histogram(
-            self.df.dropna(),
-            x="actS",
-            color="actS_c",
-            color_discrete_map=ENTROPY_CLASS_COLORS,
-            width=900,
-            category_orders={"actS": ["low", "medium", "high"]},
-        ).show()
-
-    def show_entropy_histogram_per_partition(self) -> None:
-        assert "partition" in self.df.columns
-        px.histogram(
-            self.df.dropna(),
-            x="actS",
-            color="actS_c",
-            facet_col="partition",
-            color_discrete_map=ENTROPY_CLASS_COLORS,
-            category_orders={
-                "actS": ["low", "medium", "high"],
-                "partition": ["train", "val", "test"],
-            },
-            width=900,
-        ).show()
+        self.test_wins = shuffle(self.test_wins, random_state=1)
