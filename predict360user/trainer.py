@@ -223,9 +223,10 @@ class Trainer:
                 CSVLogger(self.train_csv_log_f, append=True),
                 ModelCheckpoint(
                     self.model_path,
-                    save_best_only=True,
-                    mode="min",  # using orth_dist as loss
-                    save_weights_only=True,
+                    save_best_only=True, 
+                    save_weights_only=True, 
+                    mode='auto', 
+                    period=1
                 ),
                 WandbMetricsLogger(initial_global_step=initial_epoch),
             ]
