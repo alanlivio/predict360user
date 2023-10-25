@@ -6,7 +6,6 @@ from typing import Literal
 from sklearn.utils import shuffle
 
 from jenkspy import jenks_breaks
-import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from tqdm.auto import tqdm
@@ -156,11 +155,6 @@ class Dataset:
         # back to cwd
         os.chdir(cwd)
         return df
-
-    def sample_trace(self) -> np.array:
-        traject_ar = self.df.sample(1).iloc[0]["traces"]
-        trace = traject_ar[np.random.randint(len(traject_ar - 1))]
-        return trace
 
     def calc_traces_entropy(self) -> None:
         self.df.drop(["actS", "actS_c"], axis=1, errors="ignore", inplace=True)
