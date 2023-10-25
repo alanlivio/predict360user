@@ -40,7 +40,7 @@ def calc_traces_poles_prc(df: pd.DataFrame) -> None:
     assert not df["poles_prc_c"].isna().any()
 
 
-def show_traject(df: pd.DataFrame, row: pd.Series) -> None:
+def show_traject(row: pd.Series, title=None) -> None:
     assert "traces" in row.index
     traces = row["traces"]
     fig = make_subplots(
@@ -65,9 +65,21 @@ def show_traject(df: pd.DataFrame, row: pd.Series) -> None:
     fig.append_trace(erp_heatmap.data[0], row=1, col=2)
     # fix given phi 0 being the north pole at cartesian_to_eulerian
     fig.update_yaxes(autorange="reversed")
-    title = f"trajec_{row.name}_[{TILESET_DEFAULT.prefix}]"
+    title = title if title else f"trajec_{row.name}_[{TILESET_DEFAULT.prefix}]"
     fig.update_layout(width=800, showlegend=False, title_text=title)
     fig.show()
+
+
+def show_trajects_representative(df: pd.DataFrame) -> None:
+    show_traject(
+        df[df["actS_c"] == "low"].nlargest(1, "actS").iloc[0], "trajec top low"
+    )
+    show_traject(
+        df[df["actS_c"] == "medium"].nlargest(1, "actS").iloc[0], "trajec top medium"
+    )
+    show_traject(
+        df[df["actS_c"] == "high"].nlargest(1, "actS").iloc[0], "trajec top hight"
+    )
 
 
 def show_entropy_histogram(df: pd.DataFrame) -> None:
