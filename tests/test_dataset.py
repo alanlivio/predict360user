@@ -1,6 +1,6 @@
 import unittest
 
-from predict360user.dataset import Dataset, filter_by_entropy
+from predict360user.ingest import Dataset, filter_by_entropy
 from predict360user.utils.utils import *
 
 

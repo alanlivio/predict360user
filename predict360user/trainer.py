@@ -16,7 +16,7 @@ from tqdm.auto import tqdm
 from wandb.keras import WandbMetricsLogger
 
 from predict360user.base_model import BaseModel, Interpolation, NoMotion
-from predict360user.dataset import (
+from predict360user.ingest import (
     Dataset,
     count_entropy,
     get_class_name,
