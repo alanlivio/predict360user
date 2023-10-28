@@ -15,7 +15,7 @@ from scipy.spatial.transform import Slerp
 from sklearn.preprocessing import normalize
 
 # global enums
-ENTROPY_NAMES = ["all", "low", "medium", "high", "nohigh", "nolow", "allminsize"]
+ENTROPY_NAMES = ["all", "low", "medium", "high", "nohigh", "nolow"]
 ENTROPY_AUTO_NAMES = ["auto", "auto_m_window", "auto_since_start"]
 
 # global constants
