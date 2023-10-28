@@ -15,12 +15,7 @@ from tqdm.auto import tqdm
 from wandb.keras import WandbMetricsLogger
 
 from predict360user.base_model import BaseModel, Interpolation, NoMotion
-from predict360user.ingest import (
-    Dataset,
-    count_entropy,
-    get_class_name,
-    get_class_thresholds,
-)
+from predict360user.ingest import *
 from predict360user.models import TRACK, PosOnly, PosOnly3D
 from predict360user.utils.utils import *
 
@@ -92,17 +87,14 @@ class Trainer:
         self.train_csv_log_f = join(self.model_dir, TRAIN_RES_CSV)
 
     def run(self) -> None:
-        log.info(
-            "Trainer.run using:\n---\n" + OmegaConf.to_yaml(self.cfg) + "----"
-        )
-        log.info(f"model_fullname={self.model_fullname}")
+        log.info("Trainer.run using:\n---\n" + OmegaConf.to_yaml(self.cfg) + "----")
         log.info(f"model_dir={self.model_dir}")
         self.build_data()
         self.build_model()
         # setting dirs avoid permisison problems at '/tmp/.config/wandb'
         os.environ["WANDB_DIR"] = self.cfg.savedir
         os.environ["WANDB_CONFIG_DIR"] = self.cfg.savedir
-        _, n_low, n_medium, n_high = count_entropy(self.ds.train)
+        _, n_low, n_medium, n_high = count_entropy(self.train_wins)
         wandb.init(
             project="predict360user",
             tags=[self.cfg.model_name, self.cfg.train_entropy],
@@ -145,7 +137,7 @@ class Trainer:
                     else len(df_wins)
                 )
                 traces_l = [
-                    self.ds.df.loc[row["ds"], row["user"], row["video"]]["traces"]
+                    row["traces"]
                     for _, row in df_wins[count:end].iterrows()
                 ]
                 x_i_l = [row["trace_id"] for _, row in df_wins[count:end].iterrows()]
@@ -171,17 +163,21 @@ class Trainer:
         raise RuntimeError()
 
     def build_data(self) -> None:
-        log.info("loading dataset ...")
-        self.ds = Dataset(dataset_name=self.cfg.dataset_name, savedir=self.cfg.savedir)
-        self.ds.partition(
-            train_entropy=self.cfg.train_entropy,
+        self.df_wins = load_df_wins(
+            dataset_name=self.cfg.dataset_name,
+            init_window=self.cfg.init_window,
+            h_window=self.cfg.h_window,
+        )
+        self.df_wins = split(
+            self.df_wins,
             train_size=self.cfg.train_size,
+            train_entropy=self.cfg.train_entropy,
+            train_minsize=self.cfg.minsize,
             test_size=self.cfg.test_size,
-            minsize=self.cfg.minsize,
         )
-        self.ds.create_wins(
-            init_window=self.cfg.init_window, h_window=self.cfg.h_window
-        )
+        self.train_wins = self.df_wins[self.df_wins["partition"] == "train"]
+        self.val_wins = self.df_wins[self.df_wins["partition"] == "val"]
+        self.test_wins = self.df_wins[self.df_wins["partition"] == "test"]
 
     def train(self) -> None:
         log.info("train ...")
@@ -213,21 +209,21 @@ class Trainer:
                 f"train_csv_log_f has {initial_epoch}>={self.cfg.epochs}. not training."
             )
         else:
-            steps_per_ep_train = np.ceil(len(self.ds.train_wins) / self.cfg.batch_size)
-            steps_per_ep_validate = np.ceil(len(self.ds.val_wins) / self.cfg.batch_size)
+            steps_per_ep_train = np.ceil(len(self.train_wins) / self.cfg.batch_size)
+            steps_per_ep_validate = np.ceil(len(self.val_wins) / self.cfg.batch_size)
             callbacks = [
                 CSVLogger(self.train_csv_log_f, append=True),
                 ModelCheckpoint(
                     self.model_path,
-                    save_best_only=True, 
-                    save_weights_only=True, 
-                    mode='auto', 
-                    period=1
+                    save_best_only=True,
+                    save_weights_only=True,
+                    mode="auto",
+                    period=1,
                 ),
                 WandbMetricsLogger(initial_global_step=initial_epoch),
             ]
-            generator = self.generate_batchs(self.model, self.ds.train_wins)
-            validation_data = self.generate_batchs(self.model, self.ds.val_wins)
+            generator = self.generate_batchs(self.model, self.train_wins)
+            validation_data = self.generate_batchs(self.model, self.val_wins)
             self.model.fit_generator(
                 generator=generator,
                 steps_per_epoch=steps_per_ep_train,
@@ -247,7 +243,7 @@ class Trainer:
             )
             log.info("creating model auto ...")
             self.threshold_medium, self.threshold_high = get_class_thresholds(
-                self.ds.df, "actS"
+                self.df_wins, "actS"
             )
             self.model_low = self.model.copy()
             self.model_low.load_weights(join(prefix + "low", "weights.hdf5"))
@@ -259,11 +255,11 @@ class Trainer:
         # calculate predictions errors
         t_range = list(range(self.cfg.h_window))
 
-        def _calc_pred_err(row) -> None:
+        def _calc_pred_err(row) -> list[float]:
             # return np.random.rand(self.cfg.h_window)  # for debugging
-            # row.name return the index (user, video, time)
-            ds, user, video, x_i = row["ds"], row["user"], row["video"], row["trace_id"]
-            traces = self.ds.df.loc[ds, user, video]["traces"]
+            traces = row["traces"]
+            x_i = row["trace_id"]
+            pred_true = row["h_window"]
             # predict
             if self.using_auto:
                 pred = self._auto_select_model(traces, x_i).predict_for_sample(
@@ -272,7 +268,6 @@ class Trainer:
             else:
                 pred = self.model.predict_for_sample(traces, x_i)
             assert len(pred) == self.cfg.h_window
-            pred_true = traces[x_i + 1 : x_i + self.cfg.h_window + 1]
             error_per_t = [orth_dist_cartesian(pred[t], pred_true[t]) for t in t_range]
             return error_per_t
 
@@ -281,21 +276,21 @@ class Trainer:
             ascii=True,
             mininterval=60,  # one min
         )
-        self.ds.test_wins[t_range] = self.ds.test_wins.progress_apply(
+        self.test_wins[t_range] = self.test_wins.progress_apply(
             _calc_pred_err, axis=1, result_type="expand"
         )
-        assert self.ds.test_wins[t_range].all().all()
+        assert self.test_wins[t_range].all().all()
         # save predications
         # 1) avg per class (as wandb summary): # err_all, err_low, err_nohigh, err_medium,
         # err_nolow, err_nolow, err_all, err_high
         # 2) avg err per t per class (as wandb line plots and as csv)
         targets = [
-            ("all", pd.Series(True, self.ds.test_wins.index)),
-            ("low", self.ds.test_wins["actS_c"] == "low"),
-            ("nohigh", self.ds.test_wins["actS_c"] != "high"),
-            ("medium", self.ds.test_wins["actS_c"] == "medium"),
-            ("nolow", self.ds.test_wins["actS_c"] != "low"),
-            ("high", self.ds.test_wins["actS_c"] == "high"),
+            ("all", pd.Series(True, self.test_wins.index)),
+            ("low", self.test_wins["actS_c"] == "low"),
+            ("nohigh", self.test_wins["actS_c"] != "high"),
+            ("medium", self.test_wins["actS_c"] == "medium"),
+            ("nolow", self.test_wins["actS_c"] != "low"),
+            ("high", self.test_wins["actS_c"] == "high"),
         ]
         df_test_err_per_t = pd.DataFrame(
             columns=["model_name", "actS_c"] + t_range,
@@ -303,10 +298,10 @@ class Trainer:
         )
         for actS_c, idx in targets:
             # 1)
-            class_err = self.ds.test_wins.loc[idx, t_range].values.mean()
+            class_err = self.test_wins.loc[idx, t_range].values.mean()
             wandb.run.summary[f"err_{actS_c}"] = class_err
             # 2)
-            class_err_per_t = self.ds.test_wins.loc[idx, t_range].mean()
+            class_err_per_t = self.test_wins.loc[idx, t_range].mean()
             data = [[x, y] for (x, y) in zip(t_range, class_err_per_t)]
             table = wandb.Table(data=data, columns=["t", "err"])
             plot_id = f"test_err_per_t_class_{actS_c}"
