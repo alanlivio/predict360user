@@ -1,4 +1,4 @@
-from predict360user.ingest import Dataset
+from predict360user.ingest import * 
 from predict360user.exploration import (
     show_trajects_representative,
     show_entropy_histogram,
