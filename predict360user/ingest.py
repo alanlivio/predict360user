@@ -65,16 +65,30 @@ def load_df_trajecs(dataset_name="all") -> pd.DataFrame:
     return df
 
 
-def create_df_wins(df: pd.DataFrame, init_window=30, h_window=25) -> None:
-    # "trace_id" as list
-    create_trace_id_l = lambda traces: [
-        trace_id for trace_id in range(init_window, traces.shape[0] - h_window)
-    ]
+def create_df_wins(df: pd.DataFrame, init_window=30, m_window=5, h_window=25) -> None:
     df_wins = df
-    df_wins["trace_id"] = df["traces"].apply(create_trace_id_l)
-    # explode the list but duplicating other columns
-    df_wins = df_wins.drop(["traces"], axis=1)
+
+    # create "trace_id" list as explode it duplicating other columns
+    def _create_trace_id(traces) -> list[int]:
+        return [trace_id for trace_id in range(init_window, traces.shape[0] - h_window)]
+
+    df_wins["trace_id"] = df["traces"].apply(_create_trace_id)
     df_wins = df_wins.explode("trace_id", ignore_index=True)
+    df_wins = df_wins.dropna(subset=["trace_id"], how="all")
+
+    # m_window and f_window
+    def _create_m_window(row) -> np.array:
+        trace_id = row["trace_id"]
+        return row["traces"][trace_id - m_window : trace_id]
+
+    def _create_h_window(row) -> np.array:
+        trace_id = row["trace_id"]
+        return row["traces"][trace_id + 1 : trace_id + h_window + 1]
+
+    df_wins["m_window"] = df_wins.apply(_create_m_window, axis=1)
+    df_wins["h_window"] = df_wins.apply(_create_h_window, axis=1)
+
+    # df_wins = df_wins.drop(["traces"], axis=1)
     return df_wins
 
 
