@@ -140,7 +140,7 @@ class Trainer:
                     row["traces"]
                     for _, row in df_wins[count:end].iterrows()
                 ]
-                x_i_l = [row["trace_id"] for _, row in df_wins[count:end].iterrows()]
+                x_i_l = df_wins[count:end]['trace_id'].values
                 yield model.generate_batch(traces_l, x_i_l)
 
     def _auto_select_model(self, traces: np.array, x_i: int) -> BaseModel:
