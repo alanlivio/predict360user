@@ -2,7 +2,6 @@ import unittest
 
 import numpy as np
 
-from predict360user.ingest import Dataset
 from predict360user.utils.plot360 import Plot360
 from predict360user.utils.tileset import *
 from predict360user.utils.utils import *
