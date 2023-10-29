@@ -14,9 +14,9 @@ from omegaconf import OmegaConf
 from tqdm.auto import tqdm
 from wandb.keras import WandbMetricsLogger
 
-from predict360user.base_model import BaseModel, Interpolation, NoMotion
+from predict360user.base_model import BaseModel
 from predict360user.ingest import *
-from predict360user.models import TRACK, PosOnly, PosOnly3D
+from predict360user.models import *
 from predict360user.utils.utils import *
 
 MODEL_NAMES = [
