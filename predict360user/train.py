@@ -14,9 +14,16 @@ from tqdm.auto import tqdm
 from wandb.keras import WandbMetricsLogger
 
 from predict360user.base_model import BaseModel, batch_generator
-from predict360user.ingest import *
-from predict360user.models import *
-from predict360user.utils.utils import *
+from predict360user.ingest import (
+    count_entropy,
+    get_class_name,
+    get_class_thresholds,
+    load_df_wins,
+    split,
+)
+from predict360user.models import TRACK, Interpolation, NoMotion, PosOnly, PosOnly3D
+from predict360user.registry import EVAL_RES_CSV, TRAIN_RES_CSV
+from predict360user.utils.math360 import calc_actual_entropy, orth_dist_cartesian
 
 MODEL_NAMES = [
     "pos_only",
@@ -29,6 +36,9 @@ MODEL_NAMES = [
     "most_salient_point",
 ]
 MODELS_NAMES_NO_TRAIN = ["no_motion", "interpolation"]
+ENTROPY_NAMES = ["all", "low", "medium", "high", "nohigh", "nolow"]
+ENTROPY_AUTO_NAMES = ["auto", "auto_m_window", "auto_since_start"]
+
 log = logging.getLogger(basename(__file__))
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"

@@ -1,17 +1,16 @@
 import unittest
 
 import numpy as np
-
-from predict360user.utils.plot360 import Plot360
-from predict360user.utils.tileset import *
-from predict360user.utils.utils import *
-
 import plotly.io as pio
+
+from predict360user.utils.math360 import calc_actual_entropy_from_ids
+from predict360user.utils.plot360 import Plot360
+from predict360user.utils.tileset360 import fov_poly, tile_points, tile_poly
 
 pio.renderers.default = None
 
 
-class TileSetTestCase(unittest.TestCase):
+class TileSet360TestCase(unittest.TestCase):
     def test_tileset_polys(self) -> None:
         tile_area_6x4_equator = 0.927295
         tile_area_6x4_tropics = 0.500154
@@ -80,7 +79,7 @@ class Plot360TestCase(unittest.TestCase):
             plot.show_fov(trace)
 
 
-class UtilsTestCase(unittest.TestCase):
+class Math360TestCase(unittest.TestCase):
     def test_actual_entropy(self) -> None:
         ids = np.array([1, 2, 3, 4, 5, 6, 7])
         ret = calc_actual_entropy_from_ids(ids, return_sub_len_t=True)

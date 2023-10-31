@@ -1,5 +1,4 @@
 import numpy as np
-import pandas as pd
 import plotly.express as px
 import plotly.graph_objs as go
 from colour import Color
@@ -8,8 +7,13 @@ from plotly.subplots import make_subplots
 from scipy.spatial import SphericalVoronoi, geometric_slerp
 from spherical_geometry.polygon import SphericalPolygon
 
-from predict360user.utils.tileset import TILESET_DEFAULT, TileSet, TileSetVoro, tile_points
-from predict360user.utils.utils import fov_points
+from predict360user.utils.math360 import fov_points
+from predict360user.utils.tileset360 import (
+    TILESET_DEFAULT,
+    TileSet,
+    TileSetVoro,
+    tile_points,
+)
 
 
 class Plot360:

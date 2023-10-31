@@ -1,8 +1,8 @@
 import logging
 import math
-from os.path import basename
 from enum import Enum, auto
 from functools import cache
+from os.path import basename
 
 import numpy as np
 from scipy.spatial import SphericalVoronoi
@@ -10,13 +10,13 @@ from spherical_geometry import polygon
 from spherical_geometry.polygon import SphericalPolygon
 from tqdm.auto import tqdm
 
-from predict360user.utils.utils import (
-    degrees_to_radian,
-    fov_points,
-    eulerian_to_cartesian,
-    orth_dist_cartesian,
+from predict360user.utils.math360 import (
+    HOR_DIST,
     HOR_MARGIN,
-    HOR_DIST
+    degrees_to_radian,
+    eulerian_to_cartesian,
+    fov_points,
+    orth_dist_cartesian,
 )
 
 log = logging.getLogger(basename(__file__))

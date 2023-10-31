@@ -1,8 +1,9 @@
 from typing import Tuple
 
 import numpy as np
-from predict360user.utils.utils import *
+
 from predict360user.base_model import BaseModel
+from predict360user.utils.math360 import rotationBetweenVectors
 
 
 class NoMotion(BaseModel):

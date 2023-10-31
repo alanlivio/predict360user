@@ -1,19 +1,21 @@
 import logging
 import os
+import pathlib
 import pickle
 from os.path import basename, exists
 from typing import Literal
-import pathlib
 
-from jenkspy import jenks_breaks
+import numpy as np
 import pandas as pd
+from jenkspy import jenks_breaks
 from sklearn.model_selection import train_test_split
 from tqdm.auto import tqdm
 
+from predict360user.registry import DEFAULT_SAVEDIR
+from predict360user.utils.math360 import calc_actual_entropy
+
 DATADIR = f"{pathlib.Path(__file__).parent / 'data/'}"
 HMDDIR = f"{pathlib.Path(__file__).parent / 'head_motion_prediction/'}"
-
-from predict360user.utils.utils import *
 
 DATASETS = {
     "david": {"size": 1083},

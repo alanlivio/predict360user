@@ -1,55 +1,10 @@
-import datetime
-import logging
-import sys
-from functools import cache
-from os.path import abspath, basename, isabs, join
 
-import IPython
 import numpy as np
-import plotly.graph_objs as go
 from numpy import cross, dot
 from pyquaternion import Quaternion
 from scipy.spatial.transform import Rotation as R
 from scipy.spatial.transform import Slerp
 from sklearn.preprocessing import normalize
-
-# global enums
-ENTROPY_NAMES = ["all", "low", "medium", "high", "nohigh", "nolow"]
-ENTROPY_AUTO_NAMES = ["auto", "auto_m_window", "auto_since_start"]
-
-# global constants
-EVAL_RES_CSV = "eval_results.csv"
-TRAIN_RES_CSV = "train_results.csv"
-DEFAULT_SAVEDIR = "saved"
-
-# DS_SIZES = [1083, 300, 432, 7106, 4543] # TODO: check sample_dataset folders
-ENTROPY_CLASS_COLORS = {"low": "blue", "medium": "green", "high": "red"}
-logging.basicConfig(
-    level=logging.INFO, format="[%(levelname)s][%(name)s] - %(message)s"
-)
-log = logging.getLogger(basename(__file__))
-
-
-# global funcs
-
-
-def show_or_save(output, savedir=DEFAULT_SAVEDIR, title="") -> None:
-    if "ipykernel" in sys.modules:
-        IPython.display.display(output)
-    else:
-        if not title:
-            if isinstance(output, go.Figure):
-                title = output.layout.title.text
-            else:
-                title = datetime.datetime.now().strftime("%y%m%d_%H%M%S")
-        html_file = join(savedir, title + ".html")
-        if isinstance(output, go.Figure):
-            output.write_html(html_file)
-        else:
-            output.to_html(html_file)
-        if not isabs(html_file):
-            html_file = abspath(html_file)
-        log.info(f"compare_train saved on {html_file}")
 
 
 def degrees_to_radian(degree):

@@ -1,10 +1,38 @@
+import datetime
+import logging
 import os
-from os.path import isdir, join
+import sys
+from os.path import abspath, basename, isabs, isdir, join
 
+import IPython
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objs as go
 
-from predict360user.utils.utils import *
+EVAL_RES_CSV = "eval_results.csv"
+TRAIN_RES_CSV = "train_results.csv"
+DEFAULT_SAVEDIR = "saved"
+
+log = logging.getLogger(basename(__file__))
+
+
+def show_or_save(output, savedir=DEFAULT_SAVEDIR, title="") -> None:
+    if "ipykernel" in sys.modules:
+        IPython.display.display(output)
+    else:
+        if not title:
+            if isinstance(output, go.Figure):
+                title = output.layout.title.text
+            else:
+                title = datetime.datetime.now().strftime("%y%m%d_%H%M%S")
+        html_file = join(savedir, title + ".html")
+        if isinstance(output, go.Figure):
+            output.write_html(html_file)
+        else:
+            output.to_html(html_file)
+        if not isabs(html_file):
+            html_file = abspath(html_file)
+        log.info(f"compare_train saved on {html_file}")
 
 
 def compare_train_results(savedir="saved", model_filter=[]) -> None:
@@ -43,9 +71,7 @@ def compare_train_results(savedir="saved", model_filter=[]) -> None:
     show_or_save(fig, savedir, "compare_val_loss")
 
 
-def compare_eval_results(
-    savedir="saved", model_filter=[], entropy_filter=[]
-) -> None:
+def compare_eval_results(savedir="saved", model_filter=[], entropy_filter=[]) -> None:
     # find results_csv files
     csv_df_l = [
         pd.read_csv(join(savedir, dir_name, file_name))

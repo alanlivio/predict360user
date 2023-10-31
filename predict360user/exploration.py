@@ -3,11 +3,12 @@ import pandas as pd
 import plotly.express as px
 from plotly.subplots import make_subplots
 from tqdm.auto import tqdm
-from predict360user.utils.plot360 import Plot360
 
-from predict360user.utils.tileset import TILESET_DEFAULT
-from predict360user.utils.utils import *
-from predict360user.ingest import *
+from predict360user.ingest import get_class_name, get_class_thresholds
+from predict360user.utils.plot360 import Plot360
+from predict360user.utils.tileset360 import TILESET_DEFAULT
+
+ENTROPY_CLASS_COLORS = {"low": "blue", "medium": "green", "high": "red"}
 
 
 def calc_traces_hmps(df: pd.DataFrame) -> None:
