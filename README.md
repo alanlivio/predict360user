@@ -1,12 +1,12 @@
 # predict360user
 
-predict360user is a library that aims to help researchers to reproduce and develop models to predict user behavior in 360 videos, namely trajectory (or traject for short). It extends [Rondon 360-videos models/dataset collection](https://gitlab.com/miguelfromeror/head-motion-prediction) and takes a lot of design inspirations from the recommendation systems framework [RecBole](https://recbole.io/docs/index.html). The library's main classes are:
+predict360user is a library that aims to help researchers to reproduce and develop models to predict user behavior in 360 videos, namely trajectory (or traject for short). It extends [Rondon 360-videos models/dataset collection](https://gitlab.com/miguelfromeror/head-motion-prediction) and takes a lot of design inspirations from the recommendation systems framework [RecBole](https://recbole.io/docs/index.html). The library's main functions are:
 
-* `Dataset`: stores users trajects in 360 videos in memory as a `pandas.DataFrame` and provides functions for data visualization and preprocessing. It is inspired by the [RecBole Dataset](https://recbole.io/docs/recbole/recbole.data.dataset.dataset.html#recbole.data.dataset.dataset.Dataset). The traject is indexed by a tuple of dataset, user and video ids, and has the columns: traces for the list of x,y,z points; actS for the actual entropy; and actS_c for a class name (low, medium high) considering all other trajects. See example below:
+* `load_df_trajecs`: return users trajects in 360 videos in memory as a `pandas.DataFrame`. Each traject has: dataset id; pre-fixed user and video ids; traces as list of x,y,z points; actual entropy (actS); and an class name (actS_c) with labels `low`, `medium` and `high` selected using a Jenks breaks over actS value. See an example below:
 
-  |       |         |               | traces        | actS          | actS_c        |
+  | ds    | user    | video         | traces        | actS          | actS_c        |
   | ----- | ------- | ------------- | ------------- | ------------- | ------------- |
-  | ds    | user    | video         |               |               |               |
+  |       |         |               |               |               |               |
   | david | david_0 | david_10_Cows | [[x,y,z],...] | 3.2           | medium        |
 
 * `Trainer`: train and evaluate prediction models
