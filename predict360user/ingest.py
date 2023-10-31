@@ -3,11 +3,15 @@ import os
 import pickle
 from os.path import basename, exists
 from typing import Literal
+import pathlib
 
 from jenkspy import jenks_breaks
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from tqdm.auto import tqdm
+
+DATADIR = f"{pathlib.Path(__file__).parent / 'data/'}"
+HMDDIR = f"{pathlib.Path(__file__).parent / 'head_motion_prediction/'}"
 
 from predict360user.utils.utils import *
 
@@ -118,11 +122,11 @@ def _load_df_trajecs_from_hmp(dataset_name: str) -> pd.DataFrame:
         target = {dataset_name: DATASETS[dataset_name]}
     n_traces = 100
 
-    def _load_dataset_xyz(key, value) -> pd.DataFrame:
+    def _load_dataset_xyz(ds_name, ds_dict) -> pd.DataFrame:
         # create_and_store_sampled_dataset()
         # stores csv at head_motion_prediction/<dataset>/sampled_dataset
-        if len(os.listdir(value["pkg"].OUTPUT_FOLDER)) < 2:
-            value["pkg"].create_and_store_sampled_dataset()
+        if len(os.listdir(ds_dict["pkg"].OUTPUT_FOLDER)) < 2:
+            ds_dict["pkg"].create_and_store_sampled_dataset()
         # then call load_sample_dateset()
         # and convert csv as dict with
         # {<video1>:{
@@ -131,10 +135,10 @@ def _load_df_trajecs_from_hmp(dataset_name: str) -> pd.DataFrame:
         #  },
         #  ...
         # }"
-        dataset = value["pkg"].load_sampled_dataset()
+        dataset = ds_dict["pkg"].load_sampled_dataset()
         # time: np.around(dataset[user][video][:n_traces, 0], decimals=2)
         data = [
-            (key, user, video, dataset[user][video][:n_traces, 1:])
+            (ds_name, user, video, dataset[user][video][:n_traces, 1:])
             for user in dataset.keys()
             for video in dataset[user].keys()
         ]
@@ -143,12 +147,12 @@ def _load_df_trajecs_from_hmp(dataset_name: str) -> pd.DataFrame:
             columns=["ds", "user", "video", "traces"],
         )
         # assert and check
-        assert len(tmpdf["ds"]) == value["size"]
+        assert len(tmpdf["ds"]) == ds_dict["size"]
         return tmpdf
 
     # create df for each dataset
     df = pd.concat(
-        [_load_dataset_xyz(k, v) for k, v in target.items()],
+        [_load_dataset_xyz(ds_name, ds_dict) for ds_name, ds_dict in target.items()],
         ignore_index=True,  # otherwise the indexes are duplicated
     ).convert_dtypes()
     assert not df.empty

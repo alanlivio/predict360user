@@ -1,6 +1,5 @@
 import datetime
 import logging
-import pathlib
 import sys
 from functools import cache
 from os.path import abspath, basename, isabs, join
@@ -22,8 +21,7 @@ ENTROPY_AUTO_NAMES = ["auto", "auto_m_window", "auto_since_start"]
 EVAL_RES_CSV = "eval_results.csv"
 TRAIN_RES_CSV = "train_results.csv"
 DEFAULT_SAVEDIR = "saved"
-DATADIR = f"{pathlib.Path(__file__).parent.parent.parent / 'data/'}"
-HMDDIR = f"{pathlib.Path(__file__).parent.parent / 'head_motion_prediction/'}"
+
 # DS_SIZES = [1083, 300, 432, 7106, 4543] # TODO: check sample_dataset folders
 ENTROPY_CLASS_COLORS = {"low": "blue", "medium": "green", "high": "red"}
 logging.basicConfig(
