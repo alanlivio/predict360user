@@ -1,6 +1,7 @@
-from typing import Tuple
+from typing import Generator, Tuple
 
 import numpy as np
+import pandas as pd
 import tensorflow as tf
 
 
@@ -13,6 +14,18 @@ class BaseModel:
     def predict_for_sample(self, traces: np.array, x_i: int) -> np.array:
         pass
 
+
+def batch_generator(model: BaseModel, df_wins: pd.DataFrame, batch_size) -> Generator:
+    while True:
+        for start in range(0, len(df_wins), batch_size):
+            end = (
+                start + batch_size
+                if start + batch_size <= len(df_wins)
+                else len(df_wins)
+            )
+            traces_l = df_wins[start:end]["traces"].values
+            x_i_l = df_wins[start:end]["trace_id"].values
+            yield model.generate_batch(traces_l, x_i_l)
 
 def metric_orth_dist_cartesian(positions_a, positions_b) -> float:
     # Transform into directional vector in Cartesian Coordinate System

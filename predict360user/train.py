@@ -2,7 +2,6 @@ import logging
 import os
 from dataclasses import dataclass
 from os.path import basename, exists, join
-from typing import Generator
 
 import absl.logging
 import numpy as np
@@ -38,7 +37,6 @@ tqdm.pandas()
 # disable TF logging
 absl.logging.set_verbosity(absl.logging.ERROR)
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
-
 
 @dataclass
 class TrainerCfg:
@@ -127,21 +125,6 @@ class Trainer:
         else:
             raise RuntimeError
 
-    def generate_batchs(self, model: BaseModel, df_wins: pd.DataFrame) -> Generator:
-        while True:
-            for count, _ in enumerate(df_wins[:: self.cfg.batch_size]):
-                end = (
-                    count + self.cfg.batch_size
-                    if count + self.cfg.batch_size <= len(df_wins)
-                    else len(df_wins)
-                )
-                traces_l = [
-                    row["traces"]
-                    for _, row in df_wins[count:end].iterrows()
-                ]
-                x_i_l = df_wins[count:end]['trace_id'].values
-                yield model.generate_batch(traces_l, x_i_l)
-
     def _auto_select_model(self, traces: np.array, x_i: int) -> BaseModel:
         if self.cfg.train_entropy == "auto":
             window = traces
@@ -221,12 +204,14 @@ class Trainer:
                 ),
                 WandbMetricsLogger(initial_global_step=initial_epoch),
             ]
-            generator = self.generate_batchs(self.model, self.train_wins)
-            validation_data = self.generate_batchs(self.model, self.val_wins)
             self.model.fit_generator(
-                generator=generator,
+                generator=batch_generator(
+                    self.model, self.train_wins, self.cfg.batch_size
+                ),
+                validation_data=batch_generator(
+                    self.model, self.val_wins, self.cfg.batch_size
+                ),
                 steps_per_epoch=steps_per_ep_train,
-                validation_data=validation_data,
                 validation_steps=steps_per_ep_validate,
                 epochs=self.cfg.epochs,
                 initial_epoch=initial_epoch,
