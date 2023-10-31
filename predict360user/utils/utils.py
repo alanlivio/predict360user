@@ -73,23 +73,19 @@ def normalized(v):
 
 
 # Compute the orthodromic distance between two points in 3d coordinates
-def orth_dist_cartesian(true_position, pred_position):
+def orth_dist_cartesian(position_a, position_b):
     norm_a = np.sqrt(
-        np.square(true_position[0])
-        + np.square(true_position[1])
-        + np.square(true_position[2])
+        np.square(position_a[0]) + np.square(position_a[1]) + np.square(position_a[2])
     )
     norm_b = np.sqrt(
-        np.square(pred_position[0])
-        + np.square(pred_position[1])
-        + np.square(pred_position[2])
+        np.square(position_b[0]) + np.square(position_b[1]) + np.square(position_b[2])
     )
-    x_true = true_position[0] / norm_a
-    y_true = true_position[1] / norm_a
-    z_true = true_position[2] / norm_a
-    x_pred = pred_position[0] / norm_b
-    y_pred = pred_position[1] / norm_b
-    z_pred = pred_position[2] / norm_b
+    x_true = position_a[0] / norm_a
+    y_true = position_a[1] / norm_a
+    z_true = position_a[2] / norm_a
+    x_pred = position_b[0] / norm_b
+    y_pred = position_b[1] / norm_b
+    z_pred = position_b[2] / norm_b
     great_circle_distance = np.arccos(
         np.maximum(
             np.minimum(x_true * x_pred + y_true * y_pred + z_true * z_pred, 1.0), -1.0
