@@ -172,7 +172,6 @@ _fov_x1y0z0_points = np.array(
 )
 
 
-@cache
 def fov_points(x, y, z) -> np.ndarray:
     rotation = rotationBetweenVectors(X1Y0Z0, np.array([x, y, z]))
     points = np.array(
