@@ -97,7 +97,6 @@ class Trainer:
         _, n_low, n_medium, n_high = count_entropy(self.train_wins)
         wandb.init(
             project="predict360user",
-            tags=[self.cfg.model_name, self.cfg.train_entropy],
             mode=self.cfg.wandb_mode,
             config={
                 "model_name": self.cfg.model_name,
