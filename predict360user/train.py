@@ -13,7 +13,7 @@ from omegaconf import OmegaConf
 from tqdm.auto import tqdm
 from wandb.keras import WandbMetricsLogger
 
-from predict360user.base_model import BaseModel
+from predict360user.base_model import BaseModel, batch_generator
 from predict360user.ingest import *
 from predict360user.models import *
 from predict360user.utils.utils import *
@@ -38,12 +38,13 @@ tqdm.pandas()
 absl.logging.set_verbosity(absl.logging.ERROR)
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
+
 @dataclass
 class TrainerCfg:
     batch_size: int = 128
     dataset_name: str = "all"
     epochs: int = 30
-    gpu_id: int = 0
+    gpu_id: str = "0"
     h_window: int = 25
     init_window: int = 30
     lr: float = 0.0005
