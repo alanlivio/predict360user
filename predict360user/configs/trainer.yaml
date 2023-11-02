@@ -11,7 +11,6 @@ test_size: 0.2
 epochs: 30
 batch_size: 128
 lr: 0.0005
-wandb_mode: online
 minsize: False
 hydra:
   run: # https://hydra.cc/docs/configure_hydra/workdir/

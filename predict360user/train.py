@@ -64,7 +64,6 @@ class TrainerCfg:
     train_size: float = 0.8
     test_size: float = 0.2
     train_entropy: str = "all"
-    wandb_mode: str = "online"
     minsize: bool = False
 
     def __post_init__(self) -> None:
@@ -106,7 +105,6 @@ class Trainer:
         _, n_low, n_medium, n_high = count_entropy(self.train_wins)
         wandb.init(
             project="predict360user",
-            mode=self.cfg.wandb_mode,
             config={
                 "model_name": self.cfg.model_name,
                 "train_entropy": self.cfg.train_entropy,
