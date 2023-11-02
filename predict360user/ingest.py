@@ -98,7 +98,7 @@ def create_df_wins(df: pd.DataFrame, init_window=30, m_window=5, h_window=25) ->
     return df_wins
 
 
-def load_df_wins(dataset_name="all", m_window=5, init_window=30, h_window=25) -> None:
+def load_df_wins(dataset_name="all", m_window=5, init_window=30, h_window=25) -> pd.DataFrame:
     df_trajects = load_df_trajecs(dataset_name)
     return create_df_wins(df_trajects, m_window=5, init_window=30, h_window=25)
 

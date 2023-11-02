@@ -6,13 +6,13 @@ from os.path import basename, exists, join
 import absl.logging
 import numpy as np
 import pandas as pd
-import wandb
 from hydra.core.config_store import ConfigStore
 from keras.callbacks import CSVLogger, ModelCheckpoint
 from omegaconf import OmegaConf
 from tqdm.auto import tqdm
 from wandb.keras import WandbMetricsLogger
 
+import wandb
 from predict360user.base_model import BaseModel, batch_generator
 from predict360user.ingest import (
     count_entropy,
@@ -97,12 +97,25 @@ class Trainer:
     def run(self) -> None:
         log.info("Trainer.run using:\n---\n" + OmegaConf.to_yaml(self.cfg) + "----")
         log.info(f"model_dir={self.model_dir}")
-        self.build_data()
+        self.df_wins = load_df_wins(
+            dataset_name=self.cfg.dataset_name,
+            init_window=self.cfg.init_window,
+            h_window=self.cfg.h_window,
+        )
+        self.df_wins = split(
+            self.df_wins,
+            train_size=self.cfg.train_size,
+            train_entropy=self.cfg.train_entropy,
+            train_minsize=self.cfg.minsize,
+            test_size=self.cfg.test_size,
+        )
         self.build_model()
         # setting dirs avoid permisison problems at '/tmp/.config/wandb'
         os.environ["WANDB_DIR"] = self.cfg.savedir
         os.environ["WANDB_CONFIG_DIR"] = self.cfg.savedir
-        _, n_low, n_medium, n_high = count_entropy(self.train_wins)
+        _, n_low, n_medium, n_high = count_entropy(
+            self.df_wins[self.df_wins["partition"] == "train"]
+        )
         wandb.init(
             project="predict360user",
             config={
@@ -153,23 +166,6 @@ class Trainer:
             return self.model_high
         raise RuntimeError()
 
-    def build_data(self) -> None:
-        self.df_wins = load_df_wins(
-            dataset_name=self.cfg.dataset_name,
-            init_window=self.cfg.init_window,
-            h_window=self.cfg.h_window,
-        )
-        self.df_wins = split(
-            self.df_wins,
-            train_size=self.cfg.train_size,
-            train_entropy=self.cfg.train_entropy,
-            train_minsize=self.cfg.minsize,
-            test_size=self.cfg.test_size,
-        )
-        self.train_wins = self.df_wins[self.df_wins["partition"] == "train"]
-        self.val_wins = self.df_wins[self.df_wins["partition"] == "val"]
-        self.test_wins = self.df_wins[self.df_wins["partition"] == "test"]
-
     def train(self) -> None:
         log.info("train ...")
         if self.using_auto or (self.cfg.model_name in MODELS_NAMES_NO_TRAIN):
@@ -181,6 +177,8 @@ class Trainer:
         if exists(self.model_path):
             self.model.load_weights(self.model_path)
 
+        train_wins = self.df_wins[self.df_wins["partition"] == "train"]
+        val_wins = self.df_wins[self.df_wins["partition"] == "val"]
         # calc initial_epoch
         initial_epoch = 0
         if exists(self.train_csv_log_f):
@@ -200,8 +198,8 @@ class Trainer:
                 f"train_csv_log_f has {initial_epoch}>={self.cfg.epochs}. not training."
             )
         else:
-            steps_per_ep_train = np.ceil(len(self.train_wins) / self.cfg.batch_size)
-            steps_per_ep_validate = np.ceil(len(self.val_wins) / self.cfg.batch_size)
+            steps_per_ep_train = np.ceil(len(train_wins) / self.cfg.batch_size)
+            steps_per_ep_validate = np.ceil(len(val_wins) / self.cfg.batch_size)
             callbacks = [
                 CSVLogger(self.train_csv_log_f, append=True),
                 ModelCheckpoint(
@@ -214,11 +212,9 @@ class Trainer:
                 WandbMetricsLogger(initial_global_step=initial_epoch),
             ]
             self.model.fit_generator(
-                generator=batch_generator(
-                    self.model, self.train_wins, self.cfg.batch_size
-                ),
+                generator=batch_generator(self.model, train_wins, self.cfg.batch_size),
                 validation_data=batch_generator(
-                    self.model, self.val_wins, self.cfg.batch_size
+                    self.model, val_wins, self.cfg.batch_size
                 ),
                 steps_per_epoch=steps_per_ep_train,
                 validation_steps=steps_per_ep_validate,
@@ -245,6 +241,8 @@ class Trainer:
             self.model_high = self.model.copy()
             self.model_high.load_weights(join(prefix + "high", "weights.hdf5"))
 
+        test_wins = self.df_wins[self.df_wins["partition"] == "test"]
+
         # calculate predictions errors
         t_range = list(range(self.cfg.h_window))
 
@@ -269,21 +267,21 @@ class Trainer:
             ascii=True,
             mininterval=60,  # one min
         )
-        self.test_wins[t_range] = self.test_wins.progress_apply(
+        test_wins[t_range] = test_wins.progress_apply(
             _calc_pred_err, axis=1, result_type="expand"
         )
-        assert self.test_wins[t_range].all().all()
+        assert test_wins[t_range].all().all()
         # save predications
         # 1) avg per class (as wandb summary): # err_all, err_low, err_nohigh, err_medium,
         # err_nolow, err_nolow, err_all, err_high
         # 2) avg err per t per class (as wandb line plots and as csv)
         targets = [
-            ("all", pd.Series(True, self.test_wins.index)),
-            ("low", self.test_wins["actS_c"] == "low"),
-            ("nohigh", self.test_wins["actS_c"] != "high"),
-            ("medium", self.test_wins["actS_c"] == "medium"),
-            ("nolow", self.test_wins["actS_c"] != "low"),
-            ("high", self.test_wins["actS_c"] == "high"),
+            ("all", pd.Series(True, test_wins.index)),
+            ("low", test_wins["actS_c"] == "low"),
+            ("nohigh", test_wins["actS_c"] != "high"),
+            ("medium", test_wins["actS_c"] == "medium"),
+            ("nolow", test_wins["actS_c"] != "low"),
+            ("high", test_wins["actS_c"] == "high"),
         ]
         df_test_err_per_t = pd.DataFrame(
             columns=["model_name", "actS_c"] + t_range,
@@ -291,10 +289,10 @@ class Trainer:
         )
         for actS_c, idx in targets:
             # 1)
-            class_err = self.test_wins.loc[idx, t_range].values.mean()
+            class_err = test_wins.loc[idx, t_range].values.mean()
             wandb.run.summary[f"err_{actS_c}"] = class_err
             # 2)
-            class_err_per_t = self.test_wins.loc[idx, t_range].mean()
+            class_err_per_t = test_wins.loc[idx, t_range].mean()
             data = [[x, y] for (x, y) in zip(t_range, class_err_per_t)]
             table = wandb.Table(data=data, columns=["t", "err"])
             plot_id = f"test_err_per_t_class_{actS_c}"
