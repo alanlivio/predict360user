@@ -267,21 +267,21 @@ class Trainer:
             ascii=True,
             mininterval=60,  # one min
         )
-        test_wins[t_range] = test_wins.progress_apply(
+        self.df_wins.loc[test_wins.index, t_range] = test_wins.progress_apply(
             _calc_pred_err, axis=1, result_type="expand"
         )
-        assert test_wins[t_range].all().all()
+        assert self.df_wins.loc[test_wins.index, t_range].all().all()
         # save predications
         # 1) avg per class (as wandb summary): # err_all, err_low, err_nohigh, err_medium,
         # err_nolow, err_nolow, err_all, err_high
         # 2) avg err per t per class (as wandb line plots and as csv)
         targets = [
-            ("all", pd.Series(True, test_wins.index)),
-            ("low", test_wins["actS_c"] == "low"),
-            ("nohigh", test_wins["actS_c"] != "high"),
-            ("medium", test_wins["actS_c"] == "medium"),
-            ("nolow", test_wins["actS_c"] != "low"),
-            ("high", test_wins["actS_c"] == "high"),
+            ("all", test_wins.index),
+            ("low", test_wins.index[test_wins["actS_c"] == "low"]),
+            ("nohigh", test_wins.index[test_wins["actS_c"] != "high"]),
+            ("medium", test_wins.index[test_wins["actS_c"] == "medium"]),
+            ("nolow", test_wins.index[test_wins["actS_c"] != "low"]),
+            ("high", test_wins.index[test_wins["actS_c"] == "high"]),
         ]
         df_test_err_per_t = pd.DataFrame(
             columns=["model_name", "actS_c"] + t_range,
@@ -289,10 +289,10 @@ class Trainer:
         )
         for actS_c, idx in targets:
             # 1)
-            class_err = test_wins.loc[idx, t_range].values.mean()
+            class_err = self.df_wins.loc[idx, t_range].values.mean()
             wandb.run.summary[f"err_{actS_c}"] = class_err
             # 2)
-            class_err_per_t = test_wins.loc[idx, t_range].mean()
+            class_err_per_t = self.df_wins.loc[idx, t_range].mean()
             data = [[x, y] for (x, y) in zip(t_range, class_err_per_t)]
             table = wandb.Table(data=data, columns=["t", "err"])
             plot_id = f"test_err_per_t_class_{actS_c}"
