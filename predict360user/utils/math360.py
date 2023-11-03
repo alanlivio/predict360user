@@ -1,11 +1,10 @@
-
 import numpy as np
 from numpy import cross, dot
 from pyquaternion import Quaternion
 from scipy.spatial.transform import Rotation as R
 from scipy.spatial.transform import Slerp
 from sklearn.preprocessing import normalize
-
+import tensorflow as tf
 
 def degrees_to_radian(degree):
     return degree * np.pi / 180.0
@@ -85,6 +84,60 @@ def eulerian_in_range(theta, phi) -> tuple[float, float]:
     theta = theta - np.pi
     phi = phi - (np.pi / 2.0)
     return theta, phi
+
+
+def metric_orth_dist_cartesian(positions_a, positions_b) -> float:
+    # Transform into directional vector in Cartesian Coordinate System
+    norm_a = tf.sqrt(
+        tf.square(positions_a[:, :, 0:1])
+        + tf.square(positions_a[:, :, 1:2])
+        + tf.square(positions_a[:, :, 2:3])
+    )
+    norm_b = tf.sqrt(
+        tf.square(positions_b[:, :, 0:1])
+        + tf.square(positions_b[:, :, 1:2])
+        + tf.square(positions_b[:, :, 2:3])
+    )
+    x_true = positions_a[:, :, 0:1] / norm_a
+    y_true = positions_a[:, :, 1:2] / norm_a
+    z_true = positions_a[:, :, 2:3] / norm_a
+    x_pred = positions_b[:, :, 0:1] / norm_b
+    y_pred = positions_b[:, :, 1:2] / norm_b
+    z_pred = positions_b[:, :, 2:3] / norm_b
+    # Finally compute orthodromic distance
+    # great_circle_distance = np.arccos(x_true*x_pred+y_true*y_pred+z_true*z_pred)
+    # To keep the values in bound between -1 and 1
+    great_circle_distance = tf.acos(
+        tf.maximum(
+            tf.minimum(x_true * x_pred + y_true * y_pred + z_true * z_pred, 1.0), -1.0
+        )
+    )
+    return great_circle_distance
+
+
+def metric_orth_dist_eulerian(positions_a, positions_b) -> float:
+    yaw_true = (positions_a[:, :, 0:1] - 0.5) * 2 * np.pi
+    pitch_true = (positions_a[:, :, 1:2] - 0.5) * np.pi
+    # Transform it to range -pi, pi for yaw and -pi/2, pi/2 for pitch
+    yaw_pred = (positions_b[:, :, 0:1] - 0.5) * 2 * np.pi
+    pitch_pred = (positions_b[:, :, 1:2] - 0.5) * np.pi
+    # Finally compute orthodromic distance
+    delta_long = tf.abs(
+        tf.atan2(tf.sin(yaw_true - yaw_pred), tf.cos(yaw_true - yaw_pred))
+    )
+    numerator = tf.sqrt(
+        tf.pow(tf.cos(pitch_pred) * tf.sin(delta_long), 2.0)
+        + tf.pow(
+            tf.cos(pitch_true) * tf.sin(pitch_pred)
+            - tf.sin(pitch_true) * tf.cos(pitch_pred) * tf.cos(delta_long),
+            2.0,
+        )
+    )
+    denominator = tf.sin(pitch_true) * tf.sin(pitch_pred) + tf.cos(pitch_true) * tf.cos(
+        pitch_pred
+    ) * tf.cos(delta_long)
+    great_circle_distance = tf.abs(tf.atan2(numerator, denominator))
+    return great_circle_distance
 
 
 def rotationBetweenVectors(u, v) -> Quaternion:

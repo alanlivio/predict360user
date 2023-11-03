@@ -6,11 +6,16 @@ from keras.metrics import mean_squared_error as mse
 from omegaconf import DictConfig
 from tensorflow import keras
 
-from predict360user.model_config import (
-    BaseModel,
-    delta_angle_from_ori_mot,
-    metric_orth_dist_cartesian,
-)
+from predict360user.model_config import BaseModel
+from predict360user.utils.math360 import metric_orth_dist_cartesian
+
+
+# This way we ensure that the network learns to predict the delta angle
+def delta_angle_from_ori_mot(values):
+    orientation = values[0]
+    # The network returns values between 0 and 1, we force it to be between -1/2 and 1/2
+    motion = values[1]
+    return orientation + motion
 
 
 class PosOnly3D(keras.Model, BaseModel):

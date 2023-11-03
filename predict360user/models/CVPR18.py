@@ -1,6 +1,7 @@
 from typing import Tuple
 
 import numpy as np
+import tensorflow as tf
 from keras import backend as K
 from keras.layers import (
     LSTM,
@@ -12,14 +13,15 @@ from keras.layers import (
     TimeDistributed,
 )
 from tensorflow import keras
-import tensorflow as tf
 
-from predict360user.model_config import (
-    BaseModel,
-    delta_angle_from_ori_mot,
-    metric_orth_dist_cartesian,
-    selectImageInModel,
-)
+from predict360user.model_config import BaseModel
+from predict360user.models.pos_only_3d import delta_angle_from_ori_mot
+from predict360user.utils.math360 import metric_orth_dist_cartesian
+
+
+def selectImageInModel(input_to_selector, curr_idx):
+    selected_image = input_to_selector[:, curr_idx : curr_idx + 1]
+    return selected_image
 
 
 def add_timestep_axis(input):

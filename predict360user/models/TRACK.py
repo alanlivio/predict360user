@@ -15,12 +15,10 @@ from keras.layers import (
 from omegaconf import DictConfig
 from tensorflow import keras
 
-from predict360user.model_config import (
-    BaseModel,
-    delta_angle_from_ori_mot,
-    metric_orth_dist_cartesian,
-    selectImageInModel,
-)
+from predict360user.model_config import BaseModel
+from predict360user.models.CVPR18 import selectImageInModel
+from predict360user.models.pos_only_3d import delta_angle_from_ori_mot
+from predict360user.utils.math360 import metric_orth_dist_cartesian
 
 N_TILES_W = 384
 N_TILES_H = 216
