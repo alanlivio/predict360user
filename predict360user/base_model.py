@@ -1,8 +1,52 @@
+from dataclasses import dataclass
+from os.path import join
 from typing import Generator, Tuple
 
 import numpy as np
 import pandas as pd
 import tensorflow as tf
+from hydra.core.config_store import ConfigStore
+from omegaconf import OmegaConf
+
+from predict360user.registry import TRAIN_RES_CSV
+
+
+@dataclass
+class Config:
+    batch_size: int = 128
+    dataset_name: str = "all"
+    epochs: int = 30
+    gpu_id: str = "0"
+    h_window: int = 25
+    init_window: int = 30
+    lr: float = 0.0005
+    m_window: int = 5
+    model_name: str = "pos_only"
+    savedir: str = "saved"
+    train_size: float = 0.8
+    test_size: float = 0.2
+    train_entropy: str = "all"
+    minsize: bool = False
+
+    def __post_init__(self) -> None:
+        self.model_fullname = self.model_name
+        self.model_fullname += f",lr={self.lr!r}"
+        if self.dataset_name != "all":
+            self.model_fullname += f",ds={self.dataset_name}"
+        if self.train_entropy != "all":
+            self.model_fullname += f",actS={self.train_entropy}"
+        if self.minsize:
+            self.model_fullname += f",minsize={self.minsize!r}"
+        self.model_dir = join(self.savedir, self.model_fullname)
+        self.model_path = join(self.model_dir, "weights.hdf5")
+        self.train_csv_log_f = join(self.model_dir, TRAIN_RES_CSV)
+
+    def __str__(self) -> str:
+        return OmegaConf.to_yaml(self)
+
+
+cs = ConfigStore.instance()
+cs.store(name="config", group="config", node=Config)
 
 
 class BaseModel:
@@ -26,6 +70,7 @@ def batch_generator(model: BaseModel, df_wins: pd.DataFrame, batch_size) -> Gene
             traces_l = df_wins[start:end]["traces"].values
             x_i_l = df_wins[start:end]["trace_id"].values
             yield model.generate_batch(traces_l, x_i_l)
+
 
 def metric_orth_dist_cartesian(positions_a, positions_b) -> float:
     # Transform into directional vector in Cartesian Coordinate System

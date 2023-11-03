@@ -1,10 +1,13 @@
-from predict360user.train import Trainer, TrainerCfg
 import hydra
+from omegaconf import DictConfig
+
+from predict360user.base_model import Config
+from predict360user.train import Trainer
 
 
-@hydra.main(version_base=None, config_path="configs", config_name="trainer")
-def main(cfg: TrainerCfg) -> None:
-    trn = Trainer(cfg)
+@hydra.main(version_base=None, config_path="configs", config_name="config")
+def main(cfg: DictConfig) -> None:
+    trn = Trainer(Config(**cfg))
     trn.run()
 
 

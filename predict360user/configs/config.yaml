@@ -16,7 +16,7 @@ hydra:
   job: # https://hydra.cc/docs/tutorials/basic/running_your_app/working_directory/
     chdir: False
   help: # https://hydra.cc/docs/0.11/configure_hydra/app_help/
-    app_name: predict360user.trainer
+    app_name: predict360user
     template: |-
       ${hydra.help.app_name} module train and evaluate models to predict user behaviour in 360 videos.
 

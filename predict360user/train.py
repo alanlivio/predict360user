@@ -1,20 +1,18 @@
 import logging
 import os
-from dataclasses import dataclass
 from os.path import basename, exists, join
 from types import MethodType
 
 import absl.logging
 import numpy as np
 import pandas as pd
-from hydra.core.config_store import ConfigStore
 from keras.callbacks import CSVLogger, ModelCheckpoint
 from omegaconf import OmegaConf
 from tqdm.auto import tqdm
 from wandb.keras import WandbMetricsLogger
 
 import wandb
-from predict360user.base_model import BaseModel, batch_generator
+from predict360user.base_model import BaseModel, Config, batch_generator
 from predict360user.ingest import (
     count_entropy,
     get_class_name,
@@ -23,7 +21,7 @@ from predict360user.ingest import (
     split,
 )
 from predict360user.models import TRACK, Interpolation, NoMotion, PosOnly, PosOnly3D
-from predict360user.registry import EVAL_RES_CSV, TRAIN_RES_CSV
+from predict360user.registry import EVAL_RES_CSV
 from predict360user.utils.math360 import calc_actual_entropy, orth_dist_cartesian
 
 MODEL_NAMES = [
@@ -50,54 +48,17 @@ absl.logging.set_verbosity(absl.logging.ERROR)
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 
-@dataclass
-class TrainerCfg:
-    batch_size: int = 128
-    dataset_name: str = "all"
-    epochs: int = 30
-    gpu_id: str = "0"
-    h_window: int = 25
-    init_window: int = 30
-    lr: float = 0.0005
-    m_window: int = 5
-    model_name: str = "pos_only"
-    savedir: str = "saved"
-    train_size: float = 0.8
-    test_size: float = 0.2
-    train_entropy: str = "all"
-    minsize: bool = False
-
-    def __post_init__(self) -> None:
-        assert self.model_name in MODEL_NAMES
-        assert self.train_entropy in ENTROPY_NAMES + ENTROPY_AUTO_NAMES
-
-    def __str__(self) -> str:
-        return OmegaConf.to_yaml(self)
-
-
-cs = ConfigStore.instance()
-cs.store(name="trainer", group="trainer", node=TrainerCfg)
-
 
 class Trainer:
-    def __init__(self, cfg: TrainerCfg) -> None:
+    def __init__(self, cfg: Config) -> None:
+        assert cfg.model_name in MODEL_NAMES
+        assert cfg.train_entropy in ENTROPY_NAMES + ENTROPY_AUTO_NAMES
         self.cfg = cfg
-        self.using_auto = self.cfg.train_entropy.startswith("auto")
-        self.model_fullname = self.cfg.model_name
-        self.model_fullname += f",lr={self.cfg.lr!r}"
-        if self.cfg.dataset_name != "all":
-            self.model_fullname += f",ds={self.cfg.dataset_name}"
-        if self.cfg.train_entropy != "all":
-            self.model_fullname += f",actS={self.cfg.train_entropy}"
-        if self.cfg.minsize:
-            self.model_fullname += f",minsize={self.cfg.minsize!r}"
-        self.model_dir = join(self.cfg.savedir, self.model_fullname)
-        self.model_path = join(self.model_dir, "weights.hdf5")
-        self.train_csv_log_f = join(self.model_dir, TRAIN_RES_CSV)
+        self.using_auto = cfg.train_entropy.startswith("auto")
 
     def run(self) -> None:
         log.info("Trainer.run using:\n---\n" + OmegaConf.to_yaml(self.cfg) + "----")
-        log.info(f"model_dir={self.model_dir}")
+        log.info(f"model_dir={self.cfg.model_dir}")
         self.df_wins = load_df_wins(
             dataset_name=self.cfg.dataset_name,
             init_window=self.cfg.init_window,
@@ -125,7 +86,7 @@ class Trainer:
                 "train_n_medium": n_medium,
                 "train_n_high": n_high,
             },
-            name=self.model_fullname,
+            name=self.cfg.model_fullname,
         )
         self.train()
         self.evaluate()
@@ -149,19 +110,19 @@ class Trainer:
         log.info("train ...")
         if self.using_auto or (self.cfg.model_name in MODELS_NAMES_NO_TRAIN):
             return
-        if not exists(self.model_dir):
-            os.makedirs(self.model_dir)
-        log.info("model_dir=" + self.model_dir)
+        if not exists(self.cfg.model_dir):
+            os.makedirs(self.cfg.model_dir)
+        log.info("model_dir=" + self.cfg.model_dir)
 
-        if exists(self.model_path):
-            self.model.load_weights(self.model_path)
+        if exists(self.cfg.model_path):
+            self.model.load_weights(self.cfg.model_path)
 
         train_wins = self.df_wins[self.df_wins["partition"] == "train"]
         val_wins = self.df_wins[self.df_wins["partition"] == "val"]
         # calc initial_epoch
         initial_epoch = 0
-        if exists(self.train_csv_log_f):
-            lines = pd.read_csv(self.train_csv_log_f)
+        if exists(self.cfg.train_csv_log_f):
+            lines = pd.read_csv(self.cfg.train_csv_log_f)
             lines.dropna(how="all", inplace=True)
             done_epochs = int(lines.iloc[-1]["epoch"]) + 1
             assert done_epochs <= self.cfg.epochs
@@ -180,9 +141,9 @@ class Trainer:
             steps_per_ep_train = np.ceil(len(train_wins) / self.cfg.batch_size)
             steps_per_ep_validate = np.ceil(len(val_wins) / self.cfg.batch_size)
             callbacks = [
-                CSVLogger(self.train_csv_log_f, append=True),
+                CSVLogger(self.cfg.train_csv_log_f, append=True),
                 ModelCheckpoint(
-                    self.model_path,
+                    self.cfg.model_path,
                     save_best_only=True,
                     save_weights_only=True,
                     mode="auto",
@@ -262,14 +223,14 @@ class Trainer:
             wandb.log({plot_id: plot})
             # save new row on csv
             df_test_err_per_t.loc[len(df_test_err_per_t)] = [
-                self.model_fullname,  # target model
+                self.cfg.model_fullname,  # target model
                 actS_c,  # target class
             ] + list(class_err_per_t)
         log.info("saving eval_results.csv")
-        df_test_err_per_t.to_csv(join(self.model_dir, EVAL_RES_CSV), index=False)
+        df_test_err_per_t.to_csv(join(self.cfg.model_dir, EVAL_RES_CSV), index=False)
 
 
-def _set_predict_by_entropy(model: BaseModel, cfg: TrainerCfg, df_wins) -> BaseModel:
+def _set_predict_by_entropy(model: BaseModel, cfg: Config, df_wins) -> BaseModel:
     prefix = join(
         cfg.savedir, f"{cfg.model_name},{cfg.dataset_name},actS,"
     )
