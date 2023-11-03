@@ -62,7 +62,8 @@ class BaseModel:
         pass
 
 
-def batch_generator(model: BaseModel, df_wins: pd.DataFrame, batch_size) -> Generator:
+def batch_generator(model, df_wins: pd.DataFrame, batch_size: int) -> Generator:
+    assert batch_size
     while True:
         for start in range(0, len(df_wins), batch_size):
             end = (

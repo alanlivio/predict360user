@@ -6,7 +6,7 @@ from keras import backend as K
 from keras.layers import LSTM, Dense, Input, Lambda
 from tensorflow import keras
 
-from predict360user.model_config import BaseModel, Config
+from predict360user.model_config import Config
 from predict360user.utils.math360 import (
     cartesian_to_eulerian,
     eulerian_to_cartesian,
@@ -65,7 +65,7 @@ def transform_normalized_eulerian_to_cartesian(positions) -> np.array:
     return np.array(eulerian_samples)
 
 
-class PosOnly(keras.Model, BaseModel):
+class PosOnly(keras.Model):
     def __init__(self, cfg: Config) -> None:
         self.cfg = cfg
         
@@ -121,7 +121,9 @@ class PosOnly(keras.Model, BaseModel):
         for traces, x_i in zip(traces_l, x_i_l):
             encoder_pos_inputs_for_batch.append(traces[x_i - self.cfg.m_window : x_i])
             decoder_pos_inputs_for_batch.append(traces[x_i : x_i + 1])
-            decoder_outputs_for_batch.append(traces[x_i + 1 : x_i + self.cfg.h_window + 1])
+            decoder_outputs_for_batch.append(
+                traces[x_i + 1 : x_i + self.cfg.h_window + 1]
+            )
         return (
             [
                 transform_batches_cartesian_to_normalized_eulerian(
@@ -137,7 +139,9 @@ class PosOnly(keras.Model, BaseModel):
         )
 
     def predict_for_sample(self, traces: np.array, x_i: int) -> np.array:
-        encoder_pos_inputs_for_sample = np.array([traces[x_i - self.cfg.m_window : x_i]])
+        encoder_pos_inputs_for_sample = np.array(
+            [traces[x_i - self.cfg.m_window : x_i]]
+        )
         decoder_pos_inputs_for_sample = np.array([traces[x_i : x_i + 1]])
         inputs = [
             transform_batches_cartesian_to_normalized_eulerian(

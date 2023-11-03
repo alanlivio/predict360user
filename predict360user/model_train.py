@@ -60,6 +60,7 @@ tqdm.pandas()
 absl.logging.set_verbosity(absl.logging.ERROR)
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
+
 def train_and_eval(cfg: Config) -> None:
     assert cfg.model_name in MODEL_NAMES
     assert cfg.train_entropy in ENTROPY_NAMES + ENTROPY_AUTO_NAMES
@@ -92,8 +93,8 @@ def train_and_eval(cfg: Config) -> None:
         name=cfg.model_fullname,
     )
     model = build_model(cfg)
-    train(model, df_wins)
-    evaluate(model, df_wins)
+    train(cfg, model, df_wins)
+    evaluate(cfg, model, df_wins)
     wandb.finish()
 
 
@@ -113,46 +114,44 @@ def build_model(cfg) -> None:
         raise RuntimeError
 
 
-def train(model: BaseModel, df_wins: pd.DataFrame) -> None:
+def train(cfg: Config, model: BaseModel, df_wins: pd.DataFrame) -> None:
     log.info("train ...")
-    if model.cfg.train_entropy.startswith("auto") or (
-        model.cfg.model_name in MODELS_NAMES_NO_TRAIN
+    if cfg.train_entropy.startswith("auto") or (
+        cfg.model_name in MODELS_NAMES_NO_TRAIN
     ):
         return
-    if not exists(model.cfg.model_dir):
-        os.makedirs(model.cfg.model_dir)
-    log.info("model_dir=" + model.cfg.model_dir)
+    if not exists(cfg.model_dir):
+        os.makedirs(cfg.model_dir)
+    log.info("model_dir=" + cfg.model_dir)
 
-    if exists(model.cfg.model_path):
-        model.load_weights(model.cfg.model_path)
+    if exists(cfg.model_path):
+        model.load_weights(cfg.model_path)
 
     train_wins = df_wins[df_wins["partition"] == "train"]
     val_wins = df_wins[df_wins["partition"] == "val"]
     # calc initial_epoch
     initial_epoch = 0
-    if exists(model.cfg.train_csv_log_f):
-        lines = pd.read_csv(model.cfg.train_csv_log_f)
+    if exists(cfg.train_csv_log_f):
+        lines = pd.read_csv(cfg.train_csv_log_f)
         lines.dropna(how="all", inplace=True)
         done_epochs = int(lines.iloc[-1]["epoch"]) + 1
-        assert done_epochs <= model.cfg.epochs
+        assert done_epochs <= cfg.epochs
         initial_epoch = done_epochs
         log.info(f"train_csv_log_f has {initial_epoch} epochs ")
 
     # fit
-    if model.cfg.gpu_id:
-        os.environ["CUDA_VISIBLE_DEVICES"] = str(model.cfg.gpu_id)
-        log.info(f"set visible cpu to {model.cfg.gpu_id}")
-    if initial_epoch >= model.cfg.epochs:
-        log.info(
-            f"train_csv_log_f has {initial_epoch}>={model.cfg.epochs}. not training."
-        )
+    if cfg.gpu_id:
+        os.environ["CUDA_VISIBLE_DEVICES"] = str(cfg.gpu_id)
+        log.info(f"set visible cpu to {cfg.gpu_id}")
+    if initial_epoch >= cfg.epochs:
+        log.info(f"train_csv_log_f has {initial_epoch}>={cfg.epochs}. not training.")
     else:
-        steps_per_ep_train = np.ceil(len(train_wins) / model.cfg.batch_size)
-        steps_per_ep_validate = np.ceil(len(val_wins) / model.cfg.batch_size)
+        steps_per_ep_train = np.ceil(len(train_wins) / cfg.batch_size)
+        steps_per_ep_validate = np.ceil(len(val_wins) / cfg.batch_size)
         callbacks = [
-            CSVLogger(model.cfg.train_csv_log_f, append=True),
+            CSVLogger(cfg.train_csv_log_f, append=True),
             ModelCheckpoint(
-                model.cfg.model_path,
+                cfg.model_path,
                 save_best_only=True,
                 save_weights_only=True,
                 mode="auto",
@@ -161,26 +160,26 @@ def train(model: BaseModel, df_wins: pd.DataFrame) -> None:
             WandbMetricsLogger(initial_global_step=initial_epoch),
         ]
         model.fit_generator(
-            generator=batch_generator(model, train_wins, model.cfg.batch_size),
-            validation_data=batch_generator(model, val_wins, model.cfg.batch_size),
+            generator=batch_generator(model, train_wins, cfg.batch_size),
+            validation_data=batch_generator(model, val_wins, cfg.batch_size),
             steps_per_epoch=steps_per_ep_train,
             validation_steps=steps_per_ep_validate,
-            epochs=model.cfg.epochs,
+            epochs=cfg.epochs,
             initial_epoch=initial_epoch,
             callbacks=callbacks,
             verbose=2,
         )
 
 
-def evaluate(model: BaseModel, df_wins: pd.DataFrame) -> None:
+def evaluate(cfg: Config, model: BaseModel, df_wins: pd.DataFrame) -> None:
     log.info("evaluate ...")
-    if model.cfg.train_entropy.startswith("auto"):  # will not use model
+    if cfg.train_entropy.startswith("auto"):  # will not use model
         _set_predict_by_entropy(model)
 
     test_wins = df_wins[df_wins["partition"] == "test"]
 
     # calculate predictions errors
-    t_range = list(range(model.cfg.h_window))
+    t_range = list(range(cfg.h_window))
 
     def _calc_pred_err(row) -> list[float]:
         # return np.random.rand(cfg.h_window)  # for debugging
@@ -189,7 +188,7 @@ def evaluate(model: BaseModel, df_wins: pd.DataFrame) -> None:
         pred_true = row["h_window"]
         # predict
         pred = model.predict_for_sample(traces, x_i)
-        assert len(pred) == model.cfg.h_window
+        assert len(pred) == cfg.h_window
         error_per_t = [orth_dist_cartesian(pred[t], pred_true[t]) for t in t_range]
         return error_per_t
 
@@ -231,11 +230,11 @@ def evaluate(model: BaseModel, df_wins: pd.DataFrame) -> None:
         wandb.log({plot_id: plot})
         # save new row on csv
         df_test_err_per_t.loc[len(df_test_err_per_t)] = [
-            model.cfg.model_fullname,  # target model
+            cfg.model_fullname,  # target model
             actS_c,  # target class
         ] + list(class_err_per_t)
     log.info("saving eval_results.csv")
-    df_test_err_per_t.to_csv(join(model.cfg.model_dir, EVAL_RES_CSV), index=False)
+    df_test_err_per_t.to_csv(join(cfg.model_dir, EVAL_RES_CSV), index=False)
 
 
 def _set_predict_by_entropy(model: BaseModel, cfg: Config, df_wins) -> BaseModel:
