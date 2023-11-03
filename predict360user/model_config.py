@@ -11,6 +11,7 @@ EVAL_RES_CSV = "eval_results.csv"
 TRAIN_RES_CSV = "train_results.csv"
 DEFAULT_SAVEDIR = "saved"
 
+
 @dataclass
 class Config:
     batch_size: int = 128
@@ -50,6 +51,8 @@ cs.store(name="config", group="config", node=Config)
 
 
 class BaseModel:
+    cfg: Config # should be filled by child class
+
     def generate_batch(
         self, traces_l: list[np.array], x_i_l: list
     ) -> Tuple[list, list]:

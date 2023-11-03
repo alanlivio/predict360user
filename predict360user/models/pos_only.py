@@ -4,10 +4,9 @@ import numpy as np
 import tensorflow as tf
 from keras import backend as K
 from keras.layers import LSTM, Dense, Input, Lambda
-from omegaconf import DictConfig
 from tensorflow import keras
 
-from predict360user.model_config import BaseModel
+from predict360user.model_config import BaseModel, Config
 from predict360user.utils.math360 import (
     cartesian_to_eulerian,
     eulerian_to_cartesian,
@@ -67,11 +66,11 @@ def transform_normalized_eulerian_to_cartesian(positions) -> np.array:
 
 
 class PosOnly(keras.Model, BaseModel):
-    def __init__(self, cfg: DictConfig) -> None:
-        self.m_window, self.h_window, self.lr = cfg.m_window, cfg.h_window, cfg.lr
-
+    def __init__(self, cfg: Config) -> None:
+        self.cfg = cfg
+        
         # Defining model structure
-        encoder_inputs = Input(shape=(self.m_window, 2))
+        encoder_inputs = Input(shape=(self.cfg.m_window, 2))
         decoder_inputs = Input(shape=(1, 2))
 
         # TODO: try tf.compat.v1.keras.layers.CuDNNLSTM
@@ -90,7 +89,7 @@ class PosOnly(keras.Model, BaseModel):
         # Decoding
         all_outputs = []
         inputs = decoder_inputs
-        for _ in range(self.h_window):
+        for _ in range(self.cfg.h_window):
             # # Run the decoder on one timestep
             decoder_pred, state_h, state_c = lstm_layer(inputs, initial_state=states)
             outputs_delta = decoder_dense_mot(decoder_pred)
@@ -110,7 +109,7 @@ class PosOnly(keras.Model, BaseModel):
         super().__init__(
             inputs=[encoder_inputs, decoder_inputs], outputs=decoder_outputs
         )
-        model_optimizer = keras.optimizers.Adam(learning_rate=self.lr)
+        model_optimizer = keras.optimizers.Adam(learning_rate=self.cfg.lr)
         self.compile(optimizer=model_optimizer, loss=metric_orth_dist_eulerian)
 
     def generate_batch(
@@ -120,9 +119,9 @@ class PosOnly(keras.Model, BaseModel):
         decoder_pos_inputs_for_batch = []
         decoder_outputs_for_batch = []
         for traces, x_i in zip(traces_l, x_i_l):
-            encoder_pos_inputs_for_batch.append(traces[x_i - self.m_window : x_i])
+            encoder_pos_inputs_for_batch.append(traces[x_i - self.cfg.m_window : x_i])
             decoder_pos_inputs_for_batch.append(traces[x_i : x_i + 1])
-            decoder_outputs_for_batch.append(traces[x_i + 1 : x_i + self.h_window + 1])
+            decoder_outputs_for_batch.append(traces[x_i + 1 : x_i + self.cfg.h_window + 1])
         return (
             [
                 transform_batches_cartesian_to_normalized_eulerian(
@@ -138,7 +137,7 @@ class PosOnly(keras.Model, BaseModel):
         )
 
     def predict_for_sample(self, traces: np.array, x_i: int) -> np.array:
-        encoder_pos_inputs_for_sample = np.array([traces[x_i - self.m_window : x_i]])
+        encoder_pos_inputs_for_sample = np.array([traces[x_i - self.cfg.m_window : x_i]])
         decoder_pos_inputs_for_sample = np.array([traces[x_i : x_i + 1]])
         inputs = [
             transform_batches_cartesian_to_normalized_eulerian(
