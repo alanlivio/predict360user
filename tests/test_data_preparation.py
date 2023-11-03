@@ -2,10 +2,10 @@ import unittest
 
 import numpy as np
 
-from predict360user.ingest import load_df_trajecs, split
+from predict360user.data_preparation import load_df_trajecs, split
 
 
-class DatasetTestCase(unittest.TestCase):
+class DataPreparationTestCase(unittest.TestCase):
     def setUp(self) -> None:
         self.df = load_df_trajecs()
         self.assertFalse(self.df.empty)

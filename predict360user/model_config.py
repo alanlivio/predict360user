@@ -8,8 +8,9 @@ import tensorflow as tf
 from hydra.core.config_store import ConfigStore
 from omegaconf import OmegaConf
 
-from predict360user.registry import TRAIN_RES_CSV
-
+EVAL_RES_CSV = "eval_results.csv"
+TRAIN_RES_CSV = "train_results.csv"
+DEFAULT_SAVEDIR = "saved"
 
 @dataclass
 class Config:

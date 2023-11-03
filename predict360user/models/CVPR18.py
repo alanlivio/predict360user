@@ -14,7 +14,7 @@ from keras.layers import (
 from tensorflow import keras
 import tensorflow as tf
 
-from predict360user.base_model import (
+from predict360user.model_config import (
     BaseModel,
     delta_angle_from_ori_mot,
     metric_orth_dist_cartesian,

@@ -4,7 +4,7 @@ import plotly.express as px
 from plotly.subplots import make_subplots
 from tqdm.auto import tqdm
 
-from predict360user.ingest import get_class_name, get_class_thresholds
+from predict360user.data_preparation import get_class_name, get_class_thresholds
 from predict360user.utils.plot360 import Plot360
 from predict360user.utils.tileset360 import TILESET_DEFAULT
 

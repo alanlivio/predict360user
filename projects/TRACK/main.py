@@ -1,4 +1,4 @@
-from predict360user.train import Trainer, TrainerCfg
+from predict360user.model_train import Trainer, TrainerCfg
 import hydra
 
 
