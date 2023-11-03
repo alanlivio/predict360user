@@ -2,6 +2,7 @@ import logging
 import os
 from dataclasses import dataclass
 from os.path import basename, exists, join
+from types import MethodType
 
 import absl.logging
 import numpy as np
@@ -144,25 +145,6 @@ class Trainer:
         else:
             raise RuntimeError
 
-    def _auto_select_model(self, traces: np.array, x_i: int) -> BaseModel:
-        if self.cfg.train_entropy == "auto":
-            window = traces
-        elif self.cfg.train_entropy == "auto_m_window":
-            window = traces[x_i - self.cfg.m_window : x_i]
-        elif self.cfg.train_entropy == "auto_since_start":
-            window = traces[0:x_i]
-        else:
-            raise RuntimeError()
-        a_ent = calc_actual_entropy(window)
-        actS_c = get_class_name(a_ent, self.threshold_medium, self.threshold_high)
-        if actS_c == "low":
-            return self.model_low
-        if actS_c == "medium":
-            return self.model_medium
-        if actS_c == "high":
-            return self.model_high
-        raise RuntimeError()
-
     def train(self) -> None:
         log.info("train ...")
         if self.using_auto or (self.cfg.model_name in MODELS_NAMES_NO_TRAIN):
@@ -224,19 +206,7 @@ class Trainer:
     def evaluate(self) -> None:
         log.info("evaluate ...")
         if self.using_auto:  # will not use self.model
-            prefix = join(
-                self.cfg.savedir, f"{self.cfg.model_name},{self.cfg.dataset_name},actS,"
-            )
-            log.info("creating model auto ...")
-            self.threshold_medium, self.threshold_high = get_class_thresholds(
-                self.df_wins, "actS"
-            )
-            self.model_low = self.model.copy()
-            self.model_low.load_weights(join(prefix + "low", "weights.hdf5"))
-            self.model_medium = self.model.copy()
-            self.model_medium.load_weights(join(prefix + "medium", "weights.hdf5"))
-            self.model_high = self.model.copy()
-            self.model_high.load_weights(join(prefix + "high", "weights.hdf5"))
+            self.model = _set_predict_by_entropy(self.model)
 
         test_wins = self.df_wins[self.df_wins["partition"] == "test"]
 
@@ -249,12 +219,7 @@ class Trainer:
             x_i = row["trace_id"]
             pred_true = row["h_window"]
             # predict
-            if self.using_auto:
-                pred = self._auto_select_model(traces, x_i).predict_for_sample(
-                    traces, x_i
-                )
-            else:
-                pred = self.model.predict_for_sample(traces, x_i)
+            pred = self.model.predict_for_sample(traces, x_i)
             assert len(pred) == self.cfg.h_window
             error_per_t = [orth_dist_cartesian(pred[t], pred_true[t]) for t in t_range]
             return error_per_t
@@ -302,3 +267,39 @@ class Trainer:
             ] + list(class_err_per_t)
         log.info("saving eval_results.csv")
         df_test_err_per_t.to_csv(join(self.model_dir, EVAL_RES_CSV), index=False)
+
+
+def _set_predict_by_entropy(model: BaseModel, cfg: TrainerCfg, df_wins) -> BaseModel:
+    prefix = join(
+        cfg.savedir, f"{cfg.model_name},{cfg.dataset_name},actS,"
+    )
+    threshold_medium, threshold_high = get_class_thresholds(df_wins, "actS")
+    model_low = model.copy()
+    model_low.load_weights(join(prefix + "low", "weights.hdf5"))
+    model_medium = model.copy()
+    model_medium.load_weights(join(prefix + "medium", "weights.hdf5"))
+    model_high = model.copy()
+    model_high.load_weights(join(prefix + "high", "weights.hdf5"))
+
+    def _predict_by_entropy(self, traces: np.array, x_i: int) -> BaseModel:
+        if cfg.train_entropy == "auto":
+            window = traces
+        elif cfg.train_entropy == "auto_m_window":
+            window = traces[x_i - cfg.m_window : x_i]
+        elif cfg.train_entropy == "auto_since_start":
+            window = traces[0:x_i]
+        else:
+            raise RuntimeError()
+        a_ent = calc_actual_entropy(window)
+        actS_c = get_class_name(a_ent, threshold_medium, threshold_high)
+        if actS_c == "low":
+            return model_low.predict_for_sample(self, traces, x_i)
+        if actS_c == "medium":
+            return model_medium.predict_for_sample(self, traces, x_i)
+        if actS_c == "high":
+            return model_high.predict_for_sample(self, traces, x_i)
+        else:
+            raise RuntimeError()
+
+    model.predict_for_sample = MethodType(_predict_by_entropy, model)
+    return model
