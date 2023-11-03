@@ -110,9 +110,6 @@ class Trainer:
             test_size=self.cfg.test_size,
         )
         self.build_model()
-        # setting dirs avoid permisison problems at '/tmp/.config/wandb'
-        os.environ["WANDB_DIR"] = self.cfg.savedir
-        os.environ["WANDB_CONFIG_DIR"] = self.cfg.savedir
         _, n_low, n_medium, n_high = count_entropy(
             self.df_wins[self.df_wins["partition"] == "train"]
         )
