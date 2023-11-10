@@ -17,7 +17,7 @@ from tqdm.auto import tqdm
 from wandb.keras import WandbMetricsLogger
 
 import wandb
-from predict360user.data_preparation import (
+from predict360user.ingest import (
     count_entropy,
     get_class_name,
     get_class_thresholds,
