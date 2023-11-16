@@ -8,6 +8,7 @@ h_window: 25
 train_size: 0.8
 test_size: 0.2
 epochs: 30
+gpu_id: ''
 batch_size: 128
 lr: 0.0005
 minsize: False

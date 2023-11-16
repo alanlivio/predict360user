@@ -1,14 +1,10 @@
-from predict360user.train import Trainer, TrainerCfg
-import hydra
+from predict360user.train import Config, train_and_eval
 
 
-@hydra.main(
-    version_base=None, config_path="../../predict360user/configs", config_name="trainer"
-)
-def main(cfg: TrainerCfg) -> None:
+def main() -> None:
+    cfg = Config()
     cfg.model_name = "TRACK"
-    trn = Trainer(cfg)
-    trn.run()
+    train_and_eval(cfg)
 
 
 if __name__ == "__main__":
