@@ -71,8 +71,6 @@ def df_wins_put_entropy_at_end(df: pd.DataFrame, entropy: str) -> pd.DataFrame:
     return df
 
 def train_and_eval(cfg: Config) -> None:
-    assert cfg.model_name in MODEL_NAMES
-    assert cfg.train_entropy in ENTROPY_NAMES + ENTROPY_AUTO_NAMES
     log.info("train_and_eval using config:\n---\n" + OmegaConf.to_yaml(cfg) + "----")
     log.info(f"model_dir={cfg.model_dir}")
     df_wins = load_df_wins(
@@ -80,6 +78,7 @@ def train_and_eval(cfg: Config) -> None:
         init_window=cfg.init_window,
         h_window=cfg.h_window,
     )
+    assert cfg.train_entropy in ENTROPY_NAMES + ENTROPY_AUTO_NAMES
     df_wins = split(
         df_wins,
         train_size=cfg.train_size,
@@ -102,12 +101,13 @@ def train_and_eval(cfg: Config) -> None:
         name=cfg.model_fullname,
     )
     model = build_model(cfg)
-    train(cfg, model, df_wins)
+    fit_keras(cfg, model, df_wins)
     evaluate(cfg, model, df_wins)
     wandb.finish()
 
 
 def build_model(cfg) -> None:
+    assert cfg.model_name in MODEL_NAMES
     if cfg.model_name == "pos_only":
         return PosOnly(cfg)
     elif cfg.model_name == "pos_only_3d":
@@ -123,7 +123,7 @@ def build_model(cfg) -> None:
         raise RuntimeError
 
 
-def train(cfg: Config, model: BaseModel, df_wins: pd.DataFrame) -> None:
+def fit_keras(cfg: Config, model: BaseModel, df_wins: pd.DataFrame) -> None:
     log.info("train ...")
     if cfg.train_entropy.startswith("auto") or (
         cfg.model_name in MODELS_NAMES_NO_TRAIN
@@ -137,9 +137,9 @@ def train(cfg: Config, model: BaseModel, df_wins: pd.DataFrame) -> None:
         model.load_weights(cfg.model_path)
 
     train_wins = df_wins[df_wins["partition"] == "train"]
-    if cfg.train_last_entropy:
-        log.info(f"train_last_entropy={cfg.train_last_entropy}")
-        train_wins = df_wins_put_entropy_at_end(train_wins, cfg.train_last_entropy)
+    if cfg.tuning_entropy:
+        log.info(f"tuning_entropy={cfg.tuning_entropy}")
+        train_wins = df_wins_put_entropy_at_end(train_wins, cfg.tuning_entropy)
     else:
         train_wins = shuffle(train_wins)
         

@@ -24,7 +24,7 @@ class Config:
     savedir: str = "saved"
     train_size: float = 0.8
     test_size: float = 0.2
-    train_last_entropy: str = ""
+    tuning_entropy: str = ""
     train_entropy: str = "all"
     minsize: bool = False
 
@@ -35,8 +35,8 @@ class Config:
             self.model_fullname += f",ds={self.dataset_name}"
         if self.train_entropy != "all":
             self.model_fullname += f",actS={self.train_entropy}"
-        if self.train_last_entropy:
-            self.model_fullname += f",actS_last={self.train_last_entropy}"
+        if self.tuning_entropy:
+            self.model_fullname += f",actS_last={self.tuning_entropy}"
         if self.minsize:
             self.model_fullname += f",minsize={self.minsize!r}"
         self.model_dir = join(self.savedir, self.model_fullname)
