@@ -4,8 +4,6 @@ from typing import Generator, Tuple
 
 import numpy as np
 import pandas as pd
-from hydra.core.config_store import ConfigStore
-from omegaconf import OmegaConf
 
 EVAL_RES_CSV = "eval_results.csv"
 TRAIN_RES_CSV = "train_results.csv"
@@ -45,16 +43,9 @@ class Config:
         self.model_path = join(self.model_dir, "weights.hdf5")
         self.train_csv_log_f = join(self.model_dir, TRAIN_RES_CSV)
 
-    def __str__(self) -> str:
-        return OmegaConf.to_yaml(self)
-
-
-cs = ConfigStore.instance()
-cs.store(name="config", group="config", node=Config)
-
 
 class BaseModel:
-    cfg: Config # should be filled by child class
+    cfg: Config  # should be filled by child class
 
     def generate_batch(
         self, traces_l: list[np.array], x_i_l: list
