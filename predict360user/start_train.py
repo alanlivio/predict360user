@@ -1,13 +1,12 @@
-import hydra
-from omegaconf import DictConfig
+from omegaconf import OmegaConf
+import logging
 
 from predict360user.model_config import Config
 from predict360user.train import train_and_eval
 
-
-@hydra.main(version_base=None, config_path=".", config_name="start_train")
-def main(cfg: DictConfig) -> None:
-    train_and_eval(Config(**cfg))
-
 if __name__ == "__main__":
-    main()
+    logging.basicConfig(
+        level=logging.INFO, format="%(levelname)s %(name)s - %(message)s"
+    )
+    cfg = OmegaConf.from_cli()
+    train_and_eval(Config(**cfg))

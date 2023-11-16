@@ -1,7 +1,11 @@
 from predict360user.train import Config, train_and_eval
+import logging
 
 
 def main() -> None:
+    logging.basicConfig(
+        level=logging.INFO, format="%(levelname)s %(name)s - %(message)s"
+    )
     cfg = Config()
     cfg.model_name = "TRACK"
     train_and_eval(cfg)
