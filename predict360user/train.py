@@ -66,9 +66,10 @@ def df_wins_put_entropy_at_end(df: pd.DataFrame, entropy: str) -> pd.DataFrame:
     assert entropy in ["low", "medium", "high"]
     begin = shuffle(df[df["actS_c"] != entropy])
     end = shuffle(df[df["actS_c"] == entropy])
-    df = pd.concat([begin,end])
+    df = pd.concat([begin, end])
     assert df.iloc[-1]["actS_c"] == entropy
     return df
+
 
 def train_and_eval(cfg: Config) -> None:
     log.info("train_and_eval using config:\n---\n" + OmegaConf.to_yaml(cfg) + "----")
@@ -102,7 +103,15 @@ def train_and_eval(cfg: Config) -> None:
     )
     model = build_model(cfg)
     fit_keras(cfg, model, df_wins)
-    evaluate(cfg, model, df_wins)
+    
+    # log wandb errr
+    err_per_class_dict = evaluate(cfg, model, df_wins)
+    for actS_c, err in err_per_class_dict.items():
+        wandb.run.summary[f"err_{actS_c}"] = err["mean"] 
+        table = wandb.Table(data=err["mean_per_t"], columns=["t", "err"])
+        plot_id = f"test_err_per_t_class_{actS_c}"
+        plot = wandb.plot.line(table, "t", "err", title=plot_id)
+        wandb.log({plot_id: plot})
     wandb.finish()
 
 
@@ -142,7 +151,7 @@ def fit_keras(cfg: Config, model: BaseModel, df_wins: pd.DataFrame) -> None:
         train_wins = df_wins_put_entropy_at_end(train_wins, cfg.tuning_entropy)
     else:
         train_wins = shuffle(train_wins)
-        
+
     val_wins = df_wins[df_wins["partition"] == "val"]
     # calc initial_epoch
     initial_epoch = 0
@@ -186,14 +195,13 @@ def fit_keras(cfg: Config, model: BaseModel, df_wins: pd.DataFrame) -> None:
         )
 
 
-def evaluate(cfg: Config, model: BaseModel, df_wins: pd.DataFrame) -> None:
+def evaluate(cfg: Config, model: BaseModel, df_wins: pd.DataFrame) -> dict:
     log.info("evaluate ...")
     if cfg.train_entropy.startswith("auto"):  # will not use model
         _set_predict_by_entropy(model)
 
-    test_wins = df_wins[df_wins["partition"] == "test"]
-
     # calculate predictions errors
+    test_wins = df_wins[df_wins["partition"] == "test"]
     t_range = list(range(cfg.h_window))
 
     def _calc_pred_err(row) -> list[float]:
@@ -216,11 +224,9 @@ def evaluate(cfg: Config, model: BaseModel, df_wins: pd.DataFrame) -> None:
         _calc_pred_err, axis=1, result_type="expand"
     )
     assert df_wins.loc[test_wins.index, t_range].all().all()
-    # save predications
-    # 1) avg per class (as wandb summary): # err_all, err_low, err_nohigh, err_medium,
-    # err_nolow, err_nolow, err_all, err_high
-    # 2) avg err per t per class (as wandb line plots and as csv)
-    targets = [
+    
+    # calculate predications errors mean
+    classes = [
         ("all", test_wins.index),
         ("low", test_wins.index[test_wins["actS_c"] == "low"]),
         ("nohigh", test_wins.index[test_wins["actS_c"] != "high"]),
@@ -228,29 +234,15 @@ def evaluate(cfg: Config, model: BaseModel, df_wins: pd.DataFrame) -> None:
         ("nolow", test_wins.index[test_wins["actS_c"] != "low"]),
         ("high", test_wins.index[test_wins["actS_c"] == "high"]),
     ]
-    df_test_err_per_t = pd.DataFrame(
-        columns=["model_name", "actS_c"] + t_range,
-        dtype=np.float32,
-    )
-    for actS_c, idx in targets:
-        # 1)
-        class_err = df_wins.loc[idx, t_range].values.mean()
-        wandb.run.summary[f"err_{actS_c}"] = class_err
-        # 2)
+    ret = {tup[0]: {} for tup in classes}
+    for actS_c, idx in classes:
+        # 1) mean per class (as wandb summary): # err_all, err_low, err_nohigh, err_medium,
+        ret[actS_c]["mean"] = df_wins.loc[idx, t_range].values.mean()
+        # 2) mean err per t per class
         class_err_per_t = df_wins.loc[idx, t_range].mean()
         data = [[x, y] for (x, y) in zip(t_range, class_err_per_t)]
-        table = wandb.Table(data=data, columns=["t", "err"])
-        plot_id = f"test_err_per_t_class_{actS_c}"
-        plot = wandb.plot.line(table, "t", "err", title=plot_id)
-        wandb.log({plot_id: plot})
-        # save new row on csv
-        df_test_err_per_t.loc[len(df_test_err_per_t)] = [
-            cfg.model_fullname,  # target model
-            actS_c,  # target class
-        ] + list(class_err_per_t)
-    log.info("saving eval_results.csv")
-    df_test_err_per_t.to_csv(join(cfg.model_dir, EVAL_RES_CSV), index=False)
-
+        ret[actS_c]["mean_per_t"] = data
+    return ret
 
 def _set_predict_by_entropy(model: BaseModel, cfg: Config, df_wins) -> BaseModel:
     prefix = join(cfg.savedir, f"{cfg.model_name},{cfg.dataset_name},actS,")
