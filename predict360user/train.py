@@ -49,8 +49,7 @@ MODEL_NAMES = [
     "most_salient_point",
 ]
 MODELS_NAMES_NO_TRAIN = ["no_motion", "interpolation"]
-ENTROPY_NAMES = ["all", "low", "medium", "high", "nohigh", "nolow"]
-ENTROPY_AUTO_NAMES = ["auto", "auto_m_window", "auto_since_start"]
+
 
 log = logging.getLogger(basename(__file__))
 
@@ -79,7 +78,6 @@ def train_and_eval(cfg: Config) -> None:
         init_window=cfg.init_window,
         h_window=cfg.h_window,
     )
-    assert cfg.train_entropy in ENTROPY_NAMES + ENTROPY_AUTO_NAMES
     df_wins = split(
         df_wins,
         train_size=cfg.train_size,
@@ -116,7 +114,6 @@ def train_and_eval(cfg: Config) -> None:
 
 
 def build_model(cfg) -> None:
-    assert cfg.model_name in MODEL_NAMES
     if cfg.model_name == "pos_only":
         return PosOnly(cfg)
     elif cfg.model_name == "pos_only_3d":

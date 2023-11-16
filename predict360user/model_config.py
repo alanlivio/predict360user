@@ -8,6 +8,9 @@ import pandas as pd
 EVAL_RES_CSV = "eval_results.csv"
 TRAIN_RES_CSV = "train_results.csv"
 DEFAULT_SAVEDIR = "saved"
+ENTROPY_NAMES = ["all", "low", "medium", "high", "nohigh", "nolow"]
+ENTROPY_NAMES_UNIQUE = ["low", "medium", "high"]
+ENTROPY_NAMES_AUTO = ["auto", "auto_m_window", "auto_since_start"]
 
 
 @dataclass
@@ -33,8 +36,10 @@ class Config:
         self.model_fullname += f",lr={self.lr!r}"
         if self.dataset_name != "all":
             self.model_fullname += f",ds={self.dataset_name}"
+        assert self.train_entropy in ENTROPY_NAMES + ENTROPY_NAMES_AUTO
         if self.train_entropy != "all":
             self.model_fullname += f",actS={self.train_entropy}"
+        assert self.tuning_entropy in ENTROPY_NAMES
         if self.tuning_entropy:
             self.model_fullname += f",actS_last={self.tuning_entropy}"
         if self.minsize:

@@ -219,7 +219,7 @@ def split(
     train_minsize=False,
 ) -> None:
     log.info(f"{train_size=} (with {val_size=}), {test_size=}")
-
+    
     # split train and test
     train, test = train_test_split(
         df,
