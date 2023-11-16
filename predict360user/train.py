@@ -5,6 +5,7 @@ import sys
 from os.path import abspath, basename, exists, isabs, isdir, join
 from types import MethodType
 
+from sklearn.utils import shuffle
 import absl.logging
 import IPython
 import numpy as np
@@ -60,6 +61,14 @@ tqdm.pandas()
 absl.logging.set_verbosity(absl.logging.ERROR)
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
+
+def df_wins_put_entropy_at_end(df: pd.DataFrame, entropy: str) -> pd.DataFrame:
+    assert entropy in ["low", "medium", "high"]
+    begin = shuffle(df[df["actS_c"] != entropy])
+    end = shuffle(df[df["actS_c"] == entropy])
+    df = pd.concat([begin,end])
+    assert df.iloc[-1]["actS_c"] == entropy
+    return df
 
 def train_and_eval(cfg: Config) -> None:
     assert cfg.model_name in MODEL_NAMES
@@ -128,6 +137,12 @@ def train(cfg: Config, model: BaseModel, df_wins: pd.DataFrame) -> None:
         model.load_weights(cfg.model_path)
 
     train_wins = df_wins[df_wins["partition"] == "train"]
+    if cfg.train_last_entropy:
+        log.info(f"train_last_entropy={cfg.train_last_entropy}")
+        train_wins = df_wins_put_entropy_at_end(train_wins, cfg.train_last_entropy)
+    else:
+        train_wins = shuffle(train_wins)
+        
     val_wins = df_wins[df_wins["partition"] == "val"]
     # calc initial_epoch
     initial_epoch = 0

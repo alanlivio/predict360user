@@ -17,7 +17,7 @@ class Config:
     batch_size: int = 128
     dataset_name: str = "all"
     epochs: int = 30
-    gpu_id: str = "0"
+    gpu_id: str = ""
     h_window: int = 25
     init_window: int = 30
     lr: float = 0.0005
@@ -26,6 +26,7 @@ class Config:
     savedir: str = "saved"
     train_size: float = 0.8
     test_size: float = 0.2
+    train_last_entropy: str = ""
     train_entropy: str = "all"
     minsize: bool = False
 
@@ -36,6 +37,8 @@ class Config:
             self.model_fullname += f",ds={self.dataset_name}"
         if self.train_entropy != "all":
             self.model_fullname += f",actS={self.train_entropy}"
+        if self.train_last_entropy:
+            self.model_fullname += f",actS_last={self.train_last_entropy}"
         if self.minsize:
             self.model_fullname += f",minsize={self.minsize!r}"
         self.model_dir = join(self.savedir, self.model_fullname)
