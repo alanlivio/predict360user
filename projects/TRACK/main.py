@@ -1,4 +1,5 @@
-from predict360user.train import Config, train_and_eval
+from predict360user.train import Config
+from predict360user.start_train import train_and_eval
 import logging
 
 
