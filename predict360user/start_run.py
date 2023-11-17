@@ -7,10 +7,10 @@ import wandb
 from predict360user.ingest import count_entropy, load_df_wins, split
 
 log = logging.getLogger(basename(__file__))
+logging.basicConfig(level=logging.INFO, format="%(name)s - %(message)s")
 
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO, format="%(name)s - %(message)s")
-    cfg = Config(**OmegaConf.from_cli())
+
+def main(cfg: Config) -> None:
     log.info("used config:\n---\n" + OmegaConf.to_yaml(cfg) + "----")
     log.info(f"model_dir={cfg.model_dir}")
 
@@ -55,3 +55,8 @@ if __name__ == "__main__":
         plot = wandb.plot.line(table, "t", "err", title=plot_id)
         wandb.log({plot_id: plot})
     wandb.finish()
+
+
+if __name__ == "__main__":
+    cfg = Config(**OmegaConf.from_cli())
+    main(cfg)

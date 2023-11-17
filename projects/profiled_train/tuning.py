@@ -3,30 +3,21 @@ import logging
 from os.path import basename
 import wandb
 from sklearn.utils import shuffle
-import pandas as pd
 
+from predict360user.model_config import Config, ENTROPY_NAMES
 from predict360user.train import build_model, fit_keras, evaluate
 from predict360user.ingest import count_entropy, load_df_wins, split
 
 log = logging.getLogger(basename(__file__))
+logging.basicConfig(level=logging.INFO, format="%(name)s - %(message)s")
 
 
-def df_wins_put_entropy_at_end(df: pd.DataFrame, entropy: str) -> pd.DataFrame:
-    assert entropy in ["low", "medium", "high"]
-    begin = shuffle(df[df["actS_c"] != entropy])
-    end = shuffle(df[df["actS_c"] == entropy])
-    df = pd.concat([begin, end])
-    assert df.iloc[-1]["actS_c"] == entropy
-    return df
-
-
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO, format="%(name)s: %(message)s")
-    cfg = OmegaConf.from_cli()
+def main(cfg: Config) -> None:
+    assert cfg.tuning_entropy in ENTROPY_NAMES
     log.info("used config:\n---\n" + OmegaConf.to_yaml(cfg) + "----")
     log.info(f"model_dir={cfg.model_dir}")
 
-    # load dataset
+    # -- load dataset --
     df_wins = load_df_wins(
         dataset_name=cfg.dataset_name,
         init_window=cfg.init_window,
@@ -54,11 +45,26 @@ if __name__ == "__main__":
         name=cfg.model_fullname,
     )
 
-    # fit model
+    # -- fit --
     model = build_model(cfg)
     train_wins = df_wins[df_wins["partition"] == "train"]
-    train_wins = df_wins_put_entropy_at_end(train_wins, cfg.tuning_entropy)
-    fit_keras(cfg, model, df_wins)
+
+    # split tuning
+    tuning_prc = 0.25
+    epochs_pretuning = int(cfg.epochs * (1 - tuning_prc))
+    epochs_tuning = int(cfg.epochs * tuning_prc)
+    train_wins_tuning = shuffle(
+        train_wins[train_wins["actS_c"] == cfg.tuning_entropy].sample(
+            int(train_wins.size * tuning_prc)
+        )
+    )
+    train_wins_pretuning = shuffle(train_wins.loc[~train_wins_tuning.index])
+    # fit all
+    cfg.epochs = epochs_pretuning
+    fit_keras(cfg, model, train_wins_pretuning)
+    # fit tuning
+    cfg.epochs = epochs_tuning
+    fit_keras(cfg, model, train_wins_tuning)
 
     # evaluate and log to wandb
     err_per_class_dict = evaluate(cfg, model, df_wins)
@@ -69,3 +75,9 @@ if __name__ == "__main__":
         plot = wandb.plot.line(table, "t", "err", title=plot_id)
         wandb.log({plot_id: plot})
     wandb.finish()
+
+
+if __name__ == "__main__":
+    cfg = Config(**OmegaConf.from_cli())
+    cfg.tuning_entropy = "low"
+    main(cfg)
