@@ -2,6 +2,7 @@ from omegaconf import OmegaConf
 import logging
 from os.path import basename
 import wandb
+import math
 
 from predict360user.model_config import Config, ENTROPY_NAMES
 from predict360user.train import build_model, fit_keras, evaluate
@@ -53,8 +54,8 @@ def main(cfg: Config) -> None:
         frac=tuning_prc, random_state=1
     )
     train_wins_pretuning = train_wins.drop(train_wins_tuning.index)
-    epochs_pretuning = int(cfg.epochs * (1 - tuning_prc))
-    epochs_tuning = int(cfg.epochs * tuning_prc)
+    epochs_pretuning = math.floor(cfg.epochs * (1 - tuning_prc))
+    epochs_tuning = math.ceil(cfg.epochs * tuning_prc)
     # fit
     cfg.epochs = epochs_pretuning
     fit_keras(cfg, model, train_wins_pretuning)
