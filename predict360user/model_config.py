@@ -39,7 +39,6 @@ class Config:
         assert self.train_entropy in ENTROPY_NAMES + ENTROPY_NAMES_AUTO
         if self.train_entropy != "all":
             self.model_fullname += f",actS={self.train_entropy}"
-        assert self.tuning_entropy in ENTROPY_NAMES
         if self.tuning_entropy:
             self.model_fullname += f",actS_last={self.tuning_entropy}"
         if self.minsize:

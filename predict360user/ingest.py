@@ -217,7 +217,7 @@ def split(
     test_size=0.2,
     train_entropy="",
     train_minsize=False,
-) -> None:
+) -> pd.DataFrame:
     log.info(f"{train_size=} (with {val_size=}), {test_size=}")
     
     # split train and test

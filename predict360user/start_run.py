@@ -1,6 +1,7 @@
 from omegaconf import OmegaConf
 import logging
 from os.path import basename
+from predict360user.model_config import Config
 from predict360user.train import build_model, fit_keras, evaluate
 import wandb
 from predict360user.ingest import count_entropy, load_df_wins, split
@@ -9,7 +10,7 @@ log = logging.getLogger(basename(__file__))
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(name)s - %(message)s")
-    cfg = OmegaConf.from_cli()
+    cfg = Config(**OmegaConf.from_cli())
     log.info("used config:\n---\n" + OmegaConf.to_yaml(cfg) + "----")
     log.info(f"model_dir={cfg.model_dir}")
 
