@@ -2,7 +2,6 @@ from omegaconf import OmegaConf
 import logging
 from os.path import basename
 import wandb
-from sklearn.utils import shuffle
 
 from predict360user.model_config import Config, ENTROPY_NAMES
 from predict360user.train import build_model, fit_keras, evaluate
@@ -49,20 +48,17 @@ def main(cfg: Config) -> None:
     model = build_model(cfg)
     train_wins = df_wins[df_wins["partition"] == "train"]
 
-    # split tuning
-    tuning_prc = 0.25
+    # split for tuning
+    tuning_prc = 0.33
+    train_wins_tuning = train_wins[train_wins["actS_c"] == cfg.tuning_entropy].sample(
+        frac=tuning_prc, random_state=1
+    )
+    train_wins_pretuning = train_wins.drop(train_wins_tuning.index)
     epochs_pretuning = int(cfg.epochs * (1 - tuning_prc))
     epochs_tuning = int(cfg.epochs * tuning_prc)
-    train_wins_tuning = shuffle(
-        train_wins[train_wins["actS_c"] == cfg.tuning_entropy].sample(
-            int(train_wins.size * tuning_prc)
-        )
-    )
-    train_wins_pretuning = shuffle(train_wins.loc[~train_wins_tuning.index])
-    # fit all
+    # fit
     cfg.epochs = epochs_pretuning
     fit_keras(cfg, model, train_wins_pretuning)
-    # fit tuning
     cfg.epochs = epochs_tuning
     fit_keras(cfg, model, train_wins_tuning)
 
