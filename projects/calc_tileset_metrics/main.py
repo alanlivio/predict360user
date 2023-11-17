@@ -6,7 +6,6 @@ import pandas as pd
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 
-from predict360user.ingest import Dataset
 from predict360user.train import DEFAULT_SAVEDIR, show_or_save
 from predict360user.utils.tileset360 import TileCover, TileSet, TileSetVoro
 
