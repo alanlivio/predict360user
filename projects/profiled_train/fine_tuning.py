@@ -13,7 +13,7 @@ log = logging.getLogger(basename(__file__))
 
 def main(cfg: Config) -> None:
     assert cfg.tuning_entropy in ENTROPY_NAMES
-    log.info("used config:\n---\n" + OmegaConf.to_yaml(cfg) + "----")
+    log.info("config:\n--\n" + OmegaConf.to_yaml(cfg) + "--")
     log.info(f"model_dir={cfg.model_dir}")
 
     # -- load dataset --
@@ -76,5 +76,4 @@ def main(cfg: Config) -> None:
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(levelname)s:%(name)s:%(message)s")
     cfg = Config(**OmegaConf.from_cli())
-    cfg.tuning_entropy = "low"
     main(cfg)
