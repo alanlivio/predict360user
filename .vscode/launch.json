@@ -8,7 +8,7 @@
             "name": "Python: Module",
             "type": "python",
             "request": "launch",
-            "module": "predict360user.run_train",
+            "module": "predict360user.start_run",
             "justMyCode": true
         }
     ]
