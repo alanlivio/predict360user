@@ -40,7 +40,7 @@ class Config:
         if self.train_entropy != "all":
             self.model_fullname += f",actS={self.train_entropy}"
         if self.tuning_entropy:
-            self.model_fullname += f",actS_last={self.tuning_entropy}"
+            self.model_fullname += f",actS_tuning={self.tuning_entropy}"
         if self.minsize:
             self.model_fullname += f",minsize={self.minsize!r}"
         self.model_dir = join(self.savedir, self.model_fullname)
