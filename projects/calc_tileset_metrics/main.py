@@ -65,7 +65,7 @@ def show_tileset_reqs_metrics(df: pd.DataFrame) -> None:
 
 
 def main() -> None:
-    logging.basicConfig(level=logging.INFO, format="%(name)s: %(message)s")
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s:%(name)s:%(message)s")
     tileset_variations = [
         TileSet(4, 6, TileCover.CENTER),
         TileSet(4, 6, TileCover.ANY),

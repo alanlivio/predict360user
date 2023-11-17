@@ -7,7 +7,6 @@ import wandb
 from predict360user.ingest import count_entropy, load_df_wins, split
 
 log = logging.getLogger(basename(__file__))
-logging.basicConfig(level=logging.INFO, format="%(name)s - %(message)s")
 
 
 def main(cfg: Config) -> None:
@@ -59,4 +58,5 @@ def main(cfg: Config) -> None:
 
 if __name__ == "__main__":
     cfg = Config(**OmegaConf.from_cli())
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s:%(name)s:%(message)s")
     main(cfg)

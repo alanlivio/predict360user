@@ -8,7 +8,6 @@ from predict360user.train import build_model, fit_keras, evaluate
 from predict360user.ingest import count_entropy, load_df_wins, split
 
 log = logging.getLogger(basename(__file__))
-logging.basicConfig(level=logging.INFO, format="%(name)s - %(message)s")
 
 
 def main(cfg: Config) -> None:
@@ -74,6 +73,7 @@ def main(cfg: Config) -> None:
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s:%(name)s:%(message)s")
     cfg = Config(**OmegaConf.from_cli())
     cfg.tuning_entropy = "low"
     main(cfg)
