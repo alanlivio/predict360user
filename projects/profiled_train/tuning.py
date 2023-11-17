@@ -6,7 +6,6 @@ from sklearn.utils import shuffle
 import pandas as pd
 
 from predict360user.train import build_model, fit_keras, evaluate
-from predict360user.model_config import Config
 from predict360user.ingest import count_entropy, load_df_wins, split
 
 log = logging.getLogger(basename(__file__))
@@ -21,11 +20,13 @@ def df_wins_put_entropy_at_end(df: pd.DataFrame, entropy: str) -> pd.DataFrame:
     return df
 
 
-def train_and_eval(cfg: Config) -> None:
-    log.info("train_and_eval using config:\n---\n" + OmegaConf.to_yaml(cfg) + "----")
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO, format="%(name)s: %(message)s")
+    cfg = OmegaConf.from_cli()
+    log.info("used config:\n---\n" + OmegaConf.to_yaml(cfg) + "----")
     log.info(f"model_dir={cfg.model_dir}")
 
-    # build dataset
+    # load dataset
     df_wins = load_df_wins(
         dataset_name=cfg.dataset_name,
         init_window=cfg.init_window,
@@ -52,9 +53,11 @@ def train_and_eval(cfg: Config) -> None:
         },
         name=cfg.model_fullname,
     )
-    train_wins = df_wins_put_entropy_at_end(train_wins, cfg.tuning_entropy)
+
     # fit model
     model = build_model(cfg)
+    train_wins = df_wins[df_wins["partition"] == "train"]
+    train_wins = df_wins_put_entropy_at_end(train_wins, cfg.tuning_entropy)
     fit_keras(cfg, model, df_wins)
 
     # evaluate and log to wandb
@@ -66,12 +69,3 @@ def train_and_eval(cfg: Config) -> None:
         plot = wandb.plot.line(table, "t", "err", title=plot_id)
         wandb.log({plot_id: plot})
     wandb.finish()
-
-
-if __name__ == "__main__":
-    logging.basicConfig(
-        level=logging.INFO, format="%(levelname)s %(name)s - %(message)s"
-    )
-    cfg = OmegaConf.from_cli()
-    assert "tuning_entropy" in cfg
-    train_and_eval(Config(**cfg))

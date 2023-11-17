@@ -2,18 +2,18 @@ from omegaconf import OmegaConf
 import logging
 from os.path import basename
 from predict360user.train import build_model, fit_keras, evaluate
-from predict360user.model_config import Config
 import wandb
 from predict360user.ingest import count_entropy, load_df_wins, split
 
 log = logging.getLogger(basename(__file__))
 
-
-def train_and_eval(cfg: Config) -> None:
-    log.info("train_and_eval using config:\n---\n" + OmegaConf.to_yaml(cfg) + "----")
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO, format="%(name)s - %(message)s")
+    cfg = OmegaConf.from_cli()
+    log.info("used config:\n---\n" + OmegaConf.to_yaml(cfg) + "----")
     log.info(f"model_dir={cfg.model_dir}")
 
-    # build dataset
+    # load dataset
     df_wins = load_df_wins(
         dataset_name=cfg.dataset_name,
         init_window=cfg.init_window,
@@ -54,11 +54,3 @@ def train_and_eval(cfg: Config) -> None:
         plot = wandb.plot.line(table, "t", "err", title=plot_id)
         wandb.log({plot_id: plot})
     wandb.finish()
-
-
-if __name__ == "__main__":
-    logging.basicConfig(
-        level=logging.INFO, format="%(levelname)s %(name)s - %(message)s"
-    )
-    cfg = OmegaConf.from_cli()
-    train_and_eval(Config(**cfg))

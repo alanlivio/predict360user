@@ -6,6 +6,7 @@ import pandas as pd
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 
+from predict360user.ingest import load_df_trajecs
 from predict360user.train import DEFAULT_SAVEDIR, show_or_save
 from predict360user.utils.tileset360 import TileCover, TileSet, TileSetVoro
 
@@ -64,6 +65,7 @@ def show_tileset_reqs_metrics(df: pd.DataFrame) -> None:
 
 
 def main() -> None:
+    logging.basicConfig(level=logging.INFO, format="%(name)s: %(message)s")
     tileset_variations = [
         TileSet(4, 6, TileCover.CENTER),
         TileSet(4, 6, TileCover.ANY),
@@ -75,7 +77,7 @@ def main() -> None:
         TileSetVoro(24, TileCover.ANY),
         TileSetVoro(24, TileCover.ONLY20PERC),
     ]
-    df = Dataset(dataset_name="david").df[:2]
+    df = load_df_trajecs(dataset_name="david").df[:2]
     calc_tileset_reqs_metrics(df, tileset_variations)
     show_tileset_reqs_metrics(df, tileset_variations)
 
