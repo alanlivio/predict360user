@@ -1,5 +1,4 @@
 import logging
-from os.path import basename
 
 import numpy as np
 import pandas as pd
@@ -10,7 +9,7 @@ from predict360user.ingest import load_df_trajecs
 from predict360user.train import DEFAULT_SAVEDIR, show_or_save
 from predict360user.utils.tileset360 import TileCover, TileSet, TileSetVoro
 
-log = logging.getLogger(basename(__file__))
+log = logging.getLogger()
 
 
 def calc_tileset_reqs_metrics(df: pd.DataFrame, tileset_l: list[TileSet]) -> None:

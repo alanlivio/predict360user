@@ -2,7 +2,6 @@ import logging
 import math
 from enum import Enum, auto
 from functools import cache
-from os.path import basename
 
 import numpy as np
 from scipy.spatial import SphericalVoronoi
@@ -19,7 +18,7 @@ from predict360user.utils.math360 import (
     orth_dist_cartesian,
 )
 
-log = logging.getLogger(basename(__file__))
+log = logging.getLogger()
 
 tqdm.pandas()
 

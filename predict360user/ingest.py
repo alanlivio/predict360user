@@ -2,7 +2,7 @@ import logging
 import os
 import pathlib
 import pickle
-from os.path import basename, exists
+from os.path import exists
 from typing import Literal
 
 import numpy as np
@@ -24,7 +24,7 @@ DATASETS = {
     "xucvpr": {"size": 6654},
     "xupami": {"size": 4408},
 }
-log = logging.getLogger(basename(__file__))
+log = logging.getLogger()
 
 
 def get_class_thresholds(df, col: str) -> tuple[float, float]:

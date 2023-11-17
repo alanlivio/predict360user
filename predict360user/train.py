@@ -2,7 +2,7 @@ import datetime
 import logging
 import os
 import sys
-from os.path import abspath, basename, exists, isabs, isdir, join
+from os.path import abspath, exists, isabs, isdir, join
 from types import MethodType
 
 import absl.logging
@@ -30,7 +30,7 @@ from predict360user.model_config import (
 from predict360user.models import TRACK, Interpolation, NoMotion, PosOnly, PosOnly3D
 from predict360user.utils.math360 import calc_actual_entropy, orth_dist_cartesian
 
-log = logging.getLogger(basename(__file__))
+log = logging.getLogger()
 
 MODEL_NAMES = [
     "pos_only",
@@ -45,7 +45,7 @@ MODEL_NAMES = [
 MODELS_NAMES_NO_TRAIN = ["no_motion", "interpolation"]
 
 
-log = logging.getLogger(basename(__file__))
+log = logging.getLogger()
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 tqdm.pandas()
