@@ -38,11 +38,11 @@ class Config:
             self.model_fullname += f",ds={self.dataset_name}"
         assert self.train_entropy in ENTROPY_NAMES + ENTROPY_NAMES_AUTO
         if self.train_entropy != "all":
-            self.model_fullname += f",actS={self.train_entropy}"
+            self.model_fullname += f",filt={self.train_entropy}"
         if self.tuning_entropy:
-            self.model_fullname += f",actS_tuning={self.tuning_entropy}"
+            self.model_fullname += f",tuni={self.tuning_entropy}"
         if self.minsize:
-            self.model_fullname += f",minsize={self.minsize!r}"
+            self.model_fullname += f",mins={self.minsize!r}"
         self.model_dir = join(self.savedir, self.model_fullname)
         self.model_path = join(self.model_dir, "weights.hdf5")
         self.train_csv_log_f = join(self.model_dir, TRAIN_RES_CSV)
