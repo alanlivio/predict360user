@@ -10,7 +10,7 @@ log = logging.getLogger()
 
 def main(cfg: Config) -> None:
     build_model_fullname(cfg)
-    log.info(f"config for {cfg.model_fullname}:\n--\n" + OmegaConf.to_yaml(cfg) + "--")
+    log.info(f"config for {cfg.model_fullname}\n--\n" + OmegaConf.to_yaml(cfg) + "--")
 
     # load dataset
     df_wins = load_df_wins(
