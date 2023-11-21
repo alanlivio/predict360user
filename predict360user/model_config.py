@@ -26,7 +26,6 @@ class Config:
     savedir: str = "saved"
     train_size: float = 0.8
     test_size: float = 0.2
-    tuning_entropy: str = ""
     train_entropy: str = "all"
     minsize: bool = False
     model_fullname: str = MISSING
@@ -39,8 +38,6 @@ def build_model_fullname(cfg: Config) -> None:
     assert cfg.train_entropy in ENTROPY_NAMES + ENTROPY_NAMES_AUTO
     if cfg.train_entropy != "all":
         cfg.model_fullname += f",filt={cfg.train_entropy}"
-    if cfg.tuning_entropy:
-        cfg.model_fullname += f",tuni={cfg.tuning_entropy}"
     if cfg.minsize:
         cfg.model_fullname += f",mins={cfg.minsize!r}"
 

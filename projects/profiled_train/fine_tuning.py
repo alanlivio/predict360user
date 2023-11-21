@@ -12,8 +12,9 @@ log = logging.getLogger()
 
 
 def main(cfg: Config) -> None:
-    assert cfg.tuning_entropy in ENTROPY_NAMES
     build_model_fullname(cfg)
+    assert cfg.tuning_entropy in ENTROPY_NAMES
+    cfg.model_fullname += f",tuni={cfg.tuning_entropy}"
     log.info(f"config for {cfg.model_fullname}:\n--\n" + OmegaConf.to_yaml(cfg) + "--")
 
     # -- load dataset --
