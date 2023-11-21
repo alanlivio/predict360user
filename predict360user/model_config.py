@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from os.path import join
 from typing import Generator, Tuple
 
 import numpy as np
@@ -43,9 +42,6 @@ class Config:
             self.model_fullname += f",tuni={self.tuning_entropy}"
         if self.minsize:
             self.model_fullname += f",mins={self.minsize!r}"
-        self.model_dir = join(self.savedir, self.model_fullname)
-        self.model_path = join(self.model_dir, "weights.hdf5")
-        self.train_csv_log_f = join(self.model_dir, TRAIN_RES_CSV)
 
 
 class BaseModel:

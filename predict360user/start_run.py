@@ -10,7 +10,6 @@ log = logging.getLogger()
 
 def main(cfg: Config) -> None:
     log.info("config:\n--\n" + OmegaConf.to_yaml(cfg) + "--")
-    log.info(f"model_dir={cfg.model_dir}")
 
     # load dataset
     df_wins = load_df_wins(

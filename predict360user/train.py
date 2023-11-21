@@ -54,6 +54,7 @@ tqdm.pandas()
 absl.logging.set_verbosity(absl.logging.ERROR)
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
+
 def build_model(cfg) -> None:
     if cfg.model_name == "pos_only":
         return PosOnly(cfg)
@@ -76,19 +77,23 @@ def fit_keras(cfg: Config, model: BaseModel, df_wins: pd.DataFrame) -> None:
         cfg.model_name in MODELS_NAMES_NO_TRAIN
     ):
         return
-    if not exists(cfg.model_dir):
-        os.makedirs(cfg.model_dir)
-    log.info("model_dir=" + cfg.model_dir)
 
-    if exists(cfg.model_path):
-        model.load_weights(cfg.model_path)
+    model_dir = join(cfg.savedir, cfg.model_fullname)
+    train_csv_log_f = join(model_dir, TRAIN_RES_CSV)
+    model_path = join(model_dir, "weights.hdf5")
+
+    if not exists(model_dir):
+        os.makedirs(model_dir)
+    if exists(model_path):
+        model.load_weights(model_path)
+    log.info("model_path=" + model_path)
 
     train_wins = df_wins[df_wins["partition"] == "train"]
     val_wins = df_wins[df_wins["partition"] == "val"]
     # calc initial_epoch
     initial_epoch = 0
-    if exists(cfg.train_csv_log_f):
-        lines = pd.read_csv(cfg.train_csv_log_f)
+    if exists(train_csv_log_f):
+        lines = pd.read_csv(train_csv_log_f)
         lines.dropna(how="all", inplace=True)
         done_epochs = int(lines.iloc[-1]["epoch"]) + 1
         assert done_epochs <= cfg.epochs
@@ -105,9 +110,9 @@ def fit_keras(cfg: Config, model: BaseModel, df_wins: pd.DataFrame) -> None:
         steps_per_ep_train = np.ceil(len(train_wins) / cfg.batch_size)
         steps_per_ep_validate = np.ceil(len(val_wins) / cfg.batch_size)
         callbacks = [
-            CSVLogger(cfg.train_csv_log_f, append=True),
+            CSVLogger(train_csv_log_f, append=True),
             ModelCheckpoint(
-                cfg.model_path,
+                model_path,
                 save_best_only=True,
                 save_weights_only=True,
                 mode="auto",
@@ -129,10 +134,10 @@ def fit_keras(cfg: Config, model: BaseModel, df_wins: pd.DataFrame) -> None:
 
 def evaluate(cfg: Config, model: BaseModel, df_wins: pd.DataFrame) -> dict:
     log.info("evaluate ...")
-    if cfg.train_entropy.startswith("auto"):  # will not use model
-        _set_predict_by_entropy(model)
 
     # calculate predictions errors
+    if cfg.train_entropy.startswith("auto"):  # will not use model
+        _set_predict_by_entropy(model)
     test_wins = df_wins[df_wins["partition"] == "test"]
     t_range = list(range(cfg.h_window))
 
@@ -156,7 +161,7 @@ def evaluate(cfg: Config, model: BaseModel, df_wins: pd.DataFrame) -> dict:
         _calc_pred_err, axis=1, result_type="expand"
     )
     assert df_wins.loc[test_wins.index, t_range].all().all()
-    
+
     # calculate predications errors mean
     classes = [
         ("all", test_wins.index),
@@ -175,6 +180,7 @@ def evaluate(cfg: Config, model: BaseModel, df_wins: pd.DataFrame) -> dict:
         data = [[x, y] for (x, y) in zip(t_range, class_err_per_t)]
         ret[actS_c]["mean_per_t"] = data
     return ret
+
 
 def _set_predict_by_entropy(model: BaseModel, cfg: Config, df_wins) -> BaseModel:
     prefix = join(cfg.savedir, f"{cfg.model_name},{cfg.dataset_name},actS,")
