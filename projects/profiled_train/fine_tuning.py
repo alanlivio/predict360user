@@ -2,6 +2,7 @@ from omegaconf import OmegaConf
 import logging
 import wandb
 import math
+from predict360user.model_config import Config, build_model_fullname
 
 from predict360user.model_config import Config, ENTROPY_NAMES
 from predict360user.train import build_model, fit_keras, evaluate
@@ -12,7 +13,8 @@ log = logging.getLogger()
 
 def main(cfg: Config) -> None:
     assert cfg.tuning_entropy in ENTROPY_NAMES
-    log.info("config:\n--\n" + OmegaConf.to_yaml(cfg) + "--")
+    build_model_fullname(cfg)
+    log.info(f"config for {cfg.model_fullname}:\n--\n" + OmegaConf.to_yaml(cfg) + "--")
 
     # -- load dataset --
     df_wins = load_df_wins(
@@ -40,7 +42,7 @@ def main(cfg: Config) -> None:
             "train_n_high": n_high,
         },
         name=cfg.model_fullname,
-        resume=True
+        resume=True,
     )
 
     # -- fit --

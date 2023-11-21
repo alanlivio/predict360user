@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, MISSING
 from typing import Generator, Tuple
 
 import numpy as np
@@ -29,20 +29,20 @@ class Config:
     tuning_entropy: str = ""
     train_entropy: str = "all"
     minsize: bool = False
+    model_fullname: str = MISSING
 
-    def __post_init__(self) -> None:
-        self.model_fullname = self.model_name
-        self.model_fullname += f",lr={self.lr!r}"
-        if self.dataset_name != "all":
-            self.model_fullname += f",ds={self.dataset_name}"
-        assert self.train_entropy in ENTROPY_NAMES + ENTROPY_NAMES_AUTO
-        if self.train_entropy != "all":
-            self.model_fullname += f",filt={self.train_entropy}"
-        if self.tuning_entropy:
-            self.model_fullname += f",tuni={self.tuning_entropy}"
-        if self.minsize:
-            self.model_fullname += f",mins={self.minsize!r}"
-
+def build_model_fullname(cfg: Config) -> None:
+    cfg.model_fullname = cfg.model_name
+    cfg.model_fullname += f",lr={cfg.lr!r}"
+    if cfg.dataset_name != "all":
+        cfg.model_fullname += f",ds={cfg.dataset_name}"
+    assert cfg.train_entropy in ENTROPY_NAMES + ENTROPY_NAMES_AUTO
+    if cfg.train_entropy != "all":
+        cfg.model_fullname += f",filt={cfg.train_entropy}"
+    if cfg.tuning_entropy:
+        cfg.model_fullname += f",tuni={cfg.tuning_entropy}"
+    if cfg.minsize:
+        cfg.model_fullname += f",mins={cfg.minsize!r}"
 
 class BaseModel:
     cfg: Config  # should be filled by child class
