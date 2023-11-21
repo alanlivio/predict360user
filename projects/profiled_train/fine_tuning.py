@@ -41,6 +41,7 @@ def main(cfg: Config) -> None:
             "train_n_high": n_high,
         },
         name=cfg.model_fullname,
+        resume=True
     )
 
     # -- fit --
