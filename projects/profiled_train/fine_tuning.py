@@ -1,17 +1,22 @@
 from omegaconf import OmegaConf
 import logging
-import wandb
+from dataclasses import dataclass
 import math
-from predict360user.model_config import Config, build_model_fullname
+import wandb
 
-from predict360user.model_config import Config, ENTROPY_NAMES
 from predict360user.train import build_model, fit_keras, evaluate
 from predict360user.ingest import count_entropy, load_df_wins, split
+from predict360user.model_config import Config, ENTROPY_NAMES, build_model_fullname
 
 log = logging.getLogger()
 
 
-def main(cfg: Config) -> None:
+@dataclass
+class MainConfig(Config):
+    tuning_entropy: str = ""
+
+
+def main(cfg: MainConfig) -> None:
     build_model_fullname(cfg)
     assert cfg.tuning_entropy in ENTROPY_NAMES
     cfg.model_fullname += f",tuni={cfg.tuning_entropy}"
@@ -77,5 +82,5 @@ def main(cfg: Config) -> None:
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
-    cfg = Config(**OmegaConf.from_cli())
+    cfg = OmegaConf.merge(OmegaConf.structured(MainConfig), OmegaConf.from_cli())
     main(cfg)

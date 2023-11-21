@@ -1,4 +1,4 @@
-from dataclasses import dataclass, MISSING
+from dataclasses import dataclass
 from typing import Generator, Tuple
 
 import numpy as np
@@ -28,7 +28,7 @@ class Config:
     test_size: float = 0.2
     train_entropy: str = "all"
     minsize: bool = False
-    model_fullname: str = MISSING
+    model_fullname: str = ""
 
 def build_model_fullname(cfg: Config) -> None:
     cfg.model_fullname = cfg.model_name
