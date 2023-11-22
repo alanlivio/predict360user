@@ -18,7 +18,7 @@ from predict360user.model_config import (
     batch_generator,
     Config,
     ENTROPY_NAMES_UNIQUE,
-    build_model_fullname,
+    build_run_name,
     TRAIN_RES_CSV,
 )
 
@@ -31,10 +31,10 @@ class MainConfig(Config):
 
 
 def main(cfg: MainConfig) -> None:
-    build_model_fullname(cfg)
+    build_run_name(cfg)
     assert cfg.tuning_entropy in ENTROPY_NAMES_UNIQUE
-    cfg.model_fullname += f",btuni={cfg.tuning_entropy}"
-    log.info(f"config for {cfg.model_fullname}\n--\n" + OmegaConf.to_yaml(cfg) + "--")
+    cfg.run_name += f",btuni={cfg.tuning_entropy}"
+    log.info(f"config for {cfg.run_name}\n--\n" + OmegaConf.to_yaml(cfg) + "--")
 
     # -- load dataset --
     df_wins = load_df_wins(
@@ -61,7 +61,7 @@ def main(cfg: MainConfig) -> None:
             "train_n_medium": n_medium,
             "train_n_high": n_high,
         },
-        name=cfg.model_fullname,
+        name=cfg.run_name,
         resume=True,
     )
 
@@ -77,7 +77,7 @@ def main(cfg: MainConfig) -> None:
     train_wins = train_wins.concat([begin, end])
     assert train_wins.iloc[-1]["actS_c"] == cfg.tuning_entropy
 
-    model_dir = join(cfg.savedir, cfg.model_fullname)
+    model_dir = join(cfg.savedir, cfg.run_name)
     train_csv_log_f = join(model_dir, TRAIN_RES_CSV)
     model_path = join(model_dir, "weights.hdf5")
 

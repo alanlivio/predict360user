@@ -78,7 +78,7 @@ def fit_keras(cfg: Config, model: BaseModel, df_wins: pd.DataFrame) -> None:
     ):
         return
 
-    model_dir = join(cfg.savedir, cfg.model_fullname)
+    model_dir = join(cfg.savedir, cfg.run_name)
     train_csv_log_f = join(model_dir, TRAIN_RES_CSV)
     model_path = join(model_dir, "weights.hdf5")
 

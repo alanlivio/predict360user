@@ -28,18 +28,18 @@ class Config:
     test_size: float = 0.2
     train_entropy: str = "all"
     minsize: bool = False
-    model_fullname: str = ""
+    run_name: str = ""
 
-def build_model_fullname(cfg: Config) -> None:
-    cfg.model_fullname = cfg.model_name
-    cfg.model_fullname += f",lr={cfg.lr!r}"
+def build_run_name(cfg: Config) -> None:
+    cfg.run_name = cfg.model_name
+    cfg.run_name += f",lr={cfg.lr!r}"
     if cfg.dataset_name != "all":
-        cfg.model_fullname += f",ds={cfg.dataset_name}"
+        cfg.run_name += f",ds={cfg.dataset_name}"
     assert cfg.train_entropy in ENTROPY_NAMES + ENTROPY_NAMES_AUTO
     if cfg.train_entropy != "all":
-        cfg.model_fullname += f",filt={cfg.train_entropy}"
+        cfg.run_name += f",filt={cfg.train_entropy}"
     if cfg.minsize:
-        cfg.model_fullname += f",mins={cfg.minsize!r}"
+        cfg.run_name += f",mins={cfg.minsize!r}"
 
 class BaseModel:
     cfg: Config  # should be filled by child class

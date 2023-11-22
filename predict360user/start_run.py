@@ -1,6 +1,6 @@
 from omegaconf import OmegaConf
 import logging
-from predict360user.model_config import Config, build_model_fullname
+from predict360user.model_config import Config, build_run_name
 from predict360user.train import build_model, fit_keras, evaluate
 import wandb
 from predict360user.ingest import count_entropy, load_df_wins, split
@@ -9,8 +9,8 @@ log = logging.getLogger()
 
 
 def main(cfg: Config) -> None:
-    build_model_fullname(cfg)
-    log.info(f"config for {cfg.model_fullname}\n--\n" + OmegaConf.to_yaml(cfg) + "--")
+    build_run_name(cfg)
+    log.info(f"config for {cfg.run_name}\n--\n" + OmegaConf.to_yaml(cfg) + "--")
 
     # load dataset
     df_wins = load_df_wins(
@@ -37,7 +37,7 @@ def main(cfg: Config) -> None:
             "train_n_medium": n_medium,
             "train_n_high": n_high,
         },
-        name=cfg.model_fullname,
+        name=cfg.run_name,
         resume=True,
     )
 
