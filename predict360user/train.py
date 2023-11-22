@@ -3,7 +3,6 @@ import logging
 import os
 import sys
 from os.path import abspath, exists, isabs, isdir, join
-from types import MethodType
 
 import absl.logging
 import IPython
@@ -15,10 +14,6 @@ from keras.callbacks import CSVLogger, ModelCheckpoint
 from tqdm.auto import tqdm
 from wandb.keras import WandbMetricsLogger
 
-from predict360user.ingest import (
-    get_class_name,
-    get_class_thresholds,
-)
 from predict360user.model_config import (
     DEFAULT_SAVEDIR,
     EVAL_RES_CSV,
@@ -28,7 +23,7 @@ from predict360user.model_config import (
     batch_generator,
 )
 from predict360user.models import TRACK, Interpolation, NoMotion, PosOnly, PosOnly3D
-from predict360user.utils.math360 import calc_actual_entropy, orth_dist_cartesian
+from predict360user.utils.math360 import orth_dist_cartesian
 
 log = logging.getLogger()
 
@@ -73,9 +68,7 @@ def build_model(cfg) -> None:
 
 def fit_keras(cfg: Config, model: BaseModel, df_wins: pd.DataFrame) -> None:
     log.info("train ...")
-    if cfg.train_entropy.startswith("auto") or (
-        cfg.model_name in MODELS_NAMES_NO_TRAIN
-    ):
+    if cfg.model_name in MODELS_NAMES_NO_TRAIN:
         return
 
     model_dir = join(cfg.savedir, cfg.run_name)
@@ -136,8 +129,6 @@ def evaluate(cfg: Config, model: BaseModel, df_wins: pd.DataFrame) -> dict:
     log.info("evaluate ...")
 
     # calculate predictions errors
-    if cfg.train_entropy.startswith("auto"):  # will not use model
-        _set_predict_by_entropy(model)
     test_wins = df_wins[df_wins["partition"] == "test"]
     t_range = list(range(cfg.h_window))
 
@@ -180,40 +171,6 @@ def evaluate(cfg: Config, model: BaseModel, df_wins: pd.DataFrame) -> dict:
         data = [[x, y] for (x, y) in zip(t_range, class_err_per_t)]
         ret[actS_c]["mean_per_t"] = data
     return ret
-
-
-def _set_predict_by_entropy(model: BaseModel, cfg: Config, df_wins) -> BaseModel:
-    prefix = join(cfg.savedir, f"{cfg.model_name},{cfg.dataset_name},actS,")
-    threshold_medium, threshold_high = get_class_thresholds(df_wins, "actS")
-    model_low = model.copy()
-    model_low.load_weights(join(prefix + "low", "weights.hdf5"))
-    model_medium = model.copy()
-    model_medium.load_weights(join(prefix + "medium", "weights.hdf5"))
-    model_high = model.copy()
-    model_high.load_weights(join(prefix + "high", "weights.hdf5"))
-
-    def _predict_by_entropy(self, traces: np.array, x_i: int) -> BaseModel:
-        if cfg.train_entropy == "auto":
-            window = traces
-        elif cfg.train_entropy == "auto_m_window":
-            window = traces[x_i - cfg.m_window : x_i]
-        elif cfg.train_entropy == "auto_since_start":
-            window = traces[0:x_i]
-        else:
-            raise RuntimeError()
-        a_ent = calc_actual_entropy(window)
-        actS_c = get_class_name(a_ent, threshold_medium, threshold_high)
-        if actS_c == "low":
-            return model_low.predict_for_sample(self, traces, x_i)
-        if actS_c == "medium":
-            return model_medium.predict_for_sample(self, traces, x_i)
-        if actS_c == "high":
-            return model_high.predict_for_sample(self, traces, x_i)
-        else:
-            raise RuntimeError()
-
-    model.predict_for_sample = MethodType(_predict_by_entropy, model)
-    return model
 
 
 def show_or_save(output, savedir=DEFAULT_SAVEDIR, title="") -> None:

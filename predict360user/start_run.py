@@ -21,8 +21,6 @@ def main(cfg: Config) -> None:
     df_wins = split(
         df_wins,
         train_size=cfg.train_size,
-        train_entropy=cfg.train_entropy,
-        train_minsize=cfg.minsize,
         test_size=cfg.test_size,
     )
     _, n_low, n_medium, n_high = count_entropy(df_wins[df_wins["partition"] == "train"])
@@ -30,7 +28,6 @@ def main(cfg: Config) -> None:
         project="predict360user",
         config={
             "model_name": cfg.model_name,
-            "train_entropy": cfg.train_entropy,
             "batch_size": cfg.batch_size,
             "lr": cfg.lr,
             "train_n_low": n_low,

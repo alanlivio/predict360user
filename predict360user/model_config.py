@@ -7,9 +7,7 @@ import pandas as pd
 EVAL_RES_CSV = "eval_results.csv"
 TRAIN_RES_CSV = "train_results.csv"
 DEFAULT_SAVEDIR = "saved"
-ENTROPY_NAMES = ["all", "low", "medium", "high", "nohigh", "nolow"]
 ENTROPY_NAMES_UNIQUE = ["low", "medium", "high"]
-ENTROPY_NAMES_AUTO = ["auto", "auto_m_window", "auto_since_start"]
 
 
 @dataclass
@@ -26,20 +24,15 @@ class Config:
     savedir: str = "saved"
     train_size: float = 0.8
     test_size: float = 0.2
-    train_entropy: str = "all"
-    minsize: bool = False
     run_name: str = ""
+
 
 def build_run_name(cfg: Config) -> None:
     cfg.run_name = cfg.model_name
     cfg.run_name += f",lr={cfg.lr!r}"
     if cfg.dataset_name != "all":
         cfg.run_name += f",ds={cfg.dataset_name}"
-    assert cfg.train_entropy in ENTROPY_NAMES + ENTROPY_NAMES_AUTO
-    if cfg.train_entropy != "all":
-        cfg.run_name += f",filt={cfg.train_entropy}"
-    if cfg.minsize:
-        cfg.run_name += f",mins={cfg.minsize!r}"
+
 
 class BaseModel:
     cfg: Config  # should be filled by child class
