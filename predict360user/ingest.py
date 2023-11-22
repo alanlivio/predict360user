@@ -180,11 +180,68 @@ def _calc_traces_entropy(df) -> None:
     return df
 
 
-def _filter_train(
-    train: pd.DataFrame,
+def split(
+    df: pd.DataFrame,
+    train_size=0.8,
+    val_size=0.25,
+    test_size=0.2,
+) -> pd.DataFrame:
+    df["partition"] = "discarted" # sanity check
+    log.info(f"{train_size=} (with {val_size=}), {test_size=}")
+
+    # split train and test
+    train, test = train_test_split(
+        df,
+        random_state=1,
+        train_size=train_size,
+        test_size=test_size,
+        stratify=df["actS_c"],
+    )
+    log.info("train trajecs are " + count_entropy_str(train))
+
+    # split train and val
+    train_before_val_split = len(train)
+    train, val = train_test_split(
+        train,
+        random_state=1,
+        test_size=val_size,
+        stratify=train["actS_c"],
+    )
+    log.info("train.val trajecs are " + count_entropy_str(val))
+    log.info("test trajecs are " + count_entropy_str(test))
+
+    # save partition as column
+    df.loc[train.index, "partition"] = "train"
+    df.loc[val.index, "partition"] = "val"
+    df.loc[test.index, "partition"] = "test"
+    train_len = len(df[df["partition"] == "train"])
+    val_len = len(df[df["partition"] == "val"])
+    assert (train_len + val_len) == train_before_val_split
+
+    return df
+
+def split_train_filtred(
+    df: pd.DataFrame,
+    train_size=0.8,
+    val_size=0.25,
+    test_size=0.2,
     train_entropy="all",
     train_minsize=False,
 ) -> None:
+    df["partition"] = "discarted"
+
+    log.info(f"{train_size=} (with {val_size=}), {test_size=}")
+
+    # split train and test
+    train, test = train_test_split(
+        df,
+        random_state=1,
+        train_size=train_size,
+        test_size=test_size,
+        stratify=df["actS_c"],
+    )
+    log.info("train trajecs are " + count_entropy_str(train))
+
     # filter by given entropy
     if train_entropy == "all":
         filtered = train
@@ -205,54 +262,24 @@ def _filter_train(
         filtered = filtered.groupby("actS_c", group_keys=False).apply(
             lambda x: x.sample(n=n_sample_per_class, random_state=1)
         )
-    assert len(filtered)
-
-    return filtered
-
-
-def split(
-    df: pd.DataFrame,
-    train_size=0.8,
-    val_size=0.25,
-    test_size=0.2,
-    train_entropy="",
-    train_minsize=False,
-) -> pd.DataFrame:
-    log.info(f"{train_size=} (with {val_size=}), {test_size=}")
-    
-    # split train and test
-    train, test = train_test_split(
-        df,
-        random_state=1,
-        train_size=train_size,
-        test_size=test_size,
-        stratify=df["actS_c"],
-    )
-    log.info("train trajecs are " + count_entropy_str(train))
-
-    # filter train
-    if train_entropy or train_minsize:
-        train = _filter_train(train, train_entropy, train_minsize)
-        log.info("train_filtred trajecs are " + count_entropy_str(train))
 
     # split train and val
-    train_before_val_len = len(train)
+    train_before_val_split = len(filtered)
     train, val = train_test_split(
-        train,
+        filtered,
         random_state=1,
         test_size=val_size,
-        stratify=train["actS_c"],
+        stratify=filtered["actS_c"],
     )
-    log.info("train.val trajecs are " + count_entropy_str(val))
-    log.info("test trajecs are " + count_entropy_str(test))
+    log.info("filtred train trajecs are " + count_entropy_str(train))
+    log.info("filtred train.val trajecs are " + count_entropy_str(val))
 
     # save partition as column
-    df["partition"] = np.nan
     df.loc[train.index, "partition"] = "train"
     df.loc[val.index, "partition"] = "val"
     df.loc[test.index, "partition"] = "test"
     train_len = len(df[df["partition"] == "train"])
     val_len = len(df[df["partition"] == "val"])
-    assert (train_len + val_len) == train_before_val_len
+    assert (train_len + val_len) == train_before_val_split
 
     return df
