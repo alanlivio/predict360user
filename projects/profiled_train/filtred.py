@@ -72,7 +72,7 @@ def run(cfg: RunConf) -> None:
         cfg.run_name += f",filt={cfg.train_entropy}"
     if cfg.minsize:
         cfg.run_name += f",mins={cfg.minsize!r}"
-    log.info(f"config for {cfg.run_name}\n--\n" + OmegaConf.to_yaml(cfg) + "--")
+    log.info(f"run conf is: \n--\n" + OmegaConf.to_yaml(cfg) + "--")
 
     # load dataset
     df_wins = load_df_wins(
