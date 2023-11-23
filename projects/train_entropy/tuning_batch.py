@@ -60,7 +60,6 @@ def run(cfg: RunConf) -> None:
             "train_n_high": n_high,
         },
         name=cfg.run_name,
-        resume=True,
     )
 
     # -- fit --

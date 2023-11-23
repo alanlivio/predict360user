@@ -35,7 +35,6 @@ def run(cfg: ModelConf) -> None:
             "train_n_high": n_high,
         },
         name=cfg.run_name,
-        resume=True,
     )
 
     # fit model
