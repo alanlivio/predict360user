@@ -27,13 +27,13 @@ log = logging.getLogger()
 
 @dataclass
 class RunConf(ModelConf):
-    tuning_entropy: str = ""
+    train_entropy: str = ""
 
 
 def run(cfg: RunConf) -> None:
     build_run_name(cfg)
-    assert cfg.tuning_entropy in ENTROPY_NAMES_UNIQUE
-    cfg.run_name += f",btuni={cfg.tuning_entropy}"
+    assert cfg.train_entropy in ENTROPY_NAMES_UNIQUE
+    cfg.run_name += f",btuni={cfg.train_entropy}"
     log.info(f"run conf is: \n--\n" + OmegaConf.to_yaml(cfg) + "--")
 
     # -- load dataset --
@@ -70,10 +70,10 @@ def run(cfg: RunConf) -> None:
     val_wins = df_wins[df_wins["partition"] == "val"]
 
     train_wins = (train_wins[train_wins["partition"] == "train"],)
-    begin = shuffle(train_wins[train_wins["actS_c"] != cfg.tuning_entropy])
-    end = shuffle(train_wins[train_wins["actS_c"] == cfg.tuning_entropy])
+    begin = shuffle(train_wins[train_wins["actS_c"] != cfg.train_entropy])
+    end = shuffle(train_wins[train_wins["actS_c"] == cfg.train_entropy])
     train_wins = train_wins.concat([begin, end])
-    assert train_wins.iloc[-1]["actS_c"] == cfg.tuning_entropy
+    assert train_wins.iloc[-1]["actS_c"] == cfg.train_entropy
 
     model_dir = join(cfg.savedir, cfg.run_name)
     train_csv_log_f = join(model_dir, TRAIN_RES_CSV)

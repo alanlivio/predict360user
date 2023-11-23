@@ -13,13 +13,13 @@ log = logging.getLogger()
 
 @dataclass
 class RunConf(ModelConf):
-    tuning_entropy: str = ""
+    train_entropy: str = ""
 
 
 def run(cfg: RunConf) -> None:
     build_run_name(cfg)
-    assert cfg.tuning_entropy in ENTROPY_NAMES_UNIQUE
-    cfg.run_name += f",tuni={cfg.tuning_entropy}"
+    assert cfg.train_entropy in ENTROPY_NAMES_UNIQUE
+    cfg.run_name += f",tuni={cfg.train_entropy}"
     log.info(f"run conf is: \n--\n" + OmegaConf.to_yaml(cfg) + "--")
 
     # -- load dataset --
@@ -55,7 +55,7 @@ def run(cfg: RunConf) -> None:
 
     # split for tuning
     tuning_prc = 0.33
-    train_wins_tuning = train_wins[train_wins["actS_c"] == cfg.tuning_entropy].sample(
+    train_wins_tuning = train_wins[train_wins["actS_c"] == cfg.train_entropy].sample(
         frac=tuning_prc, random_state=1
     )
     train_wins_pretuning = train_wins.drop(train_wins_tuning.index)
