@@ -11,7 +11,7 @@ ENTROPY_NAMES_UNIQUE = ["low", "medium", "high"]
 
 
 @dataclass
-class Config:
+class ModelConf:
     batch_size: int = 128
     dataset_name: str = "all"
     epochs: int = 30
@@ -27,7 +27,7 @@ class Config:
     run_name: str = ""
 
 
-def build_run_name(cfg: Config) -> None:
+def build_run_name(cfg: ModelConf) -> None:
     cfg.run_name = cfg.model_name
     cfg.run_name += f",lr={cfg.lr!r}"
     if cfg.dataset_name != "all":
@@ -35,7 +35,7 @@ def build_run_name(cfg: Config) -> None:
 
 
 class BaseModel:
-    cfg: Config  # should be filled by child class
+    cfg: ModelConf  # should be filled by child class
 
     def generate_batch(
         self, traces_l: list[np.array], x_i_l: list

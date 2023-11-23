@@ -19,7 +19,7 @@ from predict360user.model_config import (
     EVAL_RES_CSV,
     TRAIN_RES_CSV,
     BaseModel,
-    Config,
+    ModelConf,
     batch_generator,
 )
 from predict360user.models import TRACK, Interpolation, NoMotion, PosOnly, PosOnly3D
@@ -66,7 +66,7 @@ def build_model(cfg) -> None:
         raise RuntimeError
 
 
-def fit_keras(cfg: Config, model: BaseModel, df_wins: pd.DataFrame) -> None:
+def fit_keras(cfg: ModelConf, model: BaseModel, df_wins: pd.DataFrame) -> None:
     log.info("train ...")
     if cfg.model_name in MODELS_NAMES_NO_TRAIN:
         return
@@ -125,7 +125,7 @@ def fit_keras(cfg: Config, model: BaseModel, df_wins: pd.DataFrame) -> None:
         )
 
 
-def evaluate(cfg: Config, model: BaseModel, df_wins: pd.DataFrame) -> dict:
+def evaluate(cfg: ModelConf, model: BaseModel, df_wins: pd.DataFrame) -> dict:
     log.info("evaluate ...")
 
     # calculate predictions errors

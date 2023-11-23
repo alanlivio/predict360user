@@ -6,7 +6,7 @@ from keras import backend as K
 from keras.layers import LSTM, Dense, Input, Lambda
 from tensorflow import keras
 
-from predict360user.model_config import Config
+from predict360user.model_config import ModelConf
 from predict360user.utils.math360 import (
     cartesian_to_eulerian,
     eulerian_to_cartesian,
@@ -66,7 +66,7 @@ def transform_normalized_eulerian_to_cartesian(positions) -> np.array:
 
 
 class PosOnly(keras.Model):
-    def __init__(self, cfg: Config) -> None:
+    def __init__(self, cfg: ModelConf) -> None:
         self.cfg = cfg
         
         # Defining model structure

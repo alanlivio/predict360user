@@ -12,10 +12,9 @@ from keras.layers import (
     Reshape,
     TimeDistributed,
 )
-from omegaconf import DictConfig
 from tensorflow import keras
 
-from predict360user.model_config import BaseModel
+from predict360user.model_config import BaseModel, ModelConf
 from predict360user.models.CVPR18 import selectImageInModel
 from predict360user.models.pos_only_3d import delta_angle_from_ori_mot
 from predict360user.utils.math360 import metric_orth_dist_cartesian
@@ -33,7 +32,7 @@ class TRACK(keras.Model, BaseModel):
     def predict_for_sample(self, traces: np.array, x_i) -> np.array:
         raise NotImplementedError
 
-    def __init__(self, cfg: DictConfig) -> None:
+    def __init__(self, cfg: ModelConf) -> None:
         self.m_window, self.h_window = (
             cfg.m_window,
             cfg.h_window,

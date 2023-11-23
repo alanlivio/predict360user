@@ -3,7 +3,7 @@ import logging
 import numpy as np
 from os.path import join
 from dataclasses import dataclass
-from predict360user.model_config import BaseModel, Config, build_run_name
+from predict360user.model_config import BaseModel, ModelConf, build_run_name
 from predict360user.train import build_model, fit_keras, evaluate
 import wandb
 from predict360user.ingest import (
@@ -15,7 +15,7 @@ from predict360user.ingest import (
     get_class_thresholds,
 )
 from predict360user.model_config import (
-    Config,
+    ModelConf,
     build_run_name,
 )
 
@@ -25,7 +25,7 @@ ENTROPY_NAMES_AUTO = ["auto", "auto_m_window", "auto_since_start"]
 log = logging.getLogger()
 
 
-def _set_predict_by_entropy(model: BaseModel, cfg: Config, df_wins) -> BaseModel:
+def _set_predict_by_entropy(model: BaseModel, cfg: ModelConf, df_wins) -> BaseModel:
     prefix = join(cfg.savedir, f"{cfg.model_name},{cfg.dataset_name},actS,")
     threshold_medium, threshold_high = get_class_thresholds(df_wins, "actS")
     model_low = model.copy()
@@ -60,12 +60,12 @@ def _set_predict_by_entropy(model: BaseModel, cfg: Config, df_wins) -> BaseModel
 
 
 @dataclass
-class MainConfig(Config):
+class RunConf(ModelConf):
     train_entropy: str = "all"
     minsize: bool = False
 
 
-def main(cfg: MainConfig) -> None:
+def run(cfg: RunConf) -> None:
     assert cfg.train_entropy in ENTROPY_NAMES + ENTROPY_NAMES_AUTO
     build_run_name(cfg)
     if cfg.train_entropy != "all":
@@ -122,5 +122,5 @@ def main(cfg: MainConfig) -> None:
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
-    cfg = OmegaConf.merge(OmegaConf.structured(MainConfig), OmegaConf.from_cli())
-    main(cfg)
+    cfg = OmegaConf.merge(OmegaConf.structured(RunConf), OmegaConf.from_cli())
+    run(cfg)
