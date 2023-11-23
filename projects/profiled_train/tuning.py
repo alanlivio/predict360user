@@ -6,7 +6,7 @@ import wandb
 
 from predict360user.train import build_model, fit_keras, evaluate
 from predict360user.ingest import count_entropy, load_df_wins, split
-from predict360user.model_config import ModelConf, ENTROPY_NAMES, build_run_name
+from predict360user.model_config import ModelConf, build_run_name, ENTROPY_NAMES_UNIQUE
 
 log = logging.getLogger()
 
@@ -18,7 +18,7 @@ class RunConf(ModelConf):
 
 def run(cfg: RunConf) -> None:
     build_run_name(cfg)
-    assert cfg.tuning_entropy in ENTROPY_NAMES
+    assert cfg.tuning_entropy in ENTROPY_NAMES_UNIQUE
     cfg.run_name += f",tuni={cfg.tuning_entropy}"
     log.info(f"run conf is: \n--\n" + OmegaConf.to_yaml(cfg) + "--")
 
