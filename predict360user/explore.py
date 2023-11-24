@@ -81,7 +81,50 @@ def show_trajects_representative(df: pd.DataFrame) -> None:
     show_traject(
         df[df["actS_c"] == "high"].nlargest(1, "actS").iloc[0], "trajec top hight"
     )
+    
+# def show_trajects_representative_predictions(df: pd.DataFrame) -> None:
+    # visualize some predictions
+    # # Case "most low with low"
+    # one_traject_low = ds.df[ds.df['actS_c'] == 'low'].nsmallest(1,'actS')
+    # plot = Plot360()
+    # plot.add_traces(one_traject_low['traces'].iloc[0])
+    # plot.add_predictions(one_traject_low['pos_only_low_entropy'].iloc[0])
+    # plot.show()
 
+    # # Case "most low with low"
+    # one_traject_low = ds.df[ds.df['actS_c'] == 'low'].nsmallest(1,'actS')
+    # plot = Plot360()
+    # plot.add_traces(one_traject_low['traces'].iloc[0])
+    # plot.add_predictions(one_traject_low['pos_only'].iloc[0])
+    # plot.show()
+
+    # # Case "most medium with medium"
+    # one_traject_medium = ds.df[ds.df['actS_c'] == 'medium'].nsmallest(1,'actS')
+    # plot = Plot360()
+    # plot.add_traces(one_traject_medium['traces'].iloc[0])
+    # plot.add_predictions(one_traject_medium['pos_only_medium_entropy'].iloc[0])
+    # plot.show()
+
+    # # Case "most medium with all"
+    # one_traject_medium = ds.df[ds.df['actS_c'] == 'medium'].nsmallest(1,'actS')
+    # plot = Plot360()
+    # plot.add_traces(one_traject_medium['traces'].iloc[0])
+    # plot.add_predictions(one_traject_medium['pos_only'].iloc[0])
+    # plot.show()
+
+    # # Case "most high with high"
+    # one_traject_high = ds.df[ds.df['actS_c'] == 'high'].nlargest(1,'actS')
+    # plot = Plot360()
+    # plot.add_traces(one_traject_high['traces'].iloc[0])
+    # plot.add_predictions(one_traject_high['pos_only_high_entropy'].iloc[0])
+    # plot.show()
+
+    # # Case "most high with all
+    # one_traject_high = ds.df[ds.df['actS_c'] == 'high'].nlargest(1,'actS')
+    # plot = Plot360()
+    # plot.add_traces(one_traject_medium['traces'].iloc[0])
+    # plot.add_predictions(one_traject_medium['pos_only'].iloc[0])
+    # plot.show()
 
 def show_entropy_histogram(df: pd.DataFrame) -> None:
     assert "actS" in df.columns
