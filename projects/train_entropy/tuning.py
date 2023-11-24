@@ -2,6 +2,7 @@ from omegaconf import OmegaConf
 import logging
 from dataclasses import dataclass
 import math
+import pandas as pd
 import wandb
 
 from predict360user.train import build_model, fit_keras, evaluate
@@ -50,21 +51,26 @@ def run(cfg: RunConf) -> None:
 
     # -- fit --
     model = build_model(cfg)
-    train_wins = df_wins[df_wins["partition"] == "train"]
 
     # split for tuning
+    train_wins = df_wins[df_wins["partition"] == "train"]
+    val_wins = df_wins[df_wins["partition"] == "val"]
     tuning_prc = 0.33
     train_wins_tuning = train_wins[train_wins["actS_c"] == cfg.train_entropy].sample(
         frac=tuning_prc, random_state=1
     )
-    train_wins_pretuning = train_wins.drop(train_wins_tuning.index)
-    epochs_pretuning = math.floor(cfg.epochs * (1 - tuning_prc))
-    epochs_tuning = math.ceil(cfg.epochs * tuning_prc)
-    # fit
-    cfg.epochs = epochs_pretuning
-    fit_keras(cfg, model, train_wins_pretuning)
-    cfg.epochs = epochs_tuning
-    fit_keras(cfg, model, train_wins_tuning)
+    val_wins_tuning = val_wins[val_wins["actS_c"] == cfg.train_entropy].sample(
+        frac=tuning_prc, random_state=1
+    )
+    wins_pretuning = df_wins.drop(train_wins_tuning.index).drop(val_wins_tuning.index)
+    wins_tuning = pd.concat([train_wins_tuning, val_wins_tuning])
+
+    # fit 1
+    cfg.epochs = math.floor(cfg.epochs * (1 - tuning_prc))
+    fit_keras(cfg, model, wins_pretuning)
+    # fit 2
+    cfg.epochs = math.ceil(cfg.epochs * tuning_prc)
+    fit_keras(cfg, model, wins_tuning)
 
     # evaluate and log to wandb
     err_per_class_dict = evaluate(cfg, model, df_wins)

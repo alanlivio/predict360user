@@ -3,16 +3,17 @@ import os
 import pathlib
 import pickle
 from os.path import exists
-from typing import Literal
 
 import numpy as np
 import pandas as pd
-from jenkspy import jenks_breaks
+from typing import Literal
 from sklearn.model_selection import train_test_split
-from tqdm.auto import tqdm
 
 from predict360user.model_config import DEFAULT_SAVEDIR
 from predict360user.utils.math360 import calc_actual_entropy
+from tqdm.auto import tqdm
+
+from jenkspy import jenks_breaks
 
 DATADIR = f"{pathlib.Path(__file__).parent / 'data/'}"
 HMDDIR = f"{pathlib.Path(__file__).parent / 'head_motion_prediction/'}"
@@ -186,7 +187,7 @@ def split(
     val_size=0.25,
     test_size=0.2,
 ) -> pd.DataFrame:
-    df["partition"] = "discarted" # sanity check
+    df["partition"] = "discarted"  # sanity check
     log.info(f"{train_size=} (with {val_size=}), {test_size=}")
 
     # split train and test
@@ -219,6 +220,7 @@ def split(
     assert (train_len + val_len) == train_before_val_split
 
     return df
+
 
 def split_train_filtred(
     df: pd.DataFrame,

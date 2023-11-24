@@ -65,6 +65,7 @@ def run(cfg: RunConf) -> None:
     # -- fit --
     model = build_model(cfg)
 
+    # split for tuning
     train_wins = df_wins[df_wins["partition"] == "train"]
     val_wins = df_wins[df_wins["partition"] == "val"]
 

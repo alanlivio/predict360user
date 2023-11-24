@@ -55,7 +55,7 @@ def _set_predict_by_entropy(model: BaseModel, cfg: ModelConf, df_wins) -> BaseMo
         else:
             raise RuntimeError()
 
-    model.predict_for_sample =  (_predict_by_entropy, model)
+    model.predict_for_sample = (_predict_by_entropy, model)
     return model
 
 
