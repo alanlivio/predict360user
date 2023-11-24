@@ -68,7 +68,7 @@ def run(cfg: RunConf) -> None:
     train_wins = df_wins[df_wins["partition"] == "train"]
     val_wins = df_wins[df_wins["partition"] == "val"]
 
-    train_wins = (train_wins[train_wins["partition"] == "train"],)
+    train_wins = (train_wins[train_wins["partition"] == "train"])
     begin = shuffle(train_wins[train_wins["actS_c"] != cfg.train_entropy])
     end = shuffle(train_wins[train_wins["actS_c"] == cfg.train_entropy])
     train_wins = train_wins.concat([begin, end])
