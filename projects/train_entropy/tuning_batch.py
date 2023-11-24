@@ -71,7 +71,7 @@ def run(cfg: RunConf) -> None:
     train_wins = (train_wins[train_wins["partition"] == "train"])
     begin = shuffle(train_wins[train_wins["actS_c"] != cfg.train_entropy])
     end = shuffle(train_wins[train_wins["actS_c"] == cfg.train_entropy])
-    train_wins = train_wins.concat([begin, end])
+    train_wins = pd.concat([begin, end])
     assert train_wins.iloc[-1]["actS_c"] == cfg.train_entropy
 
     model_dir = join(cfg.savedir, cfg.run_name)
