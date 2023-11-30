@@ -14,7 +14,7 @@ from wandb.keras import WandbMetricsLogger
 
 from predict360user.train import build_model, evaluate
 from predict360user.ingest import count_entropy, load_df_wins, split
-from predict360user.model_config import (
+from predict360user.model_wrapper import (
     batch_generator,
     ModelConf,
     ENTROPY_NAMES_UNIQUE,

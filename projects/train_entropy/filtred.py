@@ -3,7 +3,7 @@ import logging
 import numpy as np
 from os.path import join
 from dataclasses import dataclass
-from predict360user.model_config import BaseModel, ModelConf, build_run_name
+from predict360user.model_wrapper import ModelWrapper, ModelConf, build_run_name
 from predict360user.train import build_model, fit_keras, evaluate
 import wandb
 from predict360user.ingest import (
@@ -14,7 +14,7 @@ from predict360user.ingest import (
     calc_actual_entropy,
     get_class_thresholds,
 )
-from predict360user.model_config import (
+from predict360user.model_wrapper import (
     ModelConf,
     build_run_name,
 )
@@ -25,7 +25,7 @@ ENTROPY_NAMES_AUTO = ["auto", "auto_m_window", "auto_since_start"]
 log = logging.getLogger()
 
 
-def _set_predict_by_entropy(model: BaseModel, cfg: ModelConf, df_wins) -> BaseModel:
+def _set_predict_by_entropy(model: ModelWrapper, cfg: ModelConf, df_wins) -> ModelWrapper:
     prefix = join(cfg.savedir, f"{cfg.model_name},{cfg.dataset_name},actS,")
     threshold_medium, threshold_high = get_class_thresholds(df_wins, "actS")
     model_low = model.copy()
@@ -35,7 +35,7 @@ def _set_predict_by_entropy(model: BaseModel, cfg: ModelConf, df_wins) -> BaseMo
     model_high = model.copy()
     model_high.load_weights(join(prefix + "high", "weights.hdf5"))
 
-    def _predict_by_entropy(self, traces: np.array, x_i: int) -> BaseModel:
+    def _predict_by_entropy(self, traces: np.array, x_i: int) -> ModelWrapper:
         if cfg.train_entropy == "auto":
             window = traces
         elif cfg.train_entropy == "auto_m_window":

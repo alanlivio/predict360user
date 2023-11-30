@@ -2,10 +2,10 @@ from typing import Tuple
 
 import numpy as np
 
-from predict360user.model_config import BaseModel
+from predict360user.model_wrapper import ModelWrapper
 
 
-class TrueSaliency(BaseModel):
+class TrueSaliency(ModelWrapper):
     def generate_batch(
         self, traces_l: list[np.array], x_i_l: list
     ) -> Tuple[list, list]:
@@ -15,7 +15,7 @@ class TrueSaliency(BaseModel):
         raise NotImplementedError
 
 
-class ContentSaliency(BaseModel):
+class ContentSaliency(ModelWrapper):
     def generate_batch(
         self, traces_l: list[np.array], x_i_l: list
     ) -> Tuple[list, list]:

@@ -14,7 +14,7 @@ from keras.layers import (
 )
 from tensorflow import keras
 
-from predict360user.model_config import BaseModel, ModelConf
+from predict360user.model_wrapper import ModelWrapper, ModelConf
 from predict360user.models.CVPR18 import selectImageInModel
 from predict360user.models.pos_only_3d import delta_angle_from_ori_mot
 from predict360user.utils.math360 import metric_orth_dist_cartesian
@@ -23,7 +23,7 @@ N_TILES_W = 384
 N_TILES_H = 216
 
 
-class TRACK(keras.Model, BaseModel):
+class TRACK(keras.Model, ModelWrapper):
     def generate_batch(
         self, traces_l: list[np.array], x_i_l: list
     ) -> Tuple[list, list]:

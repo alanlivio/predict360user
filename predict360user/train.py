@@ -14,11 +14,11 @@ from keras.callbacks import CSVLogger, ModelCheckpoint
 from tqdm.auto import tqdm
 from wandb.keras import WandbMetricsLogger
 
-from predict360user.model_config import (
+from predict360user.model_wrapper import (
     DEFAULT_SAVEDIR,
     EVAL_RES_CSV,
     TRAIN_RES_CSV,
-    BaseModel,
+    ModelWrapper,
     ModelConf,
     batch_generator,
 )
@@ -66,7 +66,7 @@ def build_model(cfg) -> None:
         raise RuntimeError
 
 
-def fit_keras(cfg: ModelConf, model: BaseModel, df_wins: pd.DataFrame) -> None:
+def fit_keras(cfg: ModelConf, model: ModelWrapper, df_wins: pd.DataFrame) -> None:
     log.info("train ...")
     if cfg.model_name in MODELS_NAMES_NO_TRAIN:
         return
@@ -125,7 +125,7 @@ def fit_keras(cfg: ModelConf, model: BaseModel, df_wins: pd.DataFrame) -> None:
         )
 
 
-def evaluate(cfg: ModelConf, model: BaseModel, df_wins: pd.DataFrame) -> dict:
+def evaluate(cfg: ModelConf, model: ModelWrapper, df_wins: pd.DataFrame) -> dict:
     log.info("evaluate ...")
 
     # calculate predictions errors

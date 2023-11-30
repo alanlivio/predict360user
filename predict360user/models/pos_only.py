@@ -6,7 +6,7 @@ from keras import backend as K
 from keras.layers import LSTM, Dense, Input, Lambda
 from tensorflow import keras
 
-from predict360user.model_config import ModelConf
+from predict360user.model_wrapper import ModelConf
 from predict360user.utils.math360 import (
     cartesian_to_eulerian,
     eulerian_to_cartesian,

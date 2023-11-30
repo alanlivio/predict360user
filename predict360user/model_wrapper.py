@@ -34,7 +34,7 @@ def build_run_name(cfg: ModelConf) -> None:
         cfg.run_name += f",ds={cfg.dataset_name}"
 
 
-class BaseModel:
+class ModelWrapper:
     cfg: ModelConf  # should be filled by child class
 
     def generate_batch(

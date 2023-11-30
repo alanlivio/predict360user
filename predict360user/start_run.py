@@ -1,6 +1,6 @@
 from omegaconf import OmegaConf
 import logging
-from predict360user.model_config import ModelConf, build_run_name
+from predict360user.model_wrapper import ModelConf, build_run_name
 from predict360user.train import build_model, fit_keras, evaluate
 import wandb
 from predict360user.ingest import count_entropy, load_df_wins, split

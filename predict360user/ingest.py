@@ -9,7 +9,7 @@ import pandas as pd
 from typing import Literal
 from sklearn.model_selection import train_test_split
 
-from predict360user.model_config import DEFAULT_SAVEDIR
+from predict360user.model_wrapper import DEFAULT_SAVEDIR
 from predict360user.utils.math360 import calc_actual_entropy
 from tqdm.auto import tqdm
 
