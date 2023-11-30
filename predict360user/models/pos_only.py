@@ -6,7 +6,7 @@ from keras import backend as K
 from keras.layers import LSTM, Dense, Input, Lambda
 from tensorflow import keras
 
-from predict360user.model_wrapper import ModelConf
+from predict360user.model_wrapper import ModelConf, KerasModelWrapper
 from predict360user.utils.math360 import (
     cartesian_to_eulerian,
     eulerian_to_cartesian,
@@ -65,19 +65,17 @@ def transform_normalized_eulerian_to_cartesian(positions) -> np.array:
     return np.array(eulerian_samples)
 
 
-class PosOnly(keras.Model):
+class PosOnly(KerasModelWrapper):
     def __init__(self, cfg: ModelConf) -> None:
         self.cfg = cfg
-        
+        self.model = self.build()
+
+    def build(self) -> keras.Model:
         # Defining model structure
         encoder_inputs = Input(shape=(self.cfg.m_window, 2))
         decoder_inputs = Input(shape=(1, 2))
 
-        # TODO: try tf.compat.v1.keras.layers.CuDNNLSTM
         lstm_layer = LSTM(1024, return_sequences=True, return_state=True)
-        # print(type(lstm_layer))
-        # print(isinstance(lstm_layer, LSTM))
-        # print(isinstance(lstm_layer, CuDNNLSTM))
         decoder_dense_mot = Dense(2, activation="sigmoid")
         decoder_dense_dir = Dense(2, activation="tanh")
         To_Position = Lambda(delta_angle_from_ori_mag_dir)
@@ -106,11 +104,12 @@ class PosOnly(keras.Model):
         # decoder_outputs = all_outputs
 
         # Define and compile model
-        super().__init__(
+        model = keras.Model(
             inputs=[encoder_inputs, decoder_inputs], outputs=decoder_outputs
         )
         model_optimizer = keras.optimizers.Adam(learning_rate=self.cfg.lr)
-        self.compile(optimizer=model_optimizer, loss=metric_orth_dist_eulerian)
+        model.compile(optimizer=model_optimizer, loss=metric_orth_dist_eulerian)
+        return model
 
     def generate_batch(
         self, traces_l: list[np.array], x_i_l: list

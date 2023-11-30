@@ -3,10 +3,15 @@ from typing import Tuple
 import numpy as np
 from tensorflow import keras
 
-from predict360user.model_wrapper import ModelWrapper
+from predict360user.model_wrapper import ModelWrapper, ModelConf
 
 
-class PointNet(keras.Model, ModelWrapper):
+class PointNet(ModelWrapper):
+    def __init__(self, cfg: ModelConf) -> None:
+        self.cfg = cfg
+        # self.model: keras.Model = self.build()
+        raise NotImplementedError
+
     def generate_batch(
         self, traces_l: list[np.array], x_i_l: list
     ) -> Tuple[list, list]:

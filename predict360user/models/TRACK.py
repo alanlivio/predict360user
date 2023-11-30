@@ -14,7 +14,7 @@ from keras.layers import (
 )
 from tensorflow import keras
 
-from predict360user.model_wrapper import ModelWrapper, ModelConf
+from predict360user.model_wrapper import KerasModelWrapper, ModelConf
 from predict360user.models.CVPR18 import selectImageInModel
 from predict360user.models.pos_only_3d import delta_angle_from_ori_mot
 from predict360user.utils.math360 import metric_orth_dist_cartesian
@@ -23,20 +23,13 @@ N_TILES_W = 384
 N_TILES_H = 216
 
 
-class TRACK(keras.Model, ModelWrapper):
-    def generate_batch(
-        self, traces_l: list[np.array], x_i_l: list
-    ) -> Tuple[list, list]:
-        raise NotImplementedError
-
-    def predict_for_sample(self, traces: np.array, x_i) -> np.array:
-        raise NotImplementedError
-
+class TRACK(KerasModelWrapper):
     def __init__(self, cfg: ModelConf) -> None:
         self.m_window, self.h_window = (
             cfg.m_window,
             cfg.h_window,
         )
+
         # Defining model structure
         encoder_position_inputs = Input(shape=(self.m_window, 3))
         encoder_saliency_inputs = Input(shape=(self.m_window, N_TILES_H, N_TILES_W, 1))
@@ -123,7 +116,7 @@ class TRACK(keras.Model, ModelWrapper):
         )
 
         # Define and compile model
-        super().__init__(
+        model = keras.Model(
             inputs=[
                 encoder_position_inputs,
                 encoder_saliency_inputs,
@@ -133,8 +126,17 @@ class TRACK(keras.Model, ModelWrapper):
             outputs=decoder_outputs_pos,
         )
         model_optimizer = keras.optimizers.Adam(lr=0.0005)
-        self.compile(
+        model.compile(
             optimizer=model_optimizer,
             loss="mean_squared_error",
             metrics=[metric_orth_dist_cartesian],
         )
+        return model
+
+    def generate_batch(
+        self, traces_l: list[np.array], x_i_l: list
+    ) -> Tuple[list, list]:
+        raise NotImplementedError
+
+    def predict_for_sample(self, traces: np.array, x_i) -> np.array:
+        raise NotImplementedError

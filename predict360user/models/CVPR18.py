@@ -14,7 +14,7 @@ from keras.layers import (
 )
 from tensorflow import keras
 
-from predict360user.model_wrapper import ModelWrapper
+from predict360user.model_wrapper import KerasModelWrapper, ModelConf
 from predict360user.models.pos_only_3d import delta_angle_from_ori_mot
 from predict360user.utils.math360 import metric_orth_dist_cartesian
 
@@ -28,7 +28,11 @@ def add_timestep_axis(input):
     return tf.expand_dims(input, 1)
 
 
-class CVPR18(keras.Model, ModelWrapper):
+class CVPR18(KerasModelWrapper):
+    def __init__(self, cfg: ModelConf) -> None:
+        self.cfg = cfg
+        self.model: keras.Model = self.build()
+
     def generate_batch(
         self, traces_l: list[np.array], x_i_l: list
     ) -> Tuple[list, list]:
@@ -37,14 +41,17 @@ class CVPR18(keras.Model, ModelWrapper):
     def predict_for_sample(self, traces: np.array, x_i) -> np.array:
         raise NotImplementedError
 
-    def __init__(
-        self, m_window: int, h_window: int, num_tiles_height: int, num_tiles_width: int
-    ) -> None:
-        self.m_window, self.h_window = m_window, h_window
+    def build(self) -> keras.Model:
+        self.m_window, self.h_window = self.cfg.m_window, self.cfg.h_window
         # Defining model structure
-        encoder_position_inputs = Input(shape=(m_window, 3))
+        encoder_position_inputs = Input(shape=(self.cfg.m_window, 3))
         decoder_saliency_inputs = Input(
-            shape=(h_window, num_tiles_height, num_tiles_width, 1)
+            shape=(
+                self.cfg.h_window,
+                self.cfg.num_tiles_height,
+                self.cfg.num_tiles_width,
+                1,
+            )
         )
         decoder_position_inputs = Input(shape=(1, 3))
 
@@ -79,12 +86,12 @@ class CVPR18(keras.Model, ModelWrapper):
         # Decoding
         all_pos_outputs = []
         inputs = decoder_position_inputs
-        for curr_idx in range(h_window):
+        for curr_idx in range(self.cfg.h_window):
             selected_timestep_saliency = Lambda(
                 selectImageInModel, arguments={"curr_idx": curr_idx}
             )(decoder_saliency_inputs)
             flatten_timestep_saliency = Reshape(
-                (1, num_tiles_width * num_tiles_height)
+                (1, self.cfg.num_tiles_width * self.cfg.num_tiles_height)
             )(selected_timestep_saliency)
             prop_out_dec_1, state_h_1, state_c_1 = sense_pos_1_dec(
                 inputs, initial_state=states_1
@@ -117,7 +124,7 @@ class CVPR18(keras.Model, ModelWrapper):
         # decoder_outputs_img = Lambda(lambda x: K.concatenate(x, axis=1))(all_outputs)
 
         # Define and compile model
-        super().__init__(
+        model = keras.Model(
             inputs=[
                 encoder_position_inputs,
                 decoder_position_inputs,
@@ -127,8 +134,9 @@ class CVPR18(keras.Model, ModelWrapper):
         )
 
         model_optimizer = keras.optimizers.Adam(lr=0.0005)
-        self.compile(
+        model.compile(
             optimizer=model_optimizer,
             loss="mean_squared_error",
             metrics=[metric_orth_dist_cartesian],
         )
+        return model

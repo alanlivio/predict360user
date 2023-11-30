@@ -6,10 +6,16 @@ import numpy as np
 from keras.models import load_model
 from tensorflow import keras
 
-from predict360user.model_wrapper import ModelWrapper
+from predict360user.ingest import DATADIR
+from predict360user.model_wrapper import KerasModelWrapper, ModelConf
 
 
-class MM18(keras.Model, ModelWrapper):
+class MM18(KerasModelWrapper):
+    def __init__(self, cfg: ModelConf) -> None:
+        self.cfg = cfg
+        # self.model: keras.Model = self.build()
+        raise NotImplementedError
+
     def generate_batch(
         self, traces_l: list[np.array], x_i_l: list
     ) -> Tuple[list, list]:
@@ -18,7 +24,7 @@ class MM18(keras.Model, ModelWrapper):
     def predict_for_sample(self, traces: np.array, x_i) -> np.array:
         raise NotImplementedError
 
-    def __init__(self, m_window: int, h_window: int) -> None:
-        self.m_window, self.h_window = m_window, h_window
+    def build(self) -> None:
+        self.m_window, self.h_window = self.cfg.m_window, self.cfg.h_window
         saved_model = load_model(join(DATADIR, "model3_360net_128_w16_h9_8000"))
         self = copy.copy(saved_model)

@@ -6,7 +6,7 @@ from keras.metrics import mean_squared_error as mse
 from omegaconf import DictConfig
 from tensorflow import keras
 
-from predict360user.model_wrapper import ModelWrapper
+from predict360user.model_wrapper import KerasModelWrapper, ModelConf
 from predict360user.utils.math360 import metric_orth_dist_cartesian
 
 
@@ -18,13 +18,12 @@ def delta_angle_from_ori_mot(values):
     return orientation + motion
 
 
-class PosOnly3D(keras.Model, ModelWrapper):
-    def __init__(self, cfg: DictConfig) -> None:
-        self.m_window, self.h_window = (
-            cfg.m_window,
-            cfg.h_window,
-        )  # Defining model structure
+class PosOnly3D(keras.Model, KerasModelWrapper):
+    def __init__(self, cfg: ModelConf) -> None:
+        self.cfg = cfg
+        self.model: keras.Model = self.build()
 
+    def build(self) -> keras.Model:
         encoder_inputs = Input(shape=(None, 3))
         decoder_inputs = Input(shape=(1, 3))
 
@@ -46,7 +45,7 @@ class PosOnly3D(keras.Model, ModelWrapper):
         # Decoding
         all_outputs = []
         inputs = decoder_inputs
-        for _ in range(self.h_window):
+        for _ in range(self.cfg.h_window):
             # # Run the decoder on one timestep
             inputs_1 = sense_pos_1(inputs)
             inputs_2 = sense_pos_2(inputs_1)
@@ -63,22 +62,23 @@ class PosOnly3D(keras.Model, ModelWrapper):
             # Reinject the outputs as inputs for the next loop iteration as well as update the states
             inputs = outputs_pos
             states = [state_h, state_c]
-        if self.h_window == 1:
+        if self.cfg.h_window == 1:
             decoder_outputs = outputs_pos
         else:
             # Concatenate all predictions
             decoder_outputs = Lambda(lambda x: K.concatenate(x, axis=1))(all_outputs)
 
         # Define and compile model
-        super().__init__(
+        model = keras.Model(
             inputs=[encoder_inputs, decoder_inputs], outputs=decoder_outputs
         )
         model_optimizer = keras.optimizers.Adam(lr=0.0005)
-        self.compile(
+        model.compile(
             optimizer=model_optimizer,
             loss=self.loss_function,
             metrics=[metric_orth_dist_cartesian],
         )
+        return model
 
     # This way we ensure that the network learns to predict the delta angle
     def toPosition(self, values):

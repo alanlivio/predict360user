@@ -2,10 +2,15 @@ from typing import Tuple
 
 import numpy as np
 
-from predict360user.model_wrapper import ModelWrapper
+from predict360user.model_wrapper import ModelWrapper, ModelConf
 
 
 class TrueSaliency(ModelWrapper):
+    def __init__(self, cfg: ModelConf) -> None:
+        # self.cfg = cfg
+        # self.model: keras.Model = self.build()
+        raise NotImplementedError
+
     def generate_batch(
         self, traces_l: list[np.array], x_i_l: list
     ) -> Tuple[list, list]:
@@ -16,6 +21,11 @@ class TrueSaliency(ModelWrapper):
 
 
 class ContentSaliency(ModelWrapper):
+    def __init__(self, cfg: ModelConf) -> None:
+        # self.cfg = cfg
+        # self.model: keras.Model = self.build()
+        raise NotImplementedError
+
     def generate_batch(
         self, traces_l: list[np.array], x_i_l: list
     ) -> Tuple[list, list]:

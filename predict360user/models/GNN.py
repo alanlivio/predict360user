@@ -1,11 +1,16 @@
 from typing import Tuple
 
 import numpy as np
+import keras
+from predict360user.model_wrapper import KerasModelWrapper, ModelConf
 
-from predict360user.model_wrapper import ModelWrapper
 
+class GNN(KerasModelWrapper):
+    def __init__(self, cfg: ModelConf) -> None:
+        # self.cfg = cfg
+        # self.model: keras.Model = self.build()
+        raise NotImplementedError
 
-class GNN(ModelWrapper):
     def generate_batch(
         self, traces_l: list[np.array], x_i_l: list
     ) -> Tuple[list, list]:
