@@ -72,14 +72,8 @@ def run(cfg: RunConf) -> None:
     cfg.epochs = math.ceil(cfg.epochs * tuning_prc)
     model.fit(wins_tuning)
 
-    # evaluate and log to wandb
-    err_per_class_dict = model.evaluate(df_wins)
-    for actS_c, err in err_per_class_dict.items():
-        wandb.run.summary[f"err_{actS_c}"] = err["mean"]
-        table = wandb.Table(data=err["mean_per_t"], columns=["t", "err"])
-        plot_id = f"test_err_per_t_class_{actS_c}"
-        plot = wandb.plot.line(table, "t", "err", title=plot_id)
-        wandb.log({plot_id: plot})
+    # evaluate model
+    model.evaluate(cfg, model, df_wins)
     wandb.finish()
 
 
