@@ -1,7 +1,7 @@
 from omegaconf import OmegaConf
 import logging
 from predict360user.model_wrapper import ModelConf, build_run_name
-from predict360user.train import build_model, fit_keras, evaluate
+from predict360user.train import build_model
 import wandb
 from predict360user.ingest import count_entropy, load_df_wins, split
 
@@ -40,10 +40,10 @@ def run(cfg: ModelConf) -> None:
 
     # fit model
     model = build_model(cfg)
-    fit_keras(cfg, model, df_wins)
+    model.fit(df_wins)
 
     # evaluate and log to wandb
-    err_per_class_dict = evaluate(cfg, model, df_wins)
+    err_per_class_dict = model.evaluate(cfg, model, df_wins)
     for actS_c, err in err_per_class_dict.items():
         wandb.run.summary[f"err_{actS_c}"] = err["mean"]
         table = wandb.Table(data=err["mean_per_t"], columns=["t", "err"])

@@ -67,13 +67,13 @@ def run(cfg: RunConf) -> None:
 
     # fit 1
     cfg.epochs = math.floor(cfg.epochs * (1 - tuning_prc))
-    fit_keras(cfg, model, wins_pretuning)
+    model.fit(wins_pretuning)
     # fit 2
     cfg.epochs = math.ceil(cfg.epochs * tuning_prc)
-    fit_keras(cfg, model, wins_tuning)
+    model.fit(wins_tuning)
 
     # evaluate and log to wandb
-    err_per_class_dict = evaluate(cfg, model, df_wins)
+    err_per_class_dict = model.evaluate(df_wins)
     for actS_c, err in err_per_class_dict.items():
         wandb.run.summary[f"err_{actS_c}"] = err["mean"]
         table = wandb.Table(data=err["mean_per_t"], columns=["t", "err"])
