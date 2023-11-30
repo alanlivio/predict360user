@@ -68,6 +68,8 @@ def build_run_name(cfg: ModelConf) -> None:
     cfg.run_name += f",lr={cfg.lr!r}"
     if cfg.dataset_name != "all":
         cfg.run_name += f",ds={cfg.dataset_name}"
+    if cfg.epochs != 30:
+        cfg.run_name += f",epochs={cfg.epochs}"
 
 
 class ModelWrapper:
