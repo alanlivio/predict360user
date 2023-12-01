@@ -60,13 +60,15 @@ class ModelConf:
     run_name: str = ""
 
 
-def build_run_name(cfg: ModelConf) -> None:
+def build_run_name(cfg: ModelConf, sufix="") -> None:
     cfg.run_name = cfg.model_name
     cfg.run_name += f",lr={cfg.lr!r}"
     if cfg.dataset_name != "all":
         cfg.run_name += f",ds={cfg.dataset_name}"
     if cfg.epochs != 30:
         cfg.run_name += f",epochs={cfg.epochs}"
+    if sufix:
+        cfg.run_name += f",{sufix}"
 
 
 class ModelWrapper:
