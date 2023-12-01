@@ -1,21 +1,18 @@
-from dataclasses import dataclass
-from typing import Generator, Tuple
-
-import numpy as np
-import pandas as pd
 import logging
 import os
+from dataclasses import dataclass
 from os.path import exists, join
-from tensorflow import keras
+from typing import Generator, Tuple
 
+import absl
 import numpy as np
 import pandas as pd
-import wandb
-import absl
 from keras.callbacks import CSVLogger, ModelCheckpoint
+from tensorflow import keras
 from tqdm.auto import tqdm
 from wandb.keras import WandbMetricsLogger
 
+import wandb
 from predict360user.utils.math360 import orth_dist_cartesian
 
 log = logging.getLogger()
@@ -83,7 +80,7 @@ class ModelWrapper:
     def predict_for_sample(self, traces: np.array, x_i: int) -> np.array:
         pass
 
-    def fit(self, df_wins: pd.DataFrame) -> dict:
+    def fit(self, df_wins: pd.DataFrame) -> None:
         pass
 
     def evaluate(self, df_wins: pd.DataFrame) -> dict:
