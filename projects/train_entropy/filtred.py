@@ -106,17 +106,10 @@ def run(cfg: RunConf) -> None:
     model = build_model(cfg)
     if cfg.train_entropy.startswith("auto"):  # will not use model
         _set_predict_by_entropy(model)
-    fit_keras(cfg, model, df_wins)
+    model.fit(df_wins)
 
     # evaluate and log to wandb
-    err_per_class_dict = evaluate(cfg, model, df_wins)
-    for actS_c, err in err_per_class_dict.items():
-        wandb.run.summary[f"err_{actS_c}"] = err["mean"]
-        table = wandb.Table(data=err["mean_per_t"], columns=["t", "err"])
-        plot_id = f"test_err_per_t_class_{actS_c}"
-        plot = wandb.plot.line(table, "t", "err", title=plot_id)
-        wandb.log({plot_id: plot})
-    wandb.finish()
+    model.evaluate(cfg, df_wins)
 
 
 if __name__ == "__main__":
