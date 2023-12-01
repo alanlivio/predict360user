@@ -117,9 +117,9 @@ class ModelWrapper:
         classes = [
             ("all", test_wins.index),
             ("low", test_wins.index[test_wins["actS_c"] == "low"]),
-            ("nohigh", test_wins.index[test_wins["actS_c"] != "high"]),
+            # ("nohigh", test_wins.index[test_wins["actS_c"] != "high"]),
             ("medium", test_wins.index[test_wins["actS_c"] == "medium"]),
-            ("nolow", test_wins.index[test_wins["actS_c"] != "low"]),
+            # ("nolow", test_wins.index[test_wins["actS_c"] != "low"]),
             ("high", test_wins.index[test_wins["actS_c"] == "high"]),
         ]
         err_per_class_dict = {tup[0]: {} for tup in classes}
