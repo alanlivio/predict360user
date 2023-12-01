@@ -4,7 +4,7 @@ import numpy as np
 from os.path import join
 from dataclasses import dataclass
 from predict360user.model_wrapper import ModelWrapper, ModelConf, build_run_name
-from predict360user.train import build_model, fit_keras, evaluate
+from predict360user.train import build_model
 import wandb
 from predict360user.ingest import (
     count_entropy,
