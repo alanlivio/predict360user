@@ -64,68 +64,21 @@ def run(cfg: RunConf) -> None:
 
     # -- fit --
     model = build_model(cfg)
-
-    # split for tuning
+    
+    # train_wins_for_fit
     train_wins = df_wins[df_wins["partition"] == "train"]
-    val_wins = df_wins[df_wins["partition"] == "val"]
-
-    train_wins = (train_wins[train_wins["partition"] == "train"])
     begin = shuffle(train_wins[train_wins["actS_c"] != cfg.train_entropy])
     end = shuffle(train_wins[train_wins["actS_c"] == cfg.train_entropy])
-    train_wins = pd.concat([begin, end])
-    assert train_wins.iloc[-1]["actS_c"] == cfg.train_entropy
-
-    model_dir = join(cfg.savedir, cfg.run_name)
-    train_csv_log_f = join(model_dir, TRAIN_RES_CSV)
-    model_path = join(model_dir, "weights.hdf5")
-
-    if not exists(model_dir):
-        os.makedirs(model_dir)
-    if exists(model_path):
-        model.load_weights(model_path)
-    log.info("model_path=" + model_path)
-
-    # calc initial_epoch
-    initial_epoch = 0
-    if exists(train_csv_log_f):
-        lines = pd.read_csv(train_csv_log_f)
-        lines.dropna(how="all", inplace=True)
-        done_epochs = int(lines.iloc[-1]["epoch"]) + 1
-        assert done_epochs <= cfg.epochs
-        initial_epoch = done_epochs
-        log.info(f"train_csv_log_f has {initial_epoch} epochs ")
-
-    # fit
-    if cfg.gpu_id:
-        os.environ["CUDA_VISIBLE_DEVICES"] = str(cfg.gpu_id)
-        log.info(f"set visible cpu to {cfg.gpu_id}")
-    if initial_epoch >= cfg.epochs:
-        log.info(f"train_csv_log_f has {initial_epoch}>={cfg.epochs}. not training.")
-    else:
-        steps_per_ep_train = np.ceil(len(train_wins) / cfg.batch_size)
-        steps_per_ep_validate = np.ceil(len(val_wins) / cfg.batch_size)
-        callbacks = [
-            CSVLogger(train_csv_log_f, append=True),
-            ModelCheckpoint(
-                model_path,
-                save_best_only=True,
-                save_weights_only=True,
-                mode="auto",
-                period=1,
-            ),
-            WandbMetricsLogger(initial_global_step=initial_epoch),
-        ]
-        model.fit_generator(
-            generator=batch_generator(model, train_wins, cfg.batch_size),
-            validation_data=batch_generator(model, val_wins, cfg.batch_size),
-            steps_per_epoch=steps_per_ep_train,
-            validation_steps=steps_per_ep_validate,
-            epochs=cfg.epochs,
-            initial_epoch=initial_epoch,
-            callbacks=callbacks,
-            verbose=2,
-        )
-
+    train_wins_for_fit = pd.concat([begin, end])
+    assert train_wins_for_fit.iloc[-1]["actS_c"] == cfg.train_entropy
+    
+    # df_wins_new with train parition ordered
+    val_wins = df_wins[df_wins["partition"] == "val"]
+    df_wins_for_fit = pd.concat([train_wins_for_fit, val_wins])
+    
+    # fit model
+    model.fit (df_wins_for_fit)
+    
     # evaluate model
     model.evaluate(df_wins)
     wandb.finish()
