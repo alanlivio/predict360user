@@ -4,22 +4,15 @@ from dataclasses import dataclass
 import wandb
 from sklearn.utils import shuffle
 import logging
-import os
-from os.path import exists, join
 
-import numpy as np
 import pandas as pd
-from keras.callbacks import CSVLogger, ModelCheckpoint
-from wandb.keras import WandbMetricsLogger
 
-from predict360user.train import build_model, evaluate
+from predict360user.train import build_model
 from predict360user.ingest import count_entropy, load_df_wins, split
 from predict360user.model_wrapper import (
-    batch_generator,
     ModelConf,
     ENTROPY_NAMES_UNIQUE,
     build_run_name,
-    TRAIN_RES_CSV,
 )
 
 log = logging.getLogger()
@@ -64,21 +57,21 @@ def run(cfg: RunConf) -> None:
 
     # -- fit --
     model = build_model(cfg)
-    
+
     # train_wins_for_fit
     train_wins = df_wins[df_wins["partition"] == "train"]
     begin = shuffle(train_wins[train_wins["actS_c"] != cfg.train_entropy])
     end = shuffle(train_wins[train_wins["actS_c"] == cfg.train_entropy])
     train_wins_for_fit = pd.concat([begin, end])
     assert train_wins_for_fit.iloc[-1]["actS_c"] == cfg.train_entropy
-    
+
     # df_wins_new with train parition ordered
     val_wins = df_wins[df_wins["partition"] == "val"]
     df_wins_for_fit = pd.concat([train_wins_for_fit, val_wins])
-    
+
     # fit model
-    model.fit (df_wins_for_fit)
-    
+    model.fit(df_wins_for_fit)
+
     # evaluate model
     model.evaluate(df_wins)
     wandb.finish()
