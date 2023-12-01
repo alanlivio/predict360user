@@ -51,26 +51,22 @@ def run(cfg: RunConf) -> None:
 
     # -- fit --
     model = build_model(cfg)
+    tuning_epochs_prc = 0.33
 
     # split for tuning
     train_wins = df_wins[df_wins["partition"] == "train"]
     val_wins = df_wins[df_wins["partition"] == "val"]
-    tuning_prc = 0.33
-    train_wins_tuning = train_wins[train_wins["actS_c"] == cfg.train_entropy].sample(
-        frac=tuning_prc, random_state=1
-    )
-    val_wins_tuning = val_wins[val_wins["actS_c"] == cfg.train_entropy].sample(
-        frac=tuning_prc, random_state=1
-    )
-    wins_pretuning = df_wins.drop(train_wins_tuning.index).drop(val_wins_tuning.index)
-    wins_tuning = pd.concat([train_wins_tuning, val_wins_tuning])
+    train_wins_tuning = train_wins[train_wins["actS_c"] == cfg.train_entropy]
+    val_wins_tuning = val_wins[val_wins["actS_c"] == cfg.train_entropy]
+    df_wins_pretuning = df_wins.drop(train_wins_tuning.index).drop(val_wins_tuning.index)
+    df_wins_tuning = pd.concat([train_wins_tuning, val_wins_tuning])
 
     # fit 1
-    cfg.epochs = math.floor(cfg.epochs * (1 - tuning_prc))
-    model.fit(wins_pretuning)
+    cfg.epochs = math.floor(cfg.epochs * (1 - tuning_epochs_prc))
+    model.fit(df_wins_pretuning)
     # fit 2
-    cfg.epochs = math.ceil(cfg.epochs * tuning_prc)
-    model.fit(wins_tuning)
+    cfg.epochs = math.ceil(cfg.epochs * tuning_epochs_prc)
+    model.fit(df_wins_tuning)
 
     # evaluate model
     model.evaluate(df_wins)
