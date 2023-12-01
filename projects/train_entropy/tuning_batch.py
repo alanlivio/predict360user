@@ -127,7 +127,7 @@ def run(cfg: RunConf) -> None:
         )
 
     # evaluate model
-    model.evaluate(cfg, model, df_wins)
+    model.evaluate(df_wins)
     wandb.finish()
 
 

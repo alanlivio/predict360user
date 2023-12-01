@@ -75,7 +75,7 @@ def run(cfg: RunConf) -> None:
     model.fit(wins_tuning)
 
     # evaluate model
-    model.evaluate(cfg, model, df_wins)
+    model.evaluate(df_wins)
     wandb.finish()
 
 if __name__ == "__main__":
