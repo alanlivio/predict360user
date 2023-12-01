@@ -103,7 +103,9 @@ def load_df_wins(
     dataset_name="all", m_window=5, init_window=30, h_window=25
 ) -> pd.DataFrame:
     df_trajects = load_df_trajecs(dataset_name)
-    return create_df_wins(df_trajects, m_window=5, init_window=30, h_window=25)
+    df_wins = create_df_wins(df_trajects, m_window, init_window, h_window)
+    del df_trajects
+    return df_wins
 
 
 def _load_df_trajecs_from_hmp(dataset_name: str) -> pd.DataFrame:
