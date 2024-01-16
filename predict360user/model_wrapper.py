@@ -98,7 +98,7 @@ class ModelWrapper:
             x_i = row["trace_id"]
             pred_true = row["h_window"]
             # predict
-            pred = self.model.predict_for_sample(traces, x_i)
+            pred = self.predict_for_sample(traces, x_i)
             assert len(pred) == self.cfg.h_window
             error_per_t = [orth_dist_cartesian(pred[t], pred_true[t]) for t in t_range]
             return error_per_t
