@@ -27,13 +27,13 @@ log = logging.getLogger()
 
 def _set_predict_by_entropy(model: ModelWrapper, cfg: ModelConf, df_wins) -> ModelWrapper:
     prefix = join(cfg.savedir, f"{cfg.model_name},{cfg.dataset_name},actS,")
-    threshold_medium, threshold_high = get_class_thresholds(df_wins, "actS")
-    model_low = model.copy()
-    model_low.load_weights(join(prefix + "low", "weights.hdf5"))
-    model_medium = model.copy()
-    model_medium.load_weights(join(prefix + "medium", "weights.hdf5"))
-    model_high = model.copy()
-    model_high.load_weights(join(prefix + "high", "weights.hdf5"))
+    model.threshold_medium, model.threshold_high = get_class_thresholds(df_wins, "actS")
+    model.model_low = model.copy()
+    model.model_low.load_weights(join(prefix + "low", "weights.hdf5"))
+    model.model_medium = model.copy()
+    model.model_medium.load_weights(join(prefix + "medium", "weights.hdf5"))
+    model.model_high = model.copy()
+    model.model_high.load_weights(join(prefix + "high", "weights.hdf5"))
 
     def _predict_by_entropy(self, traces: np.array, x_i: int) -> ModelWrapper:
         if cfg.train_entropy == "auto":
@@ -45,17 +45,17 @@ def _set_predict_by_entropy(model: ModelWrapper, cfg: ModelConf, df_wins) -> Mod
         else:
             raise RuntimeError()
         a_ent = calc_actual_entropy(window)
-        actS_c = get_class_name(a_ent, threshold_medium, threshold_high)
+        actS_c = get_class_name(a_ent, self.threshold_medium, self.threshold_high)
         if actS_c == "low":
-            return model_low.predict_for_sample(self, traces, x_i)
+            return self.model_low.predict_for_sample(self, traces, x_i)
         if actS_c == "medium":
-            return model_medium.predict_for_sample(self, traces, x_i)
+            return self.model_medium.predict_for_sample(self, traces, x_i)
         if actS_c == "high":
-            return model_high.predict_for_sample(self, traces, x_i)
+            return self.model_high.predict_for_sample(self, traces, x_i)
         else:
             raise RuntimeError()
 
-    model.predict_for_sample = (_predict_by_entropy, model)
+    model.predict_for_sample = _predict_by_entropy
     return model
 
 
