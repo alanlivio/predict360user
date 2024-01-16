@@ -65,7 +65,7 @@ def run(cfg: RunConf) -> None:
     model.fit(df_wins_pretuning)
     del model
     # fit 2
-    cfg.epochs = math.ceil(cfg.epochs + cfg.epochs * tuning_epochs_prc)
+    cfg.epochs = math.ceil(cfg.epochs * (1 + tuning_epochs_prc))
     cfg.lr = 0.0001
     model = build_model(cfg)
     model.fit(df_wins_tuning)

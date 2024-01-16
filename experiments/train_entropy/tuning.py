@@ -62,10 +62,9 @@ def run(cfg: RunConf) -> None:
     df_wins_tuning = pd.concat([train_wins_tuning, val_wins_tuning])
 
     # fit 1
-    cfg.epochs = math.floor(cfg.epochs * (1 - tuning_epochs_prc))
     model.fit(df_wins_pretuning)
     # fit 2
-    cfg.epochs = math.ceil(cfg.epochs * tuning_epochs_prc)
+    cfg.epochs = math.ceil(cfg.epochs * (1 + tuning_epochs_prc))
     model.fit(df_wins_tuning)
 
     # evaluate model
