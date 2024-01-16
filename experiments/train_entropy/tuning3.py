@@ -68,9 +68,9 @@ def run(cfg: RunConf) -> None:
     cfg.epochs = math.ceil(cfg.epochs + cfg.epochs * tuning_epochs_prc)
     cfg.lr = 0.0001
     model = build_model(cfg)
-    model.layers[0].trainable = False
-    model.layers[1].trainable = False
-    model.layers[2].trainable = False
+    model.model.layers[0].trainable = False
+    model.model.layers[1].trainable = False
+    model.model.layers[2].trainable = False
     model.fit(df_wins_tuning)
 
     # evaluate model
