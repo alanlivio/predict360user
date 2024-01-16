@@ -93,7 +93,7 @@ class PosOnly3D(keras.Model, KerasModelWrapper):
         return loss
 
     def predict_for_sample(self, pos_inputs) -> np.array:
-        pred = super().predict(
+        pred = self.model.predict(
             [np.array([pos_inputs[:-1]]), np.array([pos_inputs[-1:]])]
         )
         norm_factor = np.sqrt(

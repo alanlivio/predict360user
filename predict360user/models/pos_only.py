@@ -150,5 +150,5 @@ class PosOnly(KerasModelWrapper):
                 decoder_pos_inputs_for_sample
             ),
         ]
-        model_pred = super().predict(inputs, verbose=0)[0]
+        model_pred = self.model.predict(inputs, verbose=0)[0]
         return transform_normalized_eulerian_to_cartesian(model_pred)
