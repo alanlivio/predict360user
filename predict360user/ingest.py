@@ -3,6 +3,7 @@ import os
 import pathlib
 import pickle
 from os.path import exists
+from os import mkdir
 
 import numpy as np
 import pandas as pd
@@ -67,6 +68,8 @@ def load_df_trajecs(dataset_name="all") -> pd.DataFrame:
         log.info(f"calculating entropy")
         df = _calc_traces_entropy(df)
         log.info(f"saving trajects to {pickle_file} for fast loading")
+        if not exists(DEFAULT_SAVEDIR):
+            mkdir(DEFAULT_SAVEDIR)
         with open(pickle_file, "wb") as f:
             pickle.dump(df, f)
     return df
