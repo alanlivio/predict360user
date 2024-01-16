@@ -109,7 +109,7 @@ def run(cfg: RunConf) -> None:
     model.fit(df_wins)
 
     # evaluate and log to wandb
-    model.evaluate(cfg, df_wins)
+    model.evaluate(df_wins)
 
 
 if __name__ == "__main__":
