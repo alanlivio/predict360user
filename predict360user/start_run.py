@@ -43,7 +43,7 @@ def run(cfg: ModelConf) -> None:
     model.fit(df_wins)
 
     # evaluate model
-    model.evaluate(cfg, model, df_wins)
+    model.evaluate(model, df_wins)
     wandb.finish()
 
 
