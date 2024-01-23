@@ -178,7 +178,6 @@ class KerasModelWrapper(ModelWrapper):
             lines = pd.read_csv(train_csv_log_f)
             lines.dropna(how="all", inplace=True)
             done_epochs = int(lines.iloc[-1]["epoch"]) + 1
-            assert done_epochs <= self.cfg.epochs
             initial_epoch = done_epochs
             log.info(f"train_csv_log_f has {initial_epoch} epochs ")
 
