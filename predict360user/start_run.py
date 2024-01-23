@@ -1,6 +1,6 @@
 from omegaconf import OmegaConf
 import logging
-from predict360user.model_wrapper import Config, build_run_name
+from predict360user.model_wrapper import Config
 from predict360user.train import build_model
 import wandb
 from predict360user.ingest import count_entropy, load_df_wins, split
@@ -9,7 +9,6 @@ log = logging.getLogger()
 
 
 def run(cfg: Config) -> None:
-    build_run_name(cfg)
     # cfg.run_name += f",100epochs"
     log.info(f"run conf is: \n--\n" + OmegaConf.to_yaml(cfg) + "--")
 

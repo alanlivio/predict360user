@@ -59,17 +59,10 @@ class Config:
     test_size: float = 0.2
     run_name: str = ""
 
-
-def build_run_name(cfg: Config, sufix="") -> None:
-    cfg.run_name = cfg.model_name
-    cfg.run_name += f",lr={cfg.lr!r}"
-    if cfg.dataset_name != "all":
-        cfg.run_name += f",ds={cfg.dataset_name}"
-    if cfg.epochs != 30:
-        cfg.run_name += f",epochs={cfg.epochs}"
-    if sufix:
-        cfg.run_name += f",{sufix}"
-
+    def __post_init__(self) -> None:
+        self.run_name += f"{self.model_name},lr={self.lr!r}"
+        if self.dataset_name != "all":
+            self.run_name += f",ds={self.dataset_name}"
 
 class ModelWrapper:
     cfg: Config  # should be filled by child class

@@ -9,11 +9,7 @@ import pandas as pd
 
 from predict360user.train import build_model
 from predict360user.ingest import count_entropy, load_df_wins, split
-from predict360user.model_wrapper import (
-    Config,
-    ENTROPY_NAMES_UNIQUE,
-    build_run_name,
-)
+from predict360user.model_wrapper import Config, ENTROPY_NAMES_UNIQUE
 
 log = logging.getLogger()
 
@@ -24,7 +20,6 @@ class RunConf(Config):
 
 
 def run(cfg: RunConf) -> None:
-    build_run_name(cfg)
     assert cfg.train_entropy in ENTROPY_NAMES_UNIQUE
     cfg.run_name += f",btuni={cfg.train_entropy}"
     log.info(f"run conf is: \n--\n" + OmegaConf.to_yaml(cfg) + "--")
