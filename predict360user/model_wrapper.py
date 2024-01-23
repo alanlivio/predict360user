@@ -44,7 +44,7 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 
 @dataclass
-class ModelConf:
+class Config:
     batch_size: int = 128
     dataset_name: str = "all"
     epochs: int = 30
@@ -60,7 +60,7 @@ class ModelConf:
     run_name: str = ""
 
 
-def build_run_name(cfg: ModelConf, sufix="") -> None:
+def build_run_name(cfg: Config, sufix="") -> None:
     cfg.run_name = cfg.model_name
     cfg.run_name += f",lr={cfg.lr!r}"
     if cfg.dataset_name != "all":
@@ -72,7 +72,7 @@ def build_run_name(cfg: ModelConf, sufix="") -> None:
 
 
 class ModelWrapper:
-    cfg: ModelConf  # should be filled by child class
+    cfg: Config  # should be filled by child class
 
     def generate_batch(
         self, traces_l: list[np.array], x_i_l: list

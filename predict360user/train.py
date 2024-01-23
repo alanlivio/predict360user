@@ -13,14 +13,14 @@ from predict360user.model_wrapper import (
     EVAL_RES_CSV,
     TRAIN_RES_CSV,
     ModelWrapper,
-    ModelConf,
+    Config,
 )
 from predict360user.models import TRACK, Interpolation, NoMotion, PosOnly, PosOnly3D
 
 log = logging.getLogger()
 
 
-def build_model(cfg: ModelConf) -> ModelWrapper:
+def build_model(cfg: Config) -> ModelWrapper:
     if cfg.model_name == "pos_only":
         return PosOnly(cfg)
     elif cfg.model_name == "pos_only_3d":

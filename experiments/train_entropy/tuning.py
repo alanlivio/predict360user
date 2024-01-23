@@ -7,13 +7,13 @@ import wandb
 
 from predict360user.train import build_model
 from predict360user.ingest import count_entropy, load_df_wins, split
-from predict360user.model_wrapper import ModelConf, build_run_name, ENTROPY_NAMES_UNIQUE
+from predict360user.model_wrapper import Config, build_run_name, ENTROPY_NAMES_UNIQUE
 
 log = logging.getLogger()
 
 
 @dataclass
-class RunConf(ModelConf):
+class RunConf(Config):
     train_entropy: str = ""
 
 

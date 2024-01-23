@@ -10,7 +10,7 @@ import pandas as pd
 from predict360user.train import build_model
 from predict360user.ingest import count_entropy, load_df_wins, split
 from predict360user.model_wrapper import (
-    ModelConf,
+    Config,
     ENTROPY_NAMES_UNIQUE,
     build_run_name,
 )
@@ -19,7 +19,7 @@ log = logging.getLogger()
 
 
 @dataclass
-class RunConf(ModelConf):
+class RunConf(Config):
     train_entropy: str = ""
 
 

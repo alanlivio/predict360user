@@ -3,7 +3,7 @@ import logging
 import numpy as np
 from os.path import join
 from dataclasses import dataclass
-from predict360user.model_wrapper import ModelWrapper, ModelConf, build_run_name
+from predict360user.model_wrapper import ModelWrapper, Config, build_run_name
 from predict360user.train import build_model
 import wandb
 from predict360user.ingest import (
@@ -15,7 +15,7 @@ from predict360user.ingest import (
     get_class_thresholds,
 )
 from predict360user.model_wrapper import (
-    ModelConf,
+    Config,
     build_run_name,
 )
 
@@ -25,7 +25,7 @@ ENTROPY_NAMES_AUTO = ["auto", "auto_m_window", "auto_since_start"]
 log = logging.getLogger()
 
 
-def _set_predict_by_entropy(model: ModelWrapper, cfg: ModelConf, df_wins) -> ModelWrapper:
+def _set_predict_by_entropy(model: ModelWrapper, cfg: Config, df_wins) -> ModelWrapper:
     prefix = join(cfg.savedir, f"{cfg.model_name},{cfg.dataset_name},actS,")
     model.threshold_medium, model.threshold_high = get_class_thresholds(df_wins, "actS")
     model.model_low = model.copy()
@@ -60,7 +60,7 @@ def _set_predict_by_entropy(model: ModelWrapper, cfg: ModelConf, df_wins) -> Mod
 
 
 @dataclass
-class RunConf(ModelConf):
+class RunConf(Config):
     train_entropy: str = "all"
     minsize: bool = False
 

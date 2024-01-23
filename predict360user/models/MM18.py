@@ -7,11 +7,11 @@ from keras.models import load_model
 from tensorflow import keras
 
 from predict360user.ingest import DATADIR
-from predict360user.model_wrapper import KerasModelWrapper, ModelConf
+from predict360user.model_wrapper import KerasModelWrapper, Config
 
 
 class MM18(KerasModelWrapper):
-    def __init__(self, cfg: ModelConf) -> None:
+    def __init__(self, cfg: Config) -> None:
         self.cfg = cfg
         # self.model: keras.Model = self.build()
         raise NotImplementedError

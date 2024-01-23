@@ -2,11 +2,11 @@ from typing import Tuple
 
 import numpy as np
 
-from predict360user.model_wrapper import ModelWrapper, ModelConf
+from predict360user.model_wrapper import ModelWrapper, Config
 
 
 class TrueSaliency(ModelWrapper):
-    def __init__(self, cfg: ModelConf) -> None:
+    def __init__(self, cfg: Config) -> None:
         # self.cfg = cfg
         # self.model: keras.Model = self.build()
         raise NotImplementedError
@@ -21,7 +21,7 @@ class TrueSaliency(ModelWrapper):
 
 
 class ContentSaliency(ModelWrapper):
-    def __init__(self, cfg: ModelConf) -> None:
+    def __init__(self, cfg: Config) -> None:
         # self.cfg = cfg
         # self.model: keras.Model = self.build()
         raise NotImplementedError
