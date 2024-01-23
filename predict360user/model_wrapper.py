@@ -3,6 +3,7 @@ import os
 from dataclasses import dataclass
 from os.path import exists, join
 from typing import Generator, Tuple
+from abc import ABC, abstractmethod
 
 import absl
 import numpy as np
@@ -11,6 +12,7 @@ from keras.callbacks import CSVLogger, ModelCheckpoint
 from tensorflow import keras
 from tqdm.auto import tqdm
 from wandb.keras import WandbMetricsLogger
+from sklearn.base import BaseEstimator
 
 import wandb
 from predict360user.utils.math360 import orth_dist_cartesian
@@ -64,19 +66,24 @@ class Config:
         if self.dataset_name != "all":
             self.run_name += f",ds={self.dataset_name}"
 
-class ModelWrapper:
-    cfg: Config  # should be filled by child class
 
+class ModelWrapper(BaseEstimator, ABC):
+    
+    def __init__(self, cfg: Config) -> None:
+        self.cfg = cfg
+
+    @abstractmethod
     def generate_batch(
         self, traces_l: list[np.array], x_i_l: list
     ) -> Tuple[list, list]:
-        pass
+        ...
 
+    @abstractmethod
     def predict_for_sample(self, traces: np.array, x_i: int) -> np.array:
-        pass
+        ...
 
     def fit(self, df_wins: pd.DataFrame) -> None:
-        pass
+        ...
 
     def evaluate(self, df_wins: pd.DataFrame) -> dict:
         log.info("evaluate ...")
