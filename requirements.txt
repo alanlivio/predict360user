@@ -4,7 +4,7 @@ colour
 hydra-core
 scipy
 spherical_geometry
-tqdm
+tqdm==4.61.2 # https://github.com/tqdm/tqdm/issues/1199
 wandb
 keras-tqdm
 jenkspy
