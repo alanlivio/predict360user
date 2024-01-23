@@ -64,9 +64,9 @@ def load_df_trajecs(dataset_name="all") -> pd.DataFrame:
     else:
         log.info(f"there is no {pickle_file}")
         log.info(f"loading trajects from {HMDDIR}")
-        df = _load_df_trajecs_from_hmp(dataset_name)
+        df = load_df_trajecs_from_hmp(dataset_name)
         log.info(f"calculating entropy")
-        df = _calc_traces_entropy(df)
+        df = calc_traces_entropy(df)
         log.info(f"saving trajects to {pickle_file} for fast loading")
         if not exists(DEFAULT_SAVEDIR):
             mkdir(DEFAULT_SAVEDIR)
@@ -111,7 +111,7 @@ def load_df_wins(
     return df_wins
 
 
-def _load_df_trajecs_from_hmp(dataset_name: str) -> pd.DataFrame:
+def load_df_trajecs_from_hmp(dataset_name: str) -> pd.DataFrame:
     # save cwd and move to head_motion_prediction for invoking funcs
     cwd = os.getcwd()
     os.chdir(HMDDIR)
@@ -171,7 +171,7 @@ def _load_df_trajecs_from_hmp(dataset_name: str) -> pd.DataFrame:
     return df
 
 
-def _calc_traces_entropy(df) -> None:
+def calc_traces_entropy(df) -> None:
     df.drop(["actS", "actS_c"], axis=1, errors="ignore", inplace=True)
     tqdm.pandas(desc=f"calc actS")
     df["actS"] = df["traces"].progress_apply(calc_actual_entropy).astype(float)
