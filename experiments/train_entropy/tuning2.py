@@ -13,11 +13,11 @@ log = logging.getLogger()
 
 
 @dataclass
-class RunConf(Config):
+class RunConfig(Config):
     train_entropy: str = ""
 
 
-def run(cfg: RunConf) -> None:
+def run(cfg: RunConfig) -> None:
     assert cfg.train_entropy in ENTROPY_NAMES_UNIQUE
     cfg.run_name += f",tuni2={cfg.train_entropy}"
     log.info(f"run conf is: \n--\n" + OmegaConf.to_yaml(cfg) + "--")
@@ -76,5 +76,5 @@ def run(cfg: RunConf) -> None:
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
-    cfg = RunConf(OmegaConf.from_cli())
+    cfg = RunConfig(OmegaConf.from_cli())
     run(cfg)

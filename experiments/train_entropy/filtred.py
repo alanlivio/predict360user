@@ -57,12 +57,12 @@ def _set_predict_by_entropy(model: ModelWrapper, cfg: Config, df_wins) -> ModelW
 
 
 @dataclass
-class RunConf(Config):
+class RunConfig(Config):
     train_entropy: str = "all"
     minsize: bool = False
 
 
-def run(cfg: RunConf) -> None:
+def run(cfg: RunConfig) -> None:
     assert cfg.train_entropy in ENTROPY_NAMES + ENTROPY_NAMES_AUTO
     if cfg.train_entropy != "all":
         cfg.run_name += f",filt={cfg.train_entropy}"
@@ -110,5 +110,5 @@ def run(cfg: RunConf) -> None:
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
-    cfg = RunConf(OmegaConf.from_cli())
+    cfg = RunConfig(OmegaConf.from_cli())
     run(cfg)
