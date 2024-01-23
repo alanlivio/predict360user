@@ -9,7 +9,6 @@ log = logging.getLogger()
 
 
 def run(cfg: Config) -> None:
-    # cfg.run_name += f",100epochs"
     log.info(f"run conf is: \n--\n" + OmegaConf.to_yaml(cfg) + "--")
 
     # load dataset
@@ -48,5 +47,5 @@ def run(cfg: Config) -> None:
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
-    cfg = OmegaConf.merge(OmegaConf.structured(Config), OmegaConf.from_cli())
+    cfg = Config(OmegaConf.from_cli())
     run(cfg)
