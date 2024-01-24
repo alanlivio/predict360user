@@ -74,5 +74,5 @@ def run(cfg: RunConfig) -> None:
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
-    cfg = RunConfig(OmegaConf.from_cli())
+    cfg = RunConfig(**OmegaConf.from_cli())
     run(cfg)
