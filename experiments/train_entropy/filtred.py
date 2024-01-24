@@ -63,12 +63,12 @@ class RunConfig(Config):
 
 
 def run(cfg: RunConfig) -> None:
-    assert cfg.train_entropy in ENTROPY_NAMES + ENTROPY_NAMES_AUTO
     if cfg.train_entropy != "all":
         cfg.run_name += f",filt={cfg.train_entropy}"
     if cfg.minsize:
         cfg.run_name += f",mins={cfg.minsize!r}"
     log.info(f"run conf is: \n--\n" + OmegaConf.to_yaml(cfg) + "--")
+    assert cfg.train_entropy in ENTROPY_NAMES + ENTROPY_NAMES_AUTO
 
     # load dataset
     df_wins = load_df_wins(

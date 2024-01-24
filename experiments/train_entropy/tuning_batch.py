@@ -20,9 +20,9 @@ class RunConfig(Config):
 
 
 def run(cfg: RunConfig) -> None:
-    assert cfg.train_entropy in ENTROPY_NAMES_UNIQUE
     cfg.run_name += f",btuni={cfg.train_entropy}"
     log.info(f"run conf is: \n--\n" + OmegaConf.to_yaml(cfg) + "--")
+    assert cfg.train_entropy in ENTROPY_NAMES_UNIQUE
 
     # -- load dataset --
     df_wins = load_df_wins(
