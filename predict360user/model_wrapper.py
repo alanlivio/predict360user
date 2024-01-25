@@ -82,6 +82,7 @@ class ModelWrapper(BaseEstimator, ABC):
     def predict_for_sample(self, traces: np.array, x_i: int) -> np.array:
         ...
 
+    @abstractmethod
     def fit(self, df_wins: pd.DataFrame) -> None:
         ...
 
@@ -93,7 +94,7 @@ class ModelWrapper(BaseEstimator, ABC):
         t_range = list(range(self.cfg.h_window))
 
         def _calc_pred_err(row) -> list[float]:
-            # return np.random.rand(cfg.h_window)  # for debugging
+            # return np.random.rand(self.cfg.h_window)  # for debugging
             traces = row["traces"]
             x_i = row["trace_id"]
             pred_true = row["h_window"]
