@@ -1,5 +1,5 @@
 jupyter
-plotly
+plotly==5.*
 colour
 hydra-core
 scipy
