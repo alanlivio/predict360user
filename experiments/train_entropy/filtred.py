@@ -16,13 +16,13 @@ class RunConfig(p3u.Config):
 
 
 def run(cfg: RunConfig) -> None:
+    assert cfg.train_entropy in p3u.ENTROPY_NAMES_UNIQUE
     run_name = f"{cfg.model_name},filt={cfg.train_entropy}"
     if cfg.minsize:
         run_name += f",mins={cfg.minsize!r}"
-    log.info(f"run {run_name} config is: \n--\n" + OmegaConf.to_yaml(cfg) + "--")
-    assert cfg.train_entropy in p3u.ENTROPY_NAMES_UNIQUE
     wandb.init(project="predict360user", name=run_name)
     wandb.run.log({"model": cfg.model_name, "batch": cfg.batch_size, "lr": cfg.lr})
+    log.info(f"run {run_name} config is: \n--\n" + OmegaConf.to_yaml(cfg) + "--")
 
     # load dataset
     df_wins = p3u.load_df_wins(
