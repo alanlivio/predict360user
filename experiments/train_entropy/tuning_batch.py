@@ -6,42 +6,41 @@ from sklearn.utils import shuffle
 import logging
 
 import pandas as pd
-
-from predict360user.train import build_model
-from predict360user.ingest import count_entropy, load_df_wins, split
-from predict360user.model_wrapper import Config, ENTROPY_NAMES_UNIQUE
+import predict360user as p3u
 
 log = logging.getLogger()
 
 
 @dataclass
-class RunConfig(Config):
+class RunConfig(p3u.Config):
     train_entropy: str = ""
 
 
 def run(cfg: RunConfig) -> None:
     run_name = f"{cfg.model_name},btuni={cfg.train_entropy}"
     log.info(f"run {run_name} config is: \n--\n" + OmegaConf.to_yaml(cfg) + "--")
-    assert cfg.train_entropy in ENTROPY_NAMES_UNIQUE
+    assert cfg.train_entropy in p3u.ENTROPY_NAMES_UNIQUE
     wandb.init(project="predict360user", name=run_name)
     wandb.run.log({"model": cfg.model_name, "batch": cfg.batch_size, "lr": cfg.lr})
 
     # -- load dataset --
-    df_wins = load_df_wins(
+    df_wins = p3u.load_df_wins(
         dataset_name=cfg.dataset_name,
         init_window=cfg.init_window,
         h_window=cfg.h_window,
     )
-    df_wins = split(
+    df_wins = p3u.split(
         df_wins,
         train_size=cfg.train_size,
         test_size=cfg.test_size,
     )
-    _, n_low, n_medium, n_high = count_entropy(df_wins[df_wins["partition"] == "train"])
+    _, n_low, n_medium, n_high = p3u.count_entropy(
+        df_wins[df_wins["partition"] == "train"]
+    )
     wandb.run.log({"trn_low": n_low, "trn_med": n_medium, "trn_hig": n_high})
 
     # -- fit --
-    model = build_model(cfg)
+    model = p3u.build_model(cfg)
 
     # train_wins_for_fit
     train_wins = df_wins[df_wins["partition"] == "train"]
