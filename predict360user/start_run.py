@@ -9,8 +9,10 @@ log = logging.getLogger()
 
 
 def run(cfg: Config) -> None:
-    log.info(f"run conf is: \n--\n" + OmegaConf.to_yaml(cfg) + "--")
-
+    run_name = cfg.model_name
+    log.info(f"run {run_name} config is: \n--\n" + OmegaConf.to_yaml(cfg) + "--")
+    wandb.init(project="predict360user", name=cfg.model_name)
+    wandb.run.log({"model": cfg.model_name, "batch": cfg.batch_size, "lr": cfg.lr})
     # load dataset
     df_wins = load_df_wins(
         dataset_name=cfg.dataset_name,
@@ -23,19 +25,7 @@ def run(cfg: Config) -> None:
         test_size=cfg.test_size,
     )
     _, n_low, n_medium, n_high = count_entropy(df_wins[df_wins["partition"] == "train"])
-    wandb.init(
-        project="predict360user",
-        config={
-            "model_name": cfg.model_name,
-            "batch_size": cfg.batch_size,
-            "lr": cfg.lr,
-            "train_n_low": n_low,
-            "train_n_medium": n_medium,
-            "train_n_high": n_high,
-        },
-        name=cfg.run_name,
-    )
-
+    wandb.run.log({"trn_low": n_low, "trn_med": n_medium, "trn_hig": n_high})
     # fit model
     model = build_model(cfg)
     model.fit(df_wins)
