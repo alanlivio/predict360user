@@ -59,13 +59,6 @@ class Config:
     savedir: str = "saved"
     train_size: float = 0.8
     test_size: float = 0.2
-    run_name: str = ""
-
-    def __post_init__(self) -> None:
-        self.run_name += f"{self.model_name},lr={self.lr!r}"
-        if self.dataset_name != "all":
-            self.run_name += f",ds={self.dataset_name}"
-
 
 class ModelWrapper(BaseEstimator, ABC):
     
