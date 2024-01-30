@@ -6,7 +6,7 @@ from keras import backend as K
 from keras.layers import LSTM, Dense, Input, Lambda
 from tensorflow import keras
 
-from predict360user.model_wrapper import Config, KerasModelWrapper
+from predict360user.estimator import Config, KerasEstimator
 from predict360user.utils.math360 import (
     cartesian_to_eulerian,
     eulerian_to_cartesian,
@@ -65,7 +65,7 @@ def transform_normalized_eulerian_to_cartesian(positions) -> np.array:
     return np.array(eulerian_samples)
 
 
-class PosOnly(KerasModelWrapper):
+class PosOnly(KerasEstimator):
     def __init__(self, cfg: Config) -> None:
         self.cfg = cfg
         self.model = self.build()

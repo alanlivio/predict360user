@@ -2,10 +2,10 @@ from typing import Tuple
 
 import numpy as np
 
-from predict360user.model_wrapper import ModelWrapper, Config
+from predict360user.estimator import Estimator, Config
 
 
-class TrueSaliency(ModelWrapper):
+class TrueSaliency(Estimator):
     def __init__(self, cfg: Config) -> None:
         # self.cfg = cfg
         # self.model: keras.Model = self.build()
@@ -20,7 +20,7 @@ class TrueSaliency(ModelWrapper):
         raise NotImplementedError
 
 
-class ContentSaliency(ModelWrapper):
+class ContentSaliency(Estimator):
     def __init__(self, cfg: Config) -> None:
         # self.cfg = cfg
         # self.model: keras.Model = self.build()

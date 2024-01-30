@@ -8,11 +8,11 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objs as go
 
-from predict360user.model_wrapper import (
+from predict360user.estimator import (
     DEFAULT_SAVEDIR,
     EVAL_RES_CSV,
     TRAIN_RES_CSV,
-    ModelWrapper,
+    Estimator,
     Config,
 )
 from predict360user.models import TRACK, Interpolation, NoMotion, PosOnly, PosOnly3D
@@ -20,7 +20,7 @@ from predict360user.models import TRACK, Interpolation, NoMotion, PosOnly, PosOn
 log = logging.getLogger()
 
 
-def build_model(cfg: Config) -> ModelWrapper:
+def build_model(cfg: Config) -> Estimator:
     if cfg.model_name == "pos_only":
         return PosOnly(cfg)
     elif cfg.model_name == "pos_only_3d":

@@ -7,10 +7,10 @@ from keras.models import load_model
 from tensorflow import keras
 
 from predict360user.ingest import DATADIR
-from predict360user.model_wrapper import KerasModelWrapper, Config
+from predict360user.estimator import KerasEstimator, Config
 
 
-class MM18(KerasModelWrapper):
+class MM18(KerasEstimator):
     def __init__(self, cfg: Config) -> None:
         self.cfg = cfg
         # self.model: keras.Model = self.build()

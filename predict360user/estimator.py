@@ -60,7 +60,7 @@ class Config:
     train_size: float = 0.8
     test_size: float = 0.2
 
-class ModelWrapper(BaseEstimator, ABC):
+class Estimator(BaseEstimator, ABC):
     
     def __init__(self, cfg: Config) -> None:
         self.cfg = cfg
@@ -146,7 +146,7 @@ class ModelWrapper(BaseEstimator, ABC):
                 yield self.generate_batch(traces_l, x_i_l)
 
 
-class KerasModelWrapper(ModelWrapper):
+class KerasEstimator(Estimator):
     model: keras.Model
 
     def fit(self, df_wins: pd.DataFrame) -> None:
