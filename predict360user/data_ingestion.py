@@ -10,7 +10,6 @@ import pandas as pd
 from typing import Literal
 from sklearn.model_selection import train_test_split
 
-from predict360user.base_model import DEFAULT_SAVEDIR
 from predict360user.utils.math360 import calc_actual_entropy
 from tqdm.auto import tqdm
 
@@ -18,7 +17,6 @@ from jenkspy import jenks_breaks
 
 DATADIR = f"{pathlib.Path(__file__).parent / 'data/'}"
 HMDDIR = f"{pathlib.Path(__file__).parent / 'head_motion_prediction/'}"
-
 DATASETS = {
     "david": {"size": 1083},
     "fan": {"size": 300},
@@ -26,6 +24,9 @@ DATASETS = {
     "xucvpr": {"size": 6654},
     "xupami": {"size": 4408},
 }
+DEFAULT_SAVEDIR = "saved"
+ENTROPY_NAMES_UNIQUE = ["low", "medium", "high"]
+
 log = logging.getLogger()
 
 

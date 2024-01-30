@@ -22,22 +22,8 @@ log = logging.getLogger()
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 tqdm.pandas()
 
-MODEL_NAMES = [
-    "pos_only",
-    "pos_only_3d",
-    "no_motion",
-    "interpolation",
-    "TRACK",
-    "CVPR18",
-    "MM18",
-    "most_salient_point",
-]
-MODELS_NAMES_NO_TRAIN = ["no_motion", "interpolation"]
-
 EVAL_RES_CSV = "eval_results.csv"
 TRAIN_RES_CSV = "train_results.csv"
-DEFAULT_SAVEDIR = "saved"
-ENTROPY_NAMES_UNIQUE = ["low", "medium", "high"]
 
 
 # disable TF logging
@@ -143,8 +129,6 @@ class KerasModel(BaseModel):
 
     def fit(self, df_wins: pd.DataFrame) -> None:
         log.info("train ...")
-        if self.cfg.model_name in MODELS_NAMES_NO_TRAIN:
-            return
 
         model_dir = join(self.cfg.savedir, self.cfg.run_name)
         train_csv_log_f = join(model_dir, TRAIN_RES_CSV)
