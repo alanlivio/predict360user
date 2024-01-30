@@ -2,11 +2,11 @@ from typing import Tuple
 
 import numpy as np
 
-from predict360user.estimator import Estimator
+from predict360user.base_model import BaseModel
 from predict360user.utils.math360 import rotationBetweenVectors
 
 
-class NoMotion(Estimator):
+class NoMotion(BaseModel):
     def __init__(self, h_window) -> None:
         super().__init__()
         self.h_window = h_window
@@ -21,7 +21,7 @@ class NoMotion(Estimator):
         return model_pred
 
 
-class Interpolation(Estimator):
+class Interpolation(BaseModel):
     def __init__(self, h_window) -> None:
         super().__init__()
         self.h_window = h_window
@@ -39,7 +39,7 @@ class Interpolation(Estimator):
         return prediction
 
 
-class Regression(Estimator):
+class Regression(BaseModel):
     def generate_batch(
         self, traces_l: list[np.array], x_i_l: list
     ) -> Tuple[list, list]:

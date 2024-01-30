@@ -1,12 +1,11 @@
 from typing import Tuple
 
 import numpy as np
-from tensorflow import keras
 
-from predict360user.estimator import Estimator, Config
+from predict360user.base_model import BaseModel, Config
 
 
-class PointNet(Estimator):
+class PointNet(BaseModel):
     def __init__(self, cfg: Config) -> None:
         self.cfg = cfg
         # self.model: keras.Model = self.build()

@@ -47,7 +47,8 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 @dataclass
 class Config:
-    """Base config for runs.
+    """Model config.
+    
     Keyword arguments:
     batch_size  -- model batch size
     dataset_name  -- dataset name from predict360user.ingest.DATASETS
@@ -77,11 +78,11 @@ class Config:
     test_size: float = 0.2
 
 
-class Estimator(BaseEstimator, ABC):
-    """Base class for estimators.
-    
+class BaseModel(BaseEstimator, ABC):
+    """Base class for models.
+
     Keyword arguments:
-    cfg  -- base config run
+    cfg  -- model config
     """
 
     def __init__(self, cfg: Config) -> None:
@@ -168,8 +169,8 @@ class Estimator(BaseEstimator, ABC):
                 yield self.generate_batch(traces_l, x_i_l)
 
 
-class KerasEstimator(Estimator):
-    """Base class for keras estimators."""
+class KerasModel(BaseModel):
+    """Base class for keras models."""
 
     model: keras.Model
 

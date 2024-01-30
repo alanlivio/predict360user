@@ -1,9 +1,9 @@
 from predict360user.data_ingestion import *
 from predict360user.data_exploration import *
-from predict360user.estimator import *
+from predict360user.base_model import *
 from predict360user.models import *
 
-def build_model(cfg: Config) -> Estimator:
+def build_model(cfg: Config) -> BaseModel:
     if cfg.model_name == "pos_only":
         return PosOnly(cfg)
     elif cfg.model_name == "pos_only_3d":
