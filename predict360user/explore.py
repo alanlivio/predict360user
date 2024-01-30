@@ -1,15 +1,42 @@
 import numpy as np
 import pandas as pd
 import plotly.express as px
+import sys
+import logging
+import IPython
 from plotly.subplots import make_subplots
 from tqdm.auto import tqdm
+import datetime
+from os.path import abspath, isabs, join
+import plotly.express as px
+import plotly.graph_objs as go
 
 from predict360user.ingest import get_class_name, get_class_thresholds
+from predict360user.estimator import DEFAULT_SAVEDIR
 from predict360user.utils.plot360 import Plot360
 from predict360user.utils.tileset360 import TILESET_DEFAULT
 
 ENTROPY_CLASS_COLORS = {"low": "blue", "medium": "green", "high": "red"}
 
+log = logging.getLogger()
+
+def show_or_save(output, savedir=DEFAULT_SAVEDIR, title="") -> None:
+    if "ipykernel" in sys.modules:
+        IPython.display.display(output)
+    else:
+        if not title:
+            if isinstance(output, go.Figure):
+                title = output.layout.title.text
+            else:
+                title = datetime.datetime.now().strftime("%y%m%d_%H%M%S")
+        html_file = join(savedir, title + ".html")
+        if isinstance(output, go.Figure):
+            output.write_html(html_file)
+        else:
+            output.to_html(html_file)
+        if not isabs(html_file):
+            html_file = abspath(html_file)
+        log.info(f"compare_train saved on {html_file}")
 
 def calc_traces_hmps(df: pd.DataFrame) -> None:
     df.drop(["traces_hmps"], axis=1, errors="ignore", inplace=True)
