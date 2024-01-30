@@ -47,6 +47,22 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 @dataclass
 class Config:
+    """Base config for runs.
+    Keyword arguments:
+    batch_size  -- model batch size
+    dataset_name  -- dataset name from predict360user.ingest.DATASETS
+    epochs  -- model training epochs
+    gpu_id  -- traing gpu id
+    h_window  -- model prediction horizon window size
+    init_window  -- init buffer window size
+    lr  -- model learning rate
+    m_window  -- model memory window learning rate
+    model_name  -- model name
+    savedir  -- model directory for save file
+    train_size  -- model training size
+    test_size  -- model test size
+    """
+
     batch_size: int = 128
     dataset_name: str = "all"
     epochs: int = 30
@@ -60,8 +76,14 @@ class Config:
     train_size: float = 0.8
     test_size: float = 0.2
 
+
 class Estimator(BaseEstimator, ABC):
+    """Base class for estimators.
     
+    Keyword arguments:
+    cfg  -- base config run
+    """
+
     def __init__(self, cfg: Config) -> None:
         self.cfg = cfg
 
@@ -147,6 +169,8 @@ class Estimator(BaseEstimator, ABC):
 
 
 class KerasEstimator(Estimator):
+    """Base class for keras estimators."""
+
     model: keras.Model
 
     def fit(self, df_wins: pd.DataFrame) -> None:
