@@ -5,8 +5,8 @@ import pandas as pd
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 
-from predict360user.ingest import load_df_trajecs
-from predict360user.explore import DEFAULT_SAVEDIR, show_or_save
+from predict360user.data_ingestion import load_df_trajecs
+from predict360user.data_exploration import DEFAULT_SAVEDIR, show_or_save
 from predict360user.utils.tileset360 import TileCover, TileSet, TileSetVoro
 
 log = logging.getLogger()

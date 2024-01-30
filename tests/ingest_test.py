@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from predict360user.ingest import load_df_trajecs, split_train_filtred
+from predict360user.data_ingestion import load_df_trajecs, split_train_filtred
 
 
 class IngestTestCase(unittest.TestCase):

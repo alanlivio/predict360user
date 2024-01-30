@@ -4,9 +4,8 @@ from typing import Tuple
 
 import numpy as np
 from keras.models import load_model
-from tensorflow import keras
 
-from predict360user.ingest import DATADIR
+from predict360user.data_ingestion import DATADIR
 from predict360user.estimator import KerasEstimator, Config
 
 
