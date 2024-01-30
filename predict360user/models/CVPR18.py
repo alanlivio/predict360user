@@ -14,7 +14,7 @@ from keras.layers import (
 )
 from tensorflow import keras
 
-from predict360user.base_model import KerasModel, Config
+from predict360user.base_model import KerasModel, RunConfig
 from predict360user.models.pos_only_3d import delta_angle_from_ori_mot
 from predict360user.utils.math360 import metric_orth_dist_cartesian
 
@@ -29,7 +29,7 @@ def add_timestep_axis(input):
 
 
 class CVPR18(KerasModel):
-    def __init__(self, cfg: Config) -> None:
+    def __init__(self, cfg: RunConfig) -> None:
         self.cfg = cfg
         self.model: keras.Model = self.build()
 

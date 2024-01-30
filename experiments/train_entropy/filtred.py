@@ -1,7 +1,5 @@
 from omegaconf import OmegaConf
 import logging
-import numpy as np
-from os.path import join
 from dataclasses import dataclass
 import wandb
 import predict360user as p3u
@@ -10,7 +8,7 @@ log = logging.getLogger()
 
 
 @dataclass
-class RunConfig(p3u.Config):
+class RunConfig(p3u.RunConfig):
     train_entropy: str = "all"
     minsize: bool = False
 

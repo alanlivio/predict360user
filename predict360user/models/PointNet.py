@@ -2,11 +2,11 @@ from typing import Tuple
 
 import numpy as np
 
-from predict360user.base_model import BaseModel, Config
+from predict360user.base_model import BaseModel, RunConfig
 
 
 class PointNet(BaseModel):
-    def __init__(self, cfg: Config) -> None:
+    def __init__(self, cfg: RunConfig) -> None:
         self.cfg = cfg
         # self.model: keras.Model = self.build()
         raise NotImplementedError

@@ -6,11 +6,11 @@ import numpy as np
 from keras.models import load_model
 
 from predict360user.data_ingestion import DATADIR
-from predict360user.base_model import KerasModel, Config
+from predict360user.base_model import KerasModel, RunConfig
 
 
 class MM18(KerasModel):
-    def __init__(self, cfg: Config) -> None:
+    def __init__(self, cfg: RunConfig) -> None:
         self.cfg = cfg
         # self.model: keras.Model = self.build()
         raise NotImplementedError

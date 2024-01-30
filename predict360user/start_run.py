@@ -6,7 +6,7 @@ import predict360user as p3u
 log = logging.getLogger()
 
 
-def run(cfg: p3u.Config) -> None:
+def run(cfg: p3u.RunConfig) -> None:
     run_name = cfg.model_name
     wandb.init(project="predict360user", name=run_name)
     wandb.run.log({"model": cfg.model_name, "batch": cfg.batch_size, "lr": cfg.lr})
@@ -39,5 +39,5 @@ def run(cfg: p3u.Config) -> None:
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
-    cfg = p3u.Config(**OmegaConf.from_cli())
+    cfg = p3u.RunConfig(**OmegaConf.from_cli())
     run(cfg)

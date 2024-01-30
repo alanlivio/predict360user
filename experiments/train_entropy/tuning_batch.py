@@ -12,7 +12,7 @@ log = logging.getLogger()
 
 
 @dataclass
-class RunConfig(p3u.Config):
+class RunConfig(p3u.RunConfig):
     train_entropy: str = ""
 
 

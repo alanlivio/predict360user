@@ -1,11 +1,11 @@
 from typing import Tuple
 
 import numpy as np
-from predict360user.base_model import KerasModel, Config
+from predict360user.base_model import KerasModel, RunConfig
 
 
 class GNN(KerasModel):
-    def __init__(self, cfg: Config) -> None:
+    def __init__(self, cfg: RunConfig) -> None:
         # self.cfg = cfg
         # self.model: keras.Model = self.build()
         raise NotImplementedError

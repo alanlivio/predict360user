@@ -5,7 +5,7 @@ from keras.layers import LSTM, Dense, Input, Lambda, TimeDistributed
 from keras.metrics import mean_squared_error as mse
 from tensorflow import keras
 
-from predict360user.base_model import KerasModel, Config
+from predict360user.base_model import KerasModel, RunConfig
 from predict360user.utils.math360 import metric_orth_dist_cartesian
 
 
@@ -18,7 +18,7 @@ def delta_angle_from_ori_mot(values):
 
 
 class PosOnly3D(keras.Model, KerasModel):
-    def __init__(self, cfg: Config) -> None:
+    def __init__(self, cfg: RunConfig) -> None:
         self.cfg = cfg
         self.model: keras.Model = self.build()
 

@@ -1,6 +1,5 @@
 import logging
 import os
-from dataclasses import dataclass
 from os.path import exists, join
 from typing import Generator, Tuple
 from abc import ABC, abstractmethod
@@ -15,6 +14,7 @@ from wandb.keras import WandbMetricsLogger
 from sklearn.base import BaseEstimator
 
 import wandb
+from predict360user.run_config import RunConfig
 from predict360user.utils.math360 import orth_dist_cartesian
 
 log = logging.getLogger()
@@ -45,47 +45,14 @@ absl.logging.set_verbosity(absl.logging.ERROR)
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 
-@dataclass
-class Config:
-    """Model config.
-    
-    Keyword arguments:
-    batch_size  -- model batch size
-    dataset_name  -- dataset name from predict360user.ingest.DATASETS
-    epochs  -- model training epochs
-    gpu_id  -- traing gpu id
-    h_window  -- model prediction horizon window size
-    init_window  -- init buffer window size
-    lr  -- model learning rate
-    m_window  -- model memory window learning rate
-    model_name  -- model name
-    savedir  -- model directory for save file
-    train_size  -- model training size
-    test_size  -- model test size
-    """
-
-    batch_size: int = 128
-    dataset_name: str = "all"
-    epochs: int = 30
-    gpu_id: str = ""
-    h_window: int = 25
-    init_window: int = 30
-    lr: float = 0.0005
-    m_window: int = 5
-    model_name: str = "pos_only"
-    savedir: str = "saved"
-    train_size: float = 0.8
-    test_size: float = 0.2
-
-
 class BaseModel(BaseEstimator, ABC):
     """Base class for models.
 
     Keyword arguments:
-    cfg  -- model config
+    cfg  -- RunConfig
     """
 
-    def __init__(self, cfg: Config) -> None:
+    def __init__(self, cfg: RunConfig) -> None:
         self.cfg = cfg
 
     @abstractmethod

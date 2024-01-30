@@ -3,7 +3,7 @@ from predict360user.data_exploration import *
 from predict360user.base_model import *
 from predict360user.models import *
 
-def build_model(cfg: Config) -> BaseModel:
+def build_model(cfg: RunConfig) -> BaseModel:
     if cfg.model_name == "pos_only":
         return PosOnly(cfg)
     elif cfg.model_name == "pos_only_3d":
