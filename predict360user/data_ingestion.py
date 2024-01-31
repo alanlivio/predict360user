@@ -25,7 +25,7 @@ DATASETS = {
     "xupami": {"size": 4408},
 }
 DEFAULT_SAVEDIR = "saved"
-ENTROPY_NAMES_UNIQUE = ["low", "medium", "high"]
+ENTROPY_NAMES = ["low", "medium", "high"]
 
 log = logging.getLogger()
 

@@ -14,7 +14,7 @@ class RunConfig(p3u.RunConfig):
 
 
 def run(cfg: RunConfig) -> None:
-    assert cfg.train_entropy in p3u.ENTROPY_NAMES_UNIQUE
+    assert cfg.train_entropy in p3u.ENTROPY_NAMES
     run_name = f"{cfg.model_name},filt={cfg.train_entropy}"
     if cfg.minsize:
         run_name += f",mins={cfg.minsize!r}"
