@@ -10,7 +10,7 @@ log = logging.getLogger()
 @dataclass
 class RunConfig(p3u.RunConfig):
     train_entropy: str = "all"
-    minsize: bool = False
+    train_minsize: bool = False
 
 
 def run(cfg: RunConfig) -> None:
@@ -22,6 +22,9 @@ def run(cfg: RunConfig) -> None:
     wandb.run.log({"model": cfg.model_name, "batch": cfg.batch_size, "lr": cfg.lr})
     log.info(f"run {run_name} config is: \n--\n" + OmegaConf.to_yaml(cfg) + "--")
 
+    # seed
+    cfg.set_random_seed()
+    
     # load dataset
     df_wins = p3u.load_df_wins(
         dataset_name=cfg.dataset_name,
@@ -31,9 +34,10 @@ def run(cfg: RunConfig) -> None:
     df_wins = p3u.split_train_filtred(
         df_wins,
         train_size=cfg.train_size,
-        train_entropy=cfg.train_entropy,
-        train_minsize=cfg.minsize,
         test_size=cfg.test_size,
+        train_entropy=cfg.train_entropy,
+        train_minsize=cfg.train_minsize,
+        seed=cfg.seed
     )
     _, n_low, n_medium, n_high = p3u.count_entropy(
         df_wins[df_wins["partition"] == "train"]
@@ -44,7 +48,7 @@ def run(cfg: RunConfig) -> None:
     model = p3u.build_model(cfg)
     model.fit(df_wins)
 
-    # evaluate and log to wandb
+    # evaluate model
     model.evaluate(df_wins)
 
 

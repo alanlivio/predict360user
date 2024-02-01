@@ -23,6 +23,9 @@ def run(cfg: RunConfig) -> None:
     wandb.run.log({"model": cfg.model_name, "batch": cfg.batch_size, "lr": cfg.lr})
     log.info(f"run {run_name} config is: \n--\n" + OmegaConf.to_yaml(cfg) + "--")
 
+    # seed
+    cfg.set_random_seed()
+    
     # -- load dataset --
     df_wins = p3u.load_df_wins(
         dataset_name=cfg.dataset_name,
