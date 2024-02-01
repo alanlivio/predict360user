@@ -55,64 +55,7 @@ def count_entropy_str(df: pd.DataFrame) -> str:
     return "{}: {} low, {} medium, {} high".format(*count_entropy(df))
 
 
-def load_df_trajecs(dataset_name="all") -> pd.DataFrame:
-    assert dataset_name in ["all"] + list(DATASETS.keys())
-    pickle_file = os.path.join(DEFAULT_SAVEDIR, f"df_trajecs_{dataset_name}.pickle")
-    if exists(pickle_file):
-        with open(pickle_file, "rb") as f:
-            log.info(f"loading df from {pickle_file}")
-            df = pickle.load(f)
-    else:
-        log.info(f"there is no {pickle_file}")
-        log.info(f"loading trajects from {HMDDIR}")
-        df = load_df_trajecs_from_hmp(dataset_name)
-        log.info(f"calculating entropy")
-        df = calc_traces_entropy(df)
-        log.info(f"saving trajects to {pickle_file} for fast loading")
-        if not exists(DEFAULT_SAVEDIR):
-            mkdir(DEFAULT_SAVEDIR)
-        with open(pickle_file, "wb") as f:
-            pickle.dump(df, f)
-    return df
-
-
-def create_df_wins(df: pd.DataFrame, init_window=30, m_window=5, h_window=25) -> None:
-    df_wins = df
-
-    # create "trace_id" list as explode it duplicating other columns
-    def _create_trace_id(traces) -> list[int]:
-        return [trace_id for trace_id in range(init_window, traces.shape[0] - h_window)]
-
-    df_wins["trace_id"] = df["traces"].apply(_create_trace_id)
-    df_wins = df_wins.explode("trace_id", ignore_index=True)
-    df_wins = df_wins.dropna(subset=["trace_id"], how="all")
-
-    # m_window and f_window
-    def _create_m_window(row) -> np.array:
-        trace_id = row["trace_id"]
-        return row["traces"][trace_id - m_window : trace_id]
-
-    def _create_h_window(row) -> np.array:
-        trace_id = row["trace_id"]
-        return row["traces"][trace_id + 1 : trace_id + h_window + 1]
-
-    df_wins["m_window"] = df_wins.apply(_create_m_window, axis=1)
-    df_wins["h_window"] = df_wins.apply(_create_h_window, axis=1)
-
-    # df_wins = df_wins.drop(["traces"], axis=1)
-    return df_wins
-
-
-def load_df_wins(
-    dataset_name="all", m_window=5, init_window=30, h_window=25
-) -> pd.DataFrame:
-    df_trajects = load_df_trajecs(dataset_name)
-    df_wins = create_df_wins(df_trajects, m_window, init_window, h_window)
-    del df_trajects
-    return df_wins
-
-
-def load_df_trajecs_from_hmp(dataset_name: str) -> pd.DataFrame:
+def _load_df_trajecs_from_hmp(dataset_name: str) -> pd.DataFrame:
     # save cwd and move to head_motion_prediction for invoking funcs
     cwd = os.getcwd()
     os.chdir(HMDDIR)
@@ -172,7 +115,7 @@ def load_df_trajecs_from_hmp(dataset_name: str) -> pd.DataFrame:
     return df
 
 
-def calc_traces_entropy(df) -> None:
+def _calc_traces_entropy(df) -> pd.DataFrame:
     df.drop(["actS", "actS_c"], axis=1, errors="ignore", inplace=True)
     tqdm.pandas(desc=f"calc actS")
     df["actS"] = df["traces"].progress_apply(calc_actual_entropy).astype(float)
@@ -187,11 +130,63 @@ def calc_traces_entropy(df) -> None:
     return df
 
 
+def load_df_trajecs(dataset_name="all") -> pd.DataFrame:
+    assert dataset_name in ["all"] + list(DATASETS.keys())
+    pickle_file = os.path.join(DEFAULT_SAVEDIR, f"df_trajecs_{dataset_name}.pickle")
+    if exists(pickle_file):
+        with open(pickle_file, "rb") as f:
+            log.info(f"loading df from {pickle_file}")
+            df = pickle.load(f)
+    else:
+        log.info(f"there is no {pickle_file}")
+        log.info(f"loading trajects from {HMDDIR}")
+        df = _load_df_trajecs_from_hmp(dataset_name)
+        log.info(f"calculating entropy")
+        df = _calc_traces_entropy(df)
+        log.info(f"saving trajects to {pickle_file} for fast loading")
+        if not exists(DEFAULT_SAVEDIR):
+            mkdir(DEFAULT_SAVEDIR)
+        with open(pickle_file, "wb") as f:
+            pickle.dump(df, f)
+    return df
+
+
+def load_df_wins(
+    dataset_name: str, m_window: int, init_window: int, h_window: int
+) -> pd.DataFrame:
+    df_trajects = load_df_trajecs(dataset_name)
+
+    df_wins = df_trajects
+
+    # create "trace_id" list as explode it duplicating other columns
+    def _create_trace_id(traces) -> list[int]:
+        return [trace_id for trace_id in range(init_window, traces.shape[0] - h_window)]
+
+    df_wins["trace_id"] = df_trajects["traces"].apply(_create_trace_id)
+    df_wins = df_wins.explode("trace_id", ignore_index=True)
+    df_wins = df_wins.dropna(subset=["trace_id"], how="all")
+
+    # m_window and f_window
+    def _create_m_window(row) -> np.array:
+        trace_id = row["trace_id"]
+        return row["traces"][trace_id - m_window : trace_id]
+
+    def _create_h_window(row) -> np.array:
+        trace_id = row["trace_id"]
+        return row["traces"][trace_id + 1 : trace_id + h_window + 1]
+
+    df_wins["m_window"] = df_wins.apply(_create_m_window, axis=1)
+    df_wins["h_window"] = df_wins.apply(_create_h_window, axis=1)
+
+    del df_trajects
+    return df_wins
+
+
 def split(
     df: pd.DataFrame,
-    train_size=0.8,
+    train_size: float,
+    test_size: float,
     val_size=0.25,
-    test_size=0.2,
 ) -> pd.DataFrame:
     df["partition"] = "discarted"  # sanity check
     log.info(f"{train_size=} (with {val_size=}), {test_size=}")
@@ -230,12 +225,12 @@ def split(
 
 def split_train_filtred(
     df: pd.DataFrame,
-    train_size=0.8,
+    train_size: float,
+    test_size: float,
+    train_entropy=str,
     val_size=0.25,
-    test_size=0.2,
-    train_entropy="all",
     train_minsize=False,
-) -> None:
+) -> pd.DataFrame:
     df["partition"] = "discarted"
 
     log.info(f"{train_size=} (with {val_size=}), {test_size=}")

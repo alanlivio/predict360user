@@ -3,6 +3,7 @@ from predict360user.data_ingestion import (
     load_df_trajecs,
     load_df_wins,
     split,
+    split_train_filtred,
     count_entropy_str,
     count_entropy
 )
