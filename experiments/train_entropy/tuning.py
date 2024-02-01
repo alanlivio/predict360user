@@ -25,7 +25,7 @@ def run(cfg: RunConfig) -> None:
     # seed
     cfg.set_random_seed()
     
-    # -- load dataset --
+    # load dataset
     df_wins = p3u.load_df_wins(
         dataset_name=cfg.dataset_name,
         init_window=cfg.init_window,
@@ -41,9 +41,6 @@ def run(cfg: RunConfig) -> None:
     )
     wandb.run.log({"trn_low": n_low, "trn_med": n_medium, "trn_hig": n_high})
 
-    # -- fit --
-    model = p3u.build_model(cfg)
-    tuning_epochs_prc = 0.33
 
     # split for tuning
     train_wins = df_wins[df_wins["partition"] == "train"]
@@ -55,9 +52,12 @@ def run(cfg: RunConfig) -> None:
     )
     df_wins_tuning = pd.concat([train_wins_tuning, val_wins_tuning])
 
-    # fit 1
+    # fit
+    model = p3u.build_model(cfg)
     model.fit(df_wins_pretuning)
-    # fit 2
+    
+    # tuning
+    tuning_epochs_prc = 0.33
     cfg.epochs = math.ceil(cfg.epochs * (1 + tuning_epochs_prc))
     model.fit(df_wins_tuning)
 

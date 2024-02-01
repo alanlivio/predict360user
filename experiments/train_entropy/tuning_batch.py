@@ -25,8 +25,8 @@ def run(cfg: RunConfig) -> None:
 
     # seed
     cfg.set_random_seed()
-    
-    # -- load dataset --
+
+    # load dataset
     df_wins = p3u.load_df_wins(
         dataset_name=cfg.dataset_name,
         init_window=cfg.init_window,
@@ -42,9 +42,6 @@ def run(cfg: RunConfig) -> None:
     )
     wandb.run.log({"trn_low": n_low, "trn_med": n_medium, "trn_hig": n_high})
 
-    # -- fit --
-    model = p3u.build_model(cfg)
-
     # train_wins_for_fit
     train_wins = df_wins[df_wins["partition"] == "train"]
     begin = shuffle(train_wins[train_wins["actS_c"] != cfg.train_entropy])
@@ -57,6 +54,7 @@ def run(cfg: RunConfig) -> None:
     df_wins_for_fit = pd.concat([train_wins_for_fit, val_wins])
 
     # fit model
+    model = p3u.build_model(cfg)
     model.fit(df_wins_for_fit)
 
     # evaluate model
