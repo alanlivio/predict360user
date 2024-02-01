@@ -87,14 +87,12 @@ class BaseModel(BaseEstimator, ABC):
         classes = [
             ("all", test_wins.index),
             ("low", test_wins.index[test_wins["actS_c"] == "low"]),
-            # ("nohigh", test_wins.index[test_wins["actS_c"] != "high"]),
             ("medium", test_wins.index[test_wins["actS_c"] == "medium"]),
-            # ("nolow", test_wins.index[test_wins["actS_c"] != "low"]),
             ("high", test_wins.index[test_wins["actS_c"] == "high"]),
         ]
         err_per_class_dict = {tup[0]: {} for tup in classes}
         for actS_c, idx in classes:
-            # 1) mean per class (as wandb summary): # err_all, err_low, err_nohigh, err_medium,
+            # 1) mean per class (as wandb summary): # err_all, err_low, err_high, err_medium,
             err_per_class_dict[actS_c]["mean"] = df_wins.loc[idx, t_range].values.mean()
             # 2) mean err per t per class
             class_err_per_t = df_wins.loc[idx, t_range].mean()

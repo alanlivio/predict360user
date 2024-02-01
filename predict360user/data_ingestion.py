@@ -229,8 +229,8 @@ def split_train_filtred(
     val_size=0.25,
     train_minsize=False,
 ) -> pd.DataFrame:
+    assert train_entropy in ENTROPY_NAMES
     df["partition"] = "discarted"
-
     log.info(f"{train_size=} (with {val_size=}), {test_size=}")
 
     # split train and test
@@ -244,14 +244,7 @@ def split_train_filtred(
     log.info("train trajecs are " + count_entropy_str(train))
 
     # filter by given entropy
-    if train_entropy == "all":
-        filtered = train
-    elif train_entropy == "nohigh":
-        filtered = train[train["actS_c"] != "high"]
-    elif train_entropy == "nolow":
-        filtered = train[train["actS_c"] != "low"]
-    else:
-        filtered = train[train["actS_c"] == train_entropy]
+    filtered = train[train["actS_c"] == train_entropy]
     assert len(filtered)
 
     # filter for limiting to smallest class size in the train
