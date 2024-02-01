@@ -183,10 +183,7 @@ def load_df_wins(
 
 
 def split(
-    df: pd.DataFrame,
-    train_size: float,
-    test_size: float,
-    val_size=0.25,
+    df: pd.DataFrame, train_size: float, test_size: float, seed: int, val_size=0.25
 ) -> pd.DataFrame:
     df["partition"] = "discarted"  # sanity check
     log.info(f"{train_size=} (with {val_size=}), {test_size=}")
@@ -194,7 +191,7 @@ def split(
     # split train and test
     train, test = train_test_split(
         df,
-        random_state=1,
+        random_state=seed,
         train_size=train_size,
         test_size=test_size,
         stratify=df["actS_c"],
@@ -205,7 +202,7 @@ def split(
     train_before_val_split = len(train)
     train, val = train_test_split(
         train,
-        random_state=1,
+        random_state=seed,
         test_size=val_size,
         stratify=train["actS_c"],
     )
@@ -227,7 +224,8 @@ def split_train_filtred(
     df: pd.DataFrame,
     train_size: float,
     test_size: float,
-    train_entropy=str,
+    seed: int,
+    train_entropy: str,
     val_size=0.25,
     train_minsize=False,
 ) -> pd.DataFrame:
@@ -238,7 +236,7 @@ def split_train_filtred(
     # split train and test
     train, test = train_test_split(
         df,
-        random_state=1,
+        random_state=seed,
         train_size=train_size,
         test_size=test_size,
         stratify=df["actS_c"],
@@ -263,14 +261,14 @@ def split_train_filtred(
         n_current_classes = len(filtered["actS_c"].unique())
         n_sample_per_class = int(target_size / n_current_classes)
         filtered = filtered.groupby("actS_c", group_keys=False).apply(
-            lambda x: x.sample(n=n_sample_per_class, random_state=1)
+            lambda x: x.sample(n=n_sample_per_class, random_state=seed)
         )
 
     # split train and val
     train_before_val_split = len(filtered)
     train, val = train_test_split(
         filtered,
-        random_state=1,
+        random_state=seed,
         test_size=val_size,
         stratify=filtered["actS_c"],
     )

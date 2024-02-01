@@ -5,7 +5,7 @@ from predict360user.data_ingestion import (
     split,
     split_train_filtred,
     count_entropy_str,
-    count_entropy
+    count_entropy,
 )
 from predict360user.data_exploration import (
     show_entropy_histogram,
@@ -13,7 +13,7 @@ from predict360user.data_exploration import (
     show_trajects_representative,
     show_entropy_histogram_per_partition,
 )
-from predict360user.run_config import RunConfig
+from predict360user.run_config import RunConfig, set_random_seed
 from predict360user.base_model import BaseModel, KerasModel
 from predict360user.models import PosOnly, PosOnly3D, Interpolation, NoMotion
 

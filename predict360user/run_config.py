@@ -1,9 +1,13 @@
 from dataclasses import dataclass
+import numpy as np
+import random
+import tensorflow as tf
+
 
 @dataclass
 class RunConfig:
     """Model config.
-    
+
     Keyword arguments:
     batch_size  -- model batch size
     dataset_name  -- dataset name from .data_ingestion.DATASETS
@@ -31,3 +35,9 @@ class RunConfig:
     savedir: str = "saved"
     train_size: float = 0.8
     test_size: float = 0.2
+    seed: int = 0
+
+    def set_random_seed(self) -> None:
+        random.seed(self.seed)
+        np.random.seed(self.seed)
+        tf.random.set_seed(self.seed)

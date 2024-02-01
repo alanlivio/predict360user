@@ -11,8 +11,11 @@ def run(cfg: p3u.RunConfig) -> None:
     wandb.init(project="predict360user", name=run_name)
     wandb.run.log({"model": cfg.model_name, "batch": cfg.batch_size, "lr": cfg.lr})
     log.info(f"run {run_name} config is: \n--\n" + OmegaConf.to_yaml(cfg) + "--")
-
-    # load dataset
+    
+    # seed
+    cfg.set_random_seed()
+    
+    # ingestion
     df_wins = p3u.load_df_wins(
         dataset_name=cfg.dataset_name,
         init_window=cfg.init_window,
@@ -22,6 +25,7 @@ def run(cfg: p3u.RunConfig) -> None:
         df_wins,
         train_size=cfg.train_size,
         test_size=cfg.test_size,
+        seed=cfg.seed
     )
     _, n_low, n_medium, n_high = p3u.count_entropy(
         df_wins[df_wins["partition"] == "train"]
