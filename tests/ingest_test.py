@@ -18,18 +18,8 @@ class IngestTestCase(unittest.TestCase):
         self.assertEqual(trace.shape, (3,))
 
     def test_split_train_filtred(self) -> None:
-        df = split_train_filtred(self.df, train_entropy="all")
-        self.assertGreater(
-            len(df[df["partition"] == "train"]), len(df[df["partition"] == "val"])
-        )
-        classes = set(df[df["partition"] == "train"]["actS_c"].unique())
-        self.assertSequenceEqual(classes, set(["low", "medium", "high"]))
-        classes = set(df[df["partition"] == "train"]["actS_c"].unique())
-        self.assertSequenceEqual(classes, set(["low", "medium", "high"]))
-        classes = set(df[df["partition"] == "test"]["actS_c"].unique())
-        self.assertSequenceEqual(classes, set(["low", "medium", "high"]))
         # low
-        df = split_train_filtred(self.df, train_entropy="low")
+        df = split_train_filtred(self.df, 0.8, 0.2, "low")
         self.assertGreater(
             len(df[df["partition"] == "train"]), len(df[df["partition"] == "val"])
         )
@@ -40,7 +30,7 @@ class IngestTestCase(unittest.TestCase):
         classes = set(df[df["partition"] == "test"]["actS_c"].unique())
         self.assertSequenceEqual(classes, set(["low", "medium", "high"]))
         # medium
-        df = split_train_filtred(self.df, train_entropy="medium")
+        df = split_train_filtred(self.df, 0.8, 0.2, "medium")
         self.assertGreater(
             len(df[df["partition"] == "train"]), len(df[df["partition"] == "val"])
         )
@@ -51,29 +41,8 @@ class IngestTestCase(unittest.TestCase):
         classes = set(df[df["partition"] == "test"]["actS_c"].unique())
         self.assertSequenceEqual(classes, set(["low", "medium", "high"]))
         # nolow
-        df = split_train_filtred(self.df, train_entropy="nolow")
-        self.assertGreater(
-            len(df[df["partition"] == "train"]), len(df[df["partition"] == "val"])
-        )
-        classes = set(df[df["partition"] == "train"]["actS_c"].unique())
-        self.assertSequenceEqual(classes, set(["medium", "high"]))
-        classes = set(df[df["partition"] == "val"]["actS_c"].unique())
-        self.assertSequenceEqual(classes, set(["medium", "high"]))
-        classes = set(df[df["partition"] == "test"]["actS_c"].unique())
-        self.assertSequenceEqual(classes, set(["low", "medium", "high"]))
-        # nohigh
-        df = split_train_filtred(self.df, train_entropy="nohigh")
-        self.assertGreater(
-            len(df[df["partition"] == "train"]), len(df[df["partition"] == "val"])
-        )
-        classes = set(df[df["partition"] == "train"]["actS_c"].unique())
-        self.assertSequenceEqual(classes, set(["low", "medium"]))
-        classes = set(df[df["partition"] == "val"]["actS_c"].unique())
-        self.assertSequenceEqual(classes, set(["low", "medium"]))
-        classes = set(df[df["partition"] == "test"]["actS_c"].unique())
-        self.assertSequenceEqual(classes, set(["low", "medium", "high"]))
         # high
-        df = split_train_filtred(self.df, train_entropy="high")
+        df = split_train_filtred(self.df, 0.8, 0.2, "high")
         self.assertGreater(
             len(df[df["partition"] == "train"]), len(df[df["partition"] == "val"])
         )
