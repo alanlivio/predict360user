@@ -55,7 +55,7 @@ def count_entropy_str(df: pd.DataFrame) -> str:
     return "{}: {} low, {} medium, {} high".format(*count_entropy(df))
 
 
-def _load_df_trajecs_from_hmp(dataset_name: str) -> pd.DataFrame:
+def _load_df_trajecs_from_hmp(dataset: str) -> pd.DataFrame:
     # save cwd and move to head_motion_prediction for invoking funcs
     cwd = os.getcwd()
     os.chdir(HMDDIR)
@@ -70,10 +70,10 @@ def _load_df_trajecs_from_hmp(dataset_name: str) -> pd.DataFrame:
     DATASETS["nguyen"]["pkg"] = nguyen
     DATASETS["xucvpr"]["pkg"] = xucvpr
     DATASETS["xupami"]["pkg"] = xupami
-    if dataset_name == "all":
+    if dataset == "all":
         target = DATASETS
     else:
-        target = {dataset_name: DATASETS[dataset_name]}
+        target = {dataset: DATASETS[dataset]}
     n_traces = 100
 
     def _load_dataset_xyz(ds_name, ds_dict) -> pd.DataFrame:
@@ -130,9 +130,9 @@ def _calc_traces_entropy(df) -> pd.DataFrame:
     return df
 
 
-def load_df_trajecs(dataset_name="all") -> pd.DataFrame:
-    assert dataset_name in ["all"] + list(DATASETS.keys())
-    pickle_file = os.path.join(DEFAULT_SAVEDIR, f"df_trajecs_{dataset_name}.pickle")
+def load_df_trajecs(dataset="all") -> pd.DataFrame:
+    assert dataset in ["all"] + list(DATASETS.keys())
+    pickle_file = os.path.join(DEFAULT_SAVEDIR, f"df_trajecs_{dataset}.pickle")
     if exists(pickle_file):
         with open(pickle_file, "rb") as f:
             log.info(f"loading df from {pickle_file}")
@@ -140,7 +140,7 @@ def load_df_trajecs(dataset_name="all") -> pd.DataFrame:
     else:
         log.info(f"there is no {pickle_file}")
         log.info(f"loading trajects from {HMDDIR}")
-        df = _load_df_trajecs_from_hmp(dataset_name)
+        df = _load_df_trajecs_from_hmp(dataset)
         log.info(f"calculating entropy")
         df = _calc_traces_entropy(df)
         log.info(f"saving trajects to {pickle_file} for fast loading")
@@ -152,9 +152,9 @@ def load_df_trajecs(dataset_name="all") -> pd.DataFrame:
 
 
 def load_df_wins(
-    dataset_name: str, m_window: int, init_window: int, h_window: int
+    dataset: str, m_window: int, init_window: int, h_window: int
 ) -> pd.DataFrame:
-    df_trajects = load_df_trajecs(dataset_name)
+    df_trajects = load_df_trajecs(dataset)
 
     df_wins = df_trajects
 

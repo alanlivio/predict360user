@@ -13,19 +13,19 @@ from predict360user.data_exploration import (
     show_trajects_representative,
     show_entropy_histogram_per_partition,
 )
-from predict360user.run_config import RunConfig, set_random_seed
+from predict360user.run_config import RunConfig
 from predict360user.base_model import BaseModel, KerasModel
 from predict360user.models import PosOnly, PosOnly3D, Interpolation, NoMotion
 
 
 def build_model(cfg: RunConfig) -> BaseModel:
-    if cfg.model_name == "pos_only":
+    if cfg.model == "pos_only":
         return PosOnly(cfg)
-    elif cfg.model_name == "pos_only_3d":
+    elif cfg.model == "pos_only_3d":
         return PosOnly3D(cfg)
-    elif cfg.model_name == "interpolation":
+    elif cfg.model == "interpolation":
         return Interpolation(cfg)
-    elif cfg.model_name == "no_motion":
+    elif cfg.model == "no_motion":
         return NoMotion(cfg)
     else:
         raise NotImplementedError

@@ -76,7 +76,7 @@ def main() -> None:
         TileSetVoro(24, TileCover.ANY),
         TileSetVoro(24, TileCover.ONLY20PERC),
     ]
-    df = load_df_trajecs(dataset_name="david").df[:2]
+    df = load_df_trajecs(dataset="david").df[:2]
     calc_tileset_reqs_metrics(df, tileset_variations)
     show_tileset_reqs_metrics(df, tileset_variations)
 
