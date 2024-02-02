@@ -18,8 +18,7 @@ def run(cfg: RunConfig) -> None:
     run_name = f"{cfg.model},filt={cfg.train_entropy}"
     if cfg.minsize:
         run_name += f",mins={cfg.minsize!r}"
-    wandb.init(project="predict360user", name=run_name)
-    wandb.run.log({"model": cfg.model, "batch": cfg.batch_size, "lr": cfg.lr})
+    wandb.init(project="predict360user", name=run_name, config=cfg)
     log.info(f"run {run_name} config is: \n--\n" + OmegaConf.to_yaml(cfg) + "--")
 
     # seed
