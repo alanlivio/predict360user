@@ -129,7 +129,7 @@ class KerasModel(BaseModel):
     def fit(self, df_wins: pd.DataFrame) -> None:
         log.info("train ...")
 
-        model_dir = join(DEFAULT_SAVEDIR, self.cfg.model)
+        model_dir = join(DEFAULT_SAVEDIR, self.cfg.name)
         train_csv_log_f = join(model_dir, TRAIN_RES_CSV)
         model_path = join(model_dir, "weights.hdf5")
 
