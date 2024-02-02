@@ -49,14 +49,14 @@ def delta_angle_from_ori_mag_dir(values):
     return tf.concat([yaw_pred, pitch_pred], -1)
 
 
-def transform_batches_cartesian_to_normalized_eulerian(positions_in_batch) -> np.array:
+def transform_batch_cartesian_to_normalized_eulerian(positions_in_batch) -> np.array:
     positions_in_batch = np.array(positions_in_batch)
-    eulerian_batches = [
+    eulerian_batch = [
         [cartesian_to_eulerian(pos[0], pos[1], pos[2]) for pos in batch]
         for batch in positions_in_batch
     ]
-    eulerian_batches = np.array(eulerian_batches) / np.array([2 * np.pi, np.pi])
-    return eulerian_batches
+    eulerian_batch = np.array(eulerian_batch) / np.array([2 * np.pi, np.pi])
+    return eulerian_batch
 
 
 def transform_normalized_eulerian_to_cartesian(positions) -> np.array:
@@ -125,14 +125,14 @@ class PosOnly(KerasModel):
             )
         return (
             [
-                transform_batches_cartesian_to_normalized_eulerian(
+                transform_batch_cartesian_to_normalized_eulerian(
                     encoder_pos_inputs_for_batch
                 ),
-                transform_batches_cartesian_to_normalized_eulerian(
+                transform_batch_cartesian_to_normalized_eulerian(
                     decoder_pos_inputs_for_batch
                 ),
             ],
-            transform_batches_cartesian_to_normalized_eulerian(
+            transform_batch_cartesian_to_normalized_eulerian(
                 decoder_outputs_for_batch
             ),
         )
@@ -143,10 +143,10 @@ class PosOnly(KerasModel):
         )
         decoder_pos_inputs_for_sample = np.array([traces[x_i : x_i + 1]])
         inputs = [
-            transform_batches_cartesian_to_normalized_eulerian(
+            transform_batch_cartesian_to_normalized_eulerian(
                 encoder_pos_inputs_for_sample
             ),
-            transform_batches_cartesian_to_normalized_eulerian(
+            transform_batch_cartesian_to_normalized_eulerian(
                 decoder_pos_inputs_for_sample
             ),
         ]
