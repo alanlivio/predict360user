@@ -7,9 +7,9 @@ log = logging.getLogger()
 
 
 def run(cfg: p3u.RunConfig) -> None:
-    run_name = cfg.model
-    wandb.init(project="predict360user", name=run_name, config=cfg)
-    log.info(f"run {run_name} config is: \n--\n" + OmegaConf.to_yaml(cfg) + "--")
+    cfg.name = cfg.model
+    wandb.init(project="predict360user", name=cfg.name, config=cfg)
+    log.info(f"run {cfg.name} config is: \n--\n" + OmegaConf.to_yaml(cfg) + "--")
     
     # seed
     cfg.set_random_seed()

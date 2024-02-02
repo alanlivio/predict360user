@@ -9,6 +9,7 @@ class RunConfig:
     """Model config.
 
     Keyword arguments:
+    name: -- run name, which my include other params
     batch_size  -- model batch size
     dataset  -- dataset name from .data_ingestion.DATASETS
     epochs  -- model training epochs
@@ -22,6 +23,7 @@ class RunConfig:
     test_size  -- model test size
     """
 
+    name: str
     batch_size: int = 128
     dataset: str = "all"
     epochs: int = 30
@@ -34,6 +36,9 @@ class RunConfig:
     train_size: float = 0.8
     test_size: float = 0.2
     seed: int = 0
+
+    def __post_init__(self) -> None:
+        self.name = f"{self.model}"
 
     def set_random_seed(self) -> None:
         random.seed(self.seed)

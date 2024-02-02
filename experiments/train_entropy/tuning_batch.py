@@ -18,9 +18,9 @@ class RunConfig(p3u.RunConfig):
 
 def run(cfg: RunConfig) -> None:
     assert cfg.train_entropy in p3u.ENTROPY_NAMES
-    run_name = f"{cfg.model},btuni={cfg.train_entropy}"
-    wandb.init(project="predict360user", name=run_name, config=cfg)
-    log.info(f"run {run_name} config is: \n--\n" + OmegaConf.to_yaml(cfg) + "--")
+    cfg.name = f"{cfg.model},btuni={cfg.train_entropy}"
+    wandb.init(project="predict360user", name=cfg.name, config=cfg)
+    log.info(f"run {cfg.name} config is: \n--\n" + OmegaConf.to_yaml(cfg) + "--")
 
     # seed
     cfg.set_random_seed()
