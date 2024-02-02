@@ -183,7 +183,7 @@ def load_df_wins(
 
 
 def split(
-    df: pd.DataFrame, train_size: float, test_size: float, seed: int, val_size=0.25
+    df: pd.DataFrame, train_size: float, test_size: float, seed=None, val_size=0.25
 ) -> pd.DataFrame:
     df["partition"] = "discarted"  # sanity check
     log.info(f"{train_size=} (with {val_size=}), {test_size=}")
@@ -224,8 +224,8 @@ def split_train_filtred(
     df: pd.DataFrame,
     train_size: float,
     test_size: float,
-    seed: int,
     train_entropy: str,
+    seed=None,
     val_size=0.25,
     train_minsize=False,
 ) -> pd.DataFrame:
