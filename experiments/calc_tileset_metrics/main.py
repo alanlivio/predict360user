@@ -5,7 +5,7 @@ import pandas as pd
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 
-from predict360user.data_ingestion import load_df_trajecs, DEFAULT_SAVEDIR
+from predict360user.data_ingestion import load_df_trajecs
 from predict360user.data_exploration import show_or_save
 from predict360user.utils.tileset360 import TileCover, TileSet, TileSetVoro
 
@@ -60,7 +60,7 @@ def show_tileset_reqs_metrics(df: pd.DataFrame) -> None:
         showlegend=False,
         barmode="stack",
     )
-    show_or_save(fig, savedir=DEFAULT_SAVEDIR, title="tileset_metrics")
+    show_or_save(fig, title="tileset_metrics")
 
 
 def main() -> None:

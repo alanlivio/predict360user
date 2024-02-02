@@ -11,7 +11,7 @@ from os.path import abspath, isabs, join
 import plotly.express as px
 import plotly.graph_objs as go
 
-from predict360user.data_ingestion import get_class_name, get_class_thresholds, DEFAULT_SAVEDIR
+from predict360user.data_ingestion import get_class_name, get_class_thresholds
 from predict360user.utils.plot360 import Plot360
 from predict360user.utils.tileset360 import TILESET_DEFAULT
 
@@ -19,7 +19,7 @@ ENTROPY_CLASS_COLORS = {"low": "blue", "medium": "green", "high": "red"}
 
 log = logging.getLogger()
 
-def show_or_save(output, savedir=DEFAULT_SAVEDIR, title="") -> None:
+def show_or_save(output, title="") -> None:
     if "ipykernel" in sys.modules:
         IPython.display.display(output)
     else:

@@ -24,7 +24,7 @@ DATASETS = {
     "xucvpr": {"size": 6654},
     "xupami": {"size": 4408},
 }
-DEFAULT_SAVEDIR = "saved"
+DEFAULT_SAVEDIR = "./saved"
 ENTROPY_NAMES = ["low", "medium", "high"]
 
 log = logging.getLogger()

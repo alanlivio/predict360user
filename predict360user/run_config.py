@@ -18,7 +18,6 @@ class RunConfig:
     lr  -- model learning rate
     m_window  -- model memory window learning rate
     model  -- model name from .models folder
-    savedir  -- model directory for save file
     train_size  -- model training size
     test_size  -- model test size
     """
@@ -32,7 +31,6 @@ class RunConfig:
     lr: float = 0.0005
     m_window: int = 5
     model: str = "pos_only"
-    savedir: str = "saved"
     train_size: float = 0.8
     test_size: float = 0.2
     seed: int = 0

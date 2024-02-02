@@ -14,6 +14,7 @@ from wandb.keras import WandbMetricsLogger
 from sklearn.base import BaseEstimator
 
 import wandb
+from predict360user.data_ingestion import DEFAULT_SAVEDIR
 from predict360user.run_config import RunConfig
 from predict360user.utils.math360 import orth_dist_cartesian
 
@@ -128,7 +129,7 @@ class KerasModel(BaseModel):
     def fit(self, df_wins: pd.DataFrame) -> None:
         log.info("train ...")
 
-        model_dir = join(self.cfg.savedir, self.cfg.model)
+        model_dir = join(DEFAULT_SAVEDIR, self.cfg.model)
         train_csv_log_f = join(model_dir, TRAIN_RES_CSV)
         model_path = join(model_dir, "weights.hdf5")
 
