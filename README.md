@@ -1,17 +1,6 @@
 # predict360user
 
-predict360user is a library that aims to help researchers to reproduce and develop models to predict user behavior in 360 videos, namely trajectory (or traject for short). It extends [Rondon 360-videos models/dataset collection](https://gitlab.com/miguelfromeror/head-motion-prediction) and takes a lot of design inspirations from the recommendation systems framework [RecBole](https://recbole.io/docs/index.html). The library's main functions are:
-
-* `load_df_trajecs`: return users trajects in 360 videos in memory as a `pandas.DataFrame`. Each traject has: dataset id; pre-fixed user and video ids; traces as list of x,y,z points; actual entropy (actS); and an class name (actS_c) with labels `low`, `medium` and `high` selected using a Jenks breaks over actS value. See an example below:
-
-  | ds    | user    | video         | traces        | actS          | actS_c        |
-  | ----- | ------- | ------------- | ------------- | ------------- | ------------- |
-  |       |         |               |               |               |               |
-  | david | david_0 | david_10_Cows | [[x,y,z],...] | 3.2           | medium        |
-
-* `Trainer`: train and evaluate prediction models
-
-### Datasets
+predict360user is a library that aims to help researchers to reproduce and develop models to predict user behavior in 360 videos, namely trajectory (or traject for short). It extends [Rondon 360-videos models/dataset collection](https://gitlab.com/miguelfromeror/head-motion-prediction) and takes a lot of design inspirations from the recommendation systems framework [RecBole](https://recbole.io/docs/index.html). See bellow the suported datasets and models.
 
 | dataset                                  | users (u) | videos (v) | trajects (u*v) |integrated |
 | ---------------------------------------- | --------- | ---------- | ------------------ |---------- |
@@ -21,8 +10,6 @@ predict360user is a library that aims to help researchers to reproduce and devel
 | Fan_NOSSDAV_17 ([paper][Fan_NOSSDAV_17]) | 39        | 9          | 300                |yes        |
 | David_MMSys_18 ([paper][David_MMSys_18]) | 57        | 19         | 1,083              |yes        |
 | total                                    |           |            | 12,451             |yes        |
-
-### Models
 
 | model                                                                 | method              | user input                | integrated |
 | --------------------------------------------------------------------- | ------------------- | ------------------------- | ---------- |
@@ -53,45 +40,41 @@ predict360user is a library that aims to help researchers to reproduce and devel
 [David_MMSys_18]: https://dl.acm.org/doi/10.1145/3083165.3083180
 [Li_ChinaCom_18]: https://eudl.eu/pdf/10.1007/978-3-030-06161-6_49
 
-## Usage
+## Documentation
 
-#### Requirements
+The library's main functions are:
 
-The project requirements are in [requirements.txt](requirements.txt) and it targets tensorflow==2.8 so [you will need cuda>=11.2 and cuDNN==8.1](https://www.tensorflow.org/install/source#gpu).
+* `load_df_trajecs`: return users trajects in 360 videos in memory as a `pandas.DataFrame`. Each traject has: dataset id; pre-fixed user and video ids; traces as list of x,y,z points; actual entropy (actS); and an class name (actS_c) with labels `low`, `medium` and `high` selected using a Jenks breaks over actS value. See an example below:
 
-So to setup you first need check the available Cuda version for your GPU by run `nvcc --version`. Then follow one of the guides below based on [TensorFlow pip installation tutorial](https://www.tensorflow.org/install/pip).
+  | ds    | user    | video         | traces        | actS          | actS_c        |
+  | ----- | ------- | ------------- | ------------- | ------------- | ------------- |
+  |       |         |               |               |               |               |
+  | david | david_0 | david_10_Cows | [[x,y,z],...] | 3.2           | medium        |
 
-For GPUs with Cuda 11.2, you can:
+* `BaseModel`: train and evaluate prediction models
+
+See notebooks in [docs/](docs/) folder.
+
+## Requeriments
+
+The project requirements are in [requirements.txt](requirements.txt). Regarding cuda, the the minium required for tensorflow==2.8 is[cudatoolkit>=11.2 and cuDNN==8.1](https://www.tensorflow.org/install/source#gpu). For that you can do:
 
 ```bash
-conda create -n p3u python==3.9 -c conda-forge
+conda create -n p3u python==3.9 -y
 conda activate p3u
-conda install -c conda-forge cudatoolkit=11.2.0
+conda install cudatoolkit=11.2.0
 pip install nvidia-cudnn-cu11  -r requirements.txt
 ```
 
-For GPUs with Cuda 11.8, you can:
-
-```bash
-conda create -n p3u python==3.9 -c conda-forge
-conda activate p3u
-conda install -c conda-forge cudatoolkit=11.8.0
-pip install nvidia-cudnn-cu11 -r requirements.txt
-```
+If you GPU support newer cudatoolkit, replace the codatoolkit by you desired version. For instance `conda install cudatoolkit=11.8.0`.
 
 Note: To install drivers in Windows-WSL, you can use [this tutorial](https://ubuntu.com/tutorials/enabling-gpu-acceleration-on-ubuntu-on-wsl2-with-the-nvidia-cuda-platform#3-install-nvidia-cuda-on-ubuntu) to install cuda==11.8.
-
-#### Train and evaluate
 
 To illustrate usage, the code below does train and evaluates `pos_only` model for david dataset.
 
 ```bash
 python -m predict360user.start_run dataset=david model=pos_only
 ```
-
-#### Documentation
-
-See notebooks in [docs/](docs/) folder.
 
 ## Cite
 
