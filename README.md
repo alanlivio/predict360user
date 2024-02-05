@@ -40,7 +40,20 @@ predict360user is a library that aims to help researchers to reproduce and devel
 [David_MMSys_18]: https://dl.acm.org/doi/10.1145/3083165.3083180
 [Li_ChinaCom_18]: https://eudl.eu/pdf/10.1007/978-3-030-06161-6_49
 
-## Documentation
+## Requeriments
+
+The project requirements are in [requirements.txt](requirements.txt), which uses tensorflow is 2.8. This tensorflow version requires [cudatoolkit>=11.2 and cudnn=8.1.0](https://www.tensorflow.org/install/source#gpu). See below how to create a conda env for that. If your GPU support a newer cudatoolkit version (run `nvidia-smi`), you should use the tensorflow and cuda accordingly (e.g. `conda install tensorflow=2.15 cudatoolkit=12.2` for the latest).
+
+```bash
+conda create -n p3u python==3.9 -y
+conda activate p3u
+pip install -r requirements.txt
+conda install -c conda-forge cudatoolkit=11.2 cudnn=8.1.0
+```
+
+To setup a WSL env, follow [this tutorial](https://canonical-ubuntu-wsl.readthedocs-hosted.com/en/latest/tutorials/gpu-cuda/) and do `sudo apt install cuda nvdia-cudnn`.
+
+## Usage
 
 The library's main functions are:
 
@@ -55,21 +68,6 @@ The library's main functions are:
 
 See notebooks in [docs/](docs/) folder.
 
-## Requeriments
-
-The project requirements are in [requirements.txt](requirements.txt). Regarding cuda, the the minium required for tensorflow==2.8 is[cudatoolkit>=11.2 and cuDNN==8.1](https://www.tensorflow.org/install/source#gpu). For that you can do:
-
-```bash
-conda create -n p3u python==3.9 -y
-conda activate p3u
-conda install cudatoolkit=11.2.0
-pip install nvidia-cudnn-cu11  -r requirements.txt
-```
-
-If you GPU support newer cudatoolkit, replace the codatoolkit by you desired version. For instance `conda install cudatoolkit=11.8.0`.
-
-Note: To install drivers in Windows-WSL, you can use [this tutorial](https://ubuntu.com/tutorials/enabling-gpu-acceleration-on-ubuntu-on-wsl2-with-the-nvidia-cuda-platform#3-install-nvidia-cuda-on-ubuntu) to install cuda==11.8.
-
 To illustrate usage, the code below does train and evaluates `pos_only` model for david dataset.
 
 ```bash
@@ -83,7 +81,7 @@ If you use `predict360user` please consider citing it as:
   ```bibtex
   @misc{predict360user,
     author = {Guedes, Alan},
-    title = {predict360user: library to predict user navigation in 360 videos},
+    title = {predict360user: library to predict user behavior in 360 videos},
     year = {2021},
     publisher = {GitHub},
     journal = {GitHub repository},
