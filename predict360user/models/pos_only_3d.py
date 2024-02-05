@@ -91,7 +91,7 @@ class PosOnly3D(keras.Model, KerasModel):
         loss = xent_loss + unitary_loss
         return loss
 
-    def predict_for_sample(self, pos_inputs) -> np.array:
+    def predict_for_sample(self, pos_inputs) -> np.ndarray:
         pred = self.model.predict(
             [np.array([pos_inputs[:-1]]), np.array([pos_inputs[-1:]])]
         )

@@ -16,11 +16,11 @@ def calc_tileset_reqs_metrics(df: pd.DataFrame, tileset_l: list[TileSet]) -> Non
     if len(df) >= 4:
         log.info("df.size >= 4, it will take for some time")
 
-    def _trace_mestrics_np(trace, tileset) -> np.array:
+    def _trace_mestrics_np(trace, tileset) -> np.ndarray:
         heatmap, vp_quality, area_out = tileset.request(trace, return_metrics=True)
         return np.array([np.sum(heatmap), vp_quality, area_out])
 
-    def _traject_metrics_np(traces, tileset) -> np.array:
+    def _traject_metrics_np(traces, tileset) -> np.ndarray:
         return np.apply_along_axis(_trace_mestrics_np, 1, traces, tileset=tileset)
 
     for tileset in tileset_l:

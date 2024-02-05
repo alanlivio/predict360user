@@ -40,7 +40,7 @@ def show_or_save(output, title="") -> None:
 def calc_traces_hmps(df: pd.DataFrame) -> None:
     df.drop(["traces_hmps"], axis=1, errors="ignore", inplace=True)
 
-    def _calc_traject_hmp(traces) -> np.array:
+    def _calc_traject_hmp(traces) -> np.ndarray:
         return np.apply_along_axis(TILESET_DEFAULT.request, 1, traces)
 
     tqdm.pandas(desc=f"calc traces_hmps")

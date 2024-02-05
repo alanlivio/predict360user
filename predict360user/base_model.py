@@ -49,7 +49,7 @@ class BaseModel(BaseEstimator, ABC):
         ...
 
     @abstractmethod
-    def predict_for_sample(self, traces: np.array, x_i: int) -> np.array:
+    def predict_for_sample(self, traces: np.ndarray, x_i: int) -> np.ndarray:
         ...
 
     @abstractmethod

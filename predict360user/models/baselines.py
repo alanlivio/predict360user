@@ -16,7 +16,7 @@ class NoMotion(BaseModel):
     ) -> Tuple[list, list]:
         raise NotImplementedError
 
-    def predict_for_sample(self, traces: np.array, x_i) -> np.array:
+    def predict_for_sample(self, traces: np.ndarray, x_i) -> np.ndarray:
         model_pred = np.repeat(traces[x_i : x_i + 1], self.h_window, axis=0)
         return model_pred
 
@@ -31,7 +31,7 @@ class Interpolation(BaseModel):
     ) -> Tuple[list, list]:
         raise NotImplementedError
 
-    def predict_for_sample(self, traces: np.array, x_i) -> np.array:
+    def predict_for_sample(self, traces: np.ndarray, x_i) -> np.ndarray:
         rotation = rotationBetweenVectors(traces[x_i - 2], traces[x_i - 1])
         prediction = [rotation.rotate(traces[x_i])]
         for _ in range(self.h_window - 1):
@@ -45,5 +45,5 @@ class Regression(BaseModel):
     ) -> Tuple[list, list]:
         raise NotImplementedError
 
-    def predict_for_sample(self, traces: np.array, x_i) -> np.array:
+    def predict_for_sample(self, traces: np.ndarray, x_i) -> np.ndarray:
         raise NotImplementedError

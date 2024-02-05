@@ -148,7 +148,7 @@ class Plot360:
     dft_end_c = Color("SkyBlue").hex
 
     def add_traces(
-        self, traces: np.array, start_c=dft_start_c, end_c=dft_end_c, visible=True
+        self, traces: np.ndarray, start_c=dft_start_c, end_c=dft_end_c, visible=True
     ) -> None:
         # start, end marks
         self.data.append(

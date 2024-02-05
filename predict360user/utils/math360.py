@@ -72,7 +72,7 @@ def cartesian_to_eulerian(x, y, z) -> tuple[float, float]:
 # The longitude ranges from 0, to 2*pi
 # The latitude ranges from 0 to pi, origin of equirectangular in the top-left corner
 # Returns the values (x, y, z) of a unit sphere with center in (0, 0, 0)
-def eulerian_to_cartesian(theta, phi) -> np.array:
+def eulerian_to_cartesian(theta, phi) -> np.ndarray:
     x = np.cos(theta) * np.sin(phi)
     y = np.sin(theta) * np.sin(phi)
     z = np.cos(phi)
@@ -189,7 +189,7 @@ def fov_points(x, y, z) -> np.ndarray:
     return points
 
 
-def calc_fixmps_ids(traces: np.array) -> np.array:
+def calc_fixmps_ids(traces: np.array) -> np.ndarray:
     # calc fixation_ids
     scale = 0.025
     n_height = int(scale * RES_HEIGHT)

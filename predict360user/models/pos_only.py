@@ -49,7 +49,7 @@ def delta_angle_from_ori_mag_dir(values):
     return tf.concat([yaw_pred, pitch_pred], -1)
 
 
-def transform_batch_cartesian_to_normalized_eulerian(positions_in_batch) -> np.array:
+def transform_batch_cartesian_to_normalized_eulerian(positions_in_batch) -> np.ndarray:
     positions_in_batch = np.array(positions_in_batch)
     eulerian_batch = [
         [cartesian_to_eulerian(pos[0], pos[1], pos[2]) for pos in batch]
@@ -59,7 +59,7 @@ def transform_batch_cartesian_to_normalized_eulerian(positions_in_batch) -> np.a
     return eulerian_batch
 
 
-def transform_normalized_eulerian_to_cartesian(positions) -> np.array:
+def transform_normalized_eulerian_to_cartesian(positions) -> np.ndarray:
     positions = positions * np.array([2 * np.pi, np.pi])
     eulerian_samples = [eulerian_to_cartesian(pos[0], pos[1]) for pos in positions]
     return np.array(eulerian_samples)
@@ -137,7 +137,7 @@ class PosOnly(KerasModel):
             ),
         )
 
-    def predict_for_sample(self, traces: np.array, x_i: int) -> np.array:
+    def predict_for_sample(self, traces: np.ndarray, x_i: int) -> np.ndarray:
         encoder_pos_inputs_for_sample = np.array(
             [traces[x_i - self.cfg.m_window : x_i]]
         )

@@ -70,7 +70,7 @@ def tile_poly(t_ver, t_hor, row, col) -> polygon.SphericalPolygon:
     return polys[row][col]
 
 
-def tile_center(t_ver, t_hor, row, col) -> np.array:
+def tile_center(t_ver, t_hor, row, col) -> np.ndarray:
     _, centers = _init_tileset(t_ver, t_hor)
     return centers[row][col]
 

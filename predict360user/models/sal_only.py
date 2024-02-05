@@ -16,7 +16,7 @@ class TrueSaliency(BaseModel):
     ) -> Tuple[list, list]:
         raise NotImplementedError
 
-    def predict(self, traces: np.array, x_i) -> np.array:
+    def predict(self, traces: np.ndarray, x_i) -> np.ndarray:
         raise NotImplementedError
 
 
@@ -31,5 +31,5 @@ class ContentSaliency(BaseModel):
     ) -> Tuple[list, list]:
         raise NotImplementedError
 
-    def predict(self, traces: np.array, x_i) -> np.array:
+    def predict(self, traces: np.ndarray, x_i) -> np.ndarray:
         raise NotImplementedError

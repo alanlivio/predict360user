@@ -20,7 +20,7 @@ class MM18(KerasModel):
     ) -> Tuple[list, list]:
         raise NotImplementedError
 
-    def predict_for_sample(self, traces: np.array, x_i) -> np.array:
+    def predict_for_sample(self, traces: np.ndarray, x_i) -> np.ndarray:
         raise NotImplementedError
 
     def build(self) -> None:

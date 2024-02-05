@@ -167,11 +167,11 @@ def load_df_wins(
     df_wins = df_wins.dropna(subset=["trace_id"], how="all")
 
     # m_window and f_window
-    def _create_m_window(row) -> np.array:
+    def _create_m_window(row) -> np.ndarray:
         trace_id = row["trace_id"]
         return row["traces"][trace_id - m_window : trace_id]
 
-    def _create_h_window(row) -> np.array:
+    def _create_h_window(row) -> np.ndarray:
         trace_id = row["trace_id"]
         return row["traces"][trace_id + 1 : trace_id + h_window + 1]
 
