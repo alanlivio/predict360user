@@ -1,3 +1,4 @@
+from __future__ import annotations
 import logging
 import os
 from os.path import exists, join
@@ -14,6 +15,9 @@ from wandb.keras import WandbMetricsLogger
 from sklearn.base import BaseEstimator
 
 import wandb
+
+
+
 from predict360user.data_ingestion import DEFAULT_SAVEDIR
 from predict360user.run_config import RunConfig
 from predict360user.utils.math360 import orth_dist_cartesian
@@ -53,7 +57,7 @@ class BaseModel(BaseEstimator, ABC):
         ...
 
     @abstractmethod
-    def fit(self, df_wins: pd.DataFrame) -> None:
+    def fit(self, df_wins: pd.DataFrame) -> BaseModel:
         ...
 
     def evaluate(self, df_wins: pd.DataFrame) -> dict:
@@ -183,3 +187,4 @@ class KerasModel(BaseModel):
                 callbacks=callbacks,
                 verbose=2,
             )
+        return self
