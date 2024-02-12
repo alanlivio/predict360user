@@ -1,3 +1,5 @@
+from ast import Tuple
+from typing import Union
 import numpy as np
 from numpy import cross, dot
 from pyquaternion import Quaternion
@@ -219,7 +221,7 @@ def calc_fixmps_ids(traces: np.array) -> np.ndarray:
     return fixmps_ids
 
 
-def calc_actual_entropy_from_ids(x_ids_t: np.ndarray, return_sub_len_t=False) -> float:
+def calc_actual_entropy_from_ids(x_ids_t: np.ndarray, return_sub_len_t=False) -> Union[float, Tuple]:
     assert isinstance(x_ids_t, np.ndarray)
     n = len(x_ids_t)
     sub_len_l = np.zeros(n)
