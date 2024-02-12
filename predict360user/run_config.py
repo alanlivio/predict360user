@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict, MISSING
 import numpy as np
 import random
 import tensorflow as tf
@@ -23,7 +23,7 @@ class RunConfig:
     test_size  -- model test size
     """
 
-    name: str
+    name = MISSING
     batch_size: int = 128
     dataset: str = "all"
     epochs: int = 30

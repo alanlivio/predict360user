@@ -1,6 +1,6 @@
 from omegaconf import OmegaConf
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 import wandb
 from sklearn.utils import shuffle
 import logging
@@ -19,7 +19,7 @@ class RunConfig(p3u.RunConfig):
 def run(cfg: RunConfig) -> None:
     assert cfg.train_entropy in p3u.ENTROPY_NAMES
     cfg.name = f"{cfg.model},btuni={cfg.train_entropy}"
-    wandb.init(project="predict360user", name=cfg.name, config=cfg)
+    wandb.init(project="predict360user", name=cfg.name, config=asdict(cfg))
     log.info(f"run {cfg.name} config is: \n--\n" + OmegaConf.to_yaml(cfg) + "--")
 
     # seed

@@ -2,13 +2,14 @@ from omegaconf import OmegaConf
 import logging
 import wandb
 import predict360user as p3u
+from dataclasses import asdict
 
 log = logging.getLogger()
 
 
 def run(cfg: p3u.RunConfig) -> None:
     cfg.name = cfg.model
-    wandb.init(project="predict360user", name=cfg.name, config=cfg)
+    wandb.init(project="predict360user", name=cfg.name, config=asdict(cfg))
     log.info(f"run {cfg.name} config is: \n--\n" + OmegaConf.to_yaml(cfg) + "--")
     
     # seed
