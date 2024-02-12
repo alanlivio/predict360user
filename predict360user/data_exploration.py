@@ -11,7 +11,7 @@ from os.path import abspath, isabs, join
 import plotly.express as px
 import plotly.graph_objs as go
 
-from predict360user.data_ingestion import get_class_name, get_class_thresholds
+from predict360user.data_ingestion import get_class_name, get_class_thresholds, DATADIR
 from predict360user.utils.plot360 import Plot360
 from predict360user.utils.tileset360 import TILESET_DEFAULT
 
@@ -28,7 +28,7 @@ def show_or_save(output, title="") -> None:
                 title = output.layout.title.text
             else:
                 title = datetime.datetime.now().strftime("%y%m%d_%H%M%S")
-        html_file = join(savedir, title + ".html")
+        html_file = join(DATADIR, title + ".html")
         if isinstance(output, go.Figure):
             output.write_html(html_file)
         else:
