@@ -29,6 +29,7 @@ def run(cfg: RunConfig) -> None:
         dataset=cfg.dataset,
         init_window=cfg.init_window,
         h_window=cfg.h_window,
+        m_window=cfg.m_window
     )
     df_wins = p3u.split_train_filtred(
         df_wins,

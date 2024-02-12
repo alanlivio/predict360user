@@ -6,7 +6,7 @@ import tensorflow as tf
 
 @dataclass
 class RunConfig:
-    """Model config.
+    """Run configuration.
 
     Keyword arguments:
     name: -- run name, which my include other params
