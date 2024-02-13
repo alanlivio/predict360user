@@ -1,12 +1,12 @@
-from omegaconf import OmegaConf
 import logging
-from dataclasses import dataclass, asdict
-import wandb
-from sklearn.utils import shuffle
-import logging
+from dataclasses import asdict, dataclass
 
 import pandas as pd
+from omegaconf import OmegaConf as oc
+from sklearn.utils import shuffle
+
 import predict360user as p3u
+import wandb
 
 log = logging.getLogger()
 
@@ -20,7 +20,7 @@ def run(cfg: RunConfig) -> None:
     assert cfg.train_entropy in p3u.ENTROPY_NAMES
     cfg.name = f"{cfg.model},btuni={cfg.train_entropy}"
     wandb.init(project="predict360user", name=cfg.name, config=asdict(cfg))
-    log.info(f"run {cfg.name} config is: \n--\n" + OmegaConf.to_yaml(cfg) + "--")
+    log.info(f"run {cfg.name} config is: \n--\n" + oc.to_yaml(cfg) + "--")
 
     # seed
     cfg.set_random_seed()
@@ -46,7 +46,7 @@ def run(cfg: RunConfig) -> None:
     train_wins = df_wins[df_wins["partition"] == "train"]
     begin = shuffle(train_wins[train_wins["actS_c"] != cfg.train_entropy])
     end = shuffle(train_wins[train_wins["actS_c"] == cfg.train_entropy])
-    train_wins_for_fit = pd.concat([begin, end])
+    train_wins_for_fit = pd.concat([begin, end]) # type: ignore
     assert train_wins_for_fit.iloc[-1]["actS_c"] == cfg.train_entropy
 
     # df_wins_new with train parition ordered
@@ -64,5 +64,5 @@ def run(cfg: RunConfig) -> None:
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
-    cfg = RunConfig(**OmegaConf.from_cli())
+    cfg = RunConfig(oc.to_container(oc.from_cli()))
     run(cfg)

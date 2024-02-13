@@ -1,8 +1,10 @@
-from omegaconf import OmegaConf
 import logging
-import wandb
-import predict360user as p3u
 from dataclasses import asdict
+
+from omegaconf import OmegaConf as oc
+
+import predict360user as p3u
+import wandb
 
 log = logging.getLogger()
 
@@ -10,7 +12,7 @@ log = logging.getLogger()
 def run(cfg: p3u.RunConfig) -> None:
     cfg.name = cfg.model
     wandb.init(project="predict360user", name=cfg.name, config=asdict(cfg))
-    log.info(f"run {cfg.name} config is: \n--\n" + OmegaConf.to_yaml(cfg) + "--")
+    log.info(f"run {cfg.name} config is: \n--\n" + oc.to_yaml(cfg) + "--")
     
     # seed
     cfg.set_random_seed()
@@ -44,5 +46,5 @@ def run(cfg: p3u.RunConfig) -> None:
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
-    cfg = p3u.RunConfig(**OmegaConf.from_cli())
+    cfg = p3u.RunConfig(oc.to_container(oc.from_cli()))
     run(cfg)

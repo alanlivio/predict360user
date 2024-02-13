@@ -1,11 +1,12 @@
-from omegaconf import OmegaConf
 import logging
-from dataclasses import dataclass, asdict
 import math
+from dataclasses import asdict, dataclass
+
 import pandas as pd
-import wandb
+from omegaconf import OmegaConf as oc
 
 import predict360user as p3u
+import wandb
 
 log = logging.getLogger()
 
@@ -19,7 +20,7 @@ def run(cfg: RunConfig) -> None:
     assert cfg.train_entropy in p3u.ENTROPY_NAMES
     cfg.name = f"{cfg.model},tuni={cfg.train_entropy}"
     wandb.init(project="predict360user", name=cfg.name, config=asdict(cfg))
-    log.info(f"run {cfg.name} config is: \n--\n" + OmegaConf.to_yaml(cfg) + "--")
+    log.info(f"run {cfg.name} config is: \n--\n" + oc.to_yaml(cfg) + "--")
 
     # seed
     cfg.set_random_seed()
@@ -68,5 +69,5 @@ def run(cfg: RunConfig) -> None:
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
-    cfg = RunConfig(**OmegaConf.from_cli())
+    cfg = RunConfig(oc.to_container(oc.from_cli()))
     run(cfg)
