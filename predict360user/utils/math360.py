@@ -280,4 +280,4 @@ def interpolate_quaternions(
     # to bound it to the maximum original-time in the case of rounding errors
     times[-1] = min(orig_times[-1], times[-1])
     interp_rots = slerp(times)
-    return np.concatenate((times[:, np.newaxis], interp_rots.as_quat()), axis=1)
+    return np.concatenate((times[:, np.newaxis], interp_rots.as_quat(True)), axis=1)
