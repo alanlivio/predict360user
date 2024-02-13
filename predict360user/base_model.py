@@ -4,7 +4,7 @@ import logging
 import os
 from abc import ABC, abstractmethod
 from os.path import exists, join
-from typing import Generator, Iterable, Tuple
+from typing import Generator, Tuple
 
 import absl
 import keras
@@ -44,19 +44,14 @@ class BaseModel(BaseEstimator, ABC):
     def __init__(self, cfg: RunConfig) -> None:
         self.cfg = cfg
 
-    @abstractmethod
-    def generate_batch(
-        self, traces_l: list[np.array], x_i_l: list
-    ) -> Tuple[list, list]:
-        ...
+    def generate_batch(self, traces_l: list[np.ndarray], x_i_l: list) -> Tuple[list, list]:
+        raise NotImplementedError
 
     @abstractmethod
-    def predict_for_sample(self, traces: np.ndarray, x_i: int) -> np.ndarray:
-        ...
+    def predict_for_sample(self, traces: np.ndarray, x_i: int) -> np.ndarray: ...
 
-    @abstractmethod
     def fit(self, df_wins: pd.DataFrame) -> BaseModel:
-        ...
+        return self
 
     def evaluate(self, df_wins: pd.DataFrame) -> dict:
         log.info("evaluate ...")

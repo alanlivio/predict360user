@@ -41,7 +41,7 @@ def calc_traces_hmps(df: pd.DataFrame) -> None:
     df.drop(["traces_hmps"], axis=1, errors="ignore", inplace=True)
 
     def _calc_traject_hmp(traces) -> np.ndarray:
-        return np.apply_along_axis(TILESET_DEFAULT.request, 1, traces)
+        return np.apply_along_axis(TILESET_DEFAULT.request, 1, traces) # type: ignore
 
     tqdm.pandas(desc=f"calc traces_hmps")
     np_hmps = df["traces"].progress_apply(_calc_traject_hmp)
@@ -81,7 +81,7 @@ def show_traject(row: pd.Series, title=None) -> None:
         fig.append_trace(d, row=1, col=1)
 
     # add hmps_sum
-    traces_hmps = np.apply_along_axis(TILESET_DEFAULT.request, 1, row["traces"])
+    traces_hmps = np.apply_along_axis(TILESET_DEFAULT.request, 1, row["traces"]) # type: ignore
     hmps_sum = np.sum(traces_hmps, axis=0)
     x = [str(x) for x in range(1, hmps_sum.shape[1] + 1)]
     y = [str(y) for y in range(1, hmps_sum.shape[0] + 1)]

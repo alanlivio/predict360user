@@ -1,21 +1,21 @@
+from predict360user.base_model import BaseModel, KerasBaseModel
+from predict360user.data_exploration import (
+    show_entropy_histogram,
+    show_entropy_histogram_per_partition,
+    show_traject,
+    show_trajects_representative,
+)
 from predict360user.data_ingestion import (
     ENTROPY_NAMES,
+    count_entropy,
+    count_entropy_str,
     load_df_trajecs,
     load_df_wins,
     split,
     split_train_filtred,
-    count_entropy_str,
-    count_entropy,
 )
-from predict360user.data_exploration import (
-    show_entropy_histogram,
-    show_traject,
-    show_trajects_representative,
-    show_entropy_histogram_per_partition,
-)
+from predict360user.models import Interpolation, NoMotion, PosOnly, PosOnly3D
 from predict360user.run_config import RunConfig
-from predict360user.base_model import BaseModel, KerasModel
-from predict360user.models import PosOnly, PosOnly3D, Interpolation, NoMotion
 
 
 def build_model(cfg: RunConfig) -> BaseModel:
