@@ -82,23 +82,21 @@ class Plot360TestCase(unittest.TestCase):
 class Math360TestCase(unittest.TestCase):
     def test_actual_entropy(self) -> None:
         ids = np.array([1, 2, 3, 4, 5, 6, 7])
-        ent, sub = calc_actual_entropy_from_ids(ids, return_sub_len_t=True)
+        ent, sub = calc_actual_entropy_from_ids(ids, return_sub_len_t=True)  # type: ignore
         self.assertEqual(ent, 2.807)
         self.assertTrue(np.array_equal(sub, [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]))
 
         ids = np.array([1, 2, 3, 1, 2, 3, 4])
-        ent, sub = calc_actual_entropy_from_ids(ids, return_sub_Glen_t=True)
+        ent, sub = calc_actual_entropy_from_ids(ids, return_sub_Glen_t=True)  # type: ignore
         self.assertEqual(ent, 1.512)
         self.assertTrue(np.array_equal(sub, [1.0, 1.0, 1.0, 4.0, 3.0, 2.0, 1.0]))
 
         ids = np.array([7, 7, 7, 7, 7, 7, 7])
-        ent, sub = calc_actual_entropy_from_ids(ids, return_sub_len_t=True)
+        ent, sub = calc_actual_entropy_from_ids(ids, return_sub_len_t=True)  # type: ignore
         self.assertEqual(ent, 1.228)
         self.assertTrue(np.array_equal(sub, [1.0, 2.0, 3.0, 4.0, 3.0, 2.0, 1.0]))
 
         ids = np.array([7, 1, 2, 3, 1, 2, 3, 4])
-        ent, sub = calc_actual_entropy_from_ids(ids, return_sub_len_t=True)
+        ent, sub = calc_actual_entropy_from_ids(ids, return_sub_len_t=True)  # type: ignore
         self.assertEqual(ent, 1.714)
-        self.assertTrue(
-            np.array_equal(sub, [1.0, 1.0, 1.0, 1.0, 4.0, 3.0, 2.0, 1.0])
-        )
+        self.assertTrue(np.array_equal(sub, [1.0, 1.0, 1.0, 1.0, 4.0, 3.0, 2.0, 1.0]))
