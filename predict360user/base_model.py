@@ -83,7 +83,7 @@ class BaseModel(BaseEstimator, ABC):
         )
         df_wins.loc[test_wins.index, t_range] = test_wins.progress_apply(
             _calc_pred_err, axis=1, result_type="expand"
-        )
+        )  # type: ignore
         assert df_wins.loc[test_wins.index, t_range].all().all()
 
         # calculate predications errors mean

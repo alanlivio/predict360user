@@ -242,9 +242,9 @@ class Plot360:
             fig.append_trace(t, row=1, col=1)
 
         # heatmap
-        heatmap: np.array = self.tileset.request(trace)
+        heatmap = self.tileset.request(trace)  # type: ignore
         if isinstance(self.tileset, TileSetVoro):
-            heatmap = np.reshape(heatmap, self.tileset.shape)
+            heatmap = np.reshape(heatmap, self.tileset.shape)   # type: ignore
         x = [str(x) for x in range(1, heatmap.shape[1] + 1)]
         y = [str(y) for y in range(1, heatmap.shape[0] + 1)]
         erp_heatmap = px.imshow(heatmap, text_auto=True, x=x, y=y)

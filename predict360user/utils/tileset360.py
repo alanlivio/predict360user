@@ -46,7 +46,7 @@ def tile_points(t_ver, t_hor, row, col) -> np.ndarray:
 
 
 @cache
-def _init_tileset(t_ver, t_hor) -> None:
+def _init_tileset(t_ver, t_hor) -> tuple:
     d_hor = degrees_to_radian(360 / t_hor)
     d_ver = degrees_to_radian(180 / t_ver)
     polys, centers = {}, {}
