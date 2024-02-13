@@ -1,11 +1,13 @@
+import keras
 import numpy as np
 import pandas as pd
 from keras import backend as K
 from keras.layers import LSTM, Dense, Input, Lambda, TimeDistributed
 from keras.metrics import mean_squared_error as mse
+from keras.models import Model
 from tensorflow import keras
 
-from predict360user.base_model import KerasModel, RunConfig
+from predict360user.base_model import KerasBaseModel, RunConfig
 from predict360user.utils.math360 import metric_orth_dist_cartesian
 
 
@@ -17,12 +19,12 @@ def delta_angle_from_ori_mot(values):
     return orientation + motion
 
 
-class PosOnly3D(keras.Model, KerasModel):
+class PosOnly3D(keras.Model, KerasBaseModel):
     def __init__(self, cfg: RunConfig) -> None:
         self.cfg = cfg
-        self.model: keras.Model = self.build()
+        self.model = self.build()
 
-    def build(self) -> keras.Model:
+    def build(self) -> Model:
         encoder_inputs = Input(shape=(None, 3))
         decoder_inputs = Input(shape=(1, 3))
 

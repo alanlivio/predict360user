@@ -1,12 +1,12 @@
 from typing import Tuple
 
+import keras
 import numpy as np
 import tensorflow as tf
 from keras import backend as K
 from keras.layers import LSTM, Dense, Input, Lambda
-from tensorflow import keras
 
-from predict360user.base_model import RunConfig, KerasModel
+from predict360user.base_model import KerasBaseModel, RunConfig
 from predict360user.utils.math360 import (
     cartesian_to_eulerian,
     eulerian_to_cartesian,
@@ -65,7 +65,7 @@ def transform_normalized_eulerian_to_cartesian(positions) -> np.ndarray:
     return np.array(eulerian_samples)
 
 
-class PosOnly(KerasModel):
+class PosOnly(KerasBaseModel):
     def __init__(self, cfg: RunConfig) -> None:
         self.cfg = cfg
         self.model = self.build()

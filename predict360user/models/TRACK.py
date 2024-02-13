@@ -14,7 +14,7 @@ from keras.layers import (
 )
 from tensorflow import keras
 
-from predict360user.base_model import KerasModel, RunConfig
+from predict360user.base_model import KerasBaseModel, RunConfig
 from predict360user.models.CVPR18 import selectImageInModel
 from predict360user.models.pos_only_3d import delta_angle_from_ori_mot
 from predict360user.utils.math360 import metric_orth_dist_cartesian
@@ -23,7 +23,7 @@ N_TILES_W = 384
 N_TILES_H = 216
 
 
-class TRACK(KerasModel):
+class TRACK(KerasBaseModel):
     def __init__(self, cfg: RunConfig) -> None:
         self.m_window, self.h_window = (
             cfg.m_window,

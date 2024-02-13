@@ -1,23 +1,21 @@
 from __future__ import annotations
+
 import logging
 import os
-from os.path import exists, join
-from typing import Generator, Tuple
 from abc import ABC, abstractmethod
+from os.path import exists, join
+from typing import Generator, Iterable, Tuple
 
 import absl
+import keras
 import numpy as np
 import pandas as pd
 from keras.callbacks import CSVLogger, ModelCheckpoint
-from tensorflow import keras
+from sklearn.base import BaseEstimator
 from tqdm.auto import tqdm
 from wandb.keras import WandbMetricsLogger
-from sklearn.base import BaseEstimator
 
 import wandb
-
-
-
 from predict360user.data_ingestion import DEFAULT_SAVEDIR
 from predict360user.run_config import RunConfig
 from predict360user.utils.math360 import orth_dist_cartesian
@@ -125,12 +123,12 @@ class BaseModel(BaseEstimator, ABC):
                 yield self.generate_batch(traces_l, x_i_l)
 
 
-class KerasModel(BaseModel):
+class KerasBaseModel(BaseModel):
     """Base class for keras models."""
 
     model: keras.Model
 
-    def fit(self, df_wins: pd.DataFrame) -> None:
+    def fit(self, df_wins: pd.DataFrame) -> KerasBaseModel:
         log.info("train ...")
 
         model_dir = join(DEFAULT_SAVEDIR, self.cfg.name)

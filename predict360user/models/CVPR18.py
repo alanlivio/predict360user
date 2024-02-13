@@ -1,5 +1,6 @@
 from typing import Tuple
 
+import keras
 import numpy as np
 import tensorflow as tf
 from keras import backend as K
@@ -12,9 +13,8 @@ from keras.layers import (
     Reshape,
     TimeDistributed,
 )
-from tensorflow import keras
 
-from predict360user.base_model import KerasModel, RunConfig
+from predict360user.base_model import KerasBaseModel, RunConfig
 from predict360user.models.pos_only_3d import delta_angle_from_ori_mot
 from predict360user.utils.math360 import metric_orth_dist_cartesian
 
@@ -28,7 +28,7 @@ def add_timestep_axis(input):
     return tf.expand_dims(input, 1)
 
 
-class CVPR18(KerasModel):
+class CVPR18(KerasBaseModel):
     def __init__(self, cfg: RunConfig) -> None:
         self.cfg = cfg
         self.model: keras.Model = self.build()
