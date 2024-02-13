@@ -1,17 +1,17 @@
+import datetime
+import logging
+import sys
+from os.path import abspath, isabs, join
+
+import IPython
 import numpy as np
 import pandas as pd
 import plotly.express as px
-import sys
-import logging
-import IPython
+import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 from tqdm.auto import tqdm
-import datetime
-from os.path import abspath, isabs, join
-import plotly.express as px
-import plotly.graph_objs as go
 
-from predict360user.data_ingestion import get_class_name, get_class_thresholds, DATADIR
+from predict360user.data_ingestion import DATADIR, get_class_name, get_class_thresholds
 from predict360user.utils.plot360 import Plot360
 from predict360user.utils.tileset360 import TILESET_DEFAULT
 

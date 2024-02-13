@@ -123,7 +123,7 @@ class Plot360:
         assert polygon.points.shape[1] == 3
         self._add_polygon_lines([point for point in polygon.points])
 
-    def add_polygon_from_points(self, points: np.array) -> None:
+    def add_polygon_from_points(self, points: np.ndarray) -> None:
         assert points.shape[1] == 3
         self._add_polygon_lines(points)
 
@@ -131,7 +131,7 @@ class Plot360:
         points = tile_points(t_ver, t_hor, row, col)
         self._add_polygon_lines(points)
 
-    def add_trace_and_fov(self, trace: np.array) -> None:
+    def add_trace_and_fov(self, trace: np.ndarray) -> None:
         self.data.append(
             go.Scatter3d(
                 x=[trace[0]],
@@ -244,7 +244,7 @@ class Plot360:
         # heatmap
         heatmap = self.tileset.request(trace)  # type: ignore
         if isinstance(self.tileset, TileSetVoro):
-            heatmap = np.reshape(heatmap, self.tileset.shape)   # type: ignore
+            heatmap = np.reshape(heatmap, self.tileset.shape)  # type: ignore
         x = [str(x) for x in range(1, heatmap.shape[1] + 1)]
         y = [str(y) for y in range(1, heatmap.shape[0] + 1)]
         erp_heatmap = px.imshow(heatmap, text_auto=True, x=x, y=y)

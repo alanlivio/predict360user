@@ -2,6 +2,7 @@ import logging
 import math
 from enum import Enum, auto
 from functools import cache
+from typing import Union
 
 import numpy as np
 from scipy.spatial import SphericalVoronoi
@@ -112,7 +113,9 @@ class TileSet:
     def prefix(self) -> str:
         return f"ts{self.t_ver}x{self.t_hor}"
 
-    def request(self, trace: np.ndarray, return_metrics=False):
+    def request(
+        self, trace: np.ndarray, return_metrics=False
+    ) -> Union[tuple[np.ndarray, float], np.ndarray]:
         if self.cover == TileCover.CENTER:
             return self._request_110radius_center(trace, return_metrics)
         elif self.cover == TileCover.ANY:
@@ -122,7 +125,9 @@ class TileSet:
         elif self.cover == TileCover.ONLY33PERC:
             return self._request_min_cover(trace, 0.33, return_metrics)
 
-    def _request_110radius_center(self, trace, return_metrics):
+    def _request_110radius_center(
+        self, trace, return_metrics
+    ) -> Union[tuple[np.ndarray, float], np.ndarray]:
         heatmap = np.zeros((self.t_ver, self.t_hor), dtype=int)
         areas_out = []
         vp_quality = 0.0
@@ -152,7 +157,7 @@ class TileSet:
 
     def _request_min_cover(
         self, trace: np.ndarray, required_cover: float, return_metrics
-    ):
+    ) -> Union[tuple[np.ndarray, float], np.ndarray]:
         heatmap = np.zeros((self.t_ver, self.t_hor), dtype=int)
         areas_out = []
         vp_quality = 0.0

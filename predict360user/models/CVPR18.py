@@ -34,7 +34,7 @@ class CVPR18(KerasBaseModel):
         self.model: keras.Model = self.build()
 
     def generate_batch(
-        self, traces_l: list[np.array], x_i_l: list
+        self, traces_l: list[np.ndarray], x_i_l: list
     ) -> Tuple[list, list]:
         raise NotImplementedError
 

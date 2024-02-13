@@ -1,12 +1,14 @@
 from ast import Tuple
 from typing import Union
+
 import numpy as np
+import tensorflow as tf
 from numpy import cross, dot
 from pyquaternion import Quaternion
 from scipy.spatial.transform import Rotation as R
 from scipy.spatial.transform import Slerp
 from sklearn.preprocessing import normalize
-import tensorflow as tf
+
 
 def degrees_to_radian(degree):
     return degree * np.pi / 180.0
@@ -191,7 +193,7 @@ def fov_points(x, y, z) -> np.ndarray:
     return points
 
 
-def calc_fixmps_ids(traces: np.array) -> np.ndarray:
+def calc_fixmps_ids(traces: np.ndarray) -> np.ndarray:
     # calc fixation_ids
     scale = 0.025
     n_height = int(scale * RES_HEIGHT)
@@ -257,7 +259,7 @@ def calc_actual_entropy_from_ids(x_ids_t: np.ndarray, return_sub_len_t=False) ->
         return actual_entropy
 
 
-def calc_actual_entropy(traces: np.array) -> float:
+def calc_actual_entropy(traces: np.ndarray) -> float:
     fixmps_ids = calc_fixmps_ids(traces)
     return calc_actual_entropy_from_ids(fixmps_ids)
 

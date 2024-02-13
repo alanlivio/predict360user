@@ -112,7 +112,7 @@ class PosOnly(KerasBaseModel):
         return model
 
     def generate_batch(
-        self, traces_l: list[np.array], x_i_l: list
+        self, traces_l: list[np.ndarray], x_i_l: list
     ) -> Tuple[list, list]:
         encoder_pos_inputs_for_batch = []
         decoder_pos_inputs_for_batch = []

@@ -15,9 +15,7 @@ class MM18(KerasBaseModel):
         # self.model: keras.Model = self.build()
         raise NotImplementedError
 
-    def generate_batch(
-        self, traces_l: list[np.array], x_i_l: list
-    ) -> Tuple[list, list]:
+    def generate_batch(self, traces_l: list[np.ndarray], x_i_l: list) -> Tuple[list, list]:
         raise NotImplementedError
 
     def predict_for_sample(self, traces: np.ndarray, x_i) -> np.ndarray:
