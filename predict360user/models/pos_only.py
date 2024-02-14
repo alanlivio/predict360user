@@ -59,10 +59,20 @@ def transform_batch_cartesian_to_normalized_eulerian(positions_in_batch) -> np.n
     return eulerian_batch
 
 
+def transform_batch_normalized_eulerian_to_cartesian(positions_in_batch) -> np.ndarray:
+    positions_in_batch = np.array(positions_in_batch)
+    positions_in_batch = positions_in_batch * np.array([2 * np.pi, np.pi])
+    cartesian_batch = [
+        [eulerian_to_cartesian(pos[0], pos[1]) for pos in batch]
+        for batch in positions_in_batch
+    ]
+    return cartesian_batch
+
+
 def transform_normalized_eulerian_to_cartesian(positions) -> np.ndarray:
     positions = positions * np.array([2 * np.pi, np.pi])
-    eulerian_samples = [eulerian_to_cartesian(pos[0], pos[1]) for pos in positions]
-    return np.array(eulerian_samples)
+    cartesian = [eulerian_to_cartesian(pos[0], pos[1]) for pos in positions]
+    return np.array(cartesian)
 
 
 class PosOnly(KerasBaseModel):
