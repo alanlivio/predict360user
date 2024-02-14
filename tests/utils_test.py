@@ -87,7 +87,7 @@ class Math360TestCase(unittest.TestCase):
         self.assertTrue(np.array_equal(sub, [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]))
 
         ids = np.array([1, 2, 3, 1, 2, 3, 4])
-        ent, sub = calc_actual_entropy_from_ids(ids, return_sub_Glen_t=True)  # type: ignore
+        ent, sub = calc_actual_entropy_from_ids(ids, return_sub_len_t=True)  # type: ignore
         self.assertEqual(ent, 1.512)
         self.assertTrue(np.array_equal(sub, [1.0, 1.0, 1.0, 4.0, 3.0, 2.0, 1.0]))
 
