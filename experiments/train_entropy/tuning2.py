@@ -72,5 +72,5 @@ def run(cfg: RunConfig) -> None:
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
-    cfg = RunConfig(oc.to_container(oc.from_cli()))
+    cfg = RunConfig(**oc.from_cli()) # type: ignore
     run(cfg)

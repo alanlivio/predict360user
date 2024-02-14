@@ -15,7 +15,5 @@ class RunConfigTestCase(unittest.TestCase):
         self.assertEqual(cfg.experiment_name, cfg.model)
 
     def test_run_config_from_cli(self) -> None:
-        args = oc.to_container(oc.from_cli(["name=test"]))
-        assert isinstance(args, dict)
-        cfg = p3u.RunConfig(**args)
+        cfg = p3u.RunConfig(**oc.from_cli(["name=test"])) # type: ignore
         self.assertEqual(cfg.experiment_name, "test")
