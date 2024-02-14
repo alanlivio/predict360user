@@ -15,7 +15,7 @@ from predict360user.data_ingestion import (
     split_train_filtred,
 )
 from predict360user.models import Interpolation, NoMotion, PosOnly, PosOnly3D
-from predict360user.run_config import RunConfig
+from predict360user.run_config import RunConfig, set_random_seed
 
 
 def build_model(cfg: RunConfig) -> BaseModel:

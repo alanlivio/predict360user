@@ -12,10 +12,10 @@ class RunConfigTestCase(unittest.TestCase):
 
     def test_run_config(self) -> None:
         cfg = p3u.RunConfig()
-        self.assertEqual(cfg.name, cfg.model)
+        self.assertEqual(cfg.experiment_name, cfg.model)
 
     def test_run_config_from_cli(self) -> None:
         args = oc.to_container(oc.from_cli(["name=test"]))
         assert isinstance(args, dict)
         cfg = p3u.RunConfig(**args)
-        self.assertEqual(cfg.name, "test")
+        self.assertEqual(cfg.experiment_name, "test")

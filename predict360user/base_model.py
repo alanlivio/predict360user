@@ -44,7 +44,9 @@ class BaseModel(BaseEstimator, ABC):
     def __init__(self, cfg: RunConfig) -> None:
         self.cfg = cfg
 
-    def generate_batch(self, traces_l: list[np.ndarray], x_i_l: list) -> Tuple[list, list]:
+    def generate_batch(
+        self, traces_l: list[np.ndarray], x_i_l: list
+    ) -> Tuple[list, list]:
         raise NotImplementedError
 
     @abstractmethod
@@ -126,13 +128,17 @@ class KerasBaseModel(BaseModel):
     def fit(self, df_wins: pd.DataFrame) -> KerasBaseModel:
         log.info("train ...")
 
-        model_dir = join(DEFAULT_SAVEDIR, self.cfg.name)
+        model_dir = join(
+            DEFAULT_SAVEDIR,
+            self.cfg.experiment_name if self.cfg.experiment_name else self.cfg.model,
+        )
         train_csv_log_f = join(model_dir, TRAIN_RES_CSV)
         model_path = join(model_dir, "weights.hdf5")
 
         if not exists(model_dir):
             os.makedirs(model_dir)
         if exists(model_path):
+            log.info(f"{model_path} exists loading it")
             self.model.load_weights(model_path)
         log.info("model_path=" + model_path)
 
