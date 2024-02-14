@@ -39,7 +39,8 @@ class RunConfig:
     seed: int = 0
 
     def __post_init__(self) -> None:
-        self.name = f"{self.model}"
+        if not self.name:
+            self.name = f"{self.model}"
 
     def set_random_seed(self) -> None:
         random.seed(self.seed)
