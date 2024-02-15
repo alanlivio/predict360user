@@ -1,7 +1,6 @@
 jupyter
 plotly==5.*
 colour
-hydra-core
 scipy
 spherical_geometry
 tqdm==4.61.2 # https://github.com/tqdm/tqdm/issues/1199
