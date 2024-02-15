@@ -13,22 +13,19 @@ def run(cfg: p3u.RunConfig) -> None:
     cfg.experiment_name = cfg.model
     wandb.init(project="predict360user", name=cfg.experiment_name, config=asdict(cfg))
     log.info(f"run {cfg.experiment_name} config is: \n--\n" + oc.to_yaml(cfg) + "--")
-    
+
     # seed
     p3u.set_random_seed(cfg.seed)
-    
+
     # ingestion
     df_wins = p3u.load_df_wins(
         dataset=cfg.dataset,
         init_window=cfg.init_window,
         h_window=cfg.h_window,
-        m_window=cfg.m_window
+        m_window=cfg.m_window,
     )
     df_wins = p3u.split(
-        df_wins,
-        train_size=cfg.train_size,
-        test_size=cfg.test_size,
-        seed=cfg.seed
+        df_wins, train_size=cfg.train_size, test_size=cfg.test_size, seed=cfg.seed
     )
     _, n_low, n_medium, n_high = p3u.count_entropy(
         df_wins[df_wins["partition"] == "train"]
@@ -46,5 +43,5 @@ def run(cfg: p3u.RunConfig) -> None:
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
-    cfg = p3u.RunConfig(**oc.from_cli()) # type: ignore
+    cfg = p3u.RunConfig(**oc.from_cli())  # type: ignore
     run(cfg)

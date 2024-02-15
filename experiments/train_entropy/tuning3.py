@@ -21,16 +21,16 @@ def run(cfg: RunConfig) -> None:
     cfg.experiment_name = f"{cfg.model},tuni3={cfg.train_entropy}"
     wandb.init(project="predict360user", name=cfg.experiment_name, config=asdict(cfg))
     log.info(f"run {cfg.experiment_name} config is: \n--\n" + oc.to_yaml(cfg) + "--")
-    
+
     # seed
     p3u.set_random_seed(cfg.seed)
-    
+
     # load dataset
     df_wins = p3u.load_df_wins(
         dataset=cfg.dataset,
         init_window=cfg.init_window,
         h_window=cfg.h_window,
-        m_window=cfg.m_window
+        m_window=cfg.m_window,
     )
     df_wins = p3u.split(
         df_wins,
@@ -57,7 +57,7 @@ def run(cfg: RunConfig) -> None:
     tuning_epochs_prc = 0.33
     model.fit(df_wins_pretuning)
     del model
-    
+
     # tuning
     cfg.epochs = math.ceil(cfg.epochs * (1 + tuning_epochs_prc))
     cfg.lr = 0.0001
@@ -74,5 +74,5 @@ def run(cfg: RunConfig) -> None:
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
-    cfg = RunConfig(**oc.from_cli()) # type: ignore
+    cfg = RunConfig(**oc.from_cli())  # type: ignore
     run(cfg)

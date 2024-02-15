@@ -25,13 +25,13 @@ def run(cfg: RunConfig) -> None:
 
     # seed
     p3u.set_random_seed(cfg.seed)
-    
+
     # load dataset
     df_wins = p3u.load_df_wins(
         dataset=cfg.dataset,
         init_window=cfg.init_window,
         h_window=cfg.h_window,
-        m_window=cfg.m_window
+        m_window=cfg.m_window,
     )
     df_wins = p3u.split_train_filtred(
         df_wins,
@@ -39,7 +39,7 @@ def run(cfg: RunConfig) -> None:
         test_size=cfg.test_size,
         train_entropy=cfg.train_entropy,
         train_minsize=cfg.train_minsize,
-        seed=cfg.seed
+        seed=cfg.seed,
     )
     _, n_low, n_medium, n_high = p3u.count_entropy(
         df_wins[df_wins["partition"] == "train"]
@@ -56,5 +56,5 @@ def run(cfg: RunConfig) -> None:
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
-    cfg = RunConfig(**oc.from_cli()) # type: ignore
+    cfg = RunConfig(**oc.from_cli())  # type: ignore
     run(cfg)
