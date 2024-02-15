@@ -46,5 +46,5 @@ def run(cfg: p3u.RunConfig) -> None:
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
-    cfg = p3u.RunConfig(oc.to_container(oc.from_cli()))
+    cfg = p3u.RunConfig(**oc.from_cli()) # type: ignore
     run(cfg)
