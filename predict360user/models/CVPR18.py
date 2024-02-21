@@ -14,7 +14,7 @@ from keras.layers import (
     TimeDistributed,
 )
 
-from predict360user.base_model import KerasBaseModel, RunConfig
+from predict360user.base_model import BaseModel, RunConfig
 from predict360user.models.pos_only_3d import delta_angle_from_ori_mot
 from predict360user.utils.math360 import metric_orth_dist_cartesian
 
@@ -28,7 +28,7 @@ def add_timestep_axis(input):
     return tf.expand_dims(input, 1)
 
 
-class CVPR18(KerasBaseModel):
+class CVPR18(BaseModel):
     def __init__(self, cfg: RunConfig) -> None:
         self.cfg = cfg
         self.model: keras.Model = self.build()

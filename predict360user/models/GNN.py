@@ -2,10 +2,10 @@ from typing import Tuple
 
 import numpy as np
 
-from predict360user.base_model import KerasBaseModel, RunConfig
+from predict360user.base_model import BaseModel, RunConfig
 
 
-class GNN(KerasBaseModel):
+class GNN(BaseModel):
     def __init__(self, cfg: RunConfig) -> None:
         # self.cfg = cfg
         # self.model: keras.Model = self.build()

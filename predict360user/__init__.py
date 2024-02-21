@@ -1,4 +1,4 @@
-from predict360user.base_model import BaseModel, KerasBaseModel
+from predict360user.base_model import BaseModel
 from predict360user.data_exploration import (
     show_entropy_histogram,
     show_entropy_histogram_per_partition,

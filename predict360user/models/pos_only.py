@@ -1,7 +1,7 @@
 import logging
 import os
 from os.path import exists, join
-from typing import Tuple
+from typing import Sequence, Tuple
 
 import keras
 import numpy as np

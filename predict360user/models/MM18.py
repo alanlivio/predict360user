@@ -5,11 +5,11 @@ from typing import Tuple
 import numpy as np
 from keras.models import load_model
 
-from predict360user.base_model import KerasBaseModel, RunConfig
+from predict360user.base_model import BaseModel, RunConfig
 from predict360user.data_ingestion import DATADIR
 
 
-class MM18(KerasBaseModel):
+class MM18(BaseModel):
     def __init__(self, cfg: RunConfig) -> None:
         self.cfg = cfg
         # self.model: keras.Model = self.build()
