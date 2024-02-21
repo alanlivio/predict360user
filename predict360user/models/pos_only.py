@@ -3,13 +3,14 @@ import os
 from os.path import exists, join
 from typing import Sequence, Tuple
 
-import keras
 import numpy as np
 import pandas as pd
 import tensorflow as tf
 from keras import backend as K
 from keras.callbacks import CSVLogger, ModelCheckpoint
 from keras.layers import LSTM, Dense, Input, Lambda
+from sklearn.utils.validation import check_is_fitted
+from tensorflow import keras
 from wandb.keras import WandbMetricsLogger
 
 import wandb
@@ -138,8 +139,7 @@ class PosOnly(BaseModel):
         return model
 
     def fit(self, df_wins: pd.DataFrame) -> BaseModel:
-        log.info("train ...")
-
+        log.info("fit ...")
         model_dir = join(
             DEFAULT_SAVEDIR,
             self.cfg.experiment_name if self.cfg.experiment_name else self.cfg.model,
@@ -200,7 +200,7 @@ class PosOnly(BaseModel):
                     ],
                     batch_cartesian_to_normalized_eulerian(decoder_outputs),
                 )
-
+                
             self.model.fit_generator(
                 generator=batch_generator_fn(self.cfg.batch_size, train_wins, get_fit_data),
                 validation_data=batch_generator_fn(
@@ -213,4 +213,21 @@ class PosOnly(BaseModel):
                 callbacks=callbacks,
                 verbose=2,
             )
+        self.is_fitted_ = True
         return self
+
+    def predict(self, df_wins: pd.DataFrame) -> Sequence:
+        log.info("predict ...")
+        check_is_fitted(self)
+        
+        # convert to model expected input
+        encoder_pos_inputs = df_wins["m_window"].values
+        decoder_pos_inputs = df_wins["trace"].values
+        predict_data = [
+            batch_cartesian_to_normalized_eulerian(encoder_pos_inputs),
+            batch_cartesian_to_normalized_eulerian(decoder_pos_inputs),
+        ]
+        # predict
+        pred = self.model.predict(predict_data, verbose=2)
+        # convert bacth to cartesian
+        return batch_normalized_eulerian_to_cartesian(pred)

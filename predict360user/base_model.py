@@ -45,7 +45,7 @@ class BaseModel(BaseEstimator, ABC):
         Parameters
         ----------
         df_wins : pd.DataFrame
-            pd.DataFrame created from load_df_wins()
+            pd.DataFrame from load_df_wins() and split()
 
         Returns
         -------
@@ -60,7 +60,7 @@ class BaseModel(BaseEstimator, ABC):
         Parameters
         ----------
         df_wins : pd.DataFrame
-            pd.DataFrame from load_df_wins()
+            pd.DataFrame from load_df_wins() and split()
 
         Returns
         -------
@@ -80,38 +80,36 @@ class BaseModel(BaseEstimator, ABC):
         Returns
         -------
         dict
-            predictino error per h_window t
-        """ """"""
+            prediction error per h_window t
+        """
         log.info("evaluate ...")
+        assert "partition" in df_wins.columns
+        test_idx = df_wins[df_wins["partition"] == "test"].index
+        assert len(test_idx)
+        
+        # predict
+        pred = self.predict(df_wins.loc[test_idx])
+        assert len(test_idx) == len(pred)
 
-        # calculate predictions errors
-        test_wins = df_wins[df_wins["partition"] == "test"]
-        t_range = list(range(self.cfg.h_window))
-
+        # calculate predict errors per t
         def _calc_pred_err(row) -> list[float]:
             # return np.random.rand(self.cfg.h_window)  # for debugging
-            traces = row["traces"]
-            x_i = row["trace_id"]
+            pred = row["pred"]
             pred_true = row["h_window"]
-            # predict
-            pred = self.predict_for_sample(traces, x_i)
-            assert len(pred) == self.cfg.h_window
             error_per_t = [orth_dist_cartesian(pred[t], pred_true[t]) for t in t_range]
             return error_per_t
 
-        tqdm.pandas(
-            desc="evaluate",
-            ascii=True,
-            mininterval=60,  # one min
-        )
-        df_wins.loc[test_wins.index, t_range] = test_wins.progress_apply(
+        df_wins = df_wins.loc[test_idx].assign(pred=pred)
+        t_range = list(range(self.cfg.h_window))
+        df_wins.loc[test_idx, t_range] = df_wins.loc[test_idx].apply(
             _calc_pred_err, axis=1, result_type="expand"
         )  # type: ignore
-        assert df_wins.loc[test_wins.index, t_range].all().all()
+        assert df_wins.loc[test_idx, t_range].all().all()
 
-        # calculate predications errors mean
+        # calculate predict errors pert t mean
+        test_wins = df_wins.loc[test_idx]
         classes = [
-            ("all", test_wins.index),
+            ("all", test_idx),
             ("low", test_wins.index[test_wins["actS_c"] == "low"]),
             ("medium", test_wins.index[test_wins["actS_c"] == "medium"]),
             ("high", test_wins.index[test_wins["actS_c"] == "high"]),
