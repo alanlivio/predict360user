@@ -44,18 +44,50 @@ class BaseModel(BaseEstimator, ABC):
     def __init__(self, cfg: RunConfig) -> None:
         self.cfg = cfg
 
-    def generate_batch(
-        self, traces_l: list[np.ndarray], x_i_l: list
-    ) -> Tuple[list, list]:
-        raise NotImplementedError
-
     @abstractmethod
-    def predict_for_sample(self, traces: np.ndarray, x_i: int) -> np.ndarray: ...
+    def predict(self, df_wins: pd.DataFrame) -> Sequence:
+        """model predict
+
+        Parameters
+        ----------
+        df_wins : pd.DataFrame
+            pd.DataFrame created from load_df_wins()
+
+        Returns
+        -------
+        BaseModel
+            model following sklearn.BaseModel
+        """
+        ...
 
     def fit(self, df_wins: pd.DataFrame) -> BaseModel:
+        """model fit
+
+        Parameters
+        ----------
+        df_wins : pd.DataFrame
+            pd.DataFrame from load_df_wins()
+
+        Returns
+        -------
+        BaseModel
+            model following sklearn.BaseModel
+        """
         return self
 
     def evaluate(self, df_wins: pd.DataFrame) -> dict:
+        """evalate model
+
+        Parameters
+        ----------
+        df_wins : pd.DataFrame
+            pd.DataFrame from load_df_wins() and split()
+
+        Returns
+        -------
+        dict
+            predictino error per h_window t
+        """ """"""
         log.info("evaluate ...")
 
         # calculate predictions errors
