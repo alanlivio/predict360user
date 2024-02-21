@@ -3,20 +3,14 @@ from __future__ import annotations
 import logging
 import os
 from abc import ABC, abstractmethod
-from os.path import exists, join
-from typing import Generator, Tuple
+from typing import Callable, Generator, Sequence
 
 import absl
-import keras
-import numpy as np
 import pandas as pd
-from keras.callbacks import CSVLogger, ModelCheckpoint
 from sklearn.base import BaseEstimator
 from tqdm.auto import tqdm
-from wandb.keras import WandbMetricsLogger
 
 import wandb
-from predict360user.data_ingestion import DEFAULT_SAVEDIR
 from predict360user.run_config import RunConfig
 from predict360user.utils.math360 import orth_dist_cartesian
 
@@ -139,83 +133,15 @@ class BaseModel(BaseEstimator, ABC):
                 wandb.log({plot_id: plot})
         return err_per_class_dict
 
-    def batch_generator(self, df_wins: pd.DataFrame) -> Generator:
-        while True:
-            for start in range(0, len(df_wins), self.cfg.batch_size):
-                end = (
-                    start + self.cfg.batch_size
-                    if start + self.cfg.batch_size <= len(df_wins)
-                    else len(df_wins)
-                )
-                traces_l = df_wins[start:end]["traces"].values
-                x_i_l = df_wins[start:end]["trace_id"].values
-                yield self.generate_batch(traces_l, x_i_l)
 
-
-class KerasBaseModel(BaseModel):
-    """Base class for keras models."""
-
-    model: keras.Model
-
-    def fit(self, df_wins: pd.DataFrame) -> KerasBaseModel:
-        log.info("train ...")
-
-        model_dir = join(
-            DEFAULT_SAVEDIR,
-            self.cfg.experiment_name if self.cfg.experiment_name else self.cfg.model,
-        )
-        train_csv_log_f = join(model_dir, TRAIN_RES_CSV)
-        model_path = join(model_dir, "weights.hdf5")
-
-        if not exists(model_dir):
-            os.makedirs(model_dir)
-        if exists(model_path):
-            log.info(f"{model_path} exists loading it")
-            self.model.load_weights(model_path)
-        log.info("model_path=" + model_path)
-
-        train_wins = df_wins[df_wins["partition"] == "train"]
-        val_wins = df_wins[df_wins["partition"] == "val"]
-        # calc initial_epoch
-        initial_epoch = 0
-        if exists(train_csv_log_f):
-            lines = pd.read_csv(train_csv_log_f)
-            lines.dropna(how="all", inplace=True)
-            done_epochs = int(lines.iloc[-1]["epoch"]) + 1
-            initial_epoch = done_epochs
-            log.info(f"train_csv_log_f has {initial_epoch} epochs ")
-
-        # fit
-        if self.cfg.gpu_id:
-            os.environ["CUDA_VISIBLE_DEVICES"] = str(self.cfg.gpu_id)
-            log.info(f"set visible cpu to {self.cfg.gpu_id}")
-        if initial_epoch >= self.cfg.epochs:
-            log.info(
-                f"train_csv_log_f has {initial_epoch}>={self.cfg.epochs}. not training."
+def batch_generator_fn(
+    batch_size: int, df_wins: pd.DataFrame, fn: Callable
+) -> Generator:
+    while True:
+        for start in range(0, len(df_wins), batch_size):
+            end = (
+                start + batch_size
+                if start + batch_size <= len(df_wins)
+                else len(df_wins)
             )
-        else:
-            steps_per_ep_train = np.ceil(len(train_wins) / self.cfg.batch_size)
-            steps_per_ep_validate = np.ceil(len(val_wins) / self.cfg.batch_size)
-            callbacks = [
-                CSVLogger(train_csv_log_f, append=True),
-                ModelCheckpoint(
-                    model_path,
-                    save_best_only=True,
-                    save_weights_only=True,
-                    mode="auto",
-                    period=1,
-                ),
-            ]
-            if wandb.run:
-                callbacks += [WandbMetricsLogger(initial_global_step=initial_epoch)]
-            self.model.fit_generator(
-                generator=self.batch_generator(train_wins),
-                validation_data=self.batch_generator(val_wins),
-                steps_per_epoch=steps_per_ep_train,
-                validation_steps=steps_per_ep_validate,
-                epochs=self.cfg.epochs,
-                initial_epoch=initial_epoch,
-                callbacks=callbacks,
-                verbose=2,
-            )
-        return self
+            yield fn(df_wins[start:end])
