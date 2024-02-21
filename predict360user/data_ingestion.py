@@ -2,18 +2,17 @@ import logging
 import os
 import pathlib
 import pickle
-from os.path import exists
 from os import mkdir
+from os.path import exists
+from typing import Literal
 
 import numpy as np
 import pandas as pd
-from typing import Literal
+from jenkspy import jenks_breaks
 from sklearn.model_selection import train_test_split
-
-from predict360user.utils.math360 import calc_actual_entropy
 from tqdm.auto import tqdm
 
-from jenkspy import jenks_breaks
+from predict360user.utils.math360 import calc_actual_entropy
 
 DATADIR = f"{pathlib.Path(__file__).parent / 'data/'}"
 HMDDIR = f"{pathlib.Path(__file__).parent / 'head_motion_prediction/'}"
@@ -171,12 +170,18 @@ def load_df_wins(
         trace_id = row["trace_id"]
         return row["traces"][trace_id - m_window : trace_id]
 
+    def _create_trace_pos(row) -> np.ndarray:
+        trace_id = row["trace_id"]
+        return row["traces"][trace_id : trace_id + 1]
+    
     def _create_h_window(row) -> np.ndarray:
         trace_id = row["trace_id"]
         return row["traces"][trace_id + 1 : trace_id + h_window + 1]
-
+    
     df_wins["m_window"] = df_wins.apply(_create_m_window, axis=1)
+    df_wins["trace"] = df_wins.apply(_create_trace_pos, axis=1)
     df_wins["h_window"] = df_wins.apply(_create_h_window, axis=1)
+    df_wins = df_wins.drop(["traces", "trace_id"], axis=1)
 
     del df_trajects
     return df_wins
