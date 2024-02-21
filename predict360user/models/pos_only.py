@@ -117,7 +117,7 @@ class PosOnly(KerasBaseModel):
         model = keras.Model(
             inputs=[encoder_inputs, decoder_inputs], outputs=decoder_outputs
         )
-        model_optimizer = keras.optimizers.Adam(learning_rate=self.cfg.lr)
+        model_optimizer = tf.keras.optimizers.Adam(learning_rate=self.cfg.lr)
         model.compile(optimizer=model_optimizer, loss=metric_orth_dist_eulerian)
         return model
 
