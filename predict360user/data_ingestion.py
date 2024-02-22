@@ -12,6 +12,7 @@ from jenkspy import jenks_breaks
 from sklearn.model_selection import train_test_split
 from tqdm.auto import tqdm
 
+from predict360user.run_config import RunConfig
 from predict360user.utils.math360 import calc_actual_entropy
 
 DATADIR = f"{pathlib.Path(__file__).parent / 'data/'}"
@@ -129,7 +130,7 @@ def _calc_traces_entropy(df) -> pd.DataFrame:
     return df
 
 
-def load_df_trajecs(dataset="all") -> pd.DataFrame:
+def load_df_trajecs(dataset=RunConfig.dataset) -> pd.DataFrame:
     assert dataset in ["all"] + list(DATASETS.keys())
     pickle_file = os.path.join(DEFAULT_SAVEDIR, f"df_trajecs_{dataset}.pickle")
     if exists(pickle_file):
@@ -151,7 +152,10 @@ def load_df_trajecs(dataset="all") -> pd.DataFrame:
 
 
 def load_df_wins(
-    dataset: str, m_window: int, init_window: int, h_window: int
+    dataset=RunConfig.dataset,
+    m_window=RunConfig.m_window,
+    init_window=RunConfig.init_window,
+    h_window=RunConfig.h_window,
 ) -> pd.DataFrame:
     df_trajects = load_df_trajecs(dataset)
 
@@ -173,11 +177,11 @@ def load_df_wins(
     def _create_trace_pos(row) -> np.ndarray:
         trace_id = row["trace_id"]
         return row["traces"][trace_id : trace_id + 1]
-    
+
     def _create_h_window(row) -> np.ndarray:
         trace_id = row["trace_id"]
         return row["traces"][trace_id + 1 : trace_id + h_window + 1]
-    
+
     df_wins["m_window"] = df_wins.apply(_create_m_window, axis=1)
     df_wins["trace"] = df_wins.apply(_create_trace_pos, axis=1)
     df_wins["h_window"] = df_wins.apply(_create_h_window, axis=1)
@@ -188,7 +192,11 @@ def load_df_wins(
 
 
 def split(
-    df: pd.DataFrame, train_size: float, test_size: float, seed=None, val_size=0.25
+    df: pd.DataFrame,
+    train_size=RunConfig.train_size,
+    test_size=RunConfig.test_size,
+    seed=None,
+    val_size=0.25,
 ) -> pd.DataFrame:
     df["partition"] = "discarted"  # sanity check
     log.info(f"{train_size=} (with {val_size=}), {test_size=}")
@@ -227,9 +235,9 @@ def split(
 
 def split_train_filtred(
     df: pd.DataFrame,
-    train_size: float,
-    test_size: float,
     train_entropy: str,
+    train_size=RunConfig.train_size,
+    test_size=RunConfig.test_size,
     seed=None,
     val_size=0.25,
     train_minsize=False,
