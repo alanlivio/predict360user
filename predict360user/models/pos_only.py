@@ -3,6 +3,7 @@ import os
 from os.path import exists, join
 from typing import Sequence, Tuple
 
+import absl
 import numpy as np
 import pandas as pd
 import tensorflow as tf
@@ -166,6 +167,9 @@ class PosOnly(BaseModel):
             log.info(f"train_csv_log_f has {initial_epoch} epochs ")
 
         # fit
+        os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+        absl.logging.set_verbosity(absl.logging.ERROR)
+        os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
         if self.cfg.gpu_id:
             os.environ["CUDA_VISIBLE_DEVICES"] = str(self.cfg.gpu_id)
             log.info(f"set visible cpu to {self.cfg.gpu_id}")

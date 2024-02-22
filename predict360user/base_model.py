@@ -1,32 +1,17 @@
 from __future__ import annotations
 
 import logging
-import os
 from abc import ABC, abstractmethod
 from typing import Callable, Generator, Sequence
 
-import absl
 import pandas as pd
 from sklearn.base import BaseEstimator
-from tqdm.auto import tqdm
 
 import wandb
 from predict360user.run_config import RunConfig
 from predict360user.utils.math360 import orth_dist_cartesian
 
 log = logging.getLogger()
-
-os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-tqdm.pandas()
-
-EVAL_RES_CSV = "eval_results.csv"
-TRAIN_RES_CSV = "train_results.csv"
-
-
-# disable TF logging
-absl.logging.set_verbosity(absl.logging.ERROR)
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
-
 
 class BaseModel(BaseEstimator, ABC):
     """Base class for models.
