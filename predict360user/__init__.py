@@ -18,7 +18,7 @@ from predict360user.models import Interpolation, NoMotion, PosOnly, PosOnly3D
 from predict360user.run_config import RunConfig, set_random_seed
 
 
-def build_model(cfg: RunConfig) -> BaseModel:
+def get_model(cfg: RunConfig) -> BaseModel:
     if cfg.model == "pos_only":
         return PosOnly(cfg)
     elif cfg.model == "pos_only_3d":

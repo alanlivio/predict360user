@@ -22,9 +22,9 @@ def delta_angle_from_ori_mot(values):
 class PosOnly3D(keras.Model, BaseModel):
     def __init__(self, cfg: RunConfig) -> None:
         self.cfg = cfg
-        self.model = self.build()
+        self.model = self.get_model()
 
-    def build(self) -> Model:
+    def get_model(self) -> Model:
         encoder_inputs = Input(shape=(None, 3))
         decoder_inputs = Input(shape=(1, 3))
 

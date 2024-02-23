@@ -31,7 +31,7 @@ def add_timestep_axis(input):
 class CVPR18(BaseModel):
     def __init__(self, cfg: RunConfig) -> None:
         self.cfg = cfg
-        self.model: keras.Model = self.build()
+        self.model: keras.Model = self.get_model()
 
     def generate_batch(
         self, traces_l: list[np.ndarray], x_i_l: list
@@ -41,7 +41,7 @@ class CVPR18(BaseModel):
     def predict_for_sample(self, traces: np.ndarray, x_i) -> np.ndarray:
         raise NotImplementedError
 
-    def build(self) -> keras.Model:
+    def get_model(self) -> keras.Model:
         self.m_window, self.h_window = self.cfg.m_window, self.cfg.h_window
         # Defining model structure
         encoder_position_inputs = Input(shape=(self.cfg.m_window, 3))

@@ -96,9 +96,9 @@ def transform_normalized_eulerian_to_cartesian(positions) -> np.ndarray:
 class PosOnly(BaseModel):
     def __init__(self, cfg: RunConfig) -> None:
         self.cfg = cfg
-        self.model = self.build()
+        self.model = self.get_model()
 
-    def build(self) -> keras.Model:
+    def get_model(self) -> keras.Model:
         # Defining model structure
         encoder_inputs = Input(shape=(self.cfg.m_window, 2))
         decoder_inputs = Input(shape=(1, 2))

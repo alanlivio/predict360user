@@ -53,7 +53,7 @@ def run(cfg: RunConfig) -> None:
     df_wins_tuning = pd.concat([train_wins_tuning, val_wins_tuning])
 
     # fit
-    model = p3u.build_model(cfg)
+    model = p3u.get_model(cfg)
     model.fit(df_wins_pretuning)
 
     # tuning

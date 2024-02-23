@@ -8,7 +8,7 @@ from predict360user.base_model import BaseModel, RunConfig
 class TrueSaliency(BaseModel):
     def __init__(self, cfg: RunConfig) -> None:
         # self.cfg = cfg
-        # self.model: keras.Model = self.build()
+        # self.model: keras.Model = self.get_model()
         raise NotImplementedError
 
     def generate_batch(
@@ -23,7 +23,7 @@ class TrueSaliency(BaseModel):
 class ContentSaliency(BaseModel):
     def __init__(self, cfg: RunConfig) -> None:
         # self.cfg = cfg
-        # self.model: keras.Model = self.build()
+        # self.model: keras.Model = self.get_model()
         raise NotImplementedError
 
     def generate_batch(

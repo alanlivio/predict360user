@@ -54,7 +54,7 @@ def run(cfg: RunConfig) -> None:
     df_wins_for_fit = pd.concat([train_wins_for_fit, val_wins])
 
     # fit model
-    model = p3u.build_model(cfg)
+    model = p3u.get_model(cfg)
     model.fit(df_wins_for_fit)
 
     # evaluate model

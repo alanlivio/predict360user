@@ -47,7 +47,7 @@ def run(cfg: RunConfig) -> None:
     wandb.run.log({"trn_low": n_low, "trn_med": n_medium, "trn_hig": n_high})
 
     # fit model
-    model = p3u.build_model(cfg)
+    model = p3u.get_model(cfg)
     model.fit(df_wins)
 
     # evaluate model

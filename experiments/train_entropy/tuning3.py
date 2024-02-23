@@ -53,7 +53,7 @@ def run(cfg: RunConfig) -> None:
     df_wins_tuning = pd.concat([train_wins_tuning, val_wins_tuning])
 
     # fit
-    model = p3u.build_model(cfg)
+    model = p3u.get_model(cfg)
     tuning_epochs_prc = 0.33
     model.fit(df_wins_pretuning)
     del model
@@ -61,7 +61,7 @@ def run(cfg: RunConfig) -> None:
     # tuning
     cfg.epochs = math.ceil(cfg.epochs * (1 + tuning_epochs_prc))
     cfg.lr = 0.0001
-    model = p3u.build_model(cfg)
+    model = p3u.get_model(cfg)
     model.model.layers[0].trainable = False
     model.model.layers[1].trainable = False
     model.model.layers[2].trainable = False
