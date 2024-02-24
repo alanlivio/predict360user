@@ -20,7 +20,7 @@ def run(cfg: RunConfig) -> None:
     cfg.name = f"{cfg.model},filt={cfg.train_entropy}"
     if cfg.train_minsize:
         cfg.name += f",mins={cfg.train_minsize!r}"
-    wandb.init(project="predict360user", name=cfg.name, config=asdict(cfg))
+    wandb.init(project="predict360user", name=cfg.name, resume=True, config=asdict(cfg))
     log.info(f"run {cfg.name} config is: \n--\n" + oc.to_yaml(cfg) + "--")
 
     # seed
