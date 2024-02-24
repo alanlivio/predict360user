@@ -1,5 +1,5 @@
 import random
-from dataclasses import dataclass
+from dataclasses import MISSING, dataclass
 
 import numpy as np
 import tensorflow as tf
@@ -10,7 +10,7 @@ class RunConfig:
     """Run configuration.
 
     Keyword arguments:
-    name: -- experiment name to group runs and compare (e.g., sweeps)
+    name: -- short descriptive name, also usfeul to group comparison (e.g., sweeps)
     batch_size  -- model batch size
     dataset  -- dataset name from .data_ingestion.DATASETS
     epochs  -- model training epochs
@@ -24,7 +24,7 @@ class RunConfig:
     test_size  -- model test size
     """
 
-    experiment_name: str = ""
+    name = None
     batch_size: int = 128
     dataset: str = "all"
     epochs: int = 30

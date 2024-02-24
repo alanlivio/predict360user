@@ -10,9 +10,9 @@ log = logging.getLogger()
 
 
 def run(cfg: p3u.RunConfig) -> None:
-    cfg.experiment_name = cfg.model
-    wandb.init(project="predict360user", name=cfg.experiment_name, config=asdict(cfg))
-    log.info(f"run {cfg.experiment_name} config is: \n--\n" + oc.to_yaml(cfg) + "--")
+    cfg.name = cfg.model
+    wandb.init(project="predict360user", name=cfg.name, config=asdict(cfg))
+    log.info(f"run {cfg.name} config is: \n--\n" + oc.to_yaml(cfg) + "--")
 
     # seed
     p3u.set_random_seed(cfg.seed)
