@@ -1,6 +1,6 @@
 import logging
 import os
-from os.path import exists, join
+from contextlib import suppress
 from typing import Sequence, Tuple
 
 import absl
@@ -8,24 +8,19 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 from keras import backend as K
-from keras.callbacks import CSVLogger, ModelCheckpoint
 from keras.layers import LSTM, Dense, Input, Lambda
 from sklearn.utils.validation import check_is_fitted
 from tensorflow import keras
-from wandb.keras import WandbMetricsLogger
+from wandb.keras import WandbCallback
 
 import wandb
 from predict360user.base_model import BaseModel, batch_generator_fn
-from predict360user.data_ingestion import DEFAULT_SAVEDIR
 from predict360user.run_config import RunConfig
 from predict360user.utils.math360 import (
     cartesian_to_eulerian,
     eulerian_to_cartesian,
     metric_orth_dist_eulerian,
 )
-
-TRAIN_RES_CSV = "train_results.csv"
-
 
 log = logging.getLogger()
 
@@ -96,7 +91,6 @@ def transform_normalized_eulerian_to_cartesian(positions) -> np.ndarray:
 class PosOnly(BaseModel):
     def __init__(self, cfg: RunConfig) -> None:
         self.cfg = cfg
-        self.model = self.get_model()
 
     def get_model(self) -> keras.Model:
         # Defining model structure
@@ -141,89 +135,62 @@ class PosOnly(BaseModel):
 
     def fit(self, df_wins: pd.DataFrame) -> BaseModel:
         log.info("fit ...")
-        model_dir = join(
-            DEFAULT_SAVEDIR,
-            self.cfg.experiment_name if self.cfg.experiment_name else self.cfg.model,
-        )
-        train_csv_log_f = join(model_dir, TRAIN_RES_CSV)
-        model_path = join(model_dir, "weights.hdf5")
-
-        if not exists(model_dir):
-            os.makedirs(model_dir)
-        if exists(model_path):
-            log.info(f"{model_path} exists loading it")
-            self.model.load_weights(model_path)
-        log.info("model_path=" + model_path)
-
-        train_wins = df_wins[df_wins["partition"] == "train"]
-        val_wins = df_wins[df_wins["partition"] == "val"]
-        # calc initial_epoch
-        initial_epoch = 0
-        if exists(train_csv_log_f):
-            lines = pd.read_csv(train_csv_log_f)
-            lines.dropna(how="all", inplace=True)
-            done_epochs = int(lines.iloc[-1]["epoch"]) + 1
-            initial_epoch = done_epochs
-            log.info(f"train_csv_log_f has {initial_epoch} epochs ")
-
-        # fit
-        os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+        
         absl.logging.set_verbosity(absl.logging.ERROR)
         os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+        os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+        
+        self.model = self.get_model()
+        initial_epoch = 0
+        if wandb.run.resumed:
+            try: 
+                log.info("restoring fit from preivous interrupeted.")
+                self.model.load_weights(wandb.restore("model-best.h5").name)
+                initial_epoch = wandb.run.step
+            except:
+                log.error("restoring fit failed. starting new fit.") 
+
         if self.cfg.gpu_id:
             os.environ["CUDA_VISIBLE_DEVICES"] = str(self.cfg.gpu_id)
             log.info(f"set visible cpu to {self.cfg.gpu_id}")
-        if initial_epoch >= self.cfg.epochs:
-            log.info(
-                f"train_csv_log_f has {initial_epoch}>={self.cfg.epochs}. not training."
-            )
-        else:
-            steps_per_ep_train = np.ceil(len(train_wins) / self.cfg.batch_size)
-            steps_per_ep_validate = np.ceil(len(val_wins) / self.cfg.batch_size)
-            callbacks = [
-                CSVLogger(train_csv_log_f, append=True),
-                ModelCheckpoint(
-                    model_path,
-                    save_best_only=True,
-                    save_weights_only=True,
-                    mode="auto",
-                    period=1,
-                ),
-            ]
-            if wandb.run:
-                callbacks += [WandbMetricsLogger(initial_global_step=initial_epoch)]
 
-            def get_fit_data(df_wins: pd.DataFrame) -> Tuple[list, list]:
-                encoder_pos_inputs = df_wins["m_window"].values
-                decoder_pos_inputs = df_wins["trace"].values
-                decoder_outputs = df_wins["h_window"].values
-                return (
-                    [
-                        batch_cartesian_to_normalized_eulerian(encoder_pos_inputs),
-                        batch_cartesian_to_normalized_eulerian(decoder_pos_inputs),
-                    ],
-                    batch_cartesian_to_normalized_eulerian(decoder_outputs),
-                )
-                
-            self.model.fit_generator(
-                generator=batch_generator_fn(self.cfg.batch_size, train_wins, get_fit_data),
-                validation_data=batch_generator_fn(
-                    self.cfg.batch_size, val_wins, get_fit_data
-                ),
-                steps_per_epoch=steps_per_ep_train,
-                validation_steps=steps_per_ep_validate,
-                epochs=self.cfg.epochs,
-                initial_epoch=initial_epoch,
-                callbacks=callbacks,
-                verbose=2,
+        # fit data
+        train_wins = df_wins[df_wins["partition"] == "train"]
+        val_wins = df_wins[df_wins["partition"] == "val"]
+        steps_per_ep_train = np.ceil(len(train_wins) / self.cfg.batch_size)
+        steps_per_ep_validate = np.ceil(len(val_wins) / self.cfg.batch_size)
+
+        def get_fit_data(df_wins: pd.DataFrame) -> Tuple[list, list]:
+            encoder_pos_inputs = df_wins["m_window"].values
+            decoder_pos_inputs = df_wins["trace"].values
+            decoder_outputs = df_wins["h_window"].values
+            return (
+                [
+                    batch_cartesian_to_normalized_eulerian(encoder_pos_inputs),
+                    batch_cartesian_to_normalized_eulerian(decoder_pos_inputs),
+                ],
+                batch_cartesian_to_normalized_eulerian(decoder_outputs),
             )
+
+        self.model.fit_generator(
+            generator=batch_generator_fn(self.cfg.batch_size, train_wins, get_fit_data),
+            validation_data=batch_generator_fn(
+                self.cfg.batch_size, val_wins, get_fit_data
+            ),
+            steps_per_epoch=steps_per_ep_train,
+            validation_steps=steps_per_ep_validate,
+            epochs=self.cfg.epochs,
+            initial_epoch=initial_epoch,
+            callbacks=[WandbCallback(save_model=True, monitor="loss")],
+            verbose=2,
+        )
         self.is_fitted_ = True
         return self
 
     def predict(self, df_wins: pd.DataFrame) -> Sequence:
         log.info("predict ...")
         check_is_fitted(self)
-        
+
         # convert to model expected input
         encoder_pos_inputs = df_wins["m_window"].values
         decoder_pos_inputs = df_wins["trace"].values
