@@ -44,8 +44,8 @@ def run(cfg: p3u.RunConfig, resume=False) -> None:
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
-    cfg = p3u.RunConfig(**oc.from_cli())  # type: ignore
     for seed in range(0, 3):
+        cfg = p3u.RunConfig(**oc.from_cli())  # type: ignore
         cfg.seed = seed
         try:
             run(cfg)
