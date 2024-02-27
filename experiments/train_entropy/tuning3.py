@@ -20,7 +20,7 @@ def run(cfg: RunConfig, resume=False) -> None:
     assert cfg.train_entropy in p3u.ENTROPY_NAMES
     cfg.name = f"{cfg.model},tuni3={cfg.train_entropy}"
     wandb.init(project="predict360user", name=cfg.name, resume=resume)
-    log.info(f"-- runing {cfg.name} with {cfg}")
+    log.info(f"-- run {cfg.name} with {cfg}")
     
     # set seed
     p3u.set_random_seed(cfg.seed)
@@ -62,7 +62,7 @@ def run(cfg: RunConfig, resume=False) -> None:
     model.cfg.initial_epoch = wandb.run.step
     model.cfg.epochs = math.ceil(cfg.epochs * (1.33))
     model.cfg.lr = 0.0001
-    log.info(f"\ntuning for {cfg.train_entropy} with {model.cfg=}\n")
+    log.info(f"-- tuni {cfg.train_entropy} with {model.cfg=}")
     model.model.layers[0].trainable = False
     model.model.layers[1].trainable = False
     model.model.layers[2].trainable = False

@@ -11,7 +11,7 @@ log = logging.getLogger()
 def run(cfg: p3u.RunConfig, resume=False) -> None:
     cfg.name = cfg.model
     wandb.init(project="predict360user", name=cfg.name, resume=resume)
-    log.info(f"-- runing {cfg.name} with {cfg}")
+    log.info(f"-- run {cfg.name} with {cfg}")
 
     # set seed
     p3u.set_random_seed(cfg.seed)
