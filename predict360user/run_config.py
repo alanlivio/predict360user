@@ -27,7 +27,7 @@ class RunConfig:
     test_size  -- model test size
     """
 
-    name = None
+    name = ""
     batch_size: int = 128
     dataset: str = "all"
     epochs: int = 30
@@ -41,6 +41,10 @@ class RunConfig:
     test_size: float = 0.2
     initial_epoch = 0
     seed: int = 0
+    
+    def __post_init__(self) -> None:
+        if not self.name:
+            self.name = self.model
 
 def set_random_seed(seed) -> None:
     wandb.run.summary['seed'] = seed
