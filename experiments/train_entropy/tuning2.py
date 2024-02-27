@@ -54,14 +54,12 @@ def run(cfg: RunConfig, resume=False) -> None:
 
     # fit
     model = p3u.get_model(cfg)
-    tuning_epochs_prc = 0.33
     model.fit(df_wins_pretuning)
-    del model
 
     # tuning
-    model = p3u.get_model(cfg)
-    cfg.epochs = math.ceil(cfg.epochs * (1 + tuning_epochs_prc))
-    cfg.lr = 0.0001
+    model.cfg.epochs = math.ceil(cfg.epochs * (1.33)) #  prolong more 1/3
+    model.cfg.lr = 0.0001
+    log.info(f"\ntuning for {cfg.train_entropy} with {model.cfg=}\n")
     model.fit(df_wins_tuning)
 
     # evaluate model

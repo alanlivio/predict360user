@@ -54,14 +54,12 @@ def run(cfg: RunConfig, resume=False) -> None:
 
     # fit
     model = p3u.get_model(cfg)
-    tuning_epochs_prc = 0.33
     model.fit(df_wins_pretuning)
-    del model
 
     # tuning
-    cfg.epochs = math.ceil(cfg.epochs * (1 + tuning_epochs_prc))
-    cfg.lr = 0.0001
-    model = p3u.get_model(cfg)
+    model.cfg.epochs = math.ceil(cfg.epochs * (1.33)) #  prolong more 1/3
+    model.cfg.lr = 0.0001
+    log.info(f"\ntuning for {cfg.train_entropy} with {model.cfg=}\n")
     model.model.layers[0].trainable = False
     model.model.layers[1].trainable = False
     model.model.layers[2].trainable = False
@@ -75,7 +73,7 @@ def run(cfg: RunConfig, resume=False) -> None:
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
     cfg = RunConfig(**oc.from_cli())  # type: ignore
-    for seed in range(0,3):
+    for seed in range(0, 3):
         cfg.seed = seed
         try:
             run(cfg)
