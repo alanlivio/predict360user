@@ -27,7 +27,7 @@ class RunConfig:
     test_size  -- model test size
     """
 
-    name = ""
+    name: str = ""
     batch_size: int = 128
     dataset: str = "all"
     epochs: int = 30
@@ -39,7 +39,7 @@ class RunConfig:
     model: str = "pos_only"
     train_size: float = 0.8
     test_size: float = 0.2
-    initial_epoch = 0
+    initial_epoch: int = 0
     seed: int = 0
     
     def __post_init__(self) -> None:
