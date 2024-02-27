@@ -24,12 +24,12 @@ class BaseModel(BaseEstimator, ABC):
         self.cfg = cfg
 
     @abstractmethod
-    def predict(self, df_wins: pd.DataFrame) -> Sequence:
+    def predict(self, df: pd.DataFrame) -> Sequence:
         """model predict
 
         Parameters
         ----------
-        df_wins : pd.DataFrame
+        df : pd.DataFrame
             pd.DataFrame from load_df_wins() and split()
 
         Returns
@@ -39,12 +39,12 @@ class BaseModel(BaseEstimator, ABC):
         """
         ...
 
-    def fit(self, df_wins: pd.DataFrame) -> BaseModel:
+    def fit(self, df: pd.DataFrame) -> BaseModel:
         """model fit
 
         Parameters
         ----------
-        df_wins : pd.DataFrame
+        df : pd.DataFrame
             pd.DataFrame from load_df_wins() and split()
 
         Returns
@@ -54,12 +54,12 @@ class BaseModel(BaseEstimator, ABC):
         """
         return self
 
-    def evaluate(self, df_wins: pd.DataFrame) -> dict:
+    def evaluate(self, df: pd.DataFrame) -> dict:
         """evalate model
 
         Parameters
         ----------
-        df_wins : pd.DataFrame
+        df : pd.DataFrame
             pd.DataFrame from load_df_wins() and split()
 
         Returns
@@ -68,12 +68,12 @@ class BaseModel(BaseEstimator, ABC):
             prediction error per h_window t
         """
         log.info("evaluate ...")
-        assert "partition" in df_wins.columns
-        test_idx = df_wins[df_wins["partition"] == "test"].index
+        assert "partition" in df.columns
+        test_idx = df[df["partition"] == "test"].index
         assert len(test_idx)
         
         # predict
-        pred = self.predict(df_wins.loc[test_idx])
+        pred = self.predict(df.loc[test_idx])
         assert len(test_idx) == len(pred)
 
         # calculate predict errors per t
@@ -84,15 +84,15 @@ class BaseModel(BaseEstimator, ABC):
             error_per_t = [orth_dist_cartesian(pred[t], pred_true[t]) for t in t_range]
             return error_per_t
 
-        df_wins = df_wins.loc[test_idx].assign(pred=pred)
+        df = df.loc[test_idx].assign(pred=pred)
         t_range = list(range(self.cfg.h_window))
-        df_wins.loc[test_idx, t_range] = df_wins.loc[test_idx].apply(
+        df.loc[test_idx, t_range] = df.loc[test_idx].apply(
             _calc_pred_err, axis=1, result_type="expand"
         )  # type: ignore
-        assert df_wins.loc[test_idx, t_range].all().all()
+        assert df.loc[test_idx, t_range].all().all()
 
         # calculate predict errors pert t mean
-        test_wins = df_wins.loc[test_idx]
+        test_wins = df.loc[test_idx]
         classes = [
             ("all", test_idx),
             ("low", test_wins.index[test_wins["actS_c"] == "low"]),
@@ -102,9 +102,9 @@ class BaseModel(BaseEstimator, ABC):
         err_per_class_dict = {tup[0]: {} for tup in classes}
         for actS_c, idx in classes:
             # 1) mean per class (as wandb summary): # err_all, err_low, err_high, err_medium,
-            err_per_class_dict[actS_c]["mean"] = df_wins.loc[idx, t_range].values.mean()
+            err_per_class_dict[actS_c]["mean"] = df.loc[idx, t_range].values.mean()
             # 2) mean err per t per class
-            class_err_per_t = df_wins.loc[idx, t_range].mean()
+            class_err_per_t = df.loc[idx, t_range].mean()
             data = [[x, y] for (x, y) in zip(t_range, class_err_per_t)]
             err_per_class_dict[actS_c]["mean_per_t"] = data
         if wandb.run:
@@ -118,13 +118,13 @@ class BaseModel(BaseEstimator, ABC):
 
 
 def batch_generator_fn(
-    batch_size: int, df_wins: pd.DataFrame, fn: Callable
+    batch_size: int, df: pd.DataFrame, fn: Callable
 ) -> Generator:
     while True:
-        for start in range(0, len(df_wins), batch_size):
+        for start in range(0, len(df), batch_size):
             end = (
                 start + batch_size
-                if start + batch_size <= len(df_wins)
-                else len(df_wins)
+                if start + batch_size <= len(df)
+                else len(df)
             )
-            yield fn(df_wins[start:end])
+            yield fn(df[start:end])

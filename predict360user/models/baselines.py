@@ -10,7 +10,7 @@ class NoMotion(BaseModel):
     def __init__(self, cfg: RunConfig) -> None:
         super().__init__(cfg)
     
-    def fit(self, df_wins: pd.DataFrame) -> BaseModel:
+    def fit(self, df: pd.DataFrame) -> BaseModel:
         return self
     
     def predict_for_sample(self, traces: np.ndarray, x_i) -> np.ndarray:

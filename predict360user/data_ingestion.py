@@ -159,15 +159,15 @@ def load_df_wins(
 ) -> pd.DataFrame:
     df_trajects = load_df_trajecs(dataset)
 
-    df_wins = df_trajects
+    df = df_trajects
 
     # create "trace_id" list as explode it duplicating other columns
     def _create_trace_id(traces) -> list[int]:
         return [trace_id for trace_id in range(init_window, traces.shape[0] - h_window)]
 
-    df_wins["trace_id"] = df_trajects["traces"].apply(_create_trace_id)
-    df_wins = df_wins.explode("trace_id", ignore_index=True)
-    df_wins = df_wins.dropna(subset=["trace_id"], how="all")
+    df["trace_id"] = df_trajects["traces"].apply(_create_trace_id)
+    df = df.explode("trace_id", ignore_index=True)
+    df = df.dropna(subset=["trace_id"], how="all")
 
     # m_window and f_window
     def _create_m_window(row) -> np.ndarray:
@@ -182,13 +182,13 @@ def load_df_wins(
         trace_id = row["trace_id"]
         return row["traces"][trace_id + 1 : trace_id + h_window + 1]
 
-    df_wins["m_window"] = df_wins.apply(_create_m_window, axis=1)
-    df_wins["trace"] = df_wins.apply(_create_trace_pos, axis=1)
-    df_wins["h_window"] = df_wins.apply(_create_h_window, axis=1)
-    df_wins = df_wins.drop(["traces", "trace_id"], axis=1)
+    df["m_window"] = df.apply(_create_m_window, axis=1)
+    df["trace"] = df.apply(_create_trace_pos, axis=1)
+    df["h_window"] = df.apply(_create_h_window, axis=1)
+    df = df.drop(["traces", "trace_id"], axis=1)
 
     del df_trajects
-    return df_wins
+    return df
 
 
 def split(

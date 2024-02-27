@@ -133,7 +133,7 @@ class PosOnly(BaseModel):
         model.compile(optimizer=model_optimizer, loss=metric_orth_dist_eulerian)
         return model
 
-    def fit(self, df_wins: pd.DataFrame) -> BaseModel:
+    def fit(self, df: pd.DataFrame) -> BaseModel:
         log.info("fit ...")
         
         absl.logging.set_verbosity(absl.logging.ERROR)
@@ -154,15 +154,15 @@ class PosOnly(BaseModel):
             log.info(f"set visible cpu to {self.cfg.gpu_id}")
 
         # fit data
-        train_wins = df_wins[df_wins["partition"] == "train"]
-        val_wins = df_wins[df_wins["partition"] == "val"]
+        train_wins = df[df["partition"] == "train"]
+        val_wins = df[df["partition"] == "val"]
         steps_per_ep_train = np.ceil(len(train_wins) / self.cfg.batch_size)
         steps_per_ep_validate = np.ceil(len(val_wins) / self.cfg.batch_size)
 
-        def get_fit_data(df_wins: pd.DataFrame) -> Tuple[list, list]:
-            encoder_pos_inputs = df_wins["m_window"].values
-            decoder_pos_inputs = df_wins["trace"].values
-            decoder_outputs = df_wins["h_window"].values
+        def get_fit_data(df: pd.DataFrame) -> Tuple[list, list]:
+            encoder_pos_inputs = df["m_window"].values
+            decoder_pos_inputs = df["trace"].values
+            decoder_outputs = df["h_window"].values
             return (
                 [
                     batch_cartesian_to_normalized_eulerian(encoder_pos_inputs),
@@ -186,13 +186,13 @@ class PosOnly(BaseModel):
         self.is_fitted_ = True
         return self
 
-    def predict(self, df_wins: pd.DataFrame) -> Sequence:
+    def predict(self, df: pd.DataFrame) -> Sequence:
         log.info("predict ...")
         check_is_fitted(self)
 
         # convert to model expected input
-        encoder_pos_inputs = df_wins["m_window"].values
-        decoder_pos_inputs = df_wins["trace"].values
+        encoder_pos_inputs = df["m_window"].values
+        decoder_pos_inputs = df["trace"].values
         predict_data = [
             batch_cartesian_to_normalized_eulerian(encoder_pos_inputs),
             batch_cartesian_to_normalized_eulerian(decoder_pos_inputs),
