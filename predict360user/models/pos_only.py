@@ -141,12 +141,11 @@ class PosOnly(BaseModel):
         os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
         
         self.model = self.get_model()
-        initial_epoch = 0
         if wandb.run.resumed:
             try: 
                 log.info("restoring fit from preivous interrupeted.")
                 self.model.load_weights(wandb.restore("model-best.h5").name)
-                initial_epoch = wandb.run.step
+                self.cfg.initial_epoch = wandb.run.step
             except:
                 log.error("restoring fit failed. starting new fit.") 
 
@@ -180,7 +179,7 @@ class PosOnly(BaseModel):
             steps_per_epoch=steps_per_ep_train,
             validation_steps=steps_per_ep_validate,
             epochs=self.cfg.epochs,
-            initial_epoch=initial_epoch,
+            initial_epoch=self.cfg.initial_epoch,
             callbacks=[WandbCallback(save_model=True, monitor="loss")],
             verbose=2,
         )

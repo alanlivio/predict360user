@@ -4,16 +4,19 @@ from dataclasses import MISSING, dataclass
 import numpy as np
 import tensorflow as tf
 
+import wandb
+
 
 @dataclass
 class RunConfig:
     """Run configuration.
 
     Keyword arguments:
-    name: -- short descriptive name, also usfeul to group comparison (e.g., sweeps)
+    name: -- short descriptive name, useful for wandb grouping seeds
     batch_size  -- model batch size
     dataset  -- dataset name from .data_ingestion.DATASETS
     epochs  -- model training epochs
+    initial_epoch -- training epoch, useful when resuming
     gpu_id  -- traing gpu id
     h_window  -- model prediction horizon window size
     init_window  -- init buffer window size
@@ -36,6 +39,7 @@ class RunConfig:
     model: str = "pos_only"
     train_size: float = 0.8
     test_size: float = 0.2
+    initial_epoch = 0
     seed: int = 0
 
 def set_random_seed(seed) -> None:

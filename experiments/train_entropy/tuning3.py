@@ -56,8 +56,9 @@ def run(cfg: RunConfig, resume=False) -> None:
     model = p3u.get_model(cfg)
     model.fit(df_wins_pretuning)
 
-    # tuning
-    model.cfg.epochs = math.ceil(cfg.epochs * (1.33)) #  prolong more 1/3
+    # tuning for more 1/3 epochs
+    model.cfg.initial_epoch = wandb.run.step
+    model.cfg.epochs = math.ceil(cfg.epochs * (1.33))
     model.cfg.lr = 0.0001
     log.info(f"\ntuning for {cfg.train_entropy} with {model.cfg=}\n")
     model.model.layers[0].trainable = False
