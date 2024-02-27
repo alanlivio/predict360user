@@ -27,14 +27,14 @@ def run(cfg: RunConfig, resume=False) -> None:
     p3u.set_random_seed(cfg.seed)
 
     # load dataset
-    df_wins = p3u.load_df_wins(
+    df = p3u.load_df_wins(
         dataset=cfg.dataset,
         init_window=cfg.init_window,
         h_window=cfg.h_window,
         m_window=cfg.m_window,
     )
-    df_wins = p3u.split_train_filtred(
-        df_wins,
+    df = p3u.split_train_filtred(
+        df,
         train_size=cfg.train_size,
         test_size=cfg.test_size,
         train_entropy=cfg.train_entropy,
@@ -44,15 +44,15 @@ def run(cfg: RunConfig, resume=False) -> None:
 
     # log train len
     len_keys = ["train_len", "train_len_low", "train_len_medium", "train_len_high"]
-    len_values = p3u.count_entropy(df_wins[df_wins["partition"] == "train"])
+    len_values = p3u.count_entropy(df[df["partition"] == "train"])
     wandb.run.summary.update(dict(zip(len_keys, len_values)))
 
     # fit model
     model = p3u.get_model(cfg)
-    model.fit(df_wins)
+    model.fit(df)
 
     # evaluate model
-    model.evaluate(df_wins)
+    model.evaluate(df)
 
 
 if __name__ == "__main__":

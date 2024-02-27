@@ -26,39 +26,37 @@ def run(cfg: RunConfig, resume=False) -> None:
     p3u.set_random_seed(cfg.seed)
 
     # load dataset
-    df_wins = p3u.load_df_wins(
+    df = p3u.load_df_wins(
         dataset=cfg.dataset,
         init_window=cfg.init_window,
         h_window=cfg.h_window,
         m_window=cfg.m_window,
     )
-    df_wins = p3u.split(
-        df_wins,
+    df = p3u.split(
+        df,
         train_size=cfg.train_size,
         test_size=cfg.test_size,
     )
 
     # split for tuning
-    train_wins = df_wins[df_wins["partition"] == "train"]
-    val_wins = df_wins[df_wins["partition"] == "val"]
-    train_wins_tuning = train_wins[train_wins["actS_c"] == cfg.train_entropy]
-    val_wins_tuning = val_wins[val_wins["actS_c"] == cfg.train_entropy]
-    df_wins_pretuning = df_wins.drop(train_wins_tuning.index).drop(
-        val_wins_tuning.index
-    )
-    df_wins_tuning = pd.concat([train_wins_tuning, val_wins_tuning])
+    train = df[df["partition"] == "train"]
+    val = df[df["partition"] == "val"]
+    train_tuning = train[train["actS_c"] == cfg.train_entropy]
+    val_tuning = val[val["actS_c"] == cfg.train_entropy]
+    df_pretuning = df.drop(train_tuning.index).drop(val_tuning.index)
+    df_tuning = pd.concat([train_tuning, val_tuning])
 
     # log train len
     len_keys = ["train_len", "train_len_low", "train_len_medium", "train_len_high"]
-    len_values = p3u.count_entropy(df_wins_pretuning[df_wins_pretuning["partition"] == "train"])
+    len_values = p3u.count_entropy(df_pretuning[df_pretuning["partition"] == "train"])
     wandb.run.summary.update(dict(zip(len_keys, len_values)))
     len_keys = ["tuni_len", "tuni_len_low", "tuni_len_medium", "tuni_len_high"]
-    len_values = p3u.count_entropy(df_wins_tuning[df_wins_tuning["partition"] == "train"])
+    len_values = p3u.count_entropy(df_tuning[df_tuning["partition"] == "train"])
     wandb.run.summary.update(dict(zip(len_keys, len_values)))
 
     # fit
     model = p3u.get_model(cfg)
-    model.fit(df_wins_pretuning)
+    model.fit(df_pretuning)
 
     # tuning for more 1/3 epochs
     model.cfg.initial_epoch = wandb.run.step
@@ -68,10 +66,10 @@ def run(cfg: RunConfig, resume=False) -> None:
     model.model.layers[0].trainable = False
     model.model.layers[1].trainable = False
     model.model.layers[2].trainable = False
-    model.fit(df_wins_tuning)
+    model.fit(df_tuning)
 
     # evaluate model
-    model.evaluate(df_wins)
+    model.evaluate(df)
     wandb.finish()
 
 
