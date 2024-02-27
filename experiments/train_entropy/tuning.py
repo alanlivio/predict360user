@@ -20,8 +20,7 @@ def run(cfg: RunConfig, resume=False) -> None:
     assert cfg.train_entropy in p3u.ENTROPY_NAMES
     cfg.name = f"{cfg.model},tuni={cfg.train_entropy}"
     wandb.init(project="predict360user", name=cfg.name, resume=resume)
-    log.info('\n')
-    log.info(f"runing {cfg.name} with {cfg}\n")
+    log.info(f" -- runing {cfg.name} with {cfg}\n")
 
     # set seed
     p3u.set_random_seed(cfg.seed)
@@ -67,7 +66,11 @@ def run(cfg: RunConfig, resume=False) -> None:
 
     # evaluate model
     model.evaluate(df)
+
+    # finish run
     wandb.finish()
+    del df
+    del model
 
 
 if __name__ == "__main__":
