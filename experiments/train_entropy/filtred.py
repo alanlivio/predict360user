@@ -21,7 +21,8 @@ def run(cfg: RunConfig, resume=False) -> None:
     if cfg.train_minsize:
         cfg.name += f",mins={cfg.train_minsize!r}"
     wandb.init(project="predict360user", name=cfg.name, resume=resume)
-    log.info(f"\nruning {cfg.name} with {cfg}\n")
+    log.info('\n')
+    log.info(f"runing {cfg.name} with {cfg}\n")
 
     # set seed
     p3u.set_random_seed(cfg.seed)
@@ -43,7 +44,7 @@ def run(cfg: RunConfig, resume=False) -> None:
     )
 
     # log train len
-    len_keys = ["train_len", "train_len_low", "train_len_medium", "train_len_high"]
+    len_keys = ["train.all", "train.low", "train.medi", "train.high"]
     len_values = p3u.count_entropy(df[df["partition"] == "train"])
     wandb.run.summary.update(dict(zip(len_keys, len_values)))
 

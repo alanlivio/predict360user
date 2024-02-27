@@ -20,7 +20,8 @@ def run(cfg: RunConfig, resume=False) -> None:
     assert cfg.train_entropy in p3u.ENTROPY_NAMES
     cfg.name = f"{cfg.model},tuni={cfg.train_entropy}"
     wandb.init(project="predict360user", name=cfg.name, resume=resume)
-    log.info(f"\nruning {cfg.name} with {cfg}\n")
+    log.info('\n')
+    log.info(f"runing {cfg.name} with {cfg}\n")
 
     # set seed
     p3u.set_random_seed(cfg.seed)
@@ -47,10 +48,10 @@ def run(cfg: RunConfig, resume=False) -> None:
     df_tuning = pd.concat([train_tuning, val_tuning])
 
     # log train len
-    len_keys = ["train_len", "train_len_low", "train_len_medium", "train_len_high"]
+    len_keys = ["train.all", "train.low", "train.medi", "train.high"]
     len_values = p3u.count_entropy(df_pretuning[df_pretuning["partition"] == "train"])
     wandb.run.summary.update(dict(zip(len_keys, len_values)))
-    len_keys = ["tuni_len", "tuni_len_low", "tuni_len_medium", "tuni_len_high"]
+    len_keys = ["tuni.all", "tuni.low", "tuni.medi", "tuni.high"]
     len_values = p3u.count_entropy(df_tuning[df_tuning["partition"] == "train"])
     wandb.run.summary.update(dict(zip(len_keys, len_values)))
 
