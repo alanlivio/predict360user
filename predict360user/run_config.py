@@ -43,6 +43,7 @@ class RunConfig:
     seed: int = 0
 
 def set_random_seed(seed) -> None:
+    wandb.run.summary['seed'] = seed
     random.seed(seed)
     np.random.seed(seed)
     tf.random.set_seed(seed)
