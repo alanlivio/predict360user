@@ -17,7 +17,7 @@ class BaseModel(BaseEstimator, ABC):
     """Base class for models.
 
     Keyword arguments:
-    cfg  -- RunConfig
+    cfg  ==> runConfig
     """
 
     def __init__(self, cfg: RunConfig) -> None:

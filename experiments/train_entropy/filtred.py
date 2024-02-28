@@ -65,7 +65,7 @@ def run(cfg: RunConfig, resume=False) -> None:
     if cfg.train_minsize:
         cfg.name += f",mins={cfg.train_minsize!r}"
     wandb.init(project="predict360user", name=cfg.name, resume=resume)
-    log.info(f"-- run {cfg.name} with {cfg}")
+    log.info(f"==> run {cfg.name} with {cfg}")
     # set seed
     p3u.set_random_seed(cfg.seed)
 
