@@ -3,11 +3,11 @@ import math
 from dataclasses import dataclass
 
 import pandas as pd
-import wandb
 from omegaconf import OmegaConf as oc
 from sklearn.model_selection import train_test_split
 
 import predict360user as p3u
+import wandb
 
 log = logging.getLogger()
 
@@ -34,7 +34,7 @@ def split_train_filtred(
     )
 
     # sample train like was sample full len(df) to create similar size
-    n_train = math.ceil(len(df) * train_size)
+    n_train = min(math.ceil(len(df) * train_size), len(train[train["actS_c"] == train_entropy]))
     train = train[train["actS_c"] == train_entropy].sample(n=n_train, random_state=seed)
     train, val = train_test_split(
         train,
