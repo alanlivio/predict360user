@@ -2,11 +2,11 @@ import logging
 from dataclasses import dataclass
 
 import pandas as pd
+import wandb
 from omegaconf import OmegaConf as oc
 from sklearn.utils import shuffle
 
 import predict360user as p3u
-import wandb
 
 log = logging.getLogger()
 
@@ -68,9 +68,9 @@ def run(cfg: RunConfig, resume=False) -> None:
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
     for seed in range(0, 3):
-        cfg = RunConfig(**oc.from_cli())  # type: ignore
-        cfg.seed = seed
+        CFG = RunConfig(**oc.from_cli())  # type: ignore
+        CFG.seed = seed
         try:
-            run(cfg)
+            run(CFG)
         except:
-            run(cfg, resume=True)
+            run(CFG, resume=True)
