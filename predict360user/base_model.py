@@ -8,10 +8,12 @@ import pandas as pd
 from sklearn.base import BaseEstimator
 
 import wandb
+from predict360user.data_ingestion import ENTROPY_NAMES
 from predict360user.run_config import RunConfig
 from predict360user.utils.math360 import orth_dist_cartesian
 
 log = logging.getLogger()
+
 
 class BaseModel(BaseEstimator, ABC):
     """Base class for models.
@@ -54,7 +56,7 @@ class BaseModel(BaseEstimator, ABC):
         """
         return self
 
-    def evaluate(self, df: pd.DataFrame) -> dict:
+    def evaluate(self, df: pd.DataFrame, target_class=None) -> dict:
         """evalate model
 
         Parameters
@@ -71,7 +73,7 @@ class BaseModel(BaseEstimator, ABC):
         assert "partition" in df.columns
         test_idx = df[df["partition"] == "test"].index
         assert len(test_idx)
-        
+
         # predict
         pred = self.predict(df.loc[test_idx])
         assert len(test_idx) == len(pred)
@@ -99,32 +101,25 @@ class BaseModel(BaseEstimator, ABC):
             ("medium", test_wins.index[test_wins["actS_c"] == "medium"]),
             ("high", test_wins.index[test_wins["actS_c"] == "high"]),
         ]
-        err_per_class_dict = {tup[0]: {} for tup in classes}
+        if target_class:
+            assert target_class in ENTROPY_NAMES
+            classes = [c for c in classes if c[0] == target_class]
+            assert classes
+        err_dict_per_class = {tup[0]: {} for tup in classes}
+        wandb.define_metric("t_hor", hidden=True, overwrite=True, step_sync=False)
         for actS_c, idx in classes:
             # 1) mean per class (as wandb summary): # err_all, err_low, err_high, err_medium,
-            err_per_class_dict[actS_c]["mean"] = df.loc[idx, t_range].values.mean()
+            wandb.run.summary[f"err_{actS_c}"] = df.loc[idx, t_range].values.mean()
             # 2) mean err per t per class
+            wandb.define_metric(f"test_err_per_t_hor/{actS_c}", step_metric="t_hor", overwrite=True)
             class_err_per_t = df.loc[idx, t_range].mean()
-            data = [[x, y] for (x, y) in zip(t_range, class_err_per_t)]
-            err_per_class_dict[actS_c]["mean_per_t"] = data
-        if wandb.run:
-            for actS_c, err in err_per_class_dict.items():
-                wandb.run.summary[f"err_{actS_c}"] = err["mean"]
-                table = wandb.Table(data=err["mean_per_t"], columns=["t", "err"])
-                plot_id = f"test_err_per_t_class_{actS_c}"
-                plot = wandb.plot.line(table, "t", "err", title=plot_id)
-                wandb.log({plot_id: plot})
-        return err_per_class_dict
+            for t, err in zip(t_range, class_err_per_t):
+                wandb.log({f"test_err_per_t_hor/{actS_c}": err, "t_hor": t})
+        return err_dict_per_class
 
 
-def batch_generator_fn(
-    batch_size: int, df: pd.DataFrame, fn: Callable
-) -> Generator:
+def batch_generator_fn(batch_size: int, df: pd.DataFrame, fn: Callable) -> Generator:
     while True:
         for start in range(0, len(df), batch_size):
-            end = (
-                start + batch_size
-                if start + batch_size <= len(df)
-                else len(df)
-            )
+            end = start + batch_size if start + batch_size <= len(df) else len(df)
             yield fn(df[start:end])
