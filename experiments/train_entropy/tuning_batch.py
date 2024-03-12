@@ -53,7 +53,7 @@ def run(cfg: RunConfig, **kwargs) -> None:
     # log train len
     len_keys = ["samples/train/all", "samples/train/low", "samples/train/medi", "samples/train/high"]
     len_values = p3u.count_entropy(train_for_fit)
-    wandb.log(dict(zip(len_keys, len_values)))
+    wandb.log(dict(zip(len_keys, len_values)), step=0)
 
     # fit model
     model = p3u.get_model(cfg)

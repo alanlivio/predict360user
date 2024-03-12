@@ -52,10 +52,10 @@ def run(cfg: RunConfig, **kwargs) -> None:
     # log train len
     len_keys = ["samples/train/all", "samples/train/low", "samples/train/medi", "samples/train/high"]
     len_values = p3u.count_entropy(df_pretuning[df_pretuning["partition"] == "train"])
-    wandb.log(dict(zip(len_keys, len_values)))
+    wandb.log(dict(zip(len_keys, len_values)), step=0)
     len_keys = ["samples/tuni/all", "samples/tuni/low", "samples/tuni/medi", "samples/tuni/high"]
     len_values = p3u.count_entropy(df_tuning[df_tuning["partition"] == "train"])
-    wandb.log(dict(zip(len_keys, len_values)))
+    wandb.log(dict(zip(len_keys, len_values)), step=0)
 
     # fit
     model = p3u.get_model(cfg)
