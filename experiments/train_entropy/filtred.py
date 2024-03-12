@@ -42,8 +42,8 @@ def split_train_filtred(
         test_size=val_size,
         stratify=train["actS_c"],
     )
-    log.info("filtred train trajecs are " + p3u.count_entropy_str(train))
-    log.info("filtred train.val trajecs are " + p3u.count_entropy_str(val))
+    log.info("filtred samples/train are " + p3u.count_entropy_str(train))
+    log.info("filtred samples/train/val are " + p3u.count_entropy_str(val))
 
     # save partition as column
     df.loc[train.index, "partition"] = "train"

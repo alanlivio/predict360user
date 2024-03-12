@@ -209,7 +209,7 @@ def split(
         test_size=test_size,
         stratify=df["actS_c"],
     )
-    log.info("train trajecs are " + count_entropy_str(train))
+    log.info("samples/train are " + count_entropy_str(train))
 
     # split train and val
     train_before_val_split = len(train)
@@ -219,8 +219,8 @@ def split(
         test_size=val_size,
         stratify=train["actS_c"],
     )
-    log.info("train.val trajecs are " + count_entropy_str(val))
-    log.info("test trajecs are " + count_entropy_str(test))
+    log.info("samples/train/val are " + count_entropy_str(val))
+    log.info("samples/test are " + count_entropy_str(test))
 
     # save partition as column
     df.loc[train.index, "partition"] = "train"
