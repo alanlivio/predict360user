@@ -41,11 +41,13 @@ def run(cfg: RunConfig, **kwargs) -> None:
 
     # tuning split
     train = df[df["partition"] == "train"]
+    assert not train.empty
     begin = shuffle(train[train["actS_c"] != cfg.train_entropy])
     end = shuffle(train[train["actS_c"] == cfg.train_entropy])
     train_for_fit = pd.concat([begin, end])  # type: ignore
     assert train_for_fit.iloc[-1]["actS_c"] == cfg.train_entropy
     val = df[df["partition"] == "val"]
+    assert not val.empty
     df_for_fit = pd.concat([train_for_fit, val])
 
     # log train len

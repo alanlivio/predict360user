@@ -41,7 +41,9 @@ def run(cfg: RunConfig, **kwargs) -> None:
 
     # split for tuning
     train = df[df["partition"] == "train"]
+    assert not train.empty
     val = df[df["partition"] == "val"]
+    assert not val.empty
     train_tuning = train[train["actS_c"] == cfg.train_entropy]
     val_tuning = val[val["actS_c"] == cfg.train_entropy]
     df_pretuning = df.drop(train_tuning.index).drop(val_tuning.index)
