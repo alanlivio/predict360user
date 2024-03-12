@@ -12,7 +12,8 @@ class RunConfig:
     """Run configuration.
 
     Keyword arguments:
-    name: -- short descriptive name, useful for wandb grouping seeds
+    name: -- short descriptive wandb run name, useful for grouping seeds
+    predict360user: -- wandb project name
     batch_size  -- model batch size
     dataset  -- dataset name from .data_ingestion.DATASETS
     epochs  -- model training epochs
@@ -28,6 +29,7 @@ class RunConfig:
     """
 
     name: str = ""
+    project: str = "predict360user"
     batch_size: int = 128
     dataset: str = "all"
     epochs: int = 30

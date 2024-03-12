@@ -64,7 +64,7 @@ def run(cfg: RunConfig, **kwargs) -> None:
     cfg.name = f"{cfg.model},filt={cfg.train_entropy}"
     if cfg.train_minsize:
         cfg.name += f",mins={cfg.train_minsize!r}"
-    wandb.init(project="predict360user", name=cfg.name, **kwargs)
+    wandb.init(project=cfg.project, name=cfg.name, **kwargs)
     log.info("")
     log.info(f"==> run {cfg.name} with {cfg}")
     # set seed

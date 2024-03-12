@@ -19,7 +19,7 @@ class RunConfig(p3u.RunConfig):
 def run(cfg: RunConfig, **kwargs) -> None:
     assert cfg.train_entropy in p3u.ENTROPY_NAMES
     cfg.name = f"{cfg.model},tuni2={cfg.train_entropy}"
-    wandb.init(project="predict360user", name=cfg.name, **kwargs)
+    wandb.init(project=cfg.project, name=cfg.name, **kwargs)
     log.info(f"==> run {cfg.name} with {cfg}")
     
     # set seed

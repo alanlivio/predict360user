@@ -10,7 +10,7 @@ log = logging.getLogger()
 
 def run(cfg: p3u.RunConfig, **kwargs) -> None:
     cfg.name = cfg.model
-    wandb.init(project="predict360user", name=cfg.name, **kwargs)
+    wandb.init(project=cfg.project, name=cfg.name, **kwargs)
     log.info(f"==> run {cfg.name} with {cfg}")
 
     # set seed
