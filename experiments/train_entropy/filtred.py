@@ -86,7 +86,7 @@ def run(cfg: RunConfig, **kwargs) -> None:
     )
 
     # log train len
-    len_keys = ["samples/train_all", "samples/train_low", "samples/train_medi", "samples/train_high"]
+    len_keys = ["samples/train/all", "samples/train/low", "samples/train/medi", "samples/train/high"]
     len_values = p3u.count_entropy(df[df["partition"] == "train"])
     wandb.log(dict(zip(len_keys, len_values)))
 
