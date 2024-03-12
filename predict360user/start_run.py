@@ -53,8 +53,5 @@ if __name__ == "__main__":
         try:
             run(CFG)
         except:
-            try:
-                # resume using same id
-                run(CFG, resume="must", id=wandb.run.id)
-            except:
-                wandb.run.mark_failed()
+            run(CFG, resume="must", id=wandb.run.id) # resume using same id
+
