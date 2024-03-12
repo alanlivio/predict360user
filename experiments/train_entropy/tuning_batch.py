@@ -78,4 +78,5 @@ if __name__ == "__main__":
         try:
             run(CFG)
         except:
+            log.info(f"==> rerun falied {wandb.run.id} ")
             run(CFG, resume="must", id=wandb.run.id) # resume using same id
