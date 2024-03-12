@@ -70,8 +70,10 @@ def run(cfg: RunConfig, **kwargs) -> None:
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
-    for seed in range(0, 3):
-        CFG = RunConfig(**oc.from_cli())  # type: ignore
+    args = oc.from_cli()
+    nseeds = args.pop('nseeds', 1)
+    for seed in range(0, nseeds):
+        CFG = RunConfig(**args)  # type: ignore
         CFG.seed = seed
         try:
             run(CFG)
