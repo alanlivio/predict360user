@@ -8,9 +8,9 @@ import wandb
 log = logging.getLogger()
 
 
-def run(cfg: p3u.RunConfig, resume=False) -> None:
+def run(cfg: p3u.RunConfig, **kwargs) -> None:
     cfg.name = cfg.model
-    wandb.init(project="predict360user", name=cfg.name, resume=resume)
+    wandb.init(project="predict360user", name=cfg.name, **kwargs)
     log.info(f"==> run {cfg.name} with {cfg}")
 
     # set seed
@@ -53,4 +53,8 @@ if __name__ == "__main__":
         try:
             run(CFG)
         except:
-            run(CFG, resume=True)
+            try:
+                # resume using same id
+                run(CFG, resume="must", id=wandb.run.id)
+            except:
+                wandb.run.mark_failed()

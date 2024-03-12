@@ -59,12 +59,12 @@ class RunConfig(p3u.RunConfig):
     train_minsize: bool = False
 
 
-def run(cfg: RunConfig, resume=False) -> None:
+def run(cfg: RunConfig, **kwargs) -> None:
     assert cfg.train_entropy in p3u.ENTROPY_NAMES
     cfg.name = f"{cfg.model},filt={cfg.train_entropy}"
     if cfg.train_minsize:
         cfg.name += f",mins={cfg.train_minsize!r}"
-    wandb.init(project="predict360user", name=cfg.name, resume=resume)
+    wandb.init(project="predict360user", name=cfg.name, **kwargs)
     log.info("")
     log.info(f"==> run {cfg.name} with {cfg}")
     # set seed
@@ -111,4 +111,8 @@ if __name__ == "__main__":
         try:
             run(CFG)
         except:
-            run(CFG, resume=True)
+            try:
+                # resume using same id
+                run(CFG, resume="must", id=wandb.run.id)
+            except:
+                wandb.run.mark_failed()
