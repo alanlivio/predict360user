@@ -106,15 +106,16 @@ class BaseModel(BaseEstimator, ABC):
             classes = [c for c in classes if c[0] == target_class]
             assert classes
         err_dict_per_class = {tup[0]: {} for tup in classes}
-        wandb.define_metric("t_hor", hidden=True, overwrite=True, step_sync=False)
-        for actS_c, idx in classes:
+        wandb.define_metric("t_hor", hidden=True, step_sync=False)
+        for cls, idx in classes:
             # 1) mean per class (as wandb summary): # err_all, err_low, err_high, err_medium,
-            wandb.run.summary[f"err_{actS_c}"] = df.loc[idx, t_range].values.mean()
+            wandb.define_metric(f"test_err_mean/{cls}", step_sync=False)
+            wandb.log({f"test_err_mean/{cls}": df.loc[idx, t_range].values.mean()})
             # 2) mean err per t per class
-            wandb.define_metric(f"test_err_per_t_hor/{actS_c}", step_metric="t_hor", overwrite=True)
+            wandb.define_metric(f"test_err_per_t_hor/{cls}", step_metric="t_hor", step_sync=False)
             class_err_per_t = df.loc[idx, t_range].mean()
             for t, err in zip(t_range, class_err_per_t):
-                wandb.log({f"test_err_per_t_hor/{actS_c}": err, "t_hor": t})
+                wandb.log({f"test_err_per_t_hor/{cls}": err, "t_hor": t})
         return err_dict_per_class
 
 
