@@ -15,9 +15,9 @@ log = logging.getLogger()
 def split_train_filtred(
     df: pd.DataFrame,
     train_entropy: str,
+    seed: int,
     train_size=p3u.RunConfig.train_size,
     test_size=p3u.RunConfig.test_size,
-    seed=None,
     val_size=0.25,
 ) -> pd.DataFrame:
     assert train_entropy in p3u.ENTROPY_NAMES

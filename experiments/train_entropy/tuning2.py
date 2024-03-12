@@ -36,6 +36,7 @@ def run(cfg: RunConfig, resume=False) -> None:
         df,
         train_size=cfg.train_size,
         test_size=cfg.test_size,
+        seed=cfg.seed,
     )
 
     # split for tuning

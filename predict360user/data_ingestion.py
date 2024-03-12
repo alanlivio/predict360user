@@ -193,9 +193,9 @@ def load_df_wins(
 
 def split(
     df: pd.DataFrame,
+    seed: int,
     train_size=RunConfig.train_size,
     test_size=RunConfig.test_size,
-    seed=None,
     val_size=0.25,
 ) -> pd.DataFrame:
     df["partition"] = "discarted"  # sanity check
