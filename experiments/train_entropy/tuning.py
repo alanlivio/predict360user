@@ -62,7 +62,7 @@ def run(cfg: RunConfig, **kwargs) -> None:
     model.fit(df_pretuning)
 
     # tuning for more 1/3 epochs
-    model.cfg.initial_epoch = wandb.run.step
+    model.cfg.initial_epoch = model.cfg.epochs
     model.cfg.epochs = math.ceil(cfg.epochs * (1.33))
     log.info(f"==> tuni {cfg.train_entropy} with {model.cfg=}")
     model.fit(df_tuning)
