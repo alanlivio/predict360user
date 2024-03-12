@@ -48,12 +48,12 @@ def run(cfg: RunConfig, resume=False) -> None:
     df_tuning = pd.concat([train_tuning, val_tuning])
 
     # log train len
-    len_keys = ["train.all", "train.low", "train.medi", "train.high"]
+    len_keys = ["samples/train_all", "samples/train_low", "samples/train_medi", "samples/train_high"]
     len_values = p3u.count_entropy(df_pretuning[df_pretuning["partition"] == "train"])
-    wandb.run.summary.update(dict(zip(len_keys, len_values)))
-    len_keys = ["tuni.all", "tuni.low", "tuni.medi", "tuni.high"]
+    wandb.log(dict(zip(len_keys, len_values)))
+    len_keys = ["samples/tuni_all", "samples/tuni_low", "samples/tuni_medi", "samples/tuni_high"]
     len_values = p3u.count_entropy(df_tuning[df_tuning["partition"] == "train"])
-    wandb.run.summary.update(dict(zip(len_keys, len_values)))
+    wandb.log(dict(zip(len_keys, len_values)))
 
     # fit
     model = p3u.get_model(cfg)

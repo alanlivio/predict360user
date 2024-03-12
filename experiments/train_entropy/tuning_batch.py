@@ -49,9 +49,9 @@ def run(cfg: RunConfig, resume=False) -> None:
     df_for_fit = pd.concat([train_for_fit, val])
 
     # log train len
-    len_keys = ["train.all", "train.low", "train.medi", "train.high"]
+    len_keys = ["samples/train_all", "samples/train_low", "samples/train_medi", "samples/train_high"]
     len_values = p3u.count_entropy(train_for_fit)
-    wandb.run.summary.update(dict(zip(len_keys, len_values)))
+    wandb.log(dict(zip(len_keys, len_values)))
 
     # fit model
     model = p3u.get_model(cfg)
