@@ -12,7 +12,7 @@ from plotly.subplots import make_subplots
 from tqdm.auto import tqdm
 
 from predict360user.data_ingestion import DATADIR, get_class_name, get_class_thresholds
-from predict360user.utils.plot360 import Plot360
+from predict360user.utils.plot3d import Plot3d
 from predict360user.utils.tileset360 import TILESET_DEFAULT
 
 ENTROPY_CLASS_COLORS = {"low": "blue", "medium": "green", "high": "red"}
@@ -75,7 +75,7 @@ def show_traject(row: pd.Series, title=None) -> None:
     )
 
     # add traces
-    plot = Plot360()
+    plot = Plot3d()
     plot.add_traces(traces)
     for d in plot.data:  # load all data from the df: pd.DataFrame
         fig.append_trace(d, row=1, col=1)
@@ -112,42 +112,42 @@ def show_trajects_representative(df: pd.DataFrame) -> None:
     # visualize some predictions
     # # Case "most low with low"
     # one_traject_low = ds.df[ds.df['actS_c'] == 'low'].nsmallest(1,'actS')
-    # plot = Plot360()
+    # plot = Plot3d()
     # plot.add_traces(one_traject_low['traces'].iloc[0])
     # plot.add_predictions(one_traject_low['pos_only_low_entropy'].iloc[0])
     # plot.show()
 
     # # Case "most low with low"
     # one_traject_low = ds.df[ds.df['actS_c'] == 'low'].nsmallest(1,'actS')
-    # plot = Plot360()
+    # plot = Plot3d()
     # plot.add_traces(one_traject_low['traces'].iloc[0])
     # plot.add_predictions(one_traject_low['pos_only'].iloc[0])
     # plot.show()
 
     # # Case "most medium with medium"
     # one_traject_medium = ds.df[ds.df['actS_c'] == 'medium'].nsmallest(1,'actS')
-    # plot = Plot360()
+    # plot = Plot3d()
     # plot.add_traces(one_traject_medium['traces'].iloc[0])
     # plot.add_predictions(one_traject_medium['pos_only_medium_entropy'].iloc[0])
     # plot.show()
 
     # # Case "most medium with all"
     # one_traject_medium = ds.df[ds.df['actS_c'] == 'medium'].nsmallest(1,'actS')
-    # plot = Plot360()
+    # plot = Plot3d()
     # plot.add_traces(one_traject_medium['traces'].iloc[0])
     # plot.add_predictions(one_traject_medium['pos_only'].iloc[0])
     # plot.show()
 
     # # Case "most high with high"
     # one_traject_high = ds.df[ds.df['actS_c'] == 'high'].nlargest(1,'actS')
-    # plot = Plot360()
+    # plot = Plot3d()
     # plot.add_traces(one_traject_high['traces'].iloc[0])
     # plot.add_predictions(one_traject_high['pos_only_high_entropy'].iloc[0])
     # plot.show()
 
     # # Case "most high with all
     # one_traject_high = ds.df[ds.df['actS_c'] == 'high'].nlargest(1,'actS')
-    # plot = Plot360()
+    # plot = Plot3d()
     # plot.add_traces(one_traject_medium['traces'].iloc[0])
     # plot.add_predictions(one_traject_medium['pos_only'].iloc[0])
     # plot.show()

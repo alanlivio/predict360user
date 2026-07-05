@@ -4,7 +4,8 @@ import numpy as np
 import plotly.io as pio
 
 from predict360user.utils.math360 import calc_actual_entropy_from_ids
-from predict360user.utils.plot360 import Plot360
+from predict360user.utils.plot import Plot
+from predict360user.utils.plot3d import Plot3d
 from predict360user.utils.tileset360 import fov_poly, tile_points, tile_poly
 
 pio.renderers.default = None
@@ -56,17 +57,17 @@ class TileSet360TestCase(unittest.TestCase):
             )
 
 
-class Plot360TestCase(unittest.TestCase):
+class Plot3dTestCase(unittest.TestCase):
     def test_polygons(self) -> None:
-        plot = Plot360()
+        plot = Plot3d()
         plot.add_trace_and_fov([1, 0, 0])
         plot.add_polygon_from_tile_row_col(4, 6, 0, 0)
-        plot = Plot360()
+        plot = Plot3d()
         plot.add_trace_and_fov([1, 0, 0])
         plot.add_polygon_from_points(tile_points(4, 6, 0, 0))
 
     def test_show_fov_at_axis(self) -> None:
-        plot = Plot360()
+        plot = Plot3d()
         traces = [
             [1.0, 0.0, 0.0],
             [-1.0, 0.0, 0.0],
@@ -77,6 +78,17 @@ class Plot360TestCase(unittest.TestCase):
         ]
         for trace in traces:
             plot.show_fov(trace)
+
+
+class PlotTestCase(unittest.TestCase):
+    def test_plot(self) -> None:
+        plot = Plot()
+        plot.add_traces(np.array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]]))
+        plot.add_predictions({"t1": np.array([[0.0, 0.0, 1.0], [0.0, 0.0, -1.0]])})
+        
+    def test_show_fov(self) -> None:
+        plot = Plot()
+        plot.show_fov([1.0, 0.0, 0.0])
 
 
 class Math360TestCase(unittest.TestCase):

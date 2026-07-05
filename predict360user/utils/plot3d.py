@@ -16,7 +16,7 @@ from predict360user.utils.tileset360 import (
 )
 
 
-class Plot360:
+class Plot3d:
     def __init__(self, tileset=TILESET_DEFAULT) -> None:
         self.tileset = tileset
         if isinstance(self.tileset, TileSetVoro):
