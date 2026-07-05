@@ -1,0 +1,19 @@
+[project]
+site_name = "predict360user"
+site_description = "Library for predicting user behavior in 360 videos"
+docs_dir = "docs"
+
+[project.theme]
+name = "material"
+
+[[project.theme.palette]]
+scheme = "slate"
+primary = "black"
+accent = "indigo"
+toggle = { icon = "material/brightness-4", name = "Switch to light mode" }
+
+[[project.theme.palette]]
+scheme = "default"
+primary = "indigo"
+accent = "indigo"
+toggle = { icon = "material/brightness-7", name = "Switch to dark mode" }
