@@ -15,7 +15,7 @@ log = logging.getLogger()
 def split_train_filtred(
     df: pd.DataFrame,
     train_entropy: str,
-    seed: int,
+    seed: int = 1,
     train_size=p3u.RunConfig.train_size,
     test_size=p3u.RunConfig.test_size,
     val_size=0.25,

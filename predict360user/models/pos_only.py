@@ -122,7 +122,7 @@ class PosOnly(BaseModel):
             states = [state_h, state_c]
 
         # Concatenate all predictions
-        decoder_outputs = Lambda(lambda x: K.concatenate(x, axis=1))(all_outputs)
+        decoder_outputs = Concatenate(axis=1)(all_outputs)
         # decoder_outputs = all_outputs
 
         # Define and compile model

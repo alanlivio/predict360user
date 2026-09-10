@@ -1,8 +1,7 @@
-import keras
 import numpy as np
 import pandas as pd
 from keras import backend as K
-from keras.layers import LSTM, Dense, Input, Lambda, TimeDistributed
+from keras.layers import Concatenate, Dense, Input, Lambda, LSTM, TimeDistributed
 from keras.metrics import mean_squared_error as mse
 from keras.models import Model
 from tensorflow import keras
@@ -67,13 +66,14 @@ class PosOnly3D(keras.Model, BaseModel):
             decoder_outputs = outputs_pos
         else:
             # Concatenate all predictions
-            decoder_outputs = Lambda(lambda x: K.concatenate(x, axis=1))(all_outputs)
+            decoder_outputs = Concatenate(axis=1)(all_outputs)
+
 
         # Define and compile model
         model = keras.Model(
             inputs=[encoder_inputs, decoder_inputs], outputs=decoder_outputs
         )
-        model_optimizer = keras.optimizers.Adam(lr=0.0005)
+        model_optimizer = keras.optimizers.Adam(learning_rate=0.0005)
         model.compile(
             optimizer=model_optimizer,
             loss=self.loss_function,

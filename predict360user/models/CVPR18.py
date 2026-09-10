@@ -118,9 +118,8 @@ class CVPR18(BaseModel):
             inputs = decoder_pred
 
         # Concatenate all predictions
-        decoder_outputs_pos = Lambda(lambda x: K.concatenate(x, axis=1))(
-            all_pos_outputs
-        )
+        decoder_outputs_pos = Concatenate(axis=1)(all_pos_outputs)
+
         # decoder_outputs_img = Lambda(lambda x: K.concatenate(x, axis=1))(all_outputs)
 
         # Define and compile model
@@ -133,7 +132,7 @@ class CVPR18(BaseModel):
             outputs=decoder_outputs_pos,
         )
 
-        model_optimizer = keras.optimizers.Adam(lr=0.0005)
+        model_optimizer = keras.optimizers.Adam(learning_rate=0.0005)
         model.compile(
             optimizer=model_optimizer,
             loss="mean_squared_error",

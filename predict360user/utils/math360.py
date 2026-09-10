@@ -1,5 +1,4 @@
-from ast import Tuple
-from typing import Union
+from typing import Tuple, Union
 
 import numpy as np
 import tensorflow as tf

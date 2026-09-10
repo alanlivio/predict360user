@@ -4,6 +4,7 @@ import logging
 from abc import ABC, abstractmethod
 from typing import Callable, Generator, Sequence
 
+import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator
 
