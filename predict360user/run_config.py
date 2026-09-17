@@ -1,10 +1,12 @@
 import random
-from dataclasses import MISSING, dataclass
+from dataclasses import dataclass
 
 import numpy as np
-import tensorflow as tf
 
-import wandb
+try:
+    import tensorflow as tf
+except ImportError:
+    tf = None
 
 
 @dataclass
@@ -12,8 +14,8 @@ class RunConfig:
     """Run configuration.
 
     Keyword arguments:
-    name: -- short descriptive wandb run name, useful for grouping seeds
-    predict360user: -- wandb project name
+    name: -- short descriptive run name, useful for grouping seeds
+    project: -- project name
     batch_size  -- model batch size
     dataset  -- dataset name from .data_ingestion.DATASETS
     epochs  -- model training epochs
@@ -43,15 +45,15 @@ class RunConfig:
     test_size: float = 0.2
     initial_epoch: int = 0
     seed: int = 0
-    
+
     def __post_init__(self) -> None:
         if not self.name:
             self.name = self.model
 
+
 def set_random_seed(seed) -> None:
-    if wandb.run is not None:
-        wandb.run.summary['seed'] = seed
     random.seed(seed)
     np.random.seed(seed)
-    tf.random.set_seed(seed)
+    if tf is not None:
+        tf.random.set_seed(seed)
 

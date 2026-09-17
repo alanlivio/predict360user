@@ -11,9 +11,6 @@ from keras import backend as K
 from keras.layers import LSTM, Dense, Input, Lambda
 from sklearn.utils.validation import check_is_fitted
 from tensorflow import keras
-from wandb.keras import WandbCallback
-
-import wandb
 from predict360user.base_model import BaseModel, batch_generator_fn
 from predict360user.run_config import RunConfig
 from predict360user.utils.math360 import (
@@ -141,13 +138,6 @@ class PosOnly(BaseModel):
         os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
         
         self.model = self.get_model()
-        if wandb.run.resumed:
-            try: 
-                log.info("restoring fit from preivous interrupeted.")
-                self.model.load_weights(wandb.restore("model-best.h5").name)
-                self.cfg.initial_epoch = wandb.run.step
-            except:
-                log.error("restoring fit failed. starting new fit.") 
 
         if self.cfg.gpu_id:
             os.environ["CUDA_VISIBLE_DEVICES"] = str(self.cfg.gpu_id)
@@ -171,7 +161,9 @@ class PosOnly(BaseModel):
                 batch_cartesian_to_normalized_eulerian(decoder_outputs),
             )
 
-        self.model.fit_generator(
+        history_cb = keras.callbacks.History()
+        fit_fn = getattr(self.model, "fit_generator", self.model.fit)
+        fit_fn(
             generator=batch_generator_fn(self.cfg.batch_size, train_wins, get_fit_data),
             validation_data=batch_generator_fn(
                 self.cfg.batch_size, val_wins, get_fit_data
@@ -180,9 +172,10 @@ class PosOnly(BaseModel):
             validation_steps=steps_per_ep_validate,
             epochs=self.cfg.epochs,
             initial_epoch=self.cfg.initial_epoch,
-            callbacks=[WandbCallback(save_model=True, monitor="loss")],
+            callbacks=[history_cb],
             verbose=2,
         )
+        self.history = history_cb.history
         self.is_fitted_ = True
         return self
 

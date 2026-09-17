@@ -3,20 +3,16 @@ import logging
 from omegaconf import OmegaConf as oc
 
 import predict360user as p3u
-import wandb
 
 log = logging.getLogger()
 
 
-def run(cfg: p3u.RunConfig, **kwargs) -> None:
+def run(cfg: p3u.RunConfig, **kwargs) -> dict:
     cfg.name = cfg.model
-    wandb.init(project=cfg.project, name=cfg.name, **kwargs)
     log.info(f"==> run {cfg.name} with {cfg}")
 
-    # set seed
     p3u.set_random_seed(cfg.seed)
 
-    # load dataset
     df = p3u.load_df_wins(
         dataset=cfg.dataset,
         init_window=cfg.init_window,
@@ -27,34 +23,29 @@ def run(cfg: p3u.RunConfig, **kwargs) -> None:
         df, train_size=cfg.train_size, test_size=cfg.test_size, seed=cfg.seed
     )
 
-    # log train len
     len_keys = ["samples/train/all", "samples/train/low", "samples/train/medi", "samples/train/high"]
     len_values = p3u.count_entropy(df[df["partition"] == "train"])
-    wandb.log(dict(zip(len_keys, len_values)), step=0)
+    log.info(f"Dataset partitions: {dict(zip(len_keys, len_values))}")
 
-    # fit model
     model = p3u.get_model(cfg)
     model.fit(df)
 
-    # evaluate model
-    model.evaluate(df)
+    eval_results = model.evaluate(df)
+    log.info(f"Evaluation completed for seed {cfg.seed}: {eval_results}")
 
-    # finish run
-    wandb.finish()
     del df
     del model
+    return eval_results
 
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
     args = oc.from_cli()
-    nseeds = args.pop('nseeds', 1)
+    nseeds = args.pop("nseeds", 1)
+    results = []
     for seed in range(0, nseeds):
-        CFG = p3u.RunConfig(**args)  # type: ignore
-        CFG.seed = seed
-        try:
-            run(CFG)
-        except:
-            log.info(f"==> rerun falied {wandb.run.id} ")
-            run(CFG, resume="must", id=wandb.run.id) # resume using same id
+        cfg = p3u.RunConfig(**args)
+        cfg.seed = seed
+        res = run(cfg)
+        results.append(res)
 

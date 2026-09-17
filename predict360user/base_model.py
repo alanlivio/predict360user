@@ -8,7 +8,6 @@ import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator
 
-import wandb
 from predict360user.data_ingestion import ENTROPY_NAMES
 from predict360user.run_config import RunConfig
 from predict360user.utils.math360 import orth_dist_cartesian
@@ -106,17 +105,18 @@ class BaseModel(BaseEstimator, ABC):
             assert target_class in ENTROPY_NAMES
             classes = [c for c in classes if c[0] == target_class]
             assert classes
-        err_dict_per_class = {tup[0]: {} for tup in classes}
-        wandb.define_metric("t_hor", hidden=True, step_sync=False)
+        err_dict_per_class = {}
         for cls, idx in classes:
-            # 1) mean per class (as wandb summary): # err_all, err_low, err_high, err_medium,
-            wandb.define_metric(f"test_err_mean/{cls}", step_sync=False)
-            wandb.log({f"test_err_mean/{cls}": df.loc[idx, t_range].values.mean()})
-            # 2) mean err per t per class
-            wandb.define_metric(f"test_err_per_t_hor/{cls}", step_metric="t_hor", step_sync=False)
-            class_err_per_t = df.loc[idx, t_range].mean()
-            for t, err in zip(t_range, class_err_per_t):
-                wandb.log({f"test_err_per_t_hor/{cls}": err, "t_hor": t})
+            if len(idx) > 0:
+                mean_val = float(df.loc[idx, t_range].values.mean())
+                class_err_per_t = [float(v) for v in df.loc[idx, t_range].mean()]
+            else:
+                mean_val = 0.0
+                class_err_per_t = [0.0] * len(t_range)
+            err_dict_per_class[cls] = {
+                "mean": mean_val,
+                "per_t": class_err_per_t,
+            }
         return err_dict_per_class
 
 

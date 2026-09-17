@@ -1,7 +1,10 @@
 from typing import Tuple, Union
 
 import numpy as np
-import tensorflow as tf
+try:
+    import tensorflow as tf
+except ImportError:
+    tf = None
 from numpy import cross, dot
 from pyquaternion import Quaternion
 from scipy.spatial.transform import Rotation as R

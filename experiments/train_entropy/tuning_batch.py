@@ -6,7 +6,6 @@ from omegaconf import OmegaConf as oc
 from sklearn.utils import shuffle
 
 import predict360user as p3u
-import wandb
 
 log = logging.getLogger()
 
@@ -47,13 +46,6 @@ if RAY_AVAILABLE:
     def train_and_eval_node(df: pd.DataFrame, cfg: RunConfig) -> dict:
         p3u.set_random_seed(cfg.seed)
         cfg.name = f"{cfg.model},btuni={cfg.train_entropy}"
-        wandb.init(
-            project=cfg.project,
-            name=f"{cfg.name}-seed{cfg.seed}",
-            group=cfg.name,
-            job_type="train",
-            reinit=True
-        )
         try:
             train = df[df["partition"] == "train"]
             assert not train.empty
@@ -67,23 +59,20 @@ if RAY_AVAILABLE:
 
             len_keys = ["samples/train/all", "samples/train/low", "samples/train/medi", "samples/train/high"]
             len_values = p3u.count_entropy(train_for_fit)
-            wandb.log(dict(zip(len_keys, len_values)), step=0)
+            log.info(f"Train samples: {dict(zip(len_keys, len_values))}")
 
             model = p3u.get_model(cfg)
             model.fit(df_for_fit)
-            model.evaluate(df)
-            wandb.finish()
-            return {"status": "success", "seed": cfg.seed}
+            eval_res = model.evaluate(df)
+            return {"status": "success", "seed": cfg.seed, "eval": eval_res}
         except Exception as e:
             log.error(f"Error in train_and_eval_node for seed {cfg.seed}: {e}")
-            wandb.finish(exit_code=1)
             raise e
 
 
-def run(cfg: RunConfig, **kwargs) -> None:
+def run(cfg: RunConfig, **kwargs) -> dict:
     assert cfg.train_entropy in p3u.ENTROPY_NAMES
     cfg.name = f"{cfg.model},btuni={cfg.train_entropy}"
-    wandb.init(project=cfg.project, name=cfg.name, **kwargs)
     log.info(f"==> run {cfg.name} with {cfg}")
     
     # set seed
@@ -117,25 +106,25 @@ def run(cfg: RunConfig, **kwargs) -> None:
     # log train len
     len_keys = ["samples/train/all", "samples/train/low", "samples/train/medi", "samples/train/high"]
     len_values = p3u.count_entropy(train_for_fit)
-    wandb.log(dict(zip(len_keys, len_values)), step=0)
+    log.info(f"Train entropy: {dict(zip(len_keys, len_values))}")
 
     # fit model
     model = p3u.get_model(cfg)
     model.fit(df_for_fit)
 
     # evaluate model
-    model.evaluate(df)
+    eval_res = model.evaluate(df)
 
     # finish run
-    wandb.finish()
     del df
     del model
+    return eval_res
 
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
     args = oc.from_cli()
-    nseeds = args.pop('nseeds', 1)
+    nseeds = args.pop("nseeds", 1)
     
     if RAY_AVAILABLE:
         log.info("Ray is available. Executing runs using Ray DAG...")
@@ -162,11 +151,6 @@ if __name__ == "__main__":
     else:
         log.info("Ray is not available. Falling back to sequential execution...")
         for seed in range(0, nseeds):
-            CFG = RunConfig(**args)  # type: ignore
-            CFG.seed = seed
-            try:
-                run(CFG)
-            except:
-                log.info(f"==> rerun falied {wandb.run.id} ")
-                run(CFG, resume="must", id=wandb.run.id) # resume using same id
-
+            cfg_run = RunConfig(**args)  # type: ignore
+            cfg_run.seed = seed
+            run(cfg_run)

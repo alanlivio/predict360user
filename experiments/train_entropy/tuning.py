@@ -6,7 +6,6 @@ import pandas as pd
 from omegaconf import OmegaConf as oc
 
 import predict360user as p3u
-import wandb
 
 log = logging.getLogger()
 
@@ -47,13 +46,6 @@ if RAY_AVAILABLE:
     def train_and_eval_node(df: pd.DataFrame, cfg: RunConfig) -> dict:
         p3u.set_random_seed(cfg.seed)
         cfg.name = f"{cfg.model},tuni={cfg.train_entropy}"
-        wandb.init(
-            project=cfg.project,
-            name=f"{cfg.name}-seed{cfg.seed}",
-            group=cfg.name,
-            job_type="train",
-            reinit=True
-        )
         try:
             train = df[df["partition"] == "train"]
             assert not train.empty
@@ -66,10 +58,10 @@ if RAY_AVAILABLE:
 
             len_keys = ["samples/train/all", "samples/train/low", "samples/train/medi", "samples/train/high"]
             len_values = p3u.count_entropy(df_pretuning[df_pretuning["partition"] == "train"])
-            wandb.log(dict(zip(len_keys, len_values)), step=0)
+            log.info(f"Pretuning: {dict(zip(len_keys, len_values))}")
             len_keys = ["samples/tuni/all", "samples/tuni/low", "samples/tuni/medi", "samples/tuni/high"]
             len_values = p3u.count_entropy(df_tuning[df_tuning["partition"] == "train"])
-            wandb.log(dict(zip(len_keys, len_values)), step=0)
+            log.info(f"Tuning: {dict(zip(len_keys, len_values))}")
 
             model = p3u.get_model(cfg)
             model.fit(df_pretuning)
@@ -79,25 +71,20 @@ if RAY_AVAILABLE:
             log.info(f"==> tuni {cfg.train_entropy} with {model.cfg=}")
             model.fit(df_tuning)
 
-            model.evaluate(df)
-            wandb.finish()
-            return {"status": "success", "seed": cfg.seed}
+            eval_res = model.evaluate(df)
+            return {"status": "success", "seed": cfg.seed, "eval": eval_res}
         except Exception as e:
             log.error(f"Error in train_and_eval_node for seed {cfg.seed}: {e}")
-            wandb.finish(exit_code=1)
             raise e
 
 
-def run(cfg: RunConfig, **kwargs) -> None:
+def run(cfg: RunConfig, **kwargs) -> dict:
     assert cfg.train_entropy in p3u.ENTROPY_NAMES
     cfg.name = f"{cfg.model},tuni={cfg.train_entropy}"
-    wandb.init(project=cfg.project, name=cfg.name, **kwargs)
     log.info(f"==> run {cfg.name} with {cfg}")
 
-    # set seed
     p3u.set_random_seed(cfg.seed)
 
-    # load dataset
     df = p3u.load_df_wins(
         dataset=cfg.dataset,
         init_window=cfg.init_window,
@@ -111,7 +98,6 @@ def run(cfg: RunConfig, **kwargs) -> None:
         seed=cfg.seed,
     )
 
-    # split for tuning
     train = df[df["partition"] == "train"]
     assert not train.empty
     val = df[df["partition"] == "val"]
@@ -121,68 +107,59 @@ def run(cfg: RunConfig, **kwargs) -> None:
     df_pretuning = df.drop(train_tuning.index).drop(val_tuning.index)
     df_tuning = pd.concat([train_tuning, val_tuning])
 
-    # log train len
     len_keys = ["samples/train/all", "samples/train/low", "samples/train/medi", "samples/train/high"]
     len_values = p3u.count_entropy(df_pretuning[df_pretuning["partition"] == "train"])
-    wandb.log(dict(zip(len_keys, len_values)), step=0)
+    log.info(f"Pretuning: {dict(zip(len_keys, len_values))}")
     len_keys = ["samples/tuni/all", "samples/tuni/low", "samples/tuni/medi", "samples/tuni/high"]
     len_values = p3u.count_entropy(df_tuning[df_tuning["partition"] == "train"])
-    wandb.log(dict(zip(len_keys, len_values)), step=0)
+    log.info(f"Tuning: {dict(zip(len_keys, len_values))}")
 
-    # fit
     model = p3u.get_model(cfg)
     model.fit(df_pretuning)
 
-    # tuning for more 1/3 epochs
     model.cfg.initial_epoch = model.cfg.epochs
     model.cfg.epochs = math.ceil(cfg.epochs * (1.33))
     log.info(f"==> tuni {cfg.train_entropy} with {model.cfg=}")
     model.fit(df_tuning)
 
-    # evaluate model
-    model.evaluate(df)
-
-    # finish run
-    wandb.finish()
+    eval_res = model.evaluate(df)
     del df
     del model
+    return eval_res
 
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
     args = oc.from_cli()
-    nseeds = args.pop('nseeds', 1)
-    
+    nseeds = args.pop("nseeds", 1)
+
     if RAY_AVAILABLE:
         log.info("Ray is available. Executing runs using Ray DAG...")
         ray.init(ignore_reinit_error=True)
-        base_cfg = RunConfig(**args)  # type: ignore
+        base_cfg = RunConfig(**args)
         df_node = load_and_split_node.bind(base_cfg)
         outputs = []
         for seed in range(0, nseeds):
-            run_cfg = RunConfig(**args)  # type: ignore
+            run_cfg = RunConfig(**args)
             run_cfg.seed = seed
             node = train_and_eval_node.options(
                 num_cpus=run_cfg.num_cpus,
                 num_gpus=run_cfg.num_gpus
             ).bind(df_node, run_cfg)
             outputs.append(node)
-        
+
         @ray.remote
         def gather(*results):
             return list(results)
-        
+
         dag = gather.bind(*outputs)
         results = ray.get(dag.execute())
         log.info(f"Ray DAG execution completed: {results}")
     else:
         log.info("Ray is not available. Falling back to sequential execution...")
         for seed in range(0, nseeds):
-            CFG = RunConfig(**args)  # type: ignore
-            CFG.seed = seed
-            try:
-                run(CFG)
-            except:
-                log.info(f"==> rerun falied {wandb.run.id} ")
-                run(CFG, resume="must", id=wandb.run.id) # resume using same id
+            cfg_run = RunConfig(**args)
+            cfg_run.seed = seed
+            run(cfg_run)
+
 
