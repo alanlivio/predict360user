@@ -1,4 +1,5 @@
 import logging
+import math
 import os
 import pathlib
 import pickle
@@ -229,5 +230,41 @@ def split(
     train_len = len(df[df["partition"] == "train"])
     val_len = len(df[df["partition"] == "val"])
     assert (train_len + val_len) == train_before_val_split
+
+    return df
+
+
+def split_train_filtred(
+    df: pd.DataFrame,
+    train_entropy: str,
+    seed: int = 1,
+    train_size=RunConfig.train_size,
+    test_size=RunConfig.test_size,
+    val_size=0.25,
+    train_minsize=False,
+) -> pd.DataFrame:
+    assert train_entropy in ENTROPY_NAMES
+    df["partition"] = "discarted"
+
+    train, test = train_test_split(
+        df,
+        random_state=seed,
+        train_size=1 - test_size,
+        test_size=test_size,
+        stratify=df["actS_c"],
+    )
+
+    n_train = min(math.ceil(len(df) * train_size), len(train[train["actS_c"] == train_entropy]))
+    train = train[train["actS_c"] == train_entropy].sample(n=n_train, random_state=seed)
+    train, val = train_test_split(
+        train,
+        random_state=seed,
+        test_size=val_size,
+        stratify=train["actS_c"],
+    )
+
+    df.loc[train.index, "partition"] = "train"
+    df.loc[val.index, "partition"] = "val"
+    df.loc[test.index, "partition"] = "test"
 
     return df

@@ -12,47 +12,6 @@ import wandb
 log = logging.getLogger()
 
 
-def split_train_filtred(
-    df: pd.DataFrame,
-    train_entropy: str,
-    seed: int = 1,
-    train_size=p3u.RunConfig.train_size,
-    test_size=p3u.RunConfig.test_size,
-    val_size=0.25,
-) -> pd.DataFrame:
-    assert train_entropy in p3u.ENTROPY_NAMES
-    df["partition"] = "discarted"  # sanity check
-    log.info(f"{train_size=} (with {val_size=}), {test_size=}")
-
-    # split train (with full size) and test
-    train, test = train_test_split(
-        df,
-        random_state=seed,
-        train_size=1 - test_size,
-        test_size=test_size,
-        stratify=df["actS_c"],
-    )
-
-    # sample train like was sample full len(df) to create similar size
-    n_train = min(math.ceil(len(df) * train_size), len(train[train["actS_c"] == train_entropy]))
-    train = train[train["actS_c"] == train_entropy].sample(n=n_train, random_state=seed)
-    train, val = train_test_split(
-        train,
-        random_state=seed,
-        test_size=val_size,
-        stratify=train["actS_c"],
-    )
-    log.info("filtred samples/train are " + p3u.count_entropy_str(train))
-    log.info("filtred samples/train/val are " + p3u.count_entropy_str(val))
-
-    # save partition as column
-    df.loc[train.index, "partition"] = "train"
-    df.loc[val.index, "partition"] = "val"
-    df.loc[test.index, "partition"] = "test"
-
-    return df
-
-
 @dataclass
 class RunConfig(p3u.RunConfig):
     train_entropy: str = "all"
@@ -78,7 +37,7 @@ if RAY_AVAILABLE:
             h_window=cfg.h_window,
             m_window=cfg.m_window,
         )
-        df = split_train_filtred(
+        df = p3u.split_train_filtred(
             df,
             train_size=cfg.train_size,
             test_size=cfg.test_size,
@@ -134,15 +93,15 @@ def run(cfg: RunConfig, **kwargs) -> None:
         h_window=cfg.h_window,
         m_window=cfg.m_window,
     )
-    df = split_train_filtred(
+    df = p3u.split_train_filtred(
         df,
+        seed=cfg.seed,
         train_size=cfg.train_size,
         test_size=cfg.test_size,
         train_entropy=cfg.train_entropy,
-        seed=cfg.seed,
+        train_minsize=cfg.train_minsize,
     )
 
-    # log train len
     len_keys = ["samples/train/all", "samples/train/low", "samples/train/medi", "samples/train/high"]
     len_values = p3u.count_entropy(df[df["partition"] == "train"])
     wandb.log(dict(zip(len_keys, len_values)), step=0)
