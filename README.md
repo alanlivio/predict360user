@@ -2,14 +2,14 @@
 
 predict360user is a library that aims to help researchers to reproduce and develop models to predict user behavior in 360 videos, namely trajectory (or traject for short). It extends [Rondon 360-videos models/dataset collection](https://gitlab.com/miguelfromeror/head-motion-prediction) and takes a lot of design inspirations from the recommendation systems framework [RecBole](https://recbole.io/docs/index.html). See bellow the suported datasets and models.
 
-| dataset                                  | users (u) | videos (v) | trajects (u*v) |integrated |
-| ---------------------------------------- | --------- | ---------- | ------------------ |---------- |
-| Xu_PAMI_18 ([paper][Xu_PAMIN_18])        | 59        | 77         | 4,543              |yes        |
-| Xu_CVPR_18 ([paper][Xu_CVPR_18])         | 34        | 209        | 7,106              |yes        |
-| Nguyen_MM_18 ([paper][Nguyen_MM_18])     | 48        | 9          | 432                |yes        |
-| Fan_NOSSDAV_17 ([paper][Fan_NOSSDAV_17]) | 39        | 9          | 300                |yes        |
-| David_MMSys_18 ([paper][David_MMSys_18]) | 57        | 19         | 1,083              |yes        |
-| total                                    |           |            | 12,451             |yes        |
+| dataset                                  | users (u) | videos (v) | trajects (u*v)     | integrated |
+| ---------------------------------------- | --------- | ---------- | ------------------ | ---------- |
+| Xu_PAMI_18 ([paper][Xu_PAMIN_18])        | 59        | 77         | 4,543              | yes        |
+| Xu_CVPR_18 ([paper][Xu_CVPR_18])         | 34        | 209        | 7,106              | yes        |
+| Nguyen_MM_18 ([paper][Nguyen_MM_18])     | 48        | 9          | 432                | yes        |
+| Fan_NOSSDAV_17 ([paper][Fan_NOSSDAV_17]) | 39        | 9          | 300                | yes        |
+| David_MMSys_18 ([paper][David_MMSys_18]) | 57        | 19         | 1,083              | yes        |
+| total                                    |           |            | 12,451             | yes        |
 
 | model                                                                 | method              | user input                | integrated |
 | --------------------------------------------------------------------- | ------------------- | ------------------------- | ---------- |
