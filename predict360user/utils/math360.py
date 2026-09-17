@@ -40,6 +40,8 @@ def orth_dist_cartesian(position_a, position_b):
     norm_b = np.sqrt(
         np.square(position_b[0]) + np.square(position_b[1]) + np.square(position_b[2])
     )
+    if norm_a == 0.0 or norm_b == 0.0:
+        return 0.0
     x_true = position_a[0] / norm_a
     y_true = position_a[1] / norm_a
     z_true = position_a[2] / norm_a

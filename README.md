@@ -55,16 +55,18 @@ To setup a WSL env, follow [this tutorial](https://canonical-ubuntu-wsl.readthed
 
 ## Usage
 
+Common development tasks are managed via the [Makefile](Makefile), e.g., `make deps` and `make test`
+
 The library's main functions are:
 
-* `load_df_trajecs`: return users trajects in 360 videos in memory as a `pandas.DataFrame`. Each traject has: dataset id; pre-fixed user and video ids; traces as list of x,y,z points; actual entropy (actS); and an class name (actS_c) with labels `low`, `medium` and `high` selected using a Jenks breaks over actS value. See an example below:
+- `load_df_trajecs`: return users trajects in 360 videos in memory as a `pandas.DataFrame`. Each traject has: dataset id; pre-fixed user and video ids; traces as list of x,y,z points; actual entropy (actS); and an class name (actS_c) with labels `low`, `medium` and `high` selected using a Jenks breaks over actS value. See an example below:
 
   | ds    | user    | video         | traces        | actS          | actS_c        |
   | ----- | ------- | ------------- | ------------- | ------------- | ------------- |
   |       |         |               |               |               |               |
   | david | david_0 | david_10_Cows | [[x,y,z],...] | 3.2           | medium        |
 
-* `BaseModel`: train and evaluate prediction models
+- `BaseModel`: train and evaluate prediction models
 
 See notebooks in [docs/](docs/) folder.
 
@@ -88,13 +90,3 @@ If you use `predict360user` please consider citing it as:
     howpublished = {\url{https://github.com/alanlivio/predict360user}}
   }
   ```
-
-## A note on maintenance
-
-This repository was born as part of the UK EPSR SpheryStream project. Its maintenance is limited by a research project's time and resources. Even if I want to automate all 360 user prediction models, I need more time to maintain the whole body of automation that a well-maintained package deserves. Any help is very welcome. Here is a quick guide to interacting with this repository:
-
-* If you find a bug, please open an issue, and I will fix it as soon as possible.
-* If you want to request a new feature, please open an issue, and I will consider it as soon as possible.
-* If you want to contribute yourself, please open an issue first, we discuss the objective, plan a proposal, and open a pull request to act on it.
-
-If you would like to be involved further in the development of this repository, please get in touch with me directly: aguedes at ucl dot ac dot uk.

@@ -239,7 +239,7 @@ class Plot3d:
 
         self.add_trace_and_fov(trace)
         for t in self.data:
-            fig.append_trace(t, row=1, col=1)
+            fig.add_trace(t, row=1, col=1)
 
         # heatmap
         heatmap = self.tileset.request(trace)  # type: ignore
@@ -249,7 +249,7 @@ class Plot3d:
         y = [str(y) for y in range(1, heatmap.shape[0] + 1)]
         erp_heatmap = px.imshow(heatmap, text_auto=True, x=x, y=y)
         for t in erp_heatmap["data"]:
-            fig.append_trace(t, row=1, col=2)
+            fig.add_trace(t, row=1, col=2)
         if isinstance(self.tileset, TileSet):
             # fix given phi 0 being the north pole at cartesian_to_eulerian
             fig.update_yaxes(autorange="reversed")

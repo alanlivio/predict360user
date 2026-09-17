@@ -6,6 +6,10 @@ line-length = 100
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
+filterwarnings = [
+    "ignore::_pytest.warning_types.PytestDeprecationWarning",
+    "ignore::DeprecationWarning:_yaml",
+]
 
 [build-system]
 requires = ["setuptools>=61.0"]

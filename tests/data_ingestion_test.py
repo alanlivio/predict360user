@@ -13,8 +13,8 @@ class IngestTestCase(unittest.TestCase):
     def test_random(self) -> None:
         one_row = self.df.sample(1)
         self.assertFalse(one_row.empty)
-        traject_ar = one_row.iloc[0]["traces"]
-        trace = traject_ar[np.random.randint(len(traject_ar - 1))]
+        traject_ar = one_row.iloc[0]["h_window"]
+        trace = traject_ar[np.random.randint(len(traject_ar))]
         self.assertEqual(trace.shape, (3,))
 
     def test_split_train_filtred(self) -> None:

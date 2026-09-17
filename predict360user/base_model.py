@@ -91,7 +91,7 @@ class BaseModel(BaseEstimator, ABC):
         df.loc[test_idx, t_range] = df.loc[test_idx].apply(
             _calc_pred_err, axis=1, result_type="expand"
         )  # type: ignore
-        assert df.loc[test_idx, t_range].all().all()
+        assert df.loc[test_idx, t_range].notna().all().all()
 
         # calculate predict errors pert t mean
         test_wins = df.loc[test_idx]

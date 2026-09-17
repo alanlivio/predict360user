@@ -78,7 +78,7 @@ def show_traject(row: pd.Series, title=None) -> None:
     plot = Plot3d()
     plot.add_traces(traces)
     for d in plot.data:  # load all data from the df: pd.DataFrame
-        fig.append_trace(d, row=1, col=1)
+        fig.add_trace(d, row=1, col=1)
 
     # add hmps_sum
     traces_hmps = np.apply_along_axis(TILESET_DEFAULT.request, 1, row["traces"]) # type: ignore
@@ -89,7 +89,7 @@ def show_traject(row: pd.Series, title=None) -> None:
     erp_heatmap.update_layout(width=100, height=100)
 
     # show fig
-    fig.append_trace(erp_heatmap.data[0], row=1, col=2)
+    fig.add_trace(erp_heatmap.data[0], row=1, col=2)
     # fix given phi 0 being the north pole at cartesian_to_eulerian
     fig.update_yaxes(autorange="reversed")
     title = title if title else f"trajec_{row.name}_[{TILESET_DEFAULT.prefix}]"
