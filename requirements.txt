@@ -4,7 +4,7 @@ colour
 scipy
 spherical_geometry
 tqdm==4.61.2 # https://github.com/tqdm/tqdm/issues/1199
-wandb
+metaflow
 keras-tqdm
 jenkspy
 # commented versions are from head_motion_prediction/README.md

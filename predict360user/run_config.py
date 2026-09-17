@@ -25,7 +25,7 @@ class RunConfig:
     init_window  -- init buffer window size
     lr  -- model learning rate
     m_window  -- model memory window learning rate
-    model  -- model name from .models folder
+    model  -- model name from pipelines
     train_size  -- model training size
     test_size  -- model test size
     """

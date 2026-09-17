@@ -172,6 +172,7 @@ output
 outputs
 logs
 wandb
+.metaflow
 Graph
 .tmp*
 saved

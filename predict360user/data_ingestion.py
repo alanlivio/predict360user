@@ -134,12 +134,16 @@ def _calc_traces_entropy(df) -> pd.DataFrame:
 def load_df_trajecs(dataset=RunConfig.dataset) -> pd.DataFrame:
     assert dataset in ["all"] + list(DATASETS.keys())
     pickle_file = os.path.join(DEFAULT_SAVEDIR, f"df_trajecs_{dataset}.pickle")
+    df = None
     if exists(pickle_file):
-        with open(pickle_file, "rb") as f:
-            log.info(f"loading df from {pickle_file}")
-            df = pickle.load(f)
-    else:
-        log.info(f"there is no {pickle_file}")
+        try:
+            with open(pickle_file, "rb") as f:
+                log.info(f"loading df from {pickle_file}")
+                df = pickle.load(f)
+        except Exception as e:
+            log.warning(f"failed to unpickle {pickle_file} ({e}), regenerating...")
+            df = None
+    if df is None:
         log.info(f"loading trajects from {HMDDIR}")
         df = _load_df_trajecs_from_hmp(dataset)
         log.info(f"calculating entropy")
