@@ -29,6 +29,7 @@ class TrainSplitFlow(FlowSpec):
 
     @step
     def load_data(self):
+        self.dataset_manifest = p3u.resolve_dataset_manifest(self.dataset)
         self.df = p3u.load_df_wins(
             dataset=self.dataset,
             init_window=self.init_window,

@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+import hashlib
 import logging
 import math
 import os
@@ -5,19 +8,157 @@ import pathlib
 import pickle
 from os import mkdir
 from os.path import exists
-from typing import Literal
+from typing import Any, Literal, Optional
 
 import numpy as np
-import pandas as pd
-from jenkspy import jenks_breaks
-from sklearn.model_selection import train_test_split
-from tqdm.auto import tqdm
+import pooch
+
+try:
+    import pandas as pd
+    from jenkspy import jenks_breaks
+    from sklearn.model_selection import train_test_split
+    from tqdm.auto import tqdm
+except ImportError:
+    pd = Any
 
 from predict360user.run_config import RunConfig
 from predict360user.utils.math360 import calc_actual_entropy
 
-DATADIR = f"{pathlib.Path(__file__).parent / 'data/'}"
+_REPO_ROOT = pathlib.Path(__file__).resolve().parents[1]
+_DOT_DATA_DIR = _REPO_ROOT / ".data"
+_LEGACY_DATA_DIR = _REPO_ROOT / "data"
+DATADIR = f"{_DOT_DATA_DIR if _DOT_DATA_DIR.exists() else _LEGACY_DATA_DIR}"
 HMDDIR = f"{pathlib.Path(__file__).parent / 'head_motion_prediction/'}"
+
+DATASET_ARCHIVES = {
+    "david": "David_MMSys_18.zip",
+    "fan": "Fan_NOSSDAV_17.zip",
+    "nguyen": "Nguyen_MM_18.zip",
+    "xucvpr": "Xu_CVPR_18.zip",
+    "xupami": "Xu_PAMI_18.zip",
+}
+
+DATASET_SUBDIRS = {
+    "david": "David_MMSys_18",
+    "fan": "Fan_NOSSDAV_17",
+    "nguyen": "Nguyen_MM_18",
+    "xucvpr": "Xu_CVPR_18",
+    "xupami": "Xu_PAMI_18",
+}
+
+POOCH = pooch.create(
+    path=_DOT_DATA_DIR,
+    base_url="",
+    env="DATA_DIR",
+    registry={
+        "David_MMSys_18.zip": None,
+        "Fan_NOSSDAV_17.zip": None,
+        "Nguyen_MM_18.zip": None,
+        "Xu_CVPR_18.zip": None,
+        "Xu_PAMI_18.zip": None,
+    },
+    urls={
+        "David_MMSys_18.zip": "doi:10.5281/zenodo.4673531/head-motion-prediction.zip",
+        "Fan_NOSSDAV_17.zip": "https://gitlab.com/miguelfromeror/head-motion-prediction/-/archive/master/head-motion-prediction-master.zip",
+        "Nguyen_MM_18.zip": "https://www.dropbox.com/s/r09s1yqr2qyluyr/salient_ds.zip?dl=1",
+        "Xu_CVPR_18.zip": "https://gitlab.com/miguelfromeror/head-motion-prediction/-/archive/master/head-motion-prediction-master.zip",
+        "Xu_PAMI_18.zip": "https://www.dropbox.com/s/swenk8b33vs6151/PVS-HM.tar.gz?dl=1",
+    },
+)
+
+DATA_POOCH = POOCH
+DATASET_REGISTRY = POOCH.registry
+DATASET_URLS = POOCH.urls
+
+
+def fetch_dataset(dataset: str = RunConfig.dataset, download: bool = False) -> dict[str, Any]:
+    norm_name = dataset.lower().strip()
+    fname = DATASET_ARCHIVES[norm_name]
+    subdir = DATASET_SUBDIRS[norm_name]
+    url = POOCH.urls[fname]
+
+    dot_target = _DOT_DATA_DIR / "head_motion_prediction" / subdir
+    legacy_target = pathlib.Path(HMDDIR) / subdir
+    target_dir = dot_target if dot_target.exists() or not legacy_target.exists() else legacy_target
+    target_dir.mkdir(parents=True, exist_ok=True)
+
+    if download and fname in POOCH.registry:
+        try:
+            POOCH.fetch(fname, processor=pooch.Unzip(extract_dir=str(dot_target)))
+            target_dir = dot_target
+        except Exception:
+            pass
+
+    files = sorted(
+        str(p.relative_to(target_dir))
+        for p in target_dir.rglob("*")
+        if p.is_file() and not p.name.startswith(".")
+    )
+    h = hashlib.sha256()
+    total_bytes = 0
+    for rel in files:
+        sz = (target_dir / rel).stat().st_size
+        total_bytes += sz
+        h.update(f"{rel}:{sz}\n".encode("utf-8"))
+
+    return {
+        "name": norm_name,
+        "fname": fname,
+        "url": url,
+        "local_dir": str(target_dir),
+        "num_files": len(files),
+        "total_bytes": total_bytes,
+        "content_hash": h.hexdigest()[:16] if files else "",
+        "verified": len(files) > 0,
+    }
+
+
+class Trajectory360Dataset:
+    def __init__(
+        self,
+        name: str = RunConfig.dataset,
+        root: Optional[str] = None,
+        split: str = "train",
+        download: bool = False,
+    ):
+        self.name = name.lower().strip()
+        self.root = root
+        self.split = split
+        self.manifest = fetch_dataset(self.name, download=download)
+        local_dir = pathlib.Path(self.manifest["local_dir"])
+        self.files = sorted(
+            str(p) for p in local_dir.rglob("*") if p.is_file() and not p.name.startswith(".")
+        )
+
+    def get_split_paths(self, train_ratio: float = 0.7, val_ratio: float = 0.15) -> dict[str, list[str]]:
+        n_total = len(self.files)
+        n_train = max(1, int(n_total * train_ratio))
+        n_val = max(1, int(n_total * val_ratio))
+        return {
+            "train": self.files[:n_train],
+            "val": self.files[n_train : n_train + n_val],
+            "test": self.files[n_train + n_val :] or self.files[n_train : n_train + n_val],
+        }
+
+    def __len__(self) -> int:
+        if self.split in ("train", "val", "test"):
+            return len(self.get_split_paths()[self.split])
+        return len(self.files)
+
+    def __getitem__(self, idx: int) -> str:
+        if self.split in ("train", "val", "test"):
+            return self.get_split_paths()[self.split][idx]
+        return self.files[idx]
+
+
+def resolve_dataset_manifest(dataset: str = RunConfig.dataset, download: bool = False) -> dict[str, Any]:
+    if dataset == "all":
+        manifests = {
+            ds_key: fetch_dataset(ds_key, download=download)
+            for ds_key in ("david", "fan", "nguyen", "xucvpr", "xupami")
+        }
+        return {"dataset": "all", "manifests": manifests}
+    return fetch_dataset(dataset, download=download)
 DATASETS = {
     "david": {"size": 1083},
     "fan": {"size": 300},

@@ -1,4 +1,21 @@
 from predict360user.base_model import BaseModel
+from predict360user.data_ingestion import (
+    POOCH,
+    DATA_POOCH,
+    DATASET_ARCHIVES,
+    DATASET_REGISTRY,
+    DATASET_URLS,
+    ENTROPY_NAMES,
+    Trajectory360Dataset,
+    count_entropy,
+    count_entropy_str,
+    fetch_dataset,
+    load_df_trajecs,
+    load_df_wins,
+    resolve_dataset_manifest,
+    split,
+    split_train_filtred,
+)
 try:
     from predict360user.pipelines import (
         BaseTrainEvalFlow,
@@ -26,15 +43,6 @@ try:
         show_entropy_histogram_per_partition,
         show_traject,
         show_trajects_representative,
-    )
-    from predict360user.data_ingestion import (
-        ENTROPY_NAMES,
-        count_entropy,
-        count_entropy_str,
-        load_df_trajecs,
-        load_df_wins,
-        split,
-        split_train_filtred,
     )
 except ImportError:
     pass
